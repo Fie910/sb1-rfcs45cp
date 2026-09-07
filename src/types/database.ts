@@ -19,6 +19,9 @@ export type Guru = {
   role: GuruRole;
   divisi_id: string | null;
   divisis?: Divisi | null;
+  mata_pelajaran?: string | null;
+  mapel_id?: string | null;
+  jabatan?: string | null;
   created_at?: string;
 };
 
@@ -143,7 +146,7 @@ export type AgendaGuru = {
   guru_id: string;
   jadwal_kbm_id: string | null;
   tanggal: string;
-  status_kehadiran: 'Hadir' | 'Tidak Hadir';
+  status_kehadiran: 'Hadir' | 'Tidak Hadir' | 'Hadir Mengajar' | 'Terlambat';
   catatan_materi: string | null;
   latitude_guru: number | null;
   longitude_guru: number | null;
@@ -158,6 +161,7 @@ export type AgendaGuruWithRelations = AgendaGuru & {
     kelas: Pick<Kelas, 'id' | 'nama_kelas'> | null;
     mata_pelajarans: Pick<MataPelajaran, 'id' | 'nama_mapel'> | null;
   }) | null;
+  gurus?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
 };
 
 export type JadwalPiket = {
@@ -215,6 +219,8 @@ export type Pengumuman = {
   tanggal_mulai: string;
   tanggal_selesai: string;
   is_aktif: boolean;
+  gambar_url?: string | null;
+  url?: string | null;
   created_at: string;
 };
 
@@ -246,3 +252,28 @@ export interface RencanaKegiatan {
   status?: string;
   created_at?: string;
 }
+
+export type JadwalPiketPenyambutan = {
+  id: string;
+  guru_id: string;
+  hari: string;
+  created_at?: string;
+  gurus?: Pick<Guru, 'id' | 'nama_lengkap' | 'nip'> | null;
+};
+
+export type KehadiranPiketPenyambutan = {
+  id: string;
+  guru_id: string;
+  tanggal: string;
+  status: 'Hadir' | 'Izin' | 'Sakit' | string;
+  status_kehadiran?: string;
+  waktu_absen?: string | null;
+  waktu_presensi?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  jarak_meter?: number | null;
+  menit_keterlambatan?: number | null;
+  catatan?: string | null;
+  created_at: string;
+  gurus?: Pick<Guru, 'id' | 'nama_lengkap' | 'nip'> | null;
+};

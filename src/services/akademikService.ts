@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase'; // Sesuaikan path client Supabase Anda
-import { StatusAkhirRiwayat, StatusSiswa } from '../types/database';
+import { supabase } from '@/lib/supabase';
+import type { StatusAkhirRiwayat, StatusSiswa } from '@/types/database';
 
 export interface SiswaProsesKenaikan {
   siswa_id: string;

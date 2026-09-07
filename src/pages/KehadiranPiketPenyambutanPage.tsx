@@ -566,7 +566,7 @@ export function KehadiranPiketPenyambutanPage() {
                     Status Disetujui: <span className="text-purple-400">{izinHariIni.kategori_izin}</span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    Anda telah mengajukan {izinHariIni.kategori_izin.toLowerCase()} untuk hari ini.
+                    Anda telah mengajukan {izinHariIni.kategori_izin?.toLowerCase() || 'izin'} untuk hari ini.
                   </p>
                 </div>
                 {izinHariIni.keterangan_izin && (

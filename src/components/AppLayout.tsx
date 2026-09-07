@@ -6,11 +6,11 @@ import type { PageKey } from '@/config/navigation';
 
 type LayoutProps = {
   current: PageKey;
-  onNavigate: (page: PageKey) => void;
+  onNavigate?: (page: PageKey) => void;
   children: ReactNode;
 };
 
-export function AppLayout({ current, onNavigate, children }: LayoutProps) {
+export function AppLayout({ current, children }: LayoutProps) {
   const { signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -27,7 +27,6 @@ export function AppLayout({ current, onNavigate, children }: LayoutProps) {
       {/* Sidebar Component */}
       <Sidebar
         current={current}
-        onNavigate={onNavigate}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />

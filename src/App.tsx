@@ -1,55 +1,62 @@
+import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ToastContainer } from '@/components/Toast';
 import { AppLayout } from '@/components/AppLayout';
 import type { PageKey } from '@/config/navigation';
-import { LoginPage } from '@/pages/LoginPage';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { SiswaPage } from '@/pages/SiswaPage';
-import { KelasPage } from '@/pages/KelasPage';
-import { NilaiPage } from '@/pages/NilaiPage';
-import { PresensiPage } from '@/pages/PresensiPage';
-import { AgendaPage } from '@/pages/AgendaPage';
-import { IzinPage } from '@/pages/IzinPage';
-import { PiketPage } from '@/pages/PiketPage';
-import { SekolahPage } from '@/pages/SekolahPage';
-import { PengumumanPage } from '@/pages/PengumumanPage';
-import { GuruPage } from '@/pages/GuruPage';
-import { JadwalKbmPage } from '@/pages/JadwalKbmPage';
-import { JadwalPiketPage } from '@/pages/JadwalPiketPage';
-import { RekapPresensiSiswaPage } from '@/pages/RekapPresensiSiswaPage';
-import { RekapNilaiPage } from '@/pages/RekapNilaiPage';
-import { RekapPresensiGuruPage } from '@/pages/RekapPresensiGuruPage';
-import { RekapAgendaPage } from '@/pages/RekapAgendaPage';
-import { RekapIzinPage } from '@/pages/RekapIzinPage';
-import { JadwalKbmJpsPage } from '@/pages/JadwalKbmJpsPage';
-import { ProfilPage } from '@/pages/ProfilPage';
-import { HakAksesPage } from '@/pages/HakAksesPage';
 
-// Import Halaman Piket
-import { JadwalPiketPenyambutanPage } from '@/pages/JadwalPiketPenyambutanPage';
-import { KehadiranPiketPenyambutanPage } from '@/pages/KehadiranPiketPenyambutanPage';
-import { KehadiranPiketPage } from '@/pages/KehadiranPiketPage';
+// Lazy load seluruh halaman untuk optimasi bundle (Code Splitting)
+const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const SiswaPage = lazy(() => import('@/pages/SiswaPage').then((m) => ({ default: m.SiswaPage })));
+const KelasPage = lazy(() => import('@/pages/KelasPage').then((m) => ({ default: m.KelasPage })));
+const NilaiPage = lazy(() => import('@/pages/NilaiPage').then((m) => ({ default: m.NilaiPage })));
+const PresensiPage = lazy(() => import('@/pages/PresensiPage').then((m) => ({ default: m.PresensiPage })));
+const AgendaPage = lazy(() => import('@/pages/AgendaPage').then((m) => ({ default: m.AgendaPage })));
+const IzinPage = lazy(() => import('@/pages/IzinPage').then((m) => ({ default: m.IzinPage })));
+const PiketPage = lazy(() => import('@/pages/PiketPage').then((m) => ({ default: m.PiketPage })));
+const SekolahPage = lazy(() => import('@/pages/SekolahPage').then((m) => ({ default: m.SekolahPage })));
+const PengumumanPage = lazy(() => import('@/pages/PengumumanPage').then((m) => ({ default: m.PengumumanPage })));
+const GuruPage = lazy(() => import('@/pages/GuruPage').then((m) => ({ default: m.GuruPage })));
+const JadwalKbmPage = lazy(() => import('@/pages/JadwalKbmPage').then((m) => ({ default: m.JadwalKbmPage })));
+const JadwalKbmJpsPage = lazy(() => import('@/pages/JadwalKbmJpsPage').then((m) => ({ default: m.JadwalKbmJpsPage })));
+const JadwalPiketPage = lazy(() => import('@/pages/JadwalPiketPage').then((m) => ({ default: m.JadwalPiketPage })));
+const RekapPresensiSiswaPage = lazy(() => import('@/pages/RekapPresensiSiswaPage').then((m) => ({ default: m.RekapPresensiSiswaPage })));
+const RekapNilaiPage = lazy(() => import('@/pages/RekapNilaiPage').then((m) => ({ default: m.RekapNilaiPage })));
+const RekapPresensiGuruPage = lazy(() => import('@/pages/RekapPresensiGuruPage').then((m) => ({ default: m.RekapPresensiGuruPage })));
+const RekapAgendaPage = lazy(() => import('@/pages/RekapAgendaPage').then((m) => ({ default: m.RekapAgendaPage })));
+const RekapIzinPage = lazy(() => import('@/pages/RekapIzinPage').then((m) => ({ default: m.RekapIzinPage })));
+const ProfilPage = lazy(() => import('@/pages/ProfilPage').then((m) => ({ default: m.ProfilPage })));
+const HakAksesPage = lazy(() => import('@/pages/HakAksesPage').then((m) => ({ default: m.HakAksesPage })));
 
-// Import Halaman To-Do List Divisi
-import { TodoListPage } from '@/pages/TodoListPage';
+// Halaman Piket
+const JadwalPiketPenyambutanPage = lazy(() => import('@/pages/JadwalPiketPenyambutanPage').then((m) => ({ default: m.JadwalPiketPenyambutanPage })));
+const KehadiranPiketPenyambutanPage = lazy(() => import('@/pages/KehadiranPiketPenyambutanPage').then((m) => ({ default: m.KehadiranPiketPenyambutanPage })));
+const KehadiranPiketPage = lazy(() => import('@/pages/KehadiranPiketPage').then((m) => ({ default: m.KehadiranPiketPage })));
 
-// Import Halaman Presensi Kesiswaan
-import { InputPresensiKesiswaanPage } from '@/pages/InputPresensiKesiswaanPage';
-import { RekapPresensiKesiswaanPage } from '@/pages/RekapPresensiKesiswaanPage';
+// Halaman To-Do List Divisi
+const TodoListPage = lazy(() => import('@/pages/TodoListPage').then((m) => ({ default: m.TodoListPage })));
 
-// Import Halaman Modul Kesiswaan Baru
-import { KenaikanKelas } from '@/pages/KenaikanKelas';
-import { Kelulusan } from '@/pages/Kelulusan';
-import { RiwayatSiswa } from '@/pages/RiwayatSiswa';
-import { MutasiSiswa } from '@/pages/MutasiSiswa';
+// Halaman Presensi Kesiswaan
+const InputPresensiKesiswaanPage = lazy(() => import('@/pages/InputPresensiKesiswaanPage').then((m) => ({ default: m.InputPresensiKesiswaanPage })));
+const RekapPresensiKesiswaanPage = lazy(() => import('@/pages/RekapPresensiKesiswaanPage').then((m) => ({ default: m.RekapPresensiKesiswaanPage })));
 
-import { testConnection } from '@/lib/testConnection';
+// Modul Kesiswaan Baru
+const KenaikanKelas = lazy(() => import('@/pages/KenaikanKelas').then((m) => ({ default: m.KenaikanKelas })));
+const Kelulusan = lazy(() => import('@/pages/Kelulusan').then((m) => ({ default: m.Kelulusan })));
+const RiwayatSiswa = lazy(() => import('@/pages/RiwayatSiswa').then((m) => ({ default: m.RiwayatSiswa })));
+const MutasiSiswa = lazy(() => import('@/pages/MutasiSiswa').then((m) => ({ default: m.MutasiSiswa })));
 
-testConnection();
+function PageLoadingFallback() {
+  return (
+    <div className="flex-1 min-h-[60vh] flex items-center justify-center">
+      <Loader2 className="animate-spin text-indigo-500" size={36} />
+    </div>
+  );
+}
 
-function ProtectedRoute({ accessKey, children }: { accessKey?: string; children: JSX.Element }) {
+function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children: JSX.Element }) {
   const { hasAccess } = useAuth();
   if (accessKey && !hasAccess(accessKey)) {
     return <Navigate to="/" replace />;
@@ -60,76 +67,77 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: string; children:
 function AppContent() {
   const { session, loading } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-500" size={36} />
       </div>
     );
   }
 
   if (!session) {
-    return <LoginPage />;
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <LoginPage />
+      </Suspense>
+    );
   }
 
   const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageKey;
 
-  const handleNavigate = (pageKey: PageKey) => {
-    navigate(`/${pageKey === 'dashboard' ? '' : pageKey}`);
-  };
-
   return (
-    <AppLayout current={currentPath} onNavigate={handleNavigate}>
-      <Routes>
-        <Route path="/" element={<DashboardPage onNavigate={handleNavigate} />} />
-        <Route path="/dashboard" element={<DashboardPage onNavigate={handleNavigate} />} />
-        <Route path="/profil" element={<ProfilPage />} />
+    <AppLayout current={currentPath}>
+      <Suspense fallback={<PageLoadingFallback />}>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profil" element={<ProfilPage />} />
 
-        <Route path="/todo" element={<ProtectedRoute accessKey="todo"><TodoListPage /></ProtectedRoute>} />
+          <Route path="/todo" element={<ProtectedRoute accessKey="todo"><TodoListPage /></ProtectedRoute>} />
 
-        <Route path="/siswa" element={<ProtectedRoute accessKey="siswa"><SiswaPage /></ProtectedRoute>} />
-        <Route path="/kelas" element={<ProtectedRoute accessKey="kelas"><KelasPage /></ProtectedRoute>} />
-        <Route path="/nilai" element={<ProtectedRoute accessKey="nilai"><NilaiPage /></ProtectedRoute>} />
-        <Route path="/presensi" element={<ProtectedRoute accessKey="presensi"><PresensiPage /></ProtectedRoute>} />
-        
-        {/* Rute Modul Kesiswaan */}
-        <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
-        <Route path="/kelulusan" element={<ProtectedRoute accessKey="kelulusan"><Kelulusan /></ProtectedRoute>} />
-        <Route path="/riwayat_siswa" element={<ProtectedRoute accessKey="riwayat_siswa"><RiwayatSiswa /></ProtectedRoute>} />
-        <Route path="/mutasi_siswa" element={<ProtectedRoute accessKey="mutasi_siswa"><MutasiSiswa /></ProtectedRoute>} />
+          <Route path="/siswa" element={<ProtectedRoute accessKey="siswa"><SiswaPage /></ProtectedRoute>} />
+          <Route path="/kelas" element={<ProtectedRoute accessKey="kelas"><KelasPage /></ProtectedRoute>} />
+          <Route path="/nilai" element={<ProtectedRoute accessKey="nilai"><NilaiPage /></ProtectedRoute>} />
+          <Route path="/presensi" element={<ProtectedRoute accessKey="presensi"><PresensiPage /></ProtectedRoute>} />
+          
+          {/* Rute Modul Kesiswaan */}
+          <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
+          <Route path="/kelulusan" element={<ProtectedRoute accessKey="kelulusan"><Kelulusan /></ProtectedRoute>} />
+          <Route path="/riwayat_siswa" element={<ProtectedRoute accessKey="riwayat_siswa"><RiwayatSiswa /></ProtectedRoute>} />
+          <Route path="/mutasi_siswa" element={<ProtectedRoute accessKey="mutasi_siswa"><MutasiSiswa /></ProtectedRoute>} />
 
-        {/* Rute Presensi Kesiswaan */}
-        <Route path="/presensi_kesiswaan" element={<ProtectedRoute accessKey="presensi_kesiswaan"><InputPresensiKesiswaanPage /></ProtectedRoute>} />
-        
-        <Route path="/agenda" element={<ProtectedRoute accessKey="agenda"><AgendaPage /></ProtectedRoute>} />
-        <Route path="/izin" element={<ProtectedRoute accessKey="izin"><IzinPage /></ProtectedRoute>} />
-        <Route path="/piket" element={<ProtectedRoute accessKey="piket"><PiketPage /></ProtectedRoute>} />
-        <Route path="/sekolah" element={<ProtectedRoute accessKey="sekolah"><SekolahPage /></ProtectedRoute>} />
-        <Route path="/pengumuman" element={<ProtectedRoute accessKey="pengumuman"><PengumumanPage /></ProtectedRoute>} />
-        <Route path="/guru" element={<ProtectedRoute accessKey="guru"><GuruPage /></ProtectedRoute>} />
-        <Route path="/jadwal_kbm" element={<ProtectedRoute accessKey="jadwal_kbm"><JadwalKbmPage /></ProtectedRoute>} />
-        <Route path="/jadwal_kbm_jps" element={<ProtectedRoute accessKey="jadwal_kbm_jps"><JadwalKbmJpsPage /></ProtectedRoute>} />
-        <Route path="/jadwal_piket" element={<ProtectedRoute accessKey="jadwal_piket"><JadwalPiketPage /></ProtectedRoute>} />
+          {/* Rute Presensi Kesiswaan */}
+          <Route path="/presensi_kesiswaan" element={<ProtectedRoute accessKey="presensi_kesiswaan"><InputPresensiKesiswaanPage /></ProtectedRoute>} />
+          
+          <Route path="/agenda" element={<ProtectedRoute accessKey="agenda"><AgendaPage /></ProtectedRoute>} />
+          <Route path="/izin" element={<ProtectedRoute accessKey="izin"><IzinPage /></ProtectedRoute>} />
+          <Route path="/piket" element={<ProtectedRoute accessKey="piket"><PiketPage /></ProtectedRoute>} />
+          <Route path="/sekolah" element={<ProtectedRoute accessKey="sekolah"><SekolahPage /></ProtectedRoute>} />
+          <Route path="/pengumuman" element={<ProtectedRoute accessKey="pengumuman"><PengumumanPage /></ProtectedRoute>} />
+          <Route path="/guru" element={<ProtectedRoute accessKey="guru"><GuruPage /></ProtectedRoute>} />
+          <Route path="/jadwal_kbm" element={<ProtectedRoute accessKey="jadwal_kbm"><JadwalKbmPage /></ProtectedRoute>} />
+          <Route path="/jadwal_kbm_jps" element={<ProtectedRoute accessKey="jadwal_kbm_jps"><JadwalKbmJpsPage /></ProtectedRoute>} />
+          <Route path="/jadwal_piket" element={<ProtectedRoute accessKey="jadwal_piket"><JadwalPiketPage /></ProtectedRoute>} />
 
-        <Route path="/jadwal_piket_penyambutan" element={<ProtectedRoute accessKey="jadwal_piket_penyambutan"><JadwalPiketPenyambutanPage /></ProtectedRoute>} />
-        <Route path="/kehadiran_piket" element={<ProtectedRoute accessKey="kehadiran_piket"><KehadiranPiketPage /></ProtectedRoute>} />
-        <Route path="/kehadiran_piket_penyambutan" element={<ProtectedRoute accessKey="kehadiran_piket_penyambutan"><KehadiranPiketPenyambutanPage /></ProtectedRoute>} />
+          <Route path="/jadwal_piket_penyambutan" element={<ProtectedRoute accessKey="jadwal_piket_penyambutan"><JadwalPiketPenyambutanPage /></ProtectedRoute>} />
+          <Route path="/kehadiran_piket" element={<ProtectedRoute accessKey="kehadiran_piket"><KehadiranPiketPage /></ProtectedRoute>} />
+          <Route path="/kehadiran_piket_penyambutan" element={<ProtectedRoute accessKey="kehadiran_piket_penyambutan"><KehadiranPiketPenyambutanPage /></ProtectedRoute>} />
 
-        <Route path="/rekap_presensi_siswa" element={<ProtectedRoute accessKey="rekap_presensi_siswa"><RekapPresensiSiswaPage /></ProtectedRoute>} />
-        
-        {/* Rute Rekap Presensi Kesiswaan */}
-        <Route path="/rekap_presensi_kesiswaan" element={<ProtectedRoute accessKey="rekap_presensi_kesiswaan"><RekapPresensiKesiswaanPage /></ProtectedRoute>} />
-        
-        <Route path="/rekap_nilai" element={<ProtectedRoute accessKey="rekap_nilai"><RekapNilaiPage /></ProtectedRoute>} />
-        <Route path="/rekap_presensi_guru" element={<ProtectedRoute accessKey="rekap_presensi_guru"><RekapPresensiGuruPage /></ProtectedRoute>} />
-        <Route path="/rekap_agenda" element={<ProtectedRoute accessKey="rekap_agenda"><RekapAgendaPage /></ProtectedRoute>} />
-        <Route path="/rekap_izin" element={<ProtectedRoute accessKey="rekap_izin"><RekapIzinPage /></ProtectedRoute>} />
-        <Route path="/hak_akses" element={<ProtectedRoute accessKey="hak_akses"><HakAksesPage /></ProtectedRoute>} />
+          <Route path="/rekap_presensi_siswa" element={<ProtectedRoute accessKey="rekap_presensi_siswa"><RekapPresensiSiswaPage /></ProtectedRoute>} />
+          
+          {/* Rute Rekap Presensi Kesiswaan */}
+          <Route path="/rekap_presensi_kesiswaan" element={<ProtectedRoute accessKey="rekap_presensi_kesiswaan"><RekapPresensiKesiswaanPage /></ProtectedRoute>} />
+          
+          <Route path="/rekap_nilai" element={<ProtectedRoute accessKey="rekap_nilai"><RekapNilaiPage /></ProtectedRoute>} />
+          <Route path="/rekap_presensi_guru" element={<ProtectedRoute accessKey="rekap_presensi_guru"><RekapPresensiGuruPage /></ProtectedRoute>} />
+          <Route path="/rekap_agenda" element={<ProtectedRoute accessKey="rekap_agenda"><RekapAgendaPage /></ProtectedRoute>} />
+          <Route path="/rekap_izin" element={<ProtectedRoute accessKey="rekap_izin"><RekapIzinPage /></ProtectedRoute>} />
+          <Route path="/hak_akses" element={<ProtectedRoute accessKey="hak_akses"><HakAksesPage /></ProtectedRoute>} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </AppLayout>
   );
 }

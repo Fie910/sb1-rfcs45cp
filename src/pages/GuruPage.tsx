@@ -61,7 +61,7 @@ export function GuruPage() {
   const filtered = list.filter(
     (g) =>
       g.nama_lengkap.toLowerCase().includes(search.toLowerCase()) ||
-      g.nip.toLowerCase().includes(search.toLowerCase()) ||
+      (g.nip || '').toLowerCase().includes(search.toLowerCase()) ||
       g.email.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -97,7 +97,7 @@ export function GuruPage() {
   const openEdit = (item: Guru) => {
     setEditing(item);
     setForm({
-      nip: item.nip,
+      nip: item.nip || '',
       nama_lengkap: item.nama_lengkap,
       email: item.email,
       role: item.role,

@@ -26,7 +26,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useCanAccess } from '@/hooks/useCanAccess';
 import { Modal } from '@/components/Modal';
 import { TimelineKegiatan } from '@/components/TimelineKegiatan';
-import type { PageKey } from '@/components/AppLayout';
 
 type AttendanceStats = {
   hadir: number;
@@ -80,7 +79,7 @@ const renderTextWithLinks = (text: string) => {
   });
 };
 
-export function DashboardPage({ onNavigate }: { onNavigate?: (page: PageKey) => void }) {
+export function DashboardPage() {
   const canAccess = useCanAccess('dashboard');
   const { guru } = useAuth();
 
