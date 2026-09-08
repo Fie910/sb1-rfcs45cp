@@ -62,9 +62,9 @@ export function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-2xl shadow-lg shadow-indigo-500/10 mb-4">
             <LayoutDashboard size={32} />
           </div>
-<h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">
+<h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
   <span className="block">SMK KH. A. WAHAB MUHSIN</span>
-  <span className="block text-xl text-slate-300 font-bold mt-1">Sistem Informasi Proses Memuliakan Murid</span>
+  <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">Sistem Informasi Proses Memuliakan Murid</span>
 </h1>
 
           <p className="text-sm text-slate-400 mt-1">
@@ -73,7 +73,7 @@ export function LoginPage() {
         </div>
 
         {/* Container Form Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 md:p-8 shadow-2xl backdrop-blur-xl">
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <>

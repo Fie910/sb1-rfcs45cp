@@ -85,11 +85,11 @@ export const TimelineKegiatan = () => {
               <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-indigo-500 border-4 border-slate-900 group-hover:scale-125 transition-transform" />
 
               <div className="bg-slate-950/60 border border-slate-800/60 rounded-2xl p-4 space-y-2 hover:border-slate-700/80 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <h3 className="text-sm font-bold text-slate-100 group-hover:text-indigo-300 transition-colors">
                     {item.nama_kegiatan}
                   </h3>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-full w-fit">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-full w-fit max-w-full break-words">
                     <Clock size={12} />
                     {formatTanggal(item.tanggal_mulai)}
                     {item.tanggal_selesai && item.tanggal_selesai !== item.tanggal_mulai

@@ -40,9 +40,9 @@ export function AppLayout({ current, children }: LayoutProps) {
           >
             <Menu size={22} />
           </button>
-          <div className="flex items-center">
-            <span className="font-extrabold text-slate-100 text-sm tracking-tight">
-              SMK. KH. A. WAHAB MUHSIN
+          <div className="flex items-center min-w-0 flex-1 mx-2">
+            <span className="font-extrabold text-slate-100 text-sm tracking-tight truncate">
+              SMK KH. A. WAHAB MUHSIN
             </span>
           </div>
           <button

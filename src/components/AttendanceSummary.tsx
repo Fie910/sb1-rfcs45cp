@@ -1,4 +1,4 @@
-﻿// AttendanceSummary.tsx
+// AttendanceSummary.tsx
 // Blok ringkasan kehadiran: donut chart + grid StatCard + filter bulan.
 
 import {
@@ -58,22 +58,22 @@ export function AttendanceSummary({ stats, filterMonth, onFilterChange, loading 
     <div className="relative group bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-800 flex-wrap gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/10">
             <BookHeart size={22} />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-slate-100 tracking-tight">Catatan Kehadiran Saya</h2>
+            <h2 className="text-lg md:text-xl font-extrabold text-slate-100 tracking-tight">Catatan Kehadiran Saya</h2>
             <p className="text-slate-400 text-xs mt-0.5">Ringkasan statistik kehadiran mengajar bulanan</p>
           </div>
         </div>
 
         {/* Filter bulan */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             value={filterMonth}
             onChange={(e) => onFilterChange(e.target.value)}
-            className="text-xs font-bold pl-4 pr-8 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 shadow-inner focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 appearance-none outline-none cursor-pointer"
+            className="w-full text-xs font-bold pl-4 pr-8 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 shadow-inner focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 appearance-none outline-none cursor-pointer"
           >
             {monthOptions.map((m) => (
               <option key={m.value} value={m.value} className="bg-slate-900 text-slate-200">

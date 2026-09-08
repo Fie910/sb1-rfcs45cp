@@ -24,7 +24,7 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen }: SidebarProps) 
 
   return (
     <aside
-      className={`fixed lg:sticky top-0 left-0 h-screen w-72 bg-slate-900 border-r border-slate-800 z-40 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl ${
+      className={`fixed lg:sticky top-0 left-0 h-screen h-dvh w-72 bg-slate-900 border-r border-slate-800 z-40 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}
     >
