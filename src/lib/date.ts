@@ -24,3 +24,20 @@ export function isJadwalAktif(waktuMulai: string, waktuSelesai: string): boolean
 
   return timeString >= waktuMulai && timeString <= waktuSelesai;
 }
+
+// Helper untuk mendapatkan tanggal hari ini dalam format YYYY-MM-DD berbasis WIB
+// Menggunakan Intl.DateTimeFormat en-CA (YYYY-MM-DD) yang reliable di semua browser
+export function getWibDateString(date: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === 'year')?.value ?? '1970';
+  const month = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const day = parts.find((p) => p.type === 'day')?.value ?? '01';
+
+  return `${year}-${month}-${day}`;
+}

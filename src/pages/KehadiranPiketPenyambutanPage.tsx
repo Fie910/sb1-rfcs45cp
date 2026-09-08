@@ -20,6 +20,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
+import { getWibDateString } from '@/lib/date';
 import type {
   PengaturanSekolah,
   JadwalPiketPenyambutan,
@@ -29,7 +30,7 @@ import type {
 
 // Fungsi menghitung jarak antara 2 titik koordinat (rumus Haversine dalam meter)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000; // Radius bumi dalam meter
+  const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -40,11 +41,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-}
-
-// Helper untuk mendapatkan tanggal format YYYY-MM-DD berbasis WIB
-function getWibDateString(date: Date): string {
-  return date.toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
 }
 
 export function KehadiranPiketPenyambutanPage() {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, User, Users, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getWibDateString } from '@/lib/date';
 import type { RencanaKegiatan } from '@/types/database';
 
 export const TimelineKegiatan = () => {
@@ -15,7 +16,7 @@ export const TimelineKegiatan = () => {
     try {
       setLoading(true);
       // Mengambil tanggal hari ini berbasis WIB (YYYY-MM-DD)
-      const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+      const todayStr = getWibDateString();
 
       const { data, error } = await supabase
         .from('rencana_kegiatan')
