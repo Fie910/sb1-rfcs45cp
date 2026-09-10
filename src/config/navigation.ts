@@ -21,6 +21,9 @@ import {
   Award,
   History,
   UserMinus,
+  Mails,
+  NotebookPen,
+  ClipboardCheck,
 } from 'lucide-react';
 
 export type PageKey =
@@ -51,6 +54,9 @@ export type PageKey =
   | 'rekap_izin'
   | 'hak_akses'
   | 'todo'
+  | 'buku_tamu'
+  | 'surat'
+  | 'tugas_disposisi'
   // Page keys baru modul kesiswaan
   | 'kenaikan_kelas'
   | 'kelulusan'
@@ -75,8 +81,10 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
       { key: 'profil', label: 'Profil Saya', icon: User, path: '/profil' },
-      { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
+      { key: 'buku_tamu', label: 'Buku Tamu', icon: NotebookPen, path: '/buku_tamu' },
       { key: 'todo', label: 'TodoList Divisi', icon: Briefcase, path: '/todo' },
+      { key: 'tugas_disposisi', label: 'Tugas Disposisi', icon: ClipboardCheck, path: '/tugas_disposisi' },
+      { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
     ],
   },
   {
@@ -102,24 +110,31 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'jadwal_kbm', label: 'Jadwal KBM', icon: CalendarDays, path: '/jadwal_kbm' },
       { key: 'jadwal_kbm_jps', label: 'Jadwal KBM JPS', icon: CalendarDays, path: '/jadwal_kbm_jps' },
       { key: 'jadwal_piket', label: 'Jadwal Piket KBM', icon: CalendarCheck, path: '/jadwal_piket' },
-      { key: 'jadwal_piket_penyambutan', label: 'Jadwal Piket Penyambutan', icon: CalendarCheck, path: '/jadwal_piket_penyambutan' },
     ],
   },
   {
     groupTitle: 'Kesiswaan',
     items: [
+      { key: 'siswa', label: 'Data Siswa', icon: Users, path: '/siswa' },
       { key: 'presensi_kesiswaan', label: 'Input Presensi Siswa (Kesiswaan)', icon: UserCheck, path: '/presensi_kesiswaan' },
       { key: 'kenaikan_kelas', label: 'Kenaikan Kelas', icon: TrendingUp, path: '/kenaikan_kelas' },
       { key: 'kelulusan', label: 'Kelulusan & Alumni', icon: Award, path: '/kelulusan' },
       { key: 'riwayat_siswa', label: 'Riwayat & Rekam Jejak', icon: History, path: '/riwayat_siswa' },
       { key: 'mutasi_siswa', label: 'Mutasi & Siswa Keluar', icon: UserMinus, path: '/mutasi_siswa' },
+      { key: 'jadwal_piket_penyambutan', label: 'Jadwal Piket Penyambutan', icon: CalendarCheck, path: '/jadwal_piket_penyambutan' },
+    ],
+  },
+  {
+    groupTitle: 'Humas-Kepegawaian-Tata Kelola',
+    items: [
+      { key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' },
+      
     ],
   },
   {
     groupTitle: 'Data Master & Sistem',
     items: [
       { key: 'sekolah', label: 'Data Sekolah', icon: Settings, path: '/sekolah' },
-      { key: 'siswa', label: 'Data Siswa', icon: Users, path: '/siswa' },
       { key: 'kelas', label: 'Data Kelas', icon: School, path: '/kelas' },
       { key: 'guru', label: 'Data Guru', icon: UserCog, path: '/guru' },
       { key: 'hak_akses', label: 'Kelola Hak Akses', icon: Shield, path: '/hak_akses' },

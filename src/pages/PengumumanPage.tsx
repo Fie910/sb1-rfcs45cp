@@ -39,6 +39,56 @@ const formatDateWIB = (dateString: string) => {
   });
 };
 
+// Helper Kompresi & Konversi Gambar ke Format WebP
+const compressAndConvertToWebP = (
+  file: File,
+  quality = 0.8,
+  maxWidth = 1200
+): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.src = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(image.src);
+      const canvas = document.createElement('canvas');
+      let { width, height } = image;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Gagal memuat konteks Canvas'));
+        return;
+      }
+
+      ctx.drawImage(image, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Gagal mengompresi gambar'));
+            return;
+          }
+          const webpName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
+          const webpFile = new File([blob], webpName, { type: 'image/webp' });
+          resolve(webpFile);
+        },
+        'image/webp',
+        quality
+      );
+    };
+
+    image.onerror = (error) => reject(error);
+  });
+};
+
 export function PengumumanPage() {
   const { guru } = useAuth();
 
@@ -111,8 +161,9 @@ export function PengumumanPage() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      showToast('error', 'Ukuran gambar maksimal 2 MB');
+    // Batas file mentah sebelum dikompresi diperluas hingga 10 MB
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('error', 'Ukuran gambar maksimal 10 MB');
       return;
     }
 
@@ -127,24 +178,35 @@ export function PengumumanPage() {
   };
 
   const uploadImageToStorage = async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-    const filePath = `banners/${fileName}`;
+    try {
+      // 1. Kompres dan konversi gambar ke WebP (Lebar maks 1200px, kualitas 80%)
+      const compressedFile = await compressAndConvertToWebP(file, 0.8, 1200);
 
-    const { error: uploadError } = await supabase.storage
-      .from('pengumuman-banners')
-      .upload(filePath, file);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.webp`;
+      const filePath = `banners/${fileName}`;
 
-    if (uploadError) {
-      showToast('error', 'Gagal mengunggah gambar: ' + uploadError.message);
+      // 2. Unggah ke Supabase Storage dengan Cache Control 1 Tahun (31536000 detik)
+      const { error: uploadError } = await supabase.storage
+        .from('pengumuman-banners')
+        .upload(filePath, compressedFile, {
+          cacheControl: '31536000',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        showToast('error', 'Gagal mengunggah gambar: ' + uploadError.message);
+        return null;
+      }
+
+      const { data } = supabase.storage
+        .from('pengumuman-banners')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (err) {
+      showToast('error', 'Gagal memproses gambar: ' + (err as Error).message);
       return null;
     }
-
-    const { data } = supabase.storage
-      .from('pengumuman-banners')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
   };
 
   const handleSave = async () => {
@@ -186,6 +248,30 @@ export function PengumumanPage() {
     if (result.error) {
       showToast('error', 'Gagal menyimpan: ' + result.error.message);
     } else {
+      // --- PUSH NOTIFIKASI KE SELURUH GURU (HANYA UNTUK PENGUMUMAN BARU & AKTIF) ---
+      if (!editing && form.is_aktif) {
+        try {
+          const { data: daftarGuru } = await supabase
+            .from('gurus')
+            .select('id');
+
+          if (daftarGuru && daftarGuru.length > 0) {
+            const notifPayloads = daftarGuru.map((g) => ({
+              guru_id: g.id,
+              judul: '📢 Pengumuman Baru',
+              pesan: form.judul,
+              tipe: 'pengumuman',
+              tautan: '/pengumuman',
+            }));
+
+            // Mengisi tabel notifikasi untuk memicu trigger DB & Realtime
+            await supabase.from('notifikasi').insert(notifPayloads);
+          }
+        } catch (notifErr) {
+          console.error('Gagal mengirim notifikasi pengumuman:', notifErr);
+        }
+      }
+
       showToast('success', editing ? 'Pengumuman diperbarui' : 'Pengumuman dibuat');
       setModalOpen(false);
       fetchData();
@@ -428,7 +514,7 @@ export function PengumumanPage() {
                     Klik untuk memilih gambar dari komputer
                   </p>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    PNG, JPG, atau WebP (Maks. 2 MB)
+                    PNG, JPG, atau WebP (Otomatis dikompres ke WebP)
                   </p>
                 </div>
                 <input

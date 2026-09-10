@@ -1,15 +1,27 @@
-import { useState } from 'react';
-import { Loader2, Calendar, FileText, UserCheck, Users, PlusCircle, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, Calendar, FileText, UserCheck, Users, PlusCircle, Save, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Modal } from '@/components/Modal';
 
-interface ModalTambahKegiatanProps {
+export interface RencanaKegiatan {
+  id?: string;
+  nama_kegiatan: string;
+  tanggal_mulai: string;
+  tanggal_selesai?: string | null;
+  penanggung_jawab: string;
+  peserta: string;
+  deskripsi?: string | null;
+  status?: string;
+}
+
+interface ModalKegiatanProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  kegiatanEdit?: RencanaKegiatan | null;
 }
 
-const initialFormData = {
+const initialFormData: RencanaKegiatan = {
   nama_kegiatan: '',
   tanggal_mulai: new Date().toISOString().split('T')[0],
   tanggal_selesai: '',
@@ -19,44 +31,103 @@ const initialFormData = {
   status: 'Akan Datang',
 };
 
-export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKegiatanProps) {
+export function ModalTambahKegiatan({ open, onClose, onSuccess, kegiatanEdit }: ModalKegiatanProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState<RencanaKegiatan>(initialFormData);
+
+  useEffect(() => {
+    if (kegiatanEdit) {
+      setFormData({
+        nama_kegiatan: kegiatanEdit.nama_kegiatan || '',
+        tanggal_mulai: kegiatanEdit.tanggal_mulai || new Date().toISOString().split('T')[0],
+        tanggal_selesai: kegiatanEdit.tanggal_selesai || '',
+        penanggung_jawab: kegiatanEdit.penanggung_jawab || '',
+        peserta: kegiatanEdit.peserta || '',
+        deskripsi: kegiatanEdit.deskripsi || '',
+        status: kegiatanEdit.status || 'Akan Datang',
+      });
+    } else {
+      setFormData(initialFormData);
+    }
+  }, [kegiatanEdit, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    const payload = {
+      nama_kegiatan: formData.nama_kegiatan.trim(),
+      tanggal_mulai: formData.tanggal_mulai,
+      tanggal_selesai: formData.tanggal_selesai || null,
+      penanggung_jawab: formData.penanggung_jawab.trim(),
+      peserta: formData.peserta.trim(),
+      deskripsi: formData.deskripsi?.trim() || null,
+      status: formData.status,
+    };
+
     try {
-      const { error } = await supabase.from('rencana_kegiatan').insert([
-        {
-          nama_kegiatan: formData.nama_kegiatan.trim(),
-          tanggal_mulai: formData.tanggal_mulai,
-          tanggal_selesai: formData.tanggal_selesai || null,
-          penanggung_jawab: formData.penanggung_jawab.trim(),
-          peserta: formData.peserta.trim(),
-          deskripsi: formData.deskripsi.trim() || null,
-          status: formData.status,
-        },
-      ]);
+      if (kegiatanEdit?.id) {
+        // Mode Update Agenda
+        const { error } = await supabase
+          .from('rencana_kegiatan')
+          .update(payload)
+          .eq('id', kegiatanEdit.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Mode Tambah Agenda Baru
+        const { error } = await supabase
+          .from('rencana_kegiatan')
+          .insert([payload]);
 
-      setFormData(initialFormData);
+        if (error) throw error;
+
+        // --- PUSH NOTIFIKASI KE SELURUH GURU ---
+        try {
+          // 1. Ambil daftar semua ID Guru
+          const { data: daftarGuru } = await supabase
+            .from('gurus')
+            .select('id');
+
+          if (daftarGuru && daftarGuru.length > 0) {
+            // 2. Buat array data notifikasi untuk setiap guru
+            const notifPayloads = daftarGuru.map((guru) => ({
+              guru_id: guru.id,
+              judul: '📌 Agenda Kegiatan Baru',
+              pesan: `Agenda "${payload.nama_kegiatan}" telah ditambahkan untuk tanggal ${payload.tanggal_mulai}.`,
+              tipe: 'kegiatan',
+              tautan: '/kegiatan',
+            }));
+
+            // 3. Simpan ke tabel notifikasi
+            // (Trigger 'trigger_send_push_notification' di DB akan otomatis memicu Push Notification & Realtime)
+            await supabase.from('notifikasi').insert(notifPayloads);
+          }
+        } catch (notifErr) {
+          console.error('Gagal membuat notifikasi kegiatan:', notifErr);
+        }
+      }
+
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error('Gagal menambahkan kegiatan:', err.message);
+      console.error('Gagal menyimpan kegiatan:', err.message);
       alert('Gagal menyimpan data kegiatan: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const isEdit = Boolean(kegiatanEdit?.id);
+
   return (
-    <Modal open={open} onClose={onClose} title="Tambah Rencana Kegiatan Sekolah" size="md">
+    <Modal 
+      open={open} 
+      onClose={onClose} 
+      title={isEdit ? "Edit Rencana Kegiatan Sekolah" : "Tambah Rencana Kegiatan Sekolah"} 
+      size="md"
+    >
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-        {/* Nama / Judul Kegiatan */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5">
             Nama Kegiatan <span className="text-rose-400">*</span>
@@ -71,7 +142,6 @@ export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKeg
           />
         </div>
 
-        {/* Penanggung Jawab & Peserta */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
@@ -94,7 +164,7 @@ export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKeg
             <input
               type="text"
               required
-              placeholder="Contoh: Siswa Kelas X & XI / Seluruh Guru"
+              placeholder="Contoh: Siswa Kelas X & XI"
               value={formData.peserta}
               onChange={(e) => setFormData({ ...formData, peserta: e.target.value })}
               className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
@@ -102,7 +172,6 @@ export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKeg
           </div>
         </div>
 
-        {/* Tanggal Mulai & Tanggal Selesai */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
@@ -123,14 +192,13 @@ export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKeg
             </label>
             <input
               type="date"
-              value={formData.tanggal_selesai}
+              value={formData.tanggal_selesai ?? ''}
               onChange={(e) => setFormData({ ...formData, tanggal_selesai: e.target.value })}
               className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer"
             />
           </div>
         </div>
 
-        {/* Status Kegiatan */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
             <Activity size={13} className="text-indigo-400" /> Status Kegiatan
@@ -146,7 +214,6 @@ export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKeg
           </select>
         </div>
 
-        {/* Deskripsi / Detail Kegiatan */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
             <FileText size={13} className="text-indigo-400" /> Detail / Catatan Ringkas
@@ -154,13 +221,12 @@ export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKeg
           <textarea
             rows={3}
             placeholder="Tambahkan catatan atau rincian agenda kegiatan ini..."
-            value={formData.deskripsi}
+            value={formData.deskripsi ?? ''}
             onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
             className="w-full text-xs font-medium p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"
           />
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800/80">
           <button
             type="button"
@@ -178,6 +244,10 @@ export function ModalTambahKegiatan({ open, onClose, onSuccess }: ModalTambahKeg
             {loading ? (
               <>
                 <Loader2 size={14} className="animate-spin" /> Menyimpan...
+              </>
+            ) : isEdit ? (
+              <>
+                <Save size={14} /> Simpan Perubahan
               </>
             ) : (
               <>

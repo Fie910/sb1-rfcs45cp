@@ -7,6 +7,7 @@ interface SidebarProps {
   current: PageKey;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  badgeCounts?: Partial<Record<PageKey, number>>;
 }
 
 const getRoleBadgeStyle = (roleStr: string): string => {
@@ -19,7 +20,7 @@ const getRoleBadgeStyle = (roleStr: string): string => {
   return customStyles[roleStr] || 'bg-amber-500/15 text-amber-400 border border-amber-500/20';
 };
 
-export function Sidebar({ current, sidebarOpen, setSidebarOpen }: SidebarProps) {
+export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: SidebarProps) {
   const { guru, role, namaRole, signOut, hasAccess } = useAuth();
 
   return (
@@ -58,23 +59,40 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen }: SidebarProps) 
               {visibleItems.map((item) => {
                 const Icon = item.icon;
                 const active = current === item.key;
+                const count = badgeCounts?.[item.key] ?? 0;
+
                 return (
                   <Link
                     key={item.key}
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
-                    className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[13px] transition-all duration-200 ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] transition-all duration-200 ${
                       active
                         ? 'bg-indigo-500/15 text-indigo-300 font-semibold shadow-sm border border-indigo-500/10'
                         : 'text-slate-400 font-medium hover:bg-slate-800/60 hover:text-slate-200'
                     }`}
                   >
-                    <Icon
-                      size={18}
-                      strokeWidth={active ? 2.5 : 2}
-                      className={active ? 'text-indigo-400' : 'text-slate-500'}
-                    />
-                    {item.label}
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <Icon
+                        size={18}
+                        strokeWidth={active ? 2.5 : 2}
+                        className={active ? 'text-indigo-400' : 'text-slate-500'}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+
+                    {/* Lencana Notifikasi */}
+                    {count > 0 && (
+                      <span
+                        className={`ml-2 px-2 py-0.5 text-[11px] font-bold rounded-full transition-all shrink-0 ${
+                          active
+                            ? 'bg-indigo-500 text-white'
+                            : 'bg-rose-500 text-white animate-pulse'
+                        }`}
+                      >
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

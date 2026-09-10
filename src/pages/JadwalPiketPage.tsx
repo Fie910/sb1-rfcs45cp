@@ -1,11 +1,32 @@
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Loader2, ShieldCheck } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
+  ShieldCheck,
+  Search,
+  User,
+  Filter,
+  X,
+  CalendarDays,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import type { JadwalPiketWithRelations, Guru, HariMinggu } from '@/types/database';
 
 const HARI_OPTIONS: HariMinggu[] = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+const HARI_ORDER: Record<HariMinggu, number> = {
+  Senin: 1,
+  Selasa: 2,
+  Rabu: 3,
+  Kamis: 4,
+  Jumat: 5,
+  Sabtu: 6,
+  Minggu: 7,
+};
 
 const emptyForm = {
   guru_id: '',
@@ -16,6 +37,12 @@ export function JadwalPiketPage() {
   const [list, setList] = useState<JadwalPiketWithRelations[]>([]);
   const [gurus, setGurus] = useState<Guru[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter & Search States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedHari, setSelectedHari] = useState<string>('semua');
+
+  // Modal States
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -27,23 +54,47 @@ export function JadwalPiketPage() {
     const [piketRes, guruRes] = await Promise.all([
       supabase
         .from('jadwal_pikets')
-        .select('*, gurus(id, nama_lengkap)')
-        .order('hari_piket', { ascending: true }),
+        .select('*, gurus(id, nama_lengkap)'),
       supabase.from('gurus').select('*').order('nama_lengkap', { ascending: true }),
     ]);
 
     if (piketRes.error) {
-      showToast('error', 'Gagal memuat jadwal: ' + piketRes.error.message);
+      showToast('error', 'Gagal memuat jadwal piket: ' + piketRes.error.message);
     } else {
-      setList(piketRes.data as JadwalPiketWithRelations[]);
+      const rawData = (piketRes.data as JadwalPiketWithRelations[]) || [];
+
+      const sortedData = [...rawData].sort((a, b) => {
+        const orderA = HARI_ORDER[a.hari_piket] || 99;
+        const orderB = HARI_ORDER[b.hari_piket] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+
+        const nameA = a.gurus?.nama_lengkap || '';
+        const nameB = b.gurus?.nama_lengkap || '';
+        return nameA.localeCompare(nameB);
+      });
+
+      setList(sortedData);
     }
-    setGurus(guruRes.data as Guru[]);
+
+    setGurus((guruRes.data as Guru[]) || []);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const filteredList = useMemo(() => {
+    return list.filter((item) => {
+      const matchesHari = selectedHari === 'semua' || item.hari_piket === selectedHari;
+      const query = searchQuery.toLowerCase();
+      const guruName = item.gurus?.nama_lengkap?.toLowerCase() || '';
+
+      const matchesSearch = guruName.includes(query);
+
+      return matchesHari && matchesSearch;
+    });
+  }, [list, selectedHari, searchQuery]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -65,6 +116,7 @@ export function JadwalPiketPage() {
       showToast('error', 'Guru wajib dipilih');
       return;
     }
+
     setSaving(true);
     let result;
     if (editingId) {
@@ -72,6 +124,7 @@ export function JadwalPiketPage() {
     } else {
       result = await supabase.from('jadwal_pikets').insert(form);
     }
+
     if (result.error) {
       showToast('error', 'Gagal menyimpan: ' + result.error.message);
     } else {
@@ -96,57 +149,141 @@ export function JadwalPiketPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full py-20">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-indigo-400 mb-2" size={36} />
+        <p className="text-sm text-slate-400 font-medium">Memuat jadwal piket...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Jadwal Piket</h1>
-          <p className="text-slate-500 mt-1">Kelola jadwal tugas piket guru</p>
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-500/15 text-indigo-400 rounded-xl border border-indigo-500/20">
+            <ShieldCheck size={26} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Jadwal Piket</h1>
+            <p className="text-sm text-slate-400 mt-0.5">
+              Kelola jadwal tugas piket guru sekolah
+            </p>
+          </div>
         </div>
+
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-200 cursor-pointer text-sm"
         >
-          <Plus size={18} />
-          Tambah Jadwal Piket
+          <Plus size={18} /> Tambah Jadwal Piket
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      {/* Control / Filter Bar */}
+      <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg flex flex-col md:flex-row items-center justify-between gap-3">
+        {/* Search Field */}
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+          <input
+            type="text"
+            placeholder="Cari guru piket..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all placeholder:text-slate-500 text-slate-200"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Hari Filter */}
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
+          <Filter size={16} className="text-slate-500 shrink-0 ml-1" />
+          <button
+            onClick={() => setSelectedHari('semua')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+              selectedHari === 'semua'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+            }`}
+          >
+            Semua Hari
+          </button>
+          {HARI_OPTIONS.map((hari) => (
+            <button
+              key={hari}
+              onClick={() => setSelectedHari(hari)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+                selectedHari === hari
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+              }`}
+            >
+              {hari}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table Section */}
+      <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-950/60 text-slate-400 border-b border-slate-800 uppercase text-[11px] tracking-wider font-semibold">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">Hari Piket</th>
-                <th className="text-left px-4 py-3 font-medium">Guru Piket</th>
-                <th className="text-right px-4 py-3 font-medium">Aksi</th>
+                <th className="px-5 py-3.5">Hari Piket</th>
+                <th className="px-5 py-3.5">Guru Piket</th>
+                <th className="px-5 py-3.5 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {list.length === 0 ? (
+            <tbody className="divide-y divide-slate-800/60">
+              {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="text-center py-12 text-slate-400">
-                    <ShieldCheck size={36} className="mx-auto mb-2 opacity-50" />
-                    <p>Belum ada jadwal piket.</p>
+                  <td colSpan={3} className="text-center py-12 text-slate-500">
+                    <CalendarDays size={40} className="mx-auto mb-3 opacity-30 text-slate-400" />
+                    <p className="font-medium text-slate-400">Tidak ada jadwal piket ditemukan</p>
+                    <p className="text-xs text-slate-500 mt-1">Coba sesuaikan kata kunci atau filter hari</p>
                   </td>
                 </tr>
               ) : (
-                list.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-700">{item.hari_piket}</td>
-                    <td className="px-4 py-3 font-medium text-slate-800">{item.gurus?.nama_lengkap ?? '-'}</td>
-                    <td className="px-4 py-3">
+                filteredList.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
+                    {/* Hari Badge */}
+                    <td className="px-5 py-3.5">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                        {item.hari_piket}
+                      </span>
+                    </td>
+
+                    {/* Guru */}
+                    <td className="px-5 py-3.5 font-medium text-slate-200">
+                      <div className="flex items-center gap-2">
+                        <User size={15} className="text-slate-500 shrink-0" />
+                        <span>{item.gurus?.nama_lengkap ?? '-'}</span>
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600 transition-colors">
+                        <button
+                          onClick={() => openEdit(item)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
+                          title="Edit Jadwal Piket"
+                        >
                           <Pencil size={16} />
                         </button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors">
+                        <button
+                          onClick={() => setDeleteTarget(item)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Hapus Jadwal Piket"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -159,49 +296,76 @@ export function JadwalPiketPage() {
         </div>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Edit Jadwal Piket' : 'Tambah Jadwal Piket'} size="md">
-        <div className="space-y-4">
+      {/* Modal Form */}
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingId ? 'Edit Jadwal Piket' : 'Tambah Jadwal Piket'}
+        size="md"
+      >
+        <div className="space-y-4 pt-1">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Guru Piket</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Guru Piket
+            </label>
             <select
               value={form.guru_id}
               onChange={(e) => setForm({ ...form, guru_id: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
             >
-              <option value="">Pilih Guru</option>
+              <option value="" className="bg-slate-900 text-slate-400">Pilih Guru</option>
               {gurus.map((g) => (
-                <option key={g.id} value={g.id}>{g.nama_lengkap}</option>
+                <option key={g.id} value={g.id} className="bg-slate-900 text-slate-200">
+                  {g.nama_lengkap}
+                </option>
               ))}
             </select>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Hari Piket</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Hari Piket
+            </label>
             <select
               value={form.hari_piket}
               onChange={(e) => setForm({ ...form, hari_piket: e.target.value as HariMinggu })}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
             >
               {HARI_OPTIONS.map((h) => (
-                <option key={h} value={h}>{h}</option>
+                <option key={h} value={h} className="bg-slate-900 text-slate-200">
+                  {h}
+                </option>
               ))}
             </select>
           </div>
-          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-            <button onClick={() => setModalOpen(false)} className="px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-colors">Batal</button>
-            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-60">
-              {saving ? <Loader2 size={16} className="animate-spin" /> : null}
-              Simpan
+
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-800 mt-2">
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-medium text-sm transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm shadow-lg shadow-indigo-600/20 transition-colors disabled:opacity-60 cursor-pointer"
+            >
+              {saving && <Loader2 size={16} className="animate-spin" />} Simpan
             </button>
           </div>
         </div>
       </Modal>
 
+      {/* Confirmation Modal */}
       <ConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Hapus Jadwal Piket"
-        message="Yakin ingin menghapus jadwal piket ini?"
+        message="Apakah Anda yakin ingin menghapus jadwal piket ini? Tindakan ini tidak dapat dibatalkan."
       />
     </div>
   );

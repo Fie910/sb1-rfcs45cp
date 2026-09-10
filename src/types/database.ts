@@ -277,3 +277,51 @@ export type KehadiranPiketPenyambutan = {
   created_at: string;
   gurus?: Pick<Guru, 'id' | 'nama_lengkap' | 'nip'> | null;
 };
+
+// --- BUKU TAMU & NOTIFIKASI ---
+export type StatusBukuTamu = 'menunggu' | 'bertemu' | 'selesai' | 'dibatalkan';
+
+export interface BukuTamu {
+  id: string;
+  nama_tamu: string;
+  instansi: string | null;
+  no_hp: string | null;
+  guru_id: string | null;
+  divisi_id: string | null;
+  siswa_id: number | null;
+  kategori: string;
+  keperluan: string;
+  foto_url: string | null;
+  tanda_tangan_url: string | null;
+  waktu_masuk: string;
+  waktu_keluar: string | null;
+  status: StatusBukuTamu;
+  created_at: string;
+}
+
+export interface BukuTamuWithRelations extends BukuTamu {
+  gurus?: { id: string; nama_lengkap: string } | null;
+  divisis?: { id: string; nama_divisi: string } | null;
+  siswas?: { id: number; nama_lengkap: string; nisn: string } | null;
+}
+
+export interface Notifikasi {
+  id: string;
+  guru_id: string;
+  judul: string;
+  pesan: string;
+  tipe: string;
+  tautan: string | null;
+  dibaca: boolean;
+  created_at: string;
+}
+
+export interface PushSubscription {
+  id: string;
+  guru_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+}
