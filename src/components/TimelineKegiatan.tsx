@@ -175,7 +175,7 @@ export const TimelineKegiatan = () => {
                           <Pencil size={14} />
                         </button>
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => item.id && handleDelete(item.id)}
                           title="Hapus Kegiatan"
                           className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer"
                         >
