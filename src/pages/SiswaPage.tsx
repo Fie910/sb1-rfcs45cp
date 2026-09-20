@@ -19,6 +19,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import type { SiswaWithKelas, Kelas } from '@/types/database';
 
 const emptyForm = {
@@ -145,6 +146,36 @@ export function SiswaPage() {
         'success',
         editingId ? 'Data siswa berhasil diperbarui' : 'Siswa baru berhasil ditambahkan'
       );
+
+      // Audit log — CREATE / UPDATE siswa
+      const namaKelas =
+        kelasList.find((k) => String(k.id) === String(form.kelas_id))?.nama_kelas || '-';
+
+      if (editingId) {
+        await logActivity({
+          aksi: 'UPDATE',
+          modul: AUDIT_MODUL.SISWA,
+          targetId: editingId,
+          deskripsi: `Update data siswa: ${form.nama_lengkap} (NISN: ${form.nisn}) — Kelas: ${namaKelas}`,
+          metadata: {
+            nisn: form.nisn,
+            jenis_kelamin: form.jenis_kelamin,
+            kelas: namaKelas,
+          },
+        });
+      } else {
+        await logActivity({
+          aksi: 'CREATE',
+          modul: AUDIT_MODUL.SISWA,
+          deskripsi: `Tambah siswa baru: ${form.nama_lengkap} (NISN: ${form.nisn}) — Kelas: ${namaKelas}`,
+          metadata: {
+            nisn: form.nisn,
+            jenis_kelamin: form.jenis_kelamin,
+            kelas: namaKelas,
+          },
+        });
+      }
+
       setModalOpen(false);
       fetchData();
     }
@@ -153,11 +184,30 @@ export function SiswaPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+
+    // Simpan info untuk log sebelum dihapus
+    const infoSiswa = {
+      id: deleteTarget.id,
+      nama: deleteTarget.nama_lengkap,
+      nisn: deleteTarget.nisn,
+      kelas: deleteTarget.kelas?.nama_kelas || '-',
+    };
+
     const { error } = await supabase.from('siswas').delete().eq('id', deleteTarget.id);
     if (error) {
       showToast('error', 'Gagal menghapus: ' + error.message);
     } else {
       showToast('success', 'Data siswa berhasil dihapus');
+
+      // Audit log — DELETE siswa
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.SISWA,
+        targetId: infoSiswa.id,
+        deskripsi: `Hapus data siswa: ${infoSiswa.nama} (NISN: ${infoSiswa.nisn}) — Kelas: ${infoSiswa.kelas}`,
+        metadata: { nisn: infoSiswa.nisn, kelas: infoSiswa.kelas },
+      });
+
       fetchData();
     }
     setDeleteTarget(null);
@@ -234,7 +284,6 @@ export function SiswaPage() {
 
           const jk: 'L' | 'P' = rawJk.startsWith('P') ? 'P' : 'L';
 
-          // Match Relasi Kelas
           const foundKelas = kelasList.find(
             (k) => k.nama_kelas.trim().toLowerCase() === rawKelas
           );
@@ -271,6 +320,22 @@ export function SiswaPage() {
             `Berhasil meng-import ${payloadInsert.length} data siswa!` +
               (skipped > 0 ? ` (${skipped} baris diabaikan karena data tidak sesuai)` : '')
           );
+
+          // Audit log — IMPORT siswa (dicatat sebagai CREATE batch)
+          await logActivity({
+            aksi: 'CREATE',
+            modul: AUDIT_MODUL.SISWA,
+            deskripsi: `Import ${payloadInsert.length} siswa dari file "${file.name}"${
+              skipped > 0 ? ` (${skipped} baris diabaikan)` : ''
+            }`,
+            metadata: {
+              file_name: file.name,
+              jumlah_berhasil: payloadInsert.length,
+              jumlah_diabaikan: skipped,
+              sumber: 'import_excel',
+            },
+          });
+
           setImportModalOpen(false);
           fetchData();
         }
@@ -553,7 +618,7 @@ export function SiswaPage() {
             <select
               value={form.kelas_id}
               onChange={(e) => setForm({ ...form, kelas_id: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all cursor-pointer"
             >
               <option value="" className="bg-slate-900 text-slate-400">
                 Pilih Kelas
