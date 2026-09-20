@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Loader2, UserCog, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import type { Guru } from '@/types/database';
 
 type RoleItem = {
@@ -29,6 +30,7 @@ export function GuruPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Guru | null>(null);
 
+  // Ambil Data Guru & Data Roles dari Database
   const fetchData = async () => {
     setLoading(true);
 
@@ -56,6 +58,7 @@ export function GuruPage() {
     fetchData();
   }, []);
 
+  // Filter pencarian
   const filtered = list.filter(
     (g) =>
       g.nama_lengkap.toLowerCase().includes(search.toLowerCase()) ||
@@ -63,13 +66,14 @@ export function GuruPage() {
       g.email.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Helper untuk mendapatkan Label Role berdasarkan kode_role
   const getRoleLabel = (kodeRole: string) => {
     const found = roles.find((r) => r.kode_role === kodeRole);
     if (found) return found.nama_role;
     return kodeRole.replace('_', ' ').toUpperCase();
   };
 
-  // Selaras dengan Sidebar.getRoleBadgeStyle
+  // Helper untuk warna badge role
   const getRoleBadgeStyle = (kodeRole: string) => {
     switch (kodeRole) {
       case 'admin':
@@ -107,16 +111,43 @@ export function GuruPage() {
       return;
     }
     setSaving(true);
+
     let result;
     if (editing) {
       result = await supabase.from('gurus').update(form).eq('id', editing.id);
     } else {
       result = await supabase.from('gurus').insert(form);
     }
+
     if (result.error) {
       showToast('error', 'Gagal menyimpan: ' + result.error.message);
     } else {
       showToast('success', editing ? 'Data guru diperbarui' : 'Data guru ditambahkan');
+
+      // Audit log — CREATE / UPDATE guru
+      if (editing) {
+        // Deteksi role berubah atau tidak, untuk info tambahan
+        const roleBerubah = editing.role !== form.role;
+        await logActivity({
+          aksi: 'UPDATE',
+          modul: AUDIT_MODUL.GURU,
+          targetId: editing.id,
+          deskripsi: `Update data guru: ${form.nama_lengkap} (${form.email})${
+            roleBerubah ? ` — Role: ${editing.role} → ${form.role}` : ''
+          }`,
+          metadata: roleBerubah
+            ? { role_lama: editing.role, role_baru: form.role }
+            : null,
+        });
+      } else {
+        await logActivity({
+          aksi: 'CREATE',
+          modul: AUDIT_MODUL.GURU,
+          deskripsi: `Tambah guru baru: ${form.nama_lengkap} (${form.email}) — Role: ${form.role}`,
+          metadata: { nip: form.nip, email: form.email, role: form.role },
+        });
+      }
+
       setModalOpen(false);
       fetchData();
     }
@@ -125,11 +156,31 @@ export function GuruPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+
+    // Simpan info untuk log
+    const infoGuru = {
+      id: deleteTarget.id,
+      nama: deleteTarget.nama_lengkap,
+      email: deleteTarget.email,
+      nip: deleteTarget.nip,
+      role: deleteTarget.role,
+    };
+
     const { error } = await supabase.from('gurus').delete().eq('id', deleteTarget.id);
     if (error) {
       showToast('error', 'Gagal menghapus: ' + error.message);
     } else {
       showToast('success', 'Data guru dihapus');
+
+      // Audit log — DELETE guru
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.GURU,
+        targetId: infoGuru.id,
+        deskripsi: `Hapus data guru: ${infoGuru.nama} (${infoGuru.email}) — Role: ${infoGuru.role}`,
+        metadata: { nip: infoGuru.nip, email: infoGuru.email, role: infoGuru.role },
+      });
+
       fetchData();
     }
     setDeleteTarget(null);
@@ -153,7 +204,7 @@ export function GuruPage() {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-600/20"
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-600/20 cursor-pointer"
         >
           <Plus size={18} /> Tambah Guru
         </button>
@@ -201,7 +252,11 @@ export function GuruPage() {
                     <td className="px-4 py-3 font-medium text-slate-100">{guru.nama_lengkap}</td>
                     <td className="px-4 py-3 text-slate-400">{guru.email}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getRoleBadgeStyle(guru.role)}`}>
+                      <span
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${getRoleBadgeStyle(
+                          guru.role
+                        )}`}
+                      >
                         {getRoleLabel(guru.role)}
                       </span>
                     </td>
@@ -249,7 +304,9 @@ export function GuruPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Nama Lengkap</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              Nama Lengkap
+            </label>
             <input
               type="text"
               value={form.nama_lengkap}
@@ -267,7 +324,9 @@ export function GuruPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Role (Hak Akses)</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              Role (Hak Akses)
+            </label>
             <select
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
