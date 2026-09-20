@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { resetAuditCache, logActivity, AUDIT_MODUL } from '@/lib/audit';
 import type { Guru, GuruRole } from '@/types/database';
 import type { PageKey } from '@/config/navigation';
-import { resetAuditCache } from '@/lib/audit';
 
 type AuthContextValue = {
   session: Session | null;
@@ -18,9 +18,9 @@ type AuthContextValue = {
   hasAccess: (pageKey: PageKey) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (
-    email: string, 
-    password: string, 
-    namaLengkap?: string, 
+    email: string,
+    password: string,
+    namaLengkap?: string,
     nip?: string
   ) => Promise<{ error: string | null; user: User | null }>;
   signOut: () => Promise<void>;
@@ -141,9 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (
-    email: string, 
-    password: string, 
-    namaLengkap?: string, 
+    email: string,
+    password: string,
+    namaLengkap?: string,
     nip?: string
   ) => {
     const { data, error } = await supabase.auth.signUp({
@@ -153,9 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           nama_lengkap: namaLengkap,
           nip: nip,
-          role: 'guru'
-        }
-      }
+          role: 'guru',
+        },
+      },
     });
 
     if (error) return { error: error.message, user: null };
@@ -163,6 +163,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Log LOGOUT sebelum session dihapus (fire-and-forget)
+    // Tidak di-await supaya tidak memperlambat proses logout kalau network lambat.
+    // Fungsi logActivity() sudah punya try/catch internal jadi tidak akan throw.
+    logActivity({
+      aksi: 'LOGOUT',
+      modul: AUDIT_MODUL.AUTH,
+      deskripsi: 'Logout dari aplikasi',
+    });
+
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (error) {
