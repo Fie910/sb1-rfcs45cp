@@ -107,6 +107,12 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
         icon: Eye,
         path: '/dashboard_kepsek',
       },
+      {
+        key: 'monev_divisi',
+        label: 'Monev Divisi',
+        icon: BarChart3,
+        path: '/monev_divisi',
+      },
     ],
   },
   {
