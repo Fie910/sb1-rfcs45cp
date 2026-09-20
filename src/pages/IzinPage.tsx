@@ -29,6 +29,7 @@ import {
   getGuruIdsByRole,
   getGuruIdsPiketHari,
 } from '@/lib/notification';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import type {
   Kelas,
   IzinGuruPiketWithRelations,
@@ -37,7 +38,6 @@ import type {
 } from '@/types/database';
 
 // Role kepala divisi yang perlu tahu semua pengajuan izin.
-// Sesuaikan kalau nama role di DB Anda berbeda.
 const ROLE_KEPALA_KEPEGAWAIAN = 'takola';
 
 export function IzinPage() {
@@ -200,18 +200,31 @@ export function IzinPage() {
       `Izin & delegasi tugas berhasil ${editingId ? 'diperbarui' : 'diajukan'}`
     );
 
+    // Audit log — UPDATE izin
+    if (editingId) {
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.IZIN,
+        targetId: editingId,
+        deskripsi: `Update pengajuan izin ${form.kategori_izin} tanggal ${form.tanggal_izin}`,
+      });
+    } else {
+      // Audit log — CREATE izin
+      await logActivity({
+        aksi: 'CREATE',
+        modul: AUDIT_MODUL.IZIN,
+        deskripsi: `Ajukan izin ${form.kategori_izin} tanggal ${form.tanggal_izin} — "${form.keterangan_izin}"`,
+      });
+    }
+
     // Notifikasi hanya untuk pengajuan BARU (bukan edit)
     if (!editingId) {
       try {
         const hariIzin = getHariFromDateString(form.tanggal_izin);
 
-        // Penerima 1: Guru piket KBM yang bertugas pada hari izin
         const guruPiketIds = await getGuruIdsPiketHari(hariIzin);
-
-        // Penerima 2: Kepala Divisi Kepegawaian (untuk monitoring)
         const kepalaIds = await getGuruIdsByRole(ROLE_KEPALA_KEPEGAWAIAN);
 
-        // Gabung, deduplikasi, dan hapus guru yang sedang izin (self)
         const penerimaIds = Array.from(new Set([...guruPiketIds, ...kepalaIds])).filter(
           (id) => id !== guru.id
         );
@@ -228,7 +241,6 @@ export function IzinPage() {
           });
         }
       } catch (notifErr) {
-        // Jangan gagalkan flow utama hanya karena notifikasi error
         console.error('Gagal mengirim notifikasi izin:', notifErr);
       }
     }
@@ -255,11 +267,29 @@ export function IzinPage() {
       return;
     }
 
+    // Simpan info untuk log sebelum dihapus
+    const infoIzin = {
+      id: deleteTarget.id,
+      kategori: deleteTarget.kategori_izin,
+      tanggal: deleteTarget.tanggal_izin,
+      keterangan:
+        deleteTarget.keterangan_izin ?? (deleteTarget as any).alasan_izin ?? '-',
+    };
+
     const { error } = await supabase.from('izin_guru_pikets').delete().eq('id', deleteTarget.id);
     if (error) {
       showToast('error', 'Gagal menghapus: ' + error.message);
     } else {
       showToast('success', 'Pengajuan izin berhasil dihapus');
+
+      // Audit log — DELETE izin
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.IZIN,
+        targetId: infoIzin.id,
+        deskripsi: `Hapus pengajuan izin ${infoIzin.kategori} tanggal ${infoIzin.tanggal} — "${infoIzin.keterangan}"`,
+      });
+
       setDeleteTarget(null);
       fetchData();
     }
@@ -466,7 +496,7 @@ export function IzinPage() {
         )}
       </div>
 
-      {/* IZIN GURU LAIN (HANYA DITAMPILKAN UNTUK ROLE ADMIN, KEPALA, WAKIL_KEPALA) */}
+      {/* IZIN GURU LAIN */}
       {canViewOtherIzin && otherIzin.length > 0 && (
         <div className="space-y-4 pt-4">
           <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -583,7 +613,6 @@ export function IzinPage() {
             />
           </div>
 
-          {/* INPUT URL / LINK FILE TUGAS */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
               Link File Tugas (Opsional / Google Drive)
