@@ -116,6 +116,12 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
         icon: BarChart3,
         path: '/monev_divisi',
       },
+      {
+        key: 'kalender_akademik',
+        label: 'Kalender Akademik',
+        icon: CalendarRange,
+        path: '/kalender_akademik',
+      },
     ],
   },
   {
