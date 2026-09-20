@@ -39,6 +39,7 @@ import {
   getFirstDayOfMonthWib,
   formatTanggalDDMMYYYY,
 } from '@/lib/date';
+import { sendNotification } from '@/lib/notification';
 import type {
   PriorityType,
   StatusType,
@@ -65,19 +66,32 @@ export function TodoListPage() {
     'tugas'
   );
 
-  // Validasi Role Admin / Wakil Kepala
-  const isAdminOrWakil = useMemo(() => {
-    if (!guru) return false;
-    const jabatanLower = (guru.jabatan || '').toLowerCase();
-    const roleLower = (guru.role || '').toLowerCase();
-    return (
-      jabatanLower.includes('admin') ||
-      jabatanLower.includes('wakil') ||
-      jabatanLower.includes('kepala') ||
-      roleLower.includes('admin') ||
-      roleLower.includes('wakil_kepala')
-    );
-  }, [guru]);
+  // Validasi Role untuk akses Tab "Pemantauan Penugasan Divisi".
+  //
+  // Cakupan akses:
+  // - admin        : supervisi global
+  // - kepala       : supervisi seluruh sekolah
+  // - wakil_kepala : supervisi lintas divisi
+  // - kesiswaan, akademik, sarpras, keuangan, takola : kepala divisi (supervisi divisi sendiri)
+  //
+  // Role 'guru' dan 'guru_piket' TIDAK mendapat akses.
+  const canViewControlling = useMemo(() => {
+    if (!guru?.role) return false;
+    const roleLower = guru.role.toLowerCase();
+
+    const SUPERVISOR_ROLES = [
+      'admin',
+      'kepala',
+      'wakil_kepala',
+      'kesiswaan',
+      'akademik',
+      'sarpras',
+      'keuangan',
+      'takola',
+    ];
+
+    return SUPERVISOR_ROLES.includes(roleLower);
+  }, [guru?.role]);
 
   // Data States
   const [todos, setTodos] = useState<TodoItem[]>([]);
@@ -307,6 +321,19 @@ export function TodoListPage() {
 
         if (error) throw error;
         showToast('success', 'Tugas berhasil diperbarui');
+
+        // Notifikasi kalau penanggung jawab BERUBAH ke guru lain
+        const penerimaBaru = formData.ditugaskan_ke_id;
+        const penerimaLama = editingTodo.ditugaskan_ke_id;
+        if (penerimaBaru && penerimaBaru !== penerimaLama && penerimaBaru !== guru.id) {
+          await sendNotification({
+            guruIds: penerimaBaru,
+            judul: '📋 Tugas Baru Untuk Anda',
+            pesan: `${guru.nama_lengkap} menugaskan Anda: "${formData.judul}"`,
+            tipe: 'tugas',
+            tautan: '/todo',
+          });
+        }
       } else {
         const { error } = await supabase.from('todos').insert({
           judul: formData.judul,
@@ -321,6 +348,21 @@ export function TodoListPage() {
 
         if (error) throw error;
         showToast('success', 'Tugas berhasil ditambahkan');
+
+        // Notifikasi ke guru yang ditugaskan (kalau bukan diri sendiri)
+        if (formData.ditugaskan_ke_id && formData.ditugaskan_ke_id !== guru.id) {
+          const tenggatInfo = formData.tanggal_tenggat
+            ? ` (tenggat: ${formatTanggalDDMMYYYY(formData.tanggal_tenggat)})`
+            : '';
+
+          await sendNotification({
+            guruIds: formData.ditugaskan_ke_id,
+            judul: '📋 Tugas Baru Untuk Anda',
+            pesan: `${guru.nama_lengkap} menugaskan Anda: "${formData.judul}"${tenggatInfo}`,
+            tipe: 'tugas',
+            tautan: '/todo',
+          });
+        }
       }
 
       setIsModalOpen(false);
@@ -705,8 +747,8 @@ export function TodoListPage() {
             <History size={14} /> Riwayat ({filteredHistory.length})
           </button>
 
-          {/* TAB DAFTAR TUGAS (KHUSUS ADMIN / WAKIL KEPALA) */}
-          {isAdminOrWakil && (
+          {/* TAB DAFTAR TUGAS (KHUSUS SUPERVISOR) */}
+          {canViewControlling && (
             <button
               onClick={() => setActiveTab('controlling')}
               className={`whitespace-nowrap flex-1 md:flex-none flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -1169,7 +1211,7 @@ export function TodoListPage() {
       )}
 
       {/* CONTENT TAB 4: DAFTAR TUGAS CONTROLLING */}
-      {activeTab === 'controlling' && isAdminOrWakil && (
+      {activeTab === 'controlling' && canViewControlling && (
         <div className="bg-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
             <div>
