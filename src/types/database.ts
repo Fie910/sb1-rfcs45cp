@@ -319,7 +319,7 @@ export interface Notifikasi {
   pesan: string;
   tipe: string;
   tautan: string | null;
-  dibaca: boolean;
+  is_read: boolean;
   created_at: string;
 }
 
