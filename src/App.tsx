@@ -13,6 +13,7 @@ const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default:
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const DashboardKepsekPage = lazy(() => import('@/pages/DashboardKepsekPage').then((m) => ({ default: m.DashboardKepsekPage })));
 const MonevDivisiPage = lazy(() => import('@/pages/MonevDivisiPage').then((m) => ({ default: m.MonevDivisiPage })));
+const KalenderAkademikPage = lazy(() => import('@/pages/KalenderAkademikPage').then((m) => ({ default: m.KalenderAkademikPage })));
 const SiswaPage = lazy(() => import('@/pages/SiswaPage').then((m) => ({ default: m.SiswaPage })));
 const KelasPage = lazy(() => import('@/pages/KelasPage').then((m) => ({ default: m.KelasPage })));
 const NilaiPage = lazy(() => import('@/pages/NilaiPage').then((m) => ({ default: m.NilaiPage })));
