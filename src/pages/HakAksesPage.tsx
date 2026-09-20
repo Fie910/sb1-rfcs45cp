@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 
 interface Role {
   id: number;
@@ -54,27 +55,23 @@ export function HakAksesPage() {
     try {
       setLoading(true);
 
-      // 1. Ambil Data Roles
       const { data: rolesData, error: rolesErr } = await supabase
         .from('roles')
         .select('*')
         .order('id', { ascending: true });
       if (rolesErr) throw rolesErr;
 
-      // 2. Ambil Data Menus
       const { data: menusData, error: menusErr } = await supabase
         .from('menus')
         .select('*')
         .order('kategori', { ascending: true });
       if (menusErr) throw menusErr;
 
-      // 3. Ambil Data Permissions
       const { data: permData, error: permErr } = await supabase
         .from('role_permissions')
         .select('*');
       if (permErr) throw permErr;
 
-      // Map Permissions ke Objek State
       const permMap: Record<string, boolean> = {};
       permData?.forEach((p: RolePermission) => {
         permMap[getPermKey(p.role_code, p.menu_id)] = p.can_access;
@@ -123,7 +120,20 @@ export function HakAksesPage() {
         .upsert(payload, { onConflict: 'role_code,menu_id' });
 
       if (error) throw error;
+
       showToast('success', 'Matriks hak akses berhasil disimpan!');
+
+      // Audit log — UPDATE hak akses (matriks lengkap)
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.HAK_AKSES,
+        deskripsi: `Update matriks hak akses — ${payload.length} entri (${roles.length} role × ${menus.length} menu)`,
+        metadata: {
+          total_role: roles.length,
+          total_menu: menus.length,
+          total_entri: payload.length,
+        },
+      });
     } catch (err: any) {
       showToast('error', 'Gagal menyimpan hak akses: ' + err.message);
     } finally {
@@ -153,11 +163,24 @@ export function HakAksesPage() {
       if (error) throw error;
 
       showToast('success', `Role "${newNamaRole}" berhasil ditambahkan!`);
+
+      // Audit log — CREATE role
+      await logActivity({
+        aksi: 'CREATE',
+        modul: AUDIT_MODUL.HAK_AKSES,
+        deskripsi: `Tambah role baru: ${newNamaRole.trim()} (${formattedKode})`,
+        metadata: {
+          kode_role: formattedKode,
+          nama_role: newNamaRole.trim(),
+          keterangan: newKeterangan.trim() || null,
+        },
+      });
+
       setShowAddRoleModal(false);
       setNewKodeRole('');
       setNewNamaRole('');
       setNewKeterangan('');
-      fetchData(); // Reload matriks
+      fetchData();
     } catch (err: any) {
       showToast('error', 'Gagal menambah role: ' + err.message);
     } finally {
@@ -215,14 +238,13 @@ export function HakAksesPage() {
         </div>
       </div>
 
-      {/* 1. TAMPILAN MOBILE: Card Stack Layout (Tanpa Scroll Horizontal) */}
+      {/* 1. TAMPILAN MOBILE */}
       <div className="block md:hidden space-y-4">
         {menus.map((menu) => (
           <div
             key={menu.id}
             className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3"
           >
-            {/* Header Modul */}
             <div className="flex items-start justify-between gap-2 border-b border-slate-800/80 pb-3">
               <div>
                 <h3 className="font-bold text-slate-100 text-base">{menu.nama_menu}</h3>
@@ -233,14 +255,14 @@ export function HakAksesPage() {
               </span>
             </div>
 
-            {/* List Role & Switch Access */}
             <div className="space-y-2 pt-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Hak Akses Jabatan:
               </span>
               {roles.map((role) => {
                 const isAdmin = role.kode_role === 'admin';
-                const isAllowed = isAdmin || !!permissions[getPermKey(role.kode_role, menu.id)];
+                const isAllowed =
+                  isAdmin || !!permissions[getPermKey(role.kode_role, menu.id)];
 
                 return (
                   <div
@@ -274,20 +296,21 @@ export function HakAksesPage() {
         ))}
       </div>
 
-      {/* 2. TAMPILAN DESKTOP: Tabel Matrix dengan Freeze Header & First Column */}
+      {/* 2. TAMPILAN DESKTOP */}
       <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
         <div className="overflow-auto max-h-[calc(100vh-220px)] relative">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
-                {/* Kolom 1: Freezed saat scroll vertikal (top-0) DAN horizontal (left-0), z-30 agar berada paling atas */}
                 <th className="p-4 min-w-[220px] sticky top-0 left-0 z-30 bg-slate-950 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                   Modul / Halaman
                 </th>
-                {/* Kolom-kolom lainnya: Freezed saat scroll vertikal saja (top-0), z-20 */}
                 <th className="p-4 sticky top-0 z-20 bg-slate-950">Path URL</th>
                 {roles.map((role) => (
-                  <th key={role.id} className="p-4 text-center min-w-[130px] sticky top-0 z-20 bg-slate-950">
+                  <th
+                    key={role.id}
+                    className="p-4 text-center min-w-[130px] sticky top-0 z-20 bg-slate-950"
+                  >
                     <div className="flex flex-col items-center">
                       <span className="text-slate-200">{role.nama_role}</span>
                       <span className="text-[10px] text-slate-500 font-mono normal-case mt-0.5">
@@ -301,7 +324,6 @@ export function HakAksesPage() {
             <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
               {menus.map((menu) => (
                 <tr key={menu.id} className="hover:bg-slate-800/30 transition-colors group">
-                  {/* Kolom 1: Freezed saat scroll horizontal (left-0), z-10, background solid agar konten lain tidak membayang */}
                   <td className="p-4 sticky left-0 z-10 bg-slate-900 group-hover:bg-slate-800 transition-colors border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                     <div className="font-bold text-slate-100">{menu.nama_menu}</div>
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/50">
@@ -311,7 +333,8 @@ export function HakAksesPage() {
                   <td className="p-4 text-slate-400 font-mono text-xs">{menu.path}</td>
                   {roles.map((role) => {
                     const isAdmin = role.kode_role === 'admin';
-                    const isAllowed = isAdmin || !!permissions[getPermKey(role.kode_role, menu.id)];
+                    const isAllowed =
+                      isAdmin || !!permissions[getPermKey(role.kode_role, menu.id)];
 
                     return (
                       <td key={role.id} className="p-4 text-center">
