@@ -40,6 +40,7 @@ import {
   formatTanggalDDMMYYYY,
 } from '@/lib/date';
 import { sendNotification } from '@/lib/notification';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import type {
   PriorityType,
   StatusType,
@@ -66,15 +67,6 @@ export function TodoListPage() {
     'tugas'
   );
 
-  // Validasi Role untuk akses Tab "Pemantauan Penugasan Divisi".
-  //
-  // Cakupan akses:
-  // - admin        : supervisi global
-  // - kepala       : supervisi seluruh sekolah
-  // - wakil_kepala : supervisi lintas divisi
-  // - kesiswaan, akademik, sarpras, keuangan, takola : kepala divisi (supervisi divisi sendiri)
-  //
-  // Role 'guru' dan 'guru_piket' TIDAK mendapat akses.
   const canViewControlling = useMemo(() => {
     if (!guru?.role) return false;
     const roleLower = guru.role.toLowerCase();
@@ -322,6 +314,14 @@ export function TodoListPage() {
         if (error) throw error;
         showToast('success', 'Tugas berhasil diperbarui');
 
+        // Audit log — UPDATE tugas
+        await logActivity({
+          aksi: 'UPDATE',
+          modul: AUDIT_MODUL.TODO,
+          targetId: editingTodo.id,
+          deskripsi: `Update tugas divisi "${formData.judul}"`,
+        });
+
         // Notifikasi kalau penanggung jawab BERUBAH ke guru lain
         const penerimaBaru = formData.ditugaskan_ke_id;
         const penerimaLama = editingTodo.ditugaskan_ke_id;
@@ -335,19 +335,31 @@ export function TodoListPage() {
           });
         }
       } else {
-        const { error } = await supabase.from('todos').insert({
-          judul: formData.judul,
-          deskripsi: formData.deskripsi || null,
-          divisi_id: guru.divisi_id,
-          prioritas: formData.prioritas,
-          tanggal_tenggat: formData.tanggal_tenggat || null,
-          dibuat_oleh_id: guru.id,
-          ditugaskan_ke_id: formData.ditugaskan_ke_id || null,
-          status: 'Belum Selesai',
-        });
+        const { data: created, error } = await supabase
+          .from('todos')
+          .insert({
+            judul: formData.judul,
+            deskripsi: formData.deskripsi || null,
+            divisi_id: guru.divisi_id,
+            prioritas: formData.prioritas,
+            tanggal_tenggat: formData.tanggal_tenggat || null,
+            dibuat_oleh_id: guru.id,
+            ditugaskan_ke_id: formData.ditugaskan_ke_id || null,
+            status: 'Belum Selesai',
+          })
+          .select()
+          .single();
 
         if (error) throw error;
         showToast('success', 'Tugas berhasil ditambahkan');
+
+        // Audit log — CREATE tugas
+        await logActivity({
+          aksi: 'CREATE',
+          modul: AUDIT_MODUL.TODO,
+          targetId: created?.id,
+          deskripsi: `Tambah tugas divisi "${formData.judul}"`,
+        });
 
         // Notifikasi ke guru yang ditugaskan (kalau bukan diri sendiri)
         if (formData.ditugaskan_ke_id && formData.ditugaskan_ke_id !== guru.id) {
@@ -395,6 +407,17 @@ export function TodoListPage() {
         prev.map((t) => (t.id === templateId ? { ...t, is_active: !currentStatus } : t))
       );
       showToast('success', `SOP ${!currentStatus ? 'diaktifkan' : 'dinonaktifkan'}`);
+
+      // Audit log — UPDATE SOP aktif/nonaktif
+      const target = templates.find((t) => t.id === templateId);
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.TODO_TEMPLATE,
+        targetId: templateId,
+        deskripsi: `${
+          !currentStatus ? 'Aktifkan' : 'Nonaktifkan'
+        } SOP Rutin "${target?.judul || '-'}"`,
+      });
     } catch (err) {
       console.error('Gagal merubah status SOP:', err);
       showToast('error', 'Gagal mengubah status SOP');
@@ -405,11 +428,20 @@ export function TodoListPage() {
     if (!guru?.divisi_id || !guru?.id) return;
     const today = getTodayDateWib();
     const existingLog = todaySopLogs[templateId];
+    const target = templates.find((t) => t.id === templateId);
 
     try {
       if (existingLog) {
         const { error } = await supabase.from('sop_logs').delete().eq('id', existingLog.id);
         if (error) throw error;
+
+        // Audit log — batalkan status SOP
+        await logActivity({
+          aksi: 'DELETE',
+          modul: AUDIT_MODUL.TODO_TEMPLATE,
+          targetId: templateId,
+          deskripsi: `Batalkan status Selesai SOP "${target?.judul || '-'}" (${today})`,
+        });
       } else {
         const { error } = await supabase.from('sop_logs').insert({
           template_id: templateId,
@@ -419,6 +451,14 @@ export function TodoListPage() {
           status: 'Selesai',
         });
         if (error) throw error;
+
+        // Audit log — tandai SOP selesai
+        await logActivity({
+          aksi: 'UPDATE',
+          modul: AUDIT_MODUL.TODO_TEMPLATE,
+          targetId: templateId,
+          deskripsi: `Tandai Selesai SOP "${target?.judul || '-'}" (${today})`,
+        });
       }
 
       await fetchTodaySopLogs();
@@ -439,11 +479,23 @@ export function TodoListPage() {
     });
     if (!ok) return;
 
+    const target = templates.find((t) => t.id === templateId);
+
     try {
       const { error } = await supabase.from('todo_templates').delete().eq('id', templateId);
       if (error) throw error;
       setTemplates((prev) => prev.filter((t) => t.id !== templateId));
       showToast('success', 'Jadwal SOP rutin berhasil dihapus');
+
+      // Audit log — DELETE SOP
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.TODO_TEMPLATE,
+        targetId: templateId,
+        deskripsi: target
+          ? `Hapus SOP Rutin "${target.judul}" (${target.tipe_rutin})`
+          : `Hapus SOP Rutin`,
+      });
     } catch (err) {
       console.error('Gagal menghapus SOP:', err);
       showToast('error', 'Gagal menghapus SOP');
@@ -454,7 +506,19 @@ export function TodoListPage() {
     try {
       const { error } = await supabase.from('todos').update({ status: newStatus }).eq('id', id);
       if (error) throw error;
+
+      const target = todos.find((t) => t.id === id);
+
       setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
+
+      // Audit log — UPDATE status tugas
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.TODO,
+        targetId: id,
+        deskripsi: `Ubah status tugas "${target?.judul || '-'}": ${target?.status || '-'} → ${newStatus}`,
+        metadata: { status_lama: target?.status, status_baru: newStatus },
+      });
     } catch (err) {
       console.error('Gagal mengupdate status:', err);
       showToast('error', 'Gagal mengubah status tugas');
@@ -470,11 +534,23 @@ export function TodoListPage() {
     });
     if (!ok) return;
 
+    const target = todos.find((t) => t.id === id);
+
     try {
       const { error } = await supabase.from('todos').delete().eq('id', id);
       if (error) throw error;
       setTodos((prev) => prev.filter((t) => t.id !== id));
       showToast('success', 'Tugas berhasil dihapus');
+
+      // Audit log — DELETE tugas
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.TODO,
+        targetId: id,
+        deskripsi: target
+          ? `Hapus tugas divisi "${target.judul}"`
+          : `Hapus tugas divisi`,
+      });
     } catch (err) {
       console.error('Gagal menghapus tugas:', err);
       showToast('error', 'Gagal menghapus tugas');
@@ -694,7 +770,6 @@ export function TodoListPage() {
           </p>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <button
             onClick={handleOpenCreateRutinModal}
@@ -747,7 +822,6 @@ export function TodoListPage() {
             <History size={14} /> Riwayat ({filteredHistory.length})
           </button>
 
-          {/* TAB DAFTAR TUGAS (KHUSUS SUPERVISOR) */}
           {canViewControlling && (
             <button
               onClick={() => setActiveTab('controlling')}
@@ -762,7 +836,6 @@ export function TodoListPage() {
           )}
         </div>
 
-        {/* Filter Khusus Tab Tugas Sekali Jalan */}
         {activeTab === 'tugas' && (
           <div className="flex items-center gap-3 justify-between md:justify-end">
             <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
@@ -781,7 +854,6 @@ export function TodoListPage() {
           </div>
         )}
 
-        {/* Filter Khusus Tab SOP Rutin */}
         {activeTab === 'sop' && (
           <div className="flex items-center gap-3 justify-between md:justify-end w-full md:w-auto">
             <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400 shrink-0">
@@ -1106,7 +1178,6 @@ export function TodoListPage() {
             </div>
           </div>
 
-          {/* PANEL FILTER TANGGAL (WIB) & PETUGAS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
             <div>
               <label className="block text-[11px] font-bold text-slate-400 mb-1">
@@ -1243,7 +1314,6 @@ export function TodoListPage() {
             </div>
           ) : (
             <>
-              {/* Tampilan Tabel pada Layar Sedang & Besar */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-300">
                   <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
@@ -1289,7 +1359,6 @@ export function TodoListPage() {
                 </table>
               </div>
 
-              {/* Tampilan Kartu Ringkas Responsif Khusus Seluler / HP */}
               <div className="grid grid-cols-1 gap-3 md:hidden">
                 {allAssignments.map((item) => (
                   <div
