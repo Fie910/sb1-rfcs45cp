@@ -26,6 +26,7 @@ import {
   ClipboardCheck,
   CalendarX,
   ScrollText,
+  Eye,
 } from 'lucide-react';
 
 export type PageKey =
@@ -61,6 +62,7 @@ export type PageKey =
   | 'buku_tamu'
   | 'surat'
   | 'tugas_disposisi'
+  | 'dashboard_kepsek'
   // Page keys baru modul kesiswaan
   | 'kenaikan_kelas'
   | 'kelulusan'
@@ -94,6 +96,17 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
         path: '/tugas_disposisi',
       },
       { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
+    ],
+  },
+  {
+    groupTitle: 'Monitoring & Evaluasi',
+    items: [
+      {
+        key: 'dashboard_kepsek',
+        label: 'Dashboard Kepsek',
+        icon: Eye,
+        path: '/dashboard_kepsek',
+      },
     ],
   },
   {
