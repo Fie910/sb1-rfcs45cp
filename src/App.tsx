@@ -11,6 +11,7 @@ import type { PageKey } from '@/config/navigation';
 // Lazy load seluruh halaman untuk optimasi bundle
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const DashboardKepsekPage = lazy(() => import('@/pages/DashboardKepsekPage').then((m) => ({ default: m.DashboardKepsekPage })));
 const SiswaPage = lazy(() => import('@/pages/SiswaPage').then((m) => ({ default: m.SiswaPage })));
 const KelasPage = lazy(() => import('@/pages/KelasPage').then((m) => ({ default: m.KelasPage })));
 const NilaiPage = lazy(() => import('@/pages/NilaiPage').then((m) => ({ default: m.NilaiPage })));
@@ -147,6 +148,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard_kepsek" element={<ProtectedRoute accessKey="dashboard_kepsek"><DashboardKepsekPage /></ProtectedRoute>} />
           <Route path="/profil" element={<ProfilPage />} />
           <Route path="/todo" element={<ProtectedRoute accessKey="todo"><TodoListPage /></ProtectedRoute>} />
           <Route path="/siswa" element={<ProtectedRoute accessKey="siswa"><SiswaPage /></ProtectedRoute>} />
