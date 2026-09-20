@@ -65,7 +65,6 @@ export type PageKey =
   | 'tugas_disposisi'
   | 'dashboard_kepsek'
   | 'monev_divisi'
-  // Page keys baru modul kesiswaan
   | 'kenaikan_kelas'
   | 'kelulusan'
   | 'riwayat_siswa'
