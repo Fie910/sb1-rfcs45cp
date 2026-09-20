@@ -110,7 +110,7 @@ function generateCalendarCells(year: number, month: number): CalendarCell[] {
     const dateStr = toDateStr(cellYear, cellMonth, cellDay);
 
     const dayOfWeek = cellDate.getDay(); // 0=Minggu
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isWeekend = dayOfWeek === 0;
 
     cells.push({
       date: cellDate,
