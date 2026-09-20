@@ -19,13 +19,26 @@ import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { getTodayDateWib, formatDateWibShort } from '@/lib/date';
+import {
+  getTodayDateWib,
+  formatDateWibShort,
+  getHariFromDateString,
+} from '@/lib/date';
+import {
+  sendNotification,
+  getGuruIdsByRole,
+  getGuruIdsPiketHari,
+} from '@/lib/notification';
 import type {
   Kelas,
   IzinGuruPiketWithRelations,
   MataPelajaran,
   KategoriIzin,
 } from '@/types/database';
+
+// Role kepala divisi yang perlu tahu semua pengajuan izin.
+// Sesuaikan kalau nama role di DB Anda berbeda.
+const ROLE_KEPALA_KEPEGAWAIAN = 'takola';
 
 export function IzinPage() {
   const { guru } = useAuth();
@@ -174,12 +187,54 @@ export function IzinPage() {
     }
 
     if (error) {
-      showToast('error', `Gagal ${editingId ? 'memperbarui' : 'mengajukan'} izin: ` + error.message);
-    } else {
-      showToast('success', `Izin & delegasi tugas berhasil ${editingId ? 'diperbarui' : 'diajukan'}`);
-      setModalOpen(false);
-      fetchData();
+      showToast(
+        'error',
+        `Gagal ${editingId ? 'memperbarui' : 'mengajukan'} izin: ` + error.message
+      );
+      setSaving(false);
+      return;
     }
+
+    showToast(
+      'success',
+      `Izin & delegasi tugas berhasil ${editingId ? 'diperbarui' : 'diajukan'}`
+    );
+
+    // Notifikasi hanya untuk pengajuan BARU (bukan edit)
+    if (!editingId) {
+      try {
+        const hariIzin = getHariFromDateString(form.tanggal_izin);
+
+        // Penerima 1: Guru piket KBM yang bertugas pada hari izin
+        const guruPiketIds = await getGuruIdsPiketHari(hariIzin);
+
+        // Penerima 2: Kepala Divisi Kepegawaian (untuk monitoring)
+        const kepalaIds = await getGuruIdsByRole(ROLE_KEPALA_KEPEGAWAIAN);
+
+        // Gabung, deduplikasi, dan hapus guru yang sedang izin (self)
+        const penerimaIds = Array.from(new Set([...guruPiketIds, ...kepalaIds])).filter(
+          (id) => id !== guru.id
+        );
+
+        if (penerimaIds.length > 0) {
+          await sendNotification({
+            guruIds: penerimaIds,
+            judul: '📝 Pengajuan Izin Baru',
+            pesan: `${guru.nama_lengkap} mengajukan izin ${
+              form.kategori_izin
+            } untuk ${formatDateWibShort(form.tanggal_izin)}. Silakan cek titipan tugas di halaman Izin.`,
+            tipe: 'izin_guru',
+            tautan: '/izin',
+          });
+        }
+      } catch (notifErr) {
+        // Jangan gagalkan flow utama hanya karena notifikasi error
+        console.error('Gagal mengirim notifikasi izin:', notifErr);
+      }
+    }
+
+    setModalOpen(false);
+    fetchData();
     setSaving(false);
   };
 
