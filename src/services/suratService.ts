@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { sendNotification } from '../lib/notification';
 import { Surat, KategoriSurat, DisposisiSurat, JenisSurat } from '../types/surat';
 
 export interface Guru {
@@ -85,9 +86,7 @@ export const uploadFileSurat = async (file: File, folder: 'berkas' | 'bukti' = '
 
   if (uploadError) throw uploadError;
 
-  const { data } = supabase.storage
-    .from('dokumen-surat')
-    .getPublicUrl(filePath);
+  const { data } = supabase.storage.from('dokumen-surat').getPublicUrl(filePath);
 
   return data.publicUrl;
 };
@@ -145,18 +144,16 @@ export const createDisposisi = async (
   const createdDisposisi = data[0] as DisposisiSurat;
 
   // 2. Kirim notifikasi ke penerima jika penerima_id (guru_id) tersedia
+  //    Pakai helper sendNotification agar konsisten dengan modul lain.
   if (disposisi.penerima_id) {
     const infoNomor = nomorSurat ? ` (No: ${nomorSurat})` : '';
-    await supabase.from('notifikasi').insert([
-      {
-        guru_id: disposisi.penerima_id,
-        judul: 'Disposisi Surat Baru',
-        pesan: `Anda menerima instruksi disposisi surat${infoNomor} dari ${disposisi.pemberi_disposisi}: "${disposisi.instruksi}"`,
-        tipe: 'disposisi_surat',
-        tautan: '/tugas-disposisi',
-        is_read: false
-      }
-    ]);
+    await sendNotification({
+      guruIds: disposisi.penerima_id,
+      judul: '📬 Disposisi Surat Baru',
+      pesan: `Anda menerima instruksi disposisi surat${infoNomor} dari ${disposisi.pemberi_disposisi}: "${disposisi.instruksi}"`,
+      tipe: 'disposisi_surat',
+      tautan: '/tugas-disposisi',
+    });
   }
 
   return createdDisposisi;
@@ -169,10 +166,10 @@ export const updateStatusDisposisi = async (
 ) => {
   const { data, error } = await supabase
     .from('disposisi_surat')
-    .update({ 
-      status, 
-      catatan_tindak_lanjut, 
-      updated_at: new Date().toISOString() 
+    .update({
+      status,
+      catatan_tindak_lanjut,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', id)
     .select();
