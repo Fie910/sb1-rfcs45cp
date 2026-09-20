@@ -150,6 +150,7 @@ function AppContent() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard_kepsek" element={<ProtectedRoute accessKey="dashboard_kepsek"><DashboardKepsekPage /></ProtectedRoute>} />
+          <Route path="/monev_divisi" element={<ProtectedRoute accessKey="monev_divisi"><MonevDivisiPage /></ProtectedRoute>} />
           <Route path="/profil" element={<ProfilPage />} />
           <Route path="/todo" element={<ProtectedRoute accessKey="todo"><TodoListPage /></ProtectedRoute>} />
           <Route path="/siswa" element={<ProtectedRoute accessKey="siswa"><SiswaPage /></ProtectedRoute>} />
