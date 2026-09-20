@@ -168,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.warn('Sesi server tidak aktif, logout lokal:', error);
     } finally {
+      resetAuditCache();
       setSession(null);
       setUser(null);
       setGuru(null);
