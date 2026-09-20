@@ -27,6 +27,7 @@ import {
   CalendarX,
   ScrollText,
   Eye,
+  BarChart3,
 } from 'lucide-react';
 
 export type PageKey =
