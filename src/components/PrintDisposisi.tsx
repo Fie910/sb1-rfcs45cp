@@ -14,7 +14,7 @@ interface DisposisiData {
   tanggal_disposisi: string;
   penerima_disposisi: string; // Disesuaikan dengan kolom database
   isi_disposisi: string;
-  catatan?: string;
+  catatan?: string | null;
   status: string;
   // Fallback opsional jika data surat tergabung dalam objek disposisi
   surat?: SuratData; 
