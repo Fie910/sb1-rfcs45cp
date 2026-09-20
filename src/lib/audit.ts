@@ -50,6 +50,10 @@ export const AUDIT_MODUL = {
   NILAI: 'nilai',
   SARAN_PENGADUAN: 'saran_pengaduan',
   SARPRAS: 'sarpras',
+  SARPRAS_PEMINJAMAN: 'sarpras_peminjaman',
+  SARPRAS_PEMELIHARAAN: 'sarpras_pemeliharaan',
+  SARPRAS_PENGHAPUSAN: 'sarpras_penghapusan',
+  SARPRAS_LOKASI: 'sarpras_lokasi',
 } as const;
 
 export type AuditModul = (typeof AUDIT_MODUL)[keyof typeof AUDIT_MODUL];
