@@ -68,6 +68,7 @@ export type PageKey =
   | 'dashboard_kepsek'
   | 'monev_divisi'
   | 'kalender_akademik'
+  | 'saran_pengaduan'
   | 'kenaikan_kelas'
   | 'kelulusan'
   | 'riwayat_siswa'
