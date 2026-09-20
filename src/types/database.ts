@@ -332,3 +332,29 @@ export interface PushSubscription {
   user_agent: string | null;
   created_at: string;
 }
+
+// =============================================================================
+// AUDIT LOG
+// =============================================================================
+
+export type AuditAksi =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'LOGIN'
+  | 'LOGOUT'
+  | 'EXPORT'
+  | 'VIEW';
+
+export type AuditLog = {
+  id: string;
+  user_id: string | null;
+  user_nama: string | null;
+  user_role: string | null;
+  aksi: AuditAksi;
+  modul: string;
+  target_id: string | null;
+  deskripsi: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
