@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LayoutDashboard, Mail, Lock, User, Loader2, CreditCard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 
 type Mode = 'signin' | 'signup';
 
@@ -25,6 +26,13 @@ export function LoginPage() {
         const { error: signInError } = await signIn(email, password);
         if (signInError) {
           setError(signInError);
+        } else {
+          // Log LOGIN setelah session aktif
+          await logActivity({
+            aksi: 'LOGIN',
+            modul: AUDIT_MODUL.AUTH,
+            deskripsi: `Login sebagai ${email}`,
+          });
         }
       } else {
         if (!namaLengkap || !nip) {
@@ -62,10 +70,12 @@ export function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-2xl shadow-lg shadow-indigo-500/10 mb-4">
             <LayoutDashboard size={32} />
           </div>
-<h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
-  <span className="block">SMK KH. A. WAHAB MUHSIN</span>
-  <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">Sistem Informasi Proses Memuliakan Murid</span>
-</h1>
+          <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
+            <span className="block">SMK KH. A. WAHAB MUHSIN</span>
+            <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">
+              Sistem Informasi Proses Memuliakan Murid
+            </span>
+          </h1>
 
           <p className="text-sm text-slate-400 mt-1">
             {mode === 'signin' ? 'Masuk sebagai guru' : 'Daftar akun guru baru'}
