@@ -429,6 +429,26 @@ export type KategoriSarpras = {
 };
 
 export type KondisiAset = 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
+export type StatusAset = 'Aktif' | 'Dipinjam' | 'Perbaikan' | 'Hilang' | 'Dihapus';
+export type TipeLokasi = 'Gedung' | 'Lantai' | 'Ruang' | 'Area Luar';
+
+export const KONDISI_ASET: KondisiAset[] = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
+export const STATUS_ASET: StatusAset[] = [
+  'Aktif',
+  'Dipinjam',
+  'Perbaikan',
+  'Hilang',
+  'Dihapus',
+];
+
+export type InventarisLokasi = {
+  id: string;
+  nama: string;
+  tipe: TipeLokasi;
+  parent_id: string | null;
+  keterangan: string | null;
+  created_at: string;
+};
 
 export type InventarisSarpras = {
   id: string;
@@ -436,9 +456,18 @@ export type InventarisSarpras = {
   nama_aset: string;
   kategori_id: string | null;
   lokasi: string | null;
+  lokasi_id: string | null;
   jumlah: number;
   satuan: string;
   kondisi: KondisiAset;
+  status: StatusAset;
+  nomor_seri: string | null;
+  merek: string | null;
+  model: string | null;
+  vendor: string | null;
+  umur_ekonomis_bulan: number | null;
+  nilai_residu: number | null;
+  pic_id: string | null;
   tanggal_perolehan: string | null;
   sumber_dana: string | null;
   harga_perolehan: number | null;
@@ -450,6 +479,115 @@ export type InventarisSarpras = {
 
 export type InventarisSarprasWithRelations = InventarisSarpras & {
   kategori: Pick<KategoriSarpras, 'id' | 'nama' | 'icon'> | null;
+  lokasi_detail: Pick<InventarisLokasi, 'id' | 'nama' | 'tipe'> | null;
+  pic: Pick<Guru, 'id' | 'nama_lengkap'> | null;
 };
 
-export const KONDISI_ASET: KondisiAset[] = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
+// =============================================================================
+// PEMINJAMAN ASET
+// =============================================================================
+
+export type StatusPeminjaman = 'Dipinjam' | 'Dikembalikan' | 'Terlambat' | 'Hilang';
+
+export type InventarisPeminjaman = {
+  id: string;
+  aset_id: string;
+  peminjam_id: string;
+  jumlah_dipinjam: number;
+  tanggal_pinjam: string;
+  tanggal_rencana_kembali: string | null;
+  tanggal_kembali: string | null;
+  keperluan: string;
+  kondisi_saat_pinjam: KondisiAset;
+  kondisi_saat_kembali: KondisiAset | null;
+  catatan: string | null;
+  status: StatusPeminjaman;
+  approver_id: string | null;
+  approved_at: string | null;
+  created_at: string;
+};
+
+export type InventarisPeminjamanWithRelations = InventarisPeminjaman & {
+  aset: Pick<InventarisSarpras, 'id' | 'kode_aset' | 'nama_aset' | 'satuan'> | null;
+  peminjam: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  approver: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+// =============================================================================
+// PEMELIHARAAN ASET
+// =============================================================================
+
+export type JenisPemeliharaan = 'Preventif' | 'Korektif' | 'Kalibrasi' | 'Inspeksi';
+export type StatusPemeliharaan = 'Dijadwalkan' | 'Berlangsung' | 'Selesai' | 'Dibatalkan';
+
+export type InventarisPemeliharaan = {
+  id: string;
+  aset_id: string;
+  jenis: JenisPemeliharaan;
+  judul: string;
+  deskripsi: string | null;
+  tanggal_mulai: string;
+  tanggal_selesai: string | null;
+  biaya: number | null;
+  vendor_servis: string | null;
+  teknisi: string | null;
+  kondisi_sebelum: KondisiAset | null;
+  kondisi_sesudah: KondisiAset | null;
+  status: StatusPemeliharaan;
+  pic_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventarisPemeliharaanWithRelations = InventarisPemeliharaan & {
+  aset: Pick<InventarisSarpras, 'id' | 'kode_aset' | 'nama_aset'> | null;
+  pic: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+// =============================================================================
+// PENGHAPUSAN ASET
+// =============================================================================
+
+export type StatusPenghapusan = 'Menunggu' | 'Disetujui' | 'Ditolak' | 'Selesai';
+export type MetodePenghapusan =
+  | 'Dimusnahkan'
+  | 'Dilelang'
+  | 'Dihibahkan'
+  | 'Dijual'
+  | 'Lainnya';
+
+export type InventarisPenghapusan = {
+  id: string;
+  aset_id: string;
+  pengaju_id: string;
+  alasan: string;
+  rekomendasi: string | null;
+  nilai_buku_saat_ajukan: number | null;
+  status: StatusPenghapusan;
+  approver_id: string | null;
+  approved_at: string | null;
+  catatan_approval: string | null;
+  metode_penghapusan: MetodePenghapusan | null;
+  created_at: string;
+};
+
+export type InventarisPenghapusanWithRelations = InventarisPenghapusan & {
+  aset: Pick<InventarisSarpras, 'id' | 'kode_aset' | 'nama_aset'> | null;
+  pengaju: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  approver: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+export const JENIS_PEMELIHARAAN: JenisPemeliharaan[] = [
+  'Preventif',
+  'Korektif',
+  'Kalibrasi',
+  'Inspeksi',
+];
+
+export const METODE_PENGHAPUSAN: MetodePenghapusan[] = [
+  'Dimusnahkan',
+  'Dilelang',
+  'Dihibahkan',
+  'Dijual',
+  'Lainnya',
+];
