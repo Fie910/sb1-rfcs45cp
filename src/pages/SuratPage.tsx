@@ -35,6 +35,7 @@ import { PrintDisposisi } from '../components/PrintDisposisi';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
+import { sendNotification } from '@/lib/notification';
 import { supabase } from '../lib/supabase';
 
 const compressAndConvertToWebP = (
@@ -218,7 +219,8 @@ export const SuratPage: React.FC = () => {
   const handleDeleteKategori = async (id: string) => {
     const ok = await confirm({
       title: 'Hapus Kode Perihal',
-      message: 'Apakah Anda yakin ingin menghapus Kode Perihal ini? Tindakan ini tidak dapat dibatalkan.',
+      message:
+        'Apakah Anda yakin ingin menghapus Kode Perihal ini? Tindakan ini tidak dapat dibatalkan.',
       variant: 'danger',
       confirmLabel: 'Ya, Hapus',
     });
@@ -440,17 +442,15 @@ export const SuratPage: React.FC = () => {
 
         if (error) throw error;
 
-        if (targetGuru?.id) {
-          await supabase.from('notifikasi').insert([
-            {
-              guru_id: targetGuru.id,
-              judul: 'Perubahan Disposisi Surat',
-              pesan: `Terdapat pembaruan disposisi surat (No: ${selectedSuratForDisposisi.nomor_surat}) dari ${disposisiForm.pemberi_disposisi}: "${disposisiForm.instruksi}"`,
-              tipe: 'disposisi_surat',
-              tautan: '/tugas-disposisi',
-              is_read: false,
-            },
-          ]);
+        // Notifikasi ke penerima baru bahwa disposisi diperbarui
+        if (targetGuru?.id && targetGuru.id !== guru?.id) {
+          await sendNotification({
+            guruIds: targetGuru.id,
+            judul: '📝 Perubahan Disposisi Surat',
+            pesan: `Terdapat pembaruan disposisi surat (No: ${selectedSuratForDisposisi.nomor_surat}) dari ${disposisiForm.pemberi_disposisi}: "${disposisiForm.instruksi}"`,
+            tipe: 'disposisi_surat',
+            tautan: '/tugas-disposisi',
+          });
         }
 
         showToast('success', 'Disposisi berhasil diperbarui');
@@ -517,8 +517,57 @@ export const SuratPage: React.FC = () => {
     }
   };
 
-  const handleStatusDisposisi = async (id: string, status: 'PENDING' | 'PROSES' | 'SELESAI') => {
+  // ---------- Update Status Disposisi + Notifikasi ke Pemberi ----------
+  const handleStatusDisposisi = async (
+    id: string,
+    status: 'PENDING' | 'PROSES' | 'SELESAI'
+  ) => {
+    // 1. Cari disposisi lama untuk tahu status sebelumnya & data pemberi/penerima
+    const target = disposisiList.find((d) => d.id === id);
+    if (!target) return;
+
+    const statusLama = target.status;
+
+    // 2. Skip kalau status tidak benar-benar berubah
+    if (statusLama === status) return;
+
+    // 3. Update status di DB
     await updateStatusDisposisi(id, status);
+
+    // 4. Kirim notifikasi ke PEMBERI disposisi (atasan) kalau penerima
+    //    mengubah status ke PROSES atau SELESAI.
+    //    Tidak dikirim untuk perubahan kembali ke PENDING (biar tidak berisik).
+    if (
+      status !== 'PENDING' &&
+      target.pemberi_id &&
+      target.pemberi_id !== guru?.id
+    ) {
+      const pemberiId = target.pemberi_id;
+      const isSelesai = status === 'SELESAI';
+      const nomorSurat = selectedSuratForDisposisi?.nomor_surat || '-';
+
+      // Potong instruksi biar tidak terlalu panjang di notifikasi
+      const instruksiAsli = target.instruksi || '';
+      const instruksiSingkat =
+        instruksiAsli.length > 80 ? instruksiAsli.slice(0, 80) + '…' : instruksiAsli;
+
+      try {
+        await sendNotification({
+          guruIds: pemberiId,
+          judul: isSelesai ? '✅ Disposisi Selesai' : '📬 Disposisi Sedang Dikerjakan',
+          pesan: isSelesai
+            ? `${guru?.nama_lengkap || 'Penerima'} telah menyelesaikan disposisi Anda (Surat No. ${nomorSurat}): "${instruksiSingkat}"`
+            : `${guru?.nama_lengkap || 'Penerima'} mulai mengerjakan disposisi Anda (Surat No. ${nomorSurat}): "${instruksiSingkat}"`,
+          tipe: 'disposisi_surat',
+          tautan: '/surat',
+        });
+      } catch (notifErr) {
+        // Jangan gagalkan flow utama hanya karena notifikasi error
+        console.error('Gagal kirim notifikasi status disposisi:', notifErr);
+      }
+    }
+
+    // 5. Refresh daftar disposisi
     if (selectedSuratForDisposisi?.id) {
       const updated = await getDisposisiBySuratId(selectedSuratForDisposisi.id);
       setDisposisiList(updated);
