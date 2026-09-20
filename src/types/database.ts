@@ -358,3 +358,61 @@ export type AuditLog = {
   metadata: Record<string, unknown> | null;
   created_at: string;
 };
+
+// =============================================================================
+// SARAN & PENGADUAN
+// =============================================================================
+
+export type SaranPengaduanStatus = 'Baru' | 'Diproses' | 'Selesai' | 'Ditolak';
+export type SaranPengaduanPrioritas = 'Rendah' | 'Sedang' | 'Tinggi';
+export type SaranPengaduanKategori =
+  | 'Sarana Prasarana'
+  | 'Akademik'
+  | 'Kesiswaan'
+  | 'Keuangan'
+  | 'Kepegawaian'
+  | 'Umum';
+
+export type SaranPengaduan = {
+  id: string;
+  pelapor_id: string | null;
+  is_anonim: boolean;
+  kategori: string;
+  subjek: string;
+  isi: string;
+  lampiran_url: string | null;
+  status: SaranPengaduanStatus;
+  prioritas: SaranPengaduanPrioritas;
+  tanggapan: string | null;
+  penanggap_id: string | null;
+  ditanggapi_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SaranPengaduanWithRelations = SaranPengaduan & {
+  pelapor: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  penanggap: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+export const KATEGORI_SARAN_PENGADUAN: SaranPengaduanKategori[] = [
+  'Sarana Prasarana',
+  'Akademik',
+  'Kesiswaan',
+  'Keuangan',
+  'Kepegawaian',
+  'Umum',
+];
+
+export const STATUS_SARAN_PENGADUAN: SaranPengaduanStatus[] = [
+  'Baru',
+  'Diproses',
+  'Selesai',
+  'Ditolak',
+];
+
+export const PRIORITAS_SARAN_PENGADUAN: SaranPengaduanPrioritas[] = [
+  'Rendah',
+  'Sedang',
+  'Tinggi',
+];
