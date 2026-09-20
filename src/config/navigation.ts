@@ -25,6 +25,7 @@ import {
   NotebookPen,
   ClipboardCheck,
   CalendarX,
+  ScrollText,
 } from 'lucide-react';
 
 export type PageKey =
@@ -55,6 +56,7 @@ export type PageKey =
   | 'rekap_izin'
   | 'hak_akses'
   | 'hari_libur'
+  | 'audit_log'
   | 'todo'
   | 'buku_tamu'
   | 'surat'
@@ -202,6 +204,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'kelas', label: 'Data Kelas', icon: School, path: '/kelas' },
       { key: 'guru', label: 'Data Guru', icon: UserCog, path: '/guru' },
       { key: 'hari_libur', label: 'Hari Libur', icon: CalendarX, path: '/hari_libur' },
+      { key: 'audit_log', label: 'Audit Log', icon: ScrollText, path: '/audit_log' },
       { key: 'hak_akses', label: 'Kelola Hak Akses', icon: Shield, path: '/hak_akses' },
     ],
   },
