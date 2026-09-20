@@ -416,3 +416,40 @@ export const PRIORITAS_SARAN_PENGADUAN: SaranPengaduanPrioritas[] = [
   'Sedang',
   'Tinggi',
 ];
+
+// =============================================================================
+// SARANA & PRASARANA
+// =============================================================================
+
+export type KategoriSarpras = {
+  id: string;
+  nama: string;
+  icon: string | null;
+  created_at: string;
+};
+
+export type KondisiAset = 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
+
+export type InventarisSarpras = {
+  id: string;
+  kode_aset: string;
+  nama_aset: string;
+  kategori_id: string | null;
+  lokasi: string | null;
+  jumlah: number;
+  satuan: string;
+  kondisi: KondisiAset;
+  tanggal_perolehan: string | null;
+  sumber_dana: string | null;
+  harga_perolehan: number | null;
+  keterangan: string | null;
+  foto_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventarisSarprasWithRelations = InventarisSarpras & {
+  kategori: Pick<KategoriSarpras, 'id' | 'nama' | 'icon'> | null;
+};
+
+export const KONDISI_ASET: KondisiAset[] = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
