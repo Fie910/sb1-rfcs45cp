@@ -55,6 +55,7 @@ const MutasiSiswa = lazy(() => import('@/pages/MutasiSiswa').then((m) => ({ defa
 
 // Master Data & Sistem
 const HariLiburPage = lazy(() => import('@/pages/HariLiburPage').then((m) => ({ default: m.HariLiburPage })));
+const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 
 function PageLoadingFallback() {
   return (
