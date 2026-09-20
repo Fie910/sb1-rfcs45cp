@@ -70,6 +70,7 @@ export type PageKey =
   | 'monev_divisi'
   | 'kalender_akademik'
   | 'saran_pengaduan'
+  | 'inventaris_sarpras'
   | 'kenaikan_kelas'
   | 'kelulusan'
   | 'riwayat_siswa'
