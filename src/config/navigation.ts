@@ -30,6 +30,7 @@ import {
   BarChart3,
   CalendarRange,
   MessageSquareWarning,
+  Package,
 } from 'lucide-react';
 
 export type PageKey =
