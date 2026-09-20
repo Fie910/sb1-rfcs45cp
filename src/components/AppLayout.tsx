@@ -3,6 +3,7 @@ import { LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Sidebar } from '@/components/Sidebar';
 import { NotificationBell } from '@/components/NotificationBell';
+import { InstallPWA } from '@/components/InstallPWA';
 import type { PageKey } from '@/config/navigation';
 
 type LayoutProps = {
@@ -84,6 +85,9 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
           <X size={20} />
         </button>
       )}
+
+      {/* Banner Install PWA */}
+      <InstallPWA />
     </div>
   );
 }
