@@ -232,6 +232,17 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     ],
   },
   {
+    groupTitle: 'Sarana & Prasarana',
+    items: [
+      {
+        key: 'inventaris_sarpras',
+        label: 'Inventaris Sarpras',
+        icon: Package,
+        path: '/inventaris_sarpras',
+      },
+    ],
+  },
+  {
     groupTitle: 'Humas-Kepegawaian-Tata Kelola',
     items: [{ key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' }],
   },
