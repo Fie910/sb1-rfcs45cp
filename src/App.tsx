@@ -12,6 +12,7 @@ import type { PageKey } from '@/config/navigation';
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const DashboardKepsekPage = lazy(() => import('@/pages/DashboardKepsekPage').then((m) => ({ default: m.DashboardKepsekPage })));
+const MonevDivisiPage = lazy(() => import('@/pages/MonevDivisiPage').then((m) => ({ default: m.MonevDivisiPage })));
 const SiswaPage = lazy(() => import('@/pages/SiswaPage').then((m) => ({ default: m.SiswaPage })));
 const KelasPage = lazy(() => import('@/pages/KelasPage').then((m) => ({ default: m.KelasPage })));
 const NilaiPage = lazy(() => import('@/pages/NilaiPage').then((m) => ({ default: m.NilaiPage })));
