@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { sendNotification, getGuruIdsByDivisi } from '@/lib/notification';
 import type {
   BukuTamuWithRelations,
   Guru,
@@ -265,61 +266,54 @@ export function BukuTamuPage() {
 
     if (error) {
       showToast('error', 'Gagal menyimpan buku tamu: ' + error.message);
-    } else {
-      showToast('success', 'Tamu berhasil dicatat!');
+      setSaving(false);
+      return;
+    }
 
-      // Pengiriman Notifikasi
-      if (createdData) {
-        const originInstansi = form.instansi ? ` dari ${form.instansi}` : '';
-        const pesanNotif = `${form.nama_tamu}${originInstansi} ingin bertemu. Keperluan: ${form.keperluan}`;
+    showToast('success', 'Tamu berhasil dicatat!');
 
+    // --- Kirim notifikasi ke guru / divisi tujuan ---
+    if (createdData) {
+      const originInstansi = form.instansi ? ` dari ${form.instansi}` : '';
+      const pesanNotif = `${form.nama_tamu}${originInstansi} ingin bertemu. Keperluan: ${form.keperluan}`;
+
+      try {
         if (form.guru_id) {
-          // Kirim notifikasi khusus ke guru individual
-          const { error: notifError } = await supabase.from('notifikasi').insert({
-            guru_id: form.guru_id,
+          // Khusus ditujukan ke guru tertentu
+          await sendNotification({
+            guruIds: form.guru_id,
             judul: 'Tamu Baru Menunggu',
             pesan: pesanNotif,
             tipe: 'buku_tamu',
-            tautan: '/buku-tamu',
+            tautan: '/buku_tamu',
           });
-
-          if (notifError) {
-            console.error('Gagal memicu notifikasi push:', notifError.message);
-          }
         } else if (form.divisi_id) {
-          // Ambil semua guru yang ada dalam divisi tersebut
-          const { data: targetGurus, error: fetchGurusError } = await supabase
-            .from('gurus')
-            .select('id')
-            .eq('divisi_id', form.divisi_id);
+          // Ditujukan ke divisi → notif ke semua anggota divisi
+          const targetIds = await getGuruIdsByDivisi(form.divisi_id);
 
-          if (fetchGurusError) {
-            console.error('Gagal mengambil daftar guru divisi:', fetchGurusError.message);
-          } else if (targetGurus && targetGurus.length > 0) {
-            const namaDivisi = createdData.divisis?.nama_divisi ? ` ${createdData.divisis.nama_divisi}` : '';
-            const notifPayload = targetGurus.map((g) => ({
-              guru_id: g.id,
+          if (targetIds.length > 0) {
+            const namaDivisi = createdData.divisis?.nama_divisi
+              ? ` ${createdData.divisis.nama_divisi}`
+              : '';
+
+            await sendNotification({
+              guruIds: targetIds,
               judul: `Tamu Baru (Divisi${namaDivisi})`,
               pesan: pesanNotif,
               tipe: 'buku_tamu',
-              tautan: '/buku-tamu',
-            }));
-
-            const { error: notifDivisiError } = await supabase
-              .from('notifikasi')
-              .insert(notifPayload);
-
-            if (notifDivisiError) {
-              console.error('Gagal memicu notifikasi push divisi:', notifDivisiError.message);
-            }
+              tautan: '/buku_tamu',
+            });
           }
         }
+      } catch (notifErr) {
+        // Jangan gagalkan flow utama hanya karena notifikasi error
+        console.error('Gagal mengirim notifikasi buku tamu:', notifErr);
       }
-
-      stopCamera();
-      setModalOpen(false);
-      fetchData();
     }
+
+    stopCamera();
+    setModalOpen(false);
+    fetchData();
     setSaving(false);
   };
 
