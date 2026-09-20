@@ -8,7 +8,6 @@ import { useCanAccess } from '@/hooks/useCanAccess';
 import { TimelineKegiatan } from '@/components/TimelineKegiatan';
 import { PengumumanBanner } from '@/components/PengumumanBanner';
 import { AttendanceSummary } from '@/components/AttendanceSummary';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 
 // --------------------------------------------------------------------------
 // Types & Helpers
@@ -22,14 +21,6 @@ type AttendanceStats = {
   sakit: number;
   izin: number;
 };
-
-useEffect(() => {
-  logActivity({
-    aksi: 'VIEW',
-    modul: 'dashboard',
-    deskripsi: 'Test audit log dari dashboard',
-  });
-}, []);
 
 const getLocalToday = () => {
   const d = new Date();
