@@ -66,6 +66,7 @@ export type PageKey =
   | 'tugas_disposisi'
   | 'dashboard_kepsek'
   | 'monev_divisi'
+  | 'kalender_akademik'
   | 'kenaikan_kelas'
   | 'kelulusan'
   | 'riwayat_siswa'
