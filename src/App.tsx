@@ -187,6 +187,7 @@ function AppContent() {
           <Route path="/rekap_izin" element={<ProtectedRoute accessKey="rekap_izin"><RekapIzinPage /></ProtectedRoute>} />
           <Route path="/hak_akses" element={<ProtectedRoute accessKey="hak_akses"><HakAksesPage /></ProtectedRoute>} />
           <Route path="/hari_libur" element={<ProtectedRoute accessKey="hari_libur"><HariLiburPage /></ProtectedRoute>} />
+          <Route path="/audit_log" element={<ProtectedRoute accessKey="audit_log"><AuditLogPage /></ProtectedRoute>} />
           <Route path="/buku_tamu" element={<ProtectedRoute accessKey="buku_tamu"><BukuTamuPage /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
