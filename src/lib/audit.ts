@@ -48,6 +48,8 @@ export const AUDIT_MODUL = {
   JADWAL_KBM: 'jadwal_kbm',
   PRESENSI: 'presensi',
   NILAI: 'nilai',
+  SARAN_PENGADUAN: 'saran_pengaduan',
+  SARPRAS: 'sarpras',
 } as const;
 
 export type AuditModul = (typeof AUDIT_MODUL)[keyof typeof AUDIT_MODUL];
