@@ -36,6 +36,7 @@ import { SearchableSelect } from '../components/SearchableSelect';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { sendNotification } from '@/lib/notification';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { supabase } from '../lib/supabase';
 
 const compressAndConvertToWebP = (
@@ -203,9 +204,24 @@ export const SuratPage: React.FC = () => {
       if (editingKategori) {
         await updateKategoriSurat(editingKategori.id, kategoriForm);
         showToast('success', 'Kode Perihal berhasil diperbarui');
+
+        // Audit log — UPDATE kategori
+        await logActivity({
+          aksi: 'UPDATE',
+          modul: AUDIT_MODUL.SURAT,
+          targetId: editingKategori.id,
+          deskripsi: `Update Kode Perihal [${kategoriForm.kode}] ${kategoriForm.nama_kategori}`,
+        });
       } else {
         await createKategoriSurat(kategoriForm);
         showToast('success', 'Kode Perihal berhasil ditambahkan');
+
+        // Audit log — CREATE kategori
+        await logActivity({
+          aksi: 'CREATE',
+          modul: AUDIT_MODUL.SURAT,
+          deskripsi: `Tambah Kode Perihal [${kategoriForm.kode}] ${kategoriForm.nama_kategori}`,
+        });
       }
       setShowKategoriModal(false);
       loadData();
@@ -226,9 +242,23 @@ export const SuratPage: React.FC = () => {
     });
     if (!ok) return;
 
+    // Ambil info kategori sebelum dihapus (untuk deskripsi log)
+    const target = kategoriList.find((k) => k.id === id);
+
     try {
       await deleteKategoriSurat(id);
       showToast('success', 'Kode Perihal berhasil dihapus');
+
+      // Audit log — DELETE kategori
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.SURAT,
+        targetId: id,
+        deskripsi: target
+          ? `Hapus Kode Perihal [${target.kode}] ${target.nama_kategori}`
+          : `Hapus Kode Perihal`,
+      });
+
       loadData();
     } catch (err) {
       showToast(
@@ -316,7 +346,7 @@ export const SuratPage: React.FC = () => {
         }
       }
 
-      await createSurat({
+      const created = await createSurat({
         jenis_surat: activeTab,
         kategori_id: formData.kategori_id || null,
         nomor_surat: formData.nomor_surat,
@@ -328,6 +358,15 @@ export const SuratPage: React.FC = () => {
       });
 
       showToast('success', 'Surat berhasil disimpan');
+
+      // Audit log — CREATE surat
+      await logActivity({
+        aksi: 'CREATE',
+        modul: AUDIT_MODUL.SURAT,
+        targetId: created?.id,
+        deskripsi: `Tambah surat ${activeTab} No. ${formData.nomor_surat} — "${formData.perihal}"`,
+      });
+
       setShowSuratModal(false);
       resetForm();
       loadData();
@@ -340,6 +379,9 @@ export const SuratPage: React.FC = () => {
 
   // ---------- Hapus Surat dengan Cek Disposisi (Opsi A + B) ----------
   const handleDeleteSurat = async (id: string) => {
+    // Ambil info surat dari state (untuk deskripsi log)
+    const suratInfo = suratList.find((s) => s.id === id);
+
     // 1. Cek jumlah disposisi terkait
     const { data: disposisi, error: errCek } = await supabase
       .from('disposisi_surat')
@@ -348,7 +390,6 @@ export const SuratPage: React.FC = () => {
 
     if (errCek) {
       console.error('Gagal cek disposisi:', errCek);
-      // Lanjut saja — CASCADE di DB akan handle
     }
 
     const jumlahDisposisi = disposisi?.length ?? 0;
@@ -368,8 +409,6 @@ export const SuratPage: React.FC = () => {
     if (!ok) return;
 
     try {
-      // 3. Hapus disposisi dulu (safety untuk environment yang belum migrasi CASCADE).
-      //    Kalau CASCADE sudah aktif di DB, delete ini redundant tapi tidak masalah.
       if (jumlahDisposisi > 0) {
         const { error: errDisposisi } = await supabase
           .from('disposisi_surat')
@@ -379,7 +418,6 @@ export const SuratPage: React.FC = () => {
         if (errDisposisi) throw errDisposisi;
       }
 
-      // 4. Baru hapus suratnya
       await deleteSurat(id);
 
       showToast(
@@ -388,6 +426,20 @@ export const SuratPage: React.FC = () => {
           ? `Surat dan ${jumlahDisposisi} disposisi berhasil dihapus`
           : 'Surat berhasil dihapus'
       );
+
+      // Audit log — DELETE surat
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.SURAT,
+        targetId: id,
+        deskripsi: suratInfo
+          ? `Hapus surat No. ${suratInfo.nomor_surat} — "${suratInfo.perihal}"${
+              jumlahDisposisi > 0 ? ` (bersama ${jumlahDisposisi} disposisi)` : ''
+            }`
+          : `Hapus surat${jumlahDisposisi > 0 ? ` bersama ${jumlahDisposisi} disposisi` : ''}`,
+        metadata: jumlahDisposisi > 0 ? { disposisi_dihapus: jumlahDisposisi } : null,
+      });
+
       loadData();
     } catch (err) {
       console.error('Gagal menghapus surat:', err);
@@ -442,7 +494,6 @@ export const SuratPage: React.FC = () => {
 
         if (error) throw error;
 
-        // Notifikasi ke penerima baru bahwa disposisi diperbarui
         if (targetGuru?.id && targetGuru.id !== guru?.id) {
           await sendNotification({
             guruIds: targetGuru.id,
@@ -454,8 +505,16 @@ export const SuratPage: React.FC = () => {
         }
 
         showToast('success', 'Disposisi berhasil diperbarui');
+
+        // Audit log — UPDATE disposisi
+        await logActivity({
+          aksi: 'UPDATE',
+          modul: AUDIT_MODUL.DISPOSISI,
+          targetId: editingDisposisiId,
+          deskripsi: `Update disposisi surat No. ${selectedSuratForDisposisi.nomor_surat} → ${disposisiForm.penerima_disposisi}`,
+        });
       } else {
-        await createDisposisi(
+        const created = await createDisposisi(
           {
             surat_id: selectedSuratForDisposisi.id,
             pemberi_disposisi: disposisiForm.pemberi_disposisi,
@@ -470,6 +529,14 @@ export const SuratPage: React.FC = () => {
         );
 
         showToast('success', 'Disposisi berhasil dikirim');
+
+        // Audit log — CREATE disposisi
+        await logActivity({
+          aksi: 'CREATE',
+          modul: AUDIT_MODUL.DISPOSISI,
+          targetId: created?.id,
+          deskripsi: `Kirim disposisi surat No. ${selectedSuratForDisposisi.nomor_surat} → ${disposisiForm.penerima_disposisi}`,
+        });
       }
 
       const updated = await getDisposisiBySuratId(selectedSuratForDisposisi.id);
@@ -503,6 +570,9 @@ export const SuratPage: React.FC = () => {
     });
     if (!ok) return;
 
+    // Ambil info untuk log
+    const target = disposisiList.find((d) => d.id === id);
+
     try {
       const { error } = await supabase.from('disposisi_surat').delete().eq('id', id);
       if (error) throw error;
@@ -512,6 +582,16 @@ export const SuratPage: React.FC = () => {
         setDisposisiList(updated);
       }
       showToast('success', 'Disposisi berhasil dihapus');
+
+      // Audit log — DELETE disposisi
+      await logActivity({
+        aksi: 'DELETE',
+        modul: AUDIT_MODUL.DISPOSISI,
+        targetId: id,
+        deskripsi: target
+          ? `Hapus disposisi surat No. ${selectedSuratForDisposisi?.nomor_surat || '-'} → ${target.penerima_disposisi}`
+          : `Hapus disposisi`,
+      });
     } catch (err: any) {
       showToast('error', 'Gagal menghapus disposisi: ' + (err.message || 'Error tidak diketahui'));
     }
@@ -522,21 +602,16 @@ export const SuratPage: React.FC = () => {
     id: string,
     status: 'PENDING' | 'PROSES' | 'SELESAI'
   ) => {
-    // 1. Cari disposisi lama untuk tahu status sebelumnya & data pemberi/penerima
     const target = disposisiList.find((d) => d.id === id);
     if (!target) return;
 
     const statusLama = target.status;
 
-    // 2. Skip kalau status tidak benar-benar berubah
     if (statusLama === status) return;
 
-    // 3. Update status di DB
     await updateStatusDisposisi(id, status);
 
-    // 4. Kirim notifikasi ke PEMBERI disposisi (atasan) kalau penerima
-    //    mengubah status ke PROSES atau SELESAI.
-    //    Tidak dikirim untuk perubahan kembali ke PENDING (biar tidak berisik).
+    // Notifikasi ke PEMBERI disposisi
     if (
       status !== 'PENDING' &&
       target.pemberi_id &&
@@ -546,7 +621,6 @@ export const SuratPage: React.FC = () => {
       const isSelesai = status === 'SELESAI';
       const nomorSurat = selectedSuratForDisposisi?.nomor_surat || '-';
 
-      // Potong instruksi biar tidak terlalu panjang di notifikasi
       const instruksiAsli = target.instruksi || '';
       const instruksiSingkat =
         instruksiAsli.length > 80 ? instruksiAsli.slice(0, 80) + '…' : instruksiAsli;
@@ -562,12 +636,19 @@ export const SuratPage: React.FC = () => {
           tautan: '/surat',
         });
       } catch (notifErr) {
-        // Jangan gagalkan flow utama hanya karena notifikasi error
         console.error('Gagal kirim notifikasi status disposisi:', notifErr);
       }
     }
 
-    // 5. Refresh daftar disposisi
+    // Audit log — UPDATE status disposisi
+    await logActivity({
+      aksi: 'UPDATE',
+      modul: AUDIT_MODUL.DISPOSISI,
+      targetId: id,
+      deskripsi: `Ubah status disposisi (Surat No. ${selectedSuratForDisposisi?.nomor_surat || '-'}): ${statusLama} → ${status}`,
+      metadata: { status_lama: statusLama, status_baru: status },
+    });
+
     if (selectedSuratForDisposisi?.id) {
       const updated = await getDisposisiBySuratId(selectedSuratForDisposisi.id);
       setDisposisiList(updated);
