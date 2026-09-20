@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { Modal } from '@/components/Modal';
 import { showToast } from '@/components/Toast';
+import { broadcastToAllGurus } from '@/lib/notification';
 
 export interface RencanaKegiatan {
   id?: string;
@@ -80,37 +81,39 @@ export function ModalTambahKegiatan({
       status: formData.status,
     };
 
+    const isEdit = Boolean(kegiatanEdit?.id);
+
     try {
-      if (kegiatanEdit?.id) {
+      if (isEdit && kegiatanEdit?.id) {
         const { error } = await supabase
           .from('rencana_kegiatan')
           .update(payload)
           .eq('id', kegiatanEdit.id);
 
         if (error) throw error;
+
+        showToast('success', 'Rencana kegiatan berhasil diperbarui');
       } else {
         const { error } = await supabase.from('rencana_kegiatan').insert([payload]);
 
         if (error) throw error;
 
-        // PUSH NOTIFIKASI KE SELURUH GURU
+        // Broadcast notifikasi ke seluruh guru via helper terpusat.
+        // Tipe 'kegiatan' ada di NON_PUSH_TIPE → tidak kirim push,
+        // hanya muncul di lonceng aplikasi.
         try {
-          const { data: daftarGuru } = await supabase.from('gurus').select('id');
-
-          if (daftarGuru && daftarGuru.length > 0) {
-            const notifPayloads = daftarGuru.map((guru) => ({
-              guru_id: guru.id,
-              judul: '📌 Agenda Kegiatan Baru',
-              pesan: `Agenda "${payload.nama_kegiatan}" telah ditambahkan untuk tanggal ${payload.tanggal_mulai}.`,
-              tipe: 'kegiatan',
-              tautan: '/kegiatan',
-            }));
-
-            await supabase.from('notifikasi').insert(notifPayloads);
-          }
+          await broadcastToAllGurus({
+            judul: '📌 Agenda Kegiatan Baru',
+            pesan: `Agenda "${payload.nama_kegiatan}" telah ditambahkan untuk tanggal ${payload.tanggal_mulai}.`,
+            tipe: 'kegiatan',
+            tautan: '/kegiatan',
+          });
         } catch (notifErr) {
-          console.error('Gagal membuat notifikasi kegiatan:', notifErr);
+          // Jangan gagalkan flow utama hanya karena notifikasi error
+          console.error('Gagal broadcast notifikasi kegiatan:', notifErr);
         }
+
+        showToast('success', 'Rencana kegiatan berhasil ditambahkan');
       }
 
       onSuccess();
@@ -129,9 +132,7 @@ export function ModalTambahKegiatan({
     <Modal
       open={open}
       onClose={onClose}
-      title={
-        isEdit ? 'Edit Rencana Kegiatan Sekolah' : 'Tambah Rencana Kegiatan Sekolah'
-      }
+      title={isEdit ? 'Edit Rencana Kegiatan Sekolah' : 'Tambah Rencana Kegiatan Sekolah'}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
