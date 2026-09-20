@@ -3,6 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Guru, GuruRole } from '@/types/database';
 import type { PageKey } from '@/config/navigation';
+import { resetAuditCache } from '@/lib/audit';
 
 type AuthContextValue = {
   session: Session | null;
