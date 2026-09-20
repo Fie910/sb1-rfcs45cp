@@ -15,6 +15,7 @@ import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { ModalTambahKegiatan } from '@/components/ModalTambahKegiatan';
 import { useAuth } from '@/context/AuthContext';
+import { broadcastToAllGurus } from '@/lib/notification';
 import type { Pengumuman } from '@/types/database';
 
 const emptyForm = {
@@ -248,26 +249,17 @@ export function PengumumanPage() {
     if (result.error) {
       showToast('error', 'Gagal menyimpan: ' + result.error.message);
     } else {
-      // --- PUSH NOTIFIKASI KE SELURUH GURU (HANYA UNTUK PENGUMUMAN BARU & AKTIF) ---
+      // --- BROADCAST NOTIFIKASI KE SELURUH GURU (HANYA UNTUK PENGUMUMAN BARU & AKTIF) ---
       if (!editing && form.is_aktif) {
         try {
-          const { data: daftarGuru } = await supabase
-            .from('gurus')
-            .select('id');
-
-          if (daftarGuru && daftarGuru.length > 0) {
-            const notifPayloads = daftarGuru.map((g) => ({
-              guru_id: g.id,
-              judul: '📢 Pengumuman Baru',
-              pesan: form.judul,
-              tipe: 'pengumuman',
-              tautan: '/pengumuman',
-            }));
-
-            // Mengisi tabel notifikasi untuk memicu trigger DB & Realtime
-            await supabase.from('notifikasi').insert(notifPayloads);
-          }
+          await broadcastToAllGurus({
+            judul: '📢 Pengumuman Baru',
+            pesan: form.judul,
+            tipe: 'pengumuman',
+            tautan: '/pengumuman',
+          });
         } catch (notifErr) {
+          // Jangan gagalkan flow utama hanya karena notifikasi error
           console.error('Gagal mengirim notifikasi pengumuman:', notifErr);
         }
       }
