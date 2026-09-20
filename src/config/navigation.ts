@@ -101,6 +101,12 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
         path: '/tugas_disposisi',
       },
       { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
+      {
+        key: 'saran_pengaduan',
+        label: 'Saran & Pengaduan',
+        icon: MessageSquareWarning,
+        path: '/saran_pengaduan',
+      },
     ],
   },
   {
