@@ -378,7 +378,7 @@ export function KalenderAkademikPage() {
                 <div
                   key={hari}
                   className={`py-3 text-center text-[11px] font-extrabold uppercase tracking-wider ${
-                    idx >= 5 ? 'text-rose-400' : 'text-slate-400'
+                    idx >= 6 ? 'text-rose-400' : 'text-slate-400'
                   }`}
                 >
                   {hari}
