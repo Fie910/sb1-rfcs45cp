@@ -1,6 +1,6 @@
 // src/components/sarpras/CetakLabelModal.tsx
 // Modal preview & cetak label aset dengan QR code.
-// Mendukung 3 ukuran preset, print via browser dialog.
+// ⚠️ HANYA 1 elemen QRCodeSVG per label — jangan duplikat.
 
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -97,7 +97,6 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Pilih ukuran */}
           <select
             value={ukuran}
             onChange={(e) => setUkuran(e.target.value as UkuranLabel)}
@@ -110,7 +109,6 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
             ))}
           </select>
 
-          {/* Toggle QR */}
           <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 text-xs cursor-pointer hover:border-indigo-500/40 transition-colors">
             <input
               type="checkbox"
@@ -121,7 +119,6 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
             QR
           </label>
 
-          {/* Toggle Kategori */}
           <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 text-xs cursor-pointer hover:border-indigo-500/40 transition-colors">
             <input
               type="checkbox"
@@ -189,20 +186,14 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
                   boxSizing: 'border-box',
                 }}
               >
-                {showQR && (
-                  <QRCodeSVG
-                    value={`${window.location.origin}/scan/${a.qr_token}`}
-                    size={preset.qrSize}
-                    level="M"
-                    marginSize={0}
-                  />
-                )}
+                {/* ⚠️ HANYA SATU QRCodeSVG DI SINI */}
                 {showQR && (
                   <QRCodeSVG
                     value={
                       a.qr_token
                         ? `${window.location.origin}/scan/${a.qr_token}`
-                        : a.kode_aset}
+                        : a.kode_aset
+                    }
                     size={preset.qrSize}
                     level="M"
                     marginSize={0}
@@ -279,12 +270,10 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
             padding: 0 !important;
           }
 
-          /* Sembunyikan seluruh body */
           body * {
             visibility: hidden !important;
           }
 
-          /* Tampilkan hanya area label */
           #label-print-root,
           #label-print-root * {
             visibility: visible !important;
@@ -303,14 +292,12 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
             box-sizing: border-box !important;
           }
 
-          /* Sembunyikan toolbar & overlay */
           .no-print,
           .no-print * {
             display: none !important;
             visibility: hidden !important;
           }
 
-          /* Pastikan warna terbawa saat print */
           #label-print-root * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
