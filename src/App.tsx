@@ -16,6 +16,7 @@ const MonevDivisiPage = lazy(() => import('@/pages/MonevDivisiPage').then((m) =>
 const KalenderAkademikPage = lazy(() => import('@/pages/KalenderAkademikPage').then((m) => ({ default: m.KalenderAkademikPage })));
 const SaranPengaduanPage = lazy(() => import('@/pages/SaranPengaduanPage').then((m) => ({ default: m.SaranPengaduanPage })));
 const InventarisSarprasPage = lazy(() => import('@/pages/InventarisSarprasPage').then((m) => ({ default: m.InventarisSarprasPage })));
+const ScanAsetPage = lazy(() => import('@/pages/ScanAsetPage').then((m) => ({ default: m.ScanAsetPage })));
 const SiswaPage = lazy(() => import('@/pages/SiswaPage').then((m) => ({ default: m.SiswaPage })));
 const KelasPage = lazy(() => import('@/pages/KelasPage').then((m) => ({ default: m.KelasPage })));
 const NilaiPage = lazy(() => import('@/pages/NilaiPage').then((m) => ({ default: m.NilaiPage })));
