@@ -156,7 +156,7 @@ function AppContent() {
           <Route path="/monev_divisi" element={<ProtectedRoute accessKey="monev_divisi"><MonevDivisiPage /></ProtectedRoute>} />
           <Route path="/kalender_akademik" element={<ProtectedRoute accessKey="kalender_akademik"><KalenderAkademikPage /></ProtectedRoute>} />
           <Route path="/saran_pengaduan" element={<ProtectedRoute accessKey="saran_pengaduan"><SaranPengaduanPage /></ProtectedRoute>} />
-          <Route path="/inventaris_sarpras" element={<ProtectedRoute accessKey="inventaris_sarpras"><InventarisSarprasPage /></ProtectedRoute>} />
+          <Route path="/sarpras" element={<ProtectedRoute accessKey="sarpras"><InventarisSarprasPage /></ProtectedRoute>} />
           <Route path="/profil" element={<ProfilPage />} />
           <Route path="/todo" element={<ProtectedRoute accessKey="todo"><TodoListPage /></ProtectedRoute>} />
           <Route path="/siswa" element={<ProtectedRoute accessKey="siswa"><SiswaPage /></ProtectedRoute>} />
