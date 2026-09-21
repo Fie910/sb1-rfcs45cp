@@ -197,6 +197,16 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
                     marginSize={0}
                   />
                 )}
+                {showQR && (
+                  <QRCodeSVG
+                    value={
+                      a.qr_token
+                      ? `${window.location.origin}/scan/${a.qr_token}`
+                    size={preset.qrSize}
+                    level="M"
+                    marginSize={0}
+                  />
+                )}
 
                 <div
                   style={{
