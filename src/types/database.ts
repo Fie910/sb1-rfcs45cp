@@ -473,6 +473,7 @@ export type InventarisSarpras = {
   harga_perolehan: number | null;
   keterangan: string | null;
   foto_url: string | null;
+  qr_token: string;
   created_at: string;
   updated_at: string;
 };
