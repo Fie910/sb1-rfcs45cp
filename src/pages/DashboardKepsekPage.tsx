@@ -765,7 +765,7 @@ export function DashboardKepsekPage() {
                   contentStyle={TOOLTIP_STYLE.contentStyle}
                   labelStyle={TOOLTIP_STYLE.labelStyle}
                   itemStyle={TOOLTIP_STYLE.itemStyle}
-                  formatter={(v: number, name: any) => [`${v}%`, name]}
+                  formatter={(v, name) => [`${v ?? 0}%`, String(name ?? '')]}
                 />
                 <Legend
                   wrapperStyle={{
