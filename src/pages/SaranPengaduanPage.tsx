@@ -550,7 +550,7 @@ export function SaranPengaduanPage() {
                 </label>
                 <select
                   value={form.kategori}
-                  onChange={(e) => setForm({ ...form, kategori: e.target.value })}
+                  onChange={(e) => setForm({ ...form, kategori: e.target.value as SaranPengaduanKategori })}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 cursor-pointer"
                   required
                 >
