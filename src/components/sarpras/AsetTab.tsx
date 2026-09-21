@@ -1,5 +1,5 @@
 // src/components/sarpras/AsetTab.tsx
-// Tab utama: manajemen aset inventaris Sarpras + cetak label QR.
+// Tab utama: manajemen aset inventaris Sarpras + cetak label QR + regenerate QR token.
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -18,6 +18,7 @@ import {
   Printer,
   CheckSquare,
   Square,
+  RefreshCw,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -67,7 +68,13 @@ export function AsetTab() {
     useState<InventarisSarprasWithRelations | null>(null);
   const [modalKategoriOpen, setModalKategoriOpen] = useState(false);
   const [modalLokasiOpen, setModalLokasiOpen] = useState(false);
+
+  // Modal delete
   const [deleteTarget, setDeleteTarget] =
+    useState<InventarisSarprasWithRelations | null>(null);
+
+  // Modal regenerate QR token
+  const [regenerateTarget, setRegenerateTarget] =
     useState<InventarisSarprasWithRelations | null>(null);
 
   // ============================
@@ -174,14 +181,12 @@ export function AsetTab() {
       allFilteredIds.length > 0 && allFilteredIds.every((id) => selectedIds.has(id));
 
     if (allSelected) {
-      // Deselect semua yang filtered
       setSelectedIds((prev) => {
         const next = new Set(prev);
         allFilteredIds.forEach((id) => next.delete(id));
         return next;
       });
     } else {
-      // Select semua yang filtered (tambahkan ke yang sudah ada)
       setSelectedIds((prev) => {
         const next = new Set(prev);
         allFilteredIds.forEach((id) => next.add(id));
@@ -235,6 +240,33 @@ export function AsetTab() {
       fetchAll();
     } catch (err: any) {
       showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+    }
+  };
+
+  // Regenerate QR token (anti-forgery)
+  const handleRegenerateToken = async () => {
+    if (!regenerateTarget) return;
+    try {
+      const { error } = await supabase.rpc('regenerate_qr_token', {
+        p_aset_id: regenerateTarget.id,
+      });
+      if (error) throw error;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.SARPRAS,
+        targetId: regenerateTarget.id,
+        deskripsi: `Regenerate QR token: ${regenerateTarget.nama_aset} (${regenerateTarget.kode_aset})`,
+      });
+
+      showToast(
+        'success',
+        'QR token baru dibuat. Label lama tidak lagi valid — silakan cetak ulang label.'
+      );
+      setRegenerateTarget(null);
+      fetchAll();
+    } catch (err: any) {
+      showToast('error', 'Gagal regenerate: ' + (err.message || 'Error'));
     }
   };
 
@@ -649,6 +681,13 @@ export function AsetTab() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                           <button
+                            onClick={() => setRegenerateTarget(a)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
+                            title="Regenerate QR Token (label lama akan invalid)"
+                          >
+                            <RefreshCw size={14} />
+                          </button>
+                          <button
                             onClick={() => handleOpenEdit(a)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
                             title="Edit"
@@ -777,6 +816,13 @@ export function AsetTab() {
                       <Pencil size={11} /> Edit
                     </button>
                     <button
+                      onClick={() => setRegenerateTarget(a)}
+                      className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-indigo-400 border border-slate-700 transition-colors cursor-pointer"
+                      title="Regenerate QR Token"
+                    >
+                      <RefreshCw size={12} />
+                    </button>
+                    <button
                       onClick={() => setDeleteTarget(a)}
                       className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
                       title="Hapus"
@@ -825,12 +871,24 @@ export function AsetTab() {
         asetList={selectedAssets}
       />
 
+      {/* CONFIRM DELETE */}
       <ConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Hapus Aset"
         message={`Yakin hapus aset "${deleteTarget?.nama_aset}" (${deleteTarget?.kode_aset})? Semua riwayat peminjaman dan pemeliharaan terkait akan ikut terhapus.`}
+      />
+
+      {/* CONFIRM REGENERATE QR TOKEN */}
+      <ConfirmModal
+        open={!!regenerateTarget}
+        onClose={() => setRegenerateTarget(null)}
+        onConfirm={handleRegenerateToken}
+        title="Regenerate QR Token"
+        message={`Regenerate token QR untuk "${regenerateTarget?.nama_aset}" (${regenerateTarget?.kode_aset})? Semua label yang sudah dicetak sebelumnya akan menjadi INVALID — Anda perlu cetak ulang label. Gunakan fitur ini jika label aset hilang / bocor / dicuri.`}
+        confirmLabel="Ya, Regenerate"
+        variant="warning"
       />
     </div>
   );
