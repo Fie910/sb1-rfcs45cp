@@ -33,6 +33,7 @@ import type {
   SaranPengaduanWithRelations,
   SaranPengaduanStatus,
   SaranPengaduanPrioritas,
+  SaranPengaduanKategori,
 } from '@/types/database';
 import {
   KATEGORI_SARAN_PENGADUAN,
