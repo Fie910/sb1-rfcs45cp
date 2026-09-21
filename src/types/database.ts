@@ -540,7 +540,7 @@ export type InventarisPemeliharaan = {
 };
 
 export type InventarisPemeliharaanWithRelations = InventarisPemeliharaan & {
-  aset: Pick<InventarisSarpras, 'id' | 'kode_aset' | 'nama_aset'> | null;
+  aset: Pick<InventarisSarpras, 'id' | 'kode_aset' | 'nama_aset' | 'foto_url'> | null;
   pic: Pick<Guru, 'id' | 'nama_lengkap'> | null;
 };
 
