@@ -82,6 +82,15 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children
   return children;
 }
 
+// =============================================================================
+// ROUTE PUBLIK (tanpa login) — dipakai untuk scan QR code aset
+// =============================================================================
+const PUBLIC_PATH_PREFIXES = ['/scan'];
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
 function AppContent() {
   const { session, loading, guru } = useAuth();
   const location = useLocation();
@@ -126,6 +135,9 @@ function AppContent() {
     };
   }, [guru?.nama_lengkap]);
 
+  // -----------------------------------------------------------------------
+  // LOADING
+  // -----------------------------------------------------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -137,6 +149,23 @@ function AppContent() {
     );
   }
 
+  // -----------------------------------------------------------------------
+  // ROUTE PUBLIK — bypass login & AppLayout (misal: /scan/:token)
+  // -----------------------------------------------------------------------
+  if (isPublicPath(location.pathname)) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <Routes>
+          <Route path="/scan/:token" element={<ScanAsetPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // -----------------------------------------------------------------------
+  // BELUM LOGIN & BUKAN PUBLIC PATH → LoginPage
+  // -----------------------------------------------------------------------
   if (!session) {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -145,6 +174,9 @@ function AppContent() {
     );
   }
 
+  // -----------------------------------------------------------------------
+  // SUDAH LOGIN → AppLayout + Routes
+  // -----------------------------------------------------------------------
   const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageKey;
 
   return (
