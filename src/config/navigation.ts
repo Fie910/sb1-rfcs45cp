@@ -31,6 +31,7 @@ import {
   CalendarRange,
   MessageSquareWarning,
   Package,
+  Boxes,
 } from 'lucide-react';
 
 export type PageKey =
@@ -70,7 +71,7 @@ export type PageKey =
   | 'monev_divisi'
   | 'kalender_akademik'
   | 'saran_pengaduan'
-  | 'inventaris_sarpras'
+  | 'sarpras'
   | 'kenaikan_kelas'
   | 'kelulusan'
   | 'riwayat_siswa'
