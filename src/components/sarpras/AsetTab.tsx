@@ -1,11 +1,10 @@
 // src/components/sarpras/AsetTab.tsx
-// Tab utama: manajemen aset inventaris Sarpras.
+// Tab utama: manajemen aset inventaris Sarpras + cetak label QR.
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Search,
   Plus,
-  Filter,
   X,
   Package,
   Pencil,
@@ -16,22 +15,24 @@ import {
   List,
   AlertTriangle,
   CheckCircle2,
+  Printer,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
-import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { ModalAsetSarpras } from './ModalAsetSarpras';
 import { KategoriManagerModal } from './KategoriManagerModal';
 import { LokasiManagerModal } from './LokasiManagerModal';
+import { CetakLabelModal } from './CetakLabelModal';
 import {
   getKondisiBadge,
   getStatusAsetBadge,
   formatRupiah,
   formatRupiahShort,
-  formatDateShort,
   INPUT_CLASS,
 } from './shared';
 import type {
@@ -55,6 +56,10 @@ export function AsetTab() {
   const [filterKondisi, setFilterKondisi] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+
+  // Selection (untuk cetak label)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [cetakModalOpen, setCetakModalOpen] = useState(false);
 
   // Modal
   const [modalAsetOpen, setModalAsetOpen] = useState(false);
@@ -95,6 +100,9 @@ export function AsetTab() {
       setKategoriList((kategoriRes.data as KategoriSarpras[]) || []);
       setLokasiList((lokasiRes.data as InventarisLokasi[]) || []);
       setGuruList((guruRes.data as Guru[]) || []);
+
+      // Reset selection supaya tidak ada ID hantu
+      setSelectedIds(new Set());
     } catch (err: any) {
       console.error('Fetch error:', err);
       showToast('error', 'Gagal memuat data aset: ' + (err.message || 'Error'));
@@ -137,7 +145,7 @@ export function AsetTab() {
   const stats = useMemo(() => {
     const total = asetList.length;
     const nilaiTotal = asetList.reduce(
-      (sum, a) => sum + Number(a.harga_perolehan ?? 0),
+      (sum, a) => sum + Number(a.harga_perolehan ?? 0) * (a.jumlah ?? 0),
       0
     );
     const baik = asetList.filter((a) => a.kondisi === 'Baik').length;
@@ -147,6 +155,51 @@ export function AsetTab() {
     const dipinjam = asetList.filter((a) => a.status === 'Dipinjam').length;
     return { total, nilaiTotal, baik, rusak, dipinjam };
   }, [asetList]);
+
+  // ============================
+  // SELECTION HANDLERS
+  // ============================
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const allFilteredIds = filteredList.map((a) => a.id);
+    const allSelected =
+      allFilteredIds.length > 0 && allFilteredIds.every((id) => selectedIds.has(id));
+
+    if (allSelected) {
+      // Deselect semua yang filtered
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allFilteredIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      // Select semua yang filtered (tambahkan ke yang sudah ada)
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allFilteredIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const selectedAssets = useMemo(
+    () => asetList.filter((a) => selectedIds.has(a.id)),
+    [asetList, selectedIds]
+  );
+
+  const isAllFilteredSelected =
+    filteredList.length > 0 &&
+    filteredList.every((a) => selectedIds.has(a.id));
 
   // ============================
   // HANDLERS
@@ -212,7 +265,6 @@ export function AsetTab() {
     'Harga Perolehan',
     'Tgl. Perolehan',
   ];
-
   const exportRows = filteredList.map((a) => [
     a.kode_aset,
     a.nama_aset,
@@ -241,22 +293,37 @@ export function AsetTab() {
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
             {filteredList.length} dari {asetList.length} aset ditampilkan
+            {selectedIds.size > 0 && (
+              <span className="text-indigo-400 font-bold"> · {selectedIds.size} dipilih</span>
+            )}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {selectedIds.size > 0 && (
+            <button
+              onClick={clearSelection}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              title="Batal pilih"
+            >
+              <X size={14} /> Batal Pilih
+            </button>
+          )}
+
           <button
             onClick={() => setModalKategoriOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-colors cursor-pointer"
           >
             <Settings size={14} /> Kelola Kategori
           </button>
+
           <button
             onClick={() => setModalLokasiOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-colors cursor-pointer"
           >
             <MapPin size={14} /> Kelola Lokasi
           </button>
+
           <button
             onClick={handleOpenCreate}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-colors cursor-pointer"
@@ -324,7 +391,6 @@ export function AsetTab() {
       {/* FILTER BAR */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div className="flex flex-col lg:flex-row gap-3">
-          {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
             <Search
               size={15}
@@ -339,7 +405,6 @@ export function AsetTab() {
             />
           </div>
 
-          {/* Filter dropdowns */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <select
               value={filterKategori}
@@ -392,7 +457,6 @@ export function AsetTab() {
             </select>
           </div>
 
-          {/* View toggle + Export */}
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-slate-950 rounded-xl border border-slate-800 p-0.5">
               <button
@@ -431,8 +495,23 @@ export function AsetTab() {
           </div>
         </div>
 
-        {/* Export */}
-        <div className="flex justify-end">
+        {/* TOOLBAR AKSI MASSAL + EXPORT */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+          <div className="flex items-center gap-2">
+            {selectedIds.size > 0 ? (
+              <button
+                onClick={() => setCetakModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-colors cursor-pointer"
+              >
+                <Printer size={14} /> Cetak Label ({selectedIds.size})
+              </button>
+            ) : (
+              <p className="text-[11px] text-slate-500 italic">
+                Pilih aset dengan checkbox untuk mencetak label QR
+              </p>
+            )}
+          </div>
+
           <ExportImportButtons
             filename={`inventaris_sarpras_${new Date().toISOString().slice(0, 10)}`}
             title="Daftar Inventaris Sarpras"
@@ -467,6 +546,19 @@ export function AsetTab() {
             <table className="w-full text-sm">
               <thead className="bg-slate-950/60 border-b border-slate-800 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
                 <tr>
+                  <th className="px-3 py-3 w-10 text-center">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="inline-flex items-center justify-center text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"
+                      title={isAllFilteredSelected ? 'Batal pilih semua' : 'Pilih semua'}
+                    >
+                      {isAllFilteredSelected ? (
+                        <CheckSquare size={16} className="text-indigo-400" />
+                      ) : (
+                        <Square size={16} />
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left px-4 py-3">Aset</th>
                   <th className="text-left px-4 py-3">Kategori</th>
                   <th className="text-left px-4 py-3">Lokasi</th>
@@ -477,87 +569,104 @@ export function AsetTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {filteredList.map((a) => (
-                  <tr
-                    key={a.id}
-                    className="hover:bg-slate-800/30 transition-colors group"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
-                          {a.foto_url ? (
-                            <img
-                              src={a.foto_url}
-                              alt={a.nama_aset}
-                              className="w-full h-full object-cover"
-                            />
+                {filteredList.map((a) => {
+                  const isSelected = selectedIds.has(a.id);
+                  return (
+                    <tr
+                      key={a.id}
+                      className={`hover:bg-slate-800/30 transition-colors group ${
+                        isSelected ? 'bg-indigo-500/[0.06]' : ''
+                      }`}
+                    >
+                      <td className="px-3 py-3 text-center">
+                        <button
+                          onClick={() => toggleSelect(a.id)}
+                          className="inline-flex items-center justify-center text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"
+                        >
+                          {isSelected ? (
+                            <CheckSquare size={16} className="text-indigo-400" />
                           ) : (
-                            <Package size={16} className="text-slate-500" />
+                            <Square size={16} />
                           )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-100 truncate max-w-[200px]">
-                            {a.nama_aset}
-                          </p>
-                          <p className="text-[11px] font-mono text-indigo-400">
-                            {a.kode_aset}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-slate-300">
-                        {a.kategori?.nama ?? '-'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-slate-300">
-                        {a.lokasi_detail?.nama ?? '-'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${getKondisiBadge(
-                          a.kondisi
-                        )}`}
-                      >
-                        {a.kondisi}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${getStatusAsetBadge(
-                          a.status
-                        )}`}
-                      >
-                        {a.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-xs text-slate-300 font-mono">
-                        {a.harga_perolehan ? formatRupiah(a.harga_perolehan) : '-'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleOpenEdit(a)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
-                          title="Edit"
-                        >
-                          <Pencil size={14} />
                         </button>
-                        <button
-                          onClick={() => setDeleteTarget(a)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                          title="Hapus"
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
+                            {a.foto_url ? (
+                              <img
+                                src={a.foto_url}
+                                alt={a.nama_aset}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Package size={16} className="text-slate-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-100 truncate max-w-[200px]">
+                              {a.nama_aset}
+                            </p>
+                            <p className="text-[11px] font-mono text-indigo-400">
+                              {a.kode_aset}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-slate-300">
+                          {a.kategori?.nama ?? '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-slate-300">
+                          {a.lokasi_detail?.nama ?? '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${getKondisiBadge(
+                            a.kondisi
+                          )}`}
                         >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {a.kondisi}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${getStatusAsetBadge(
+                            a.status
+                          )}`}
+                        >
+                          {a.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-xs text-slate-300 font-mono">
+                          {a.harga_perolehan ? formatRupiah(a.harga_perolehan) : '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleOpenEdit(a)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                            title="Edit"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(a)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="Hapus"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -565,99 +674,120 @@ export function AsetTab() {
       ) : (
         // ==================== GRID VIEW ====================
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredList.map((a) => (
-            <div
-              key={a.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-indigo-500/40 transition-all group"
-            >
-              <div className="aspect-video bg-slate-950 flex items-center justify-center overflow-hidden relative">
-                {a.foto_url ? (
-                  <img
-                    src={a.foto_url}
-                    alt={a.nama_aset}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                ) : (
-                  <Package size={40} className="text-slate-700" />
-                )}
-                <div className="absolute top-2 right-2 flex gap-1">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md border backdrop-blur ${getKondisiBadge(
-                      a.kondisi
-                    )}`}
-                  >
-                    {a.kondisi}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-4 space-y-3">
-                <div>
-                  <p className="text-[11px] font-mono text-indigo-400">{a.kode_aset}</p>
-                  <h3 className="font-bold text-slate-100 text-sm leading-tight mt-0.5 line-clamp-2">
-                    {a.nama_aset}
-                  </h3>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 text-[10px]">
-                  {a.kategori && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400">
-                      {a.kategori.nama}
-                    </span>
+          {filteredList.map((a) => {
+            const isSelected = selectedIds.has(a.id);
+            return (
+              <div
+                key={a.id}
+                className={`bg-slate-900 border rounded-2xl overflow-hidden transition-all group ${
+                  isSelected
+                    ? 'border-indigo-500/60 ring-1 ring-indigo-500/40'
+                    : 'border-slate-800 hover:border-indigo-500/40'
+                }`}
+              >
+                <div className="aspect-video bg-slate-950 flex items-center justify-center overflow-hidden relative">
+                  {a.foto_url ? (
+                    <img
+                      src={a.foto_url}
+                      alt={a.nama_aset}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  ) : (
+                    <Package size={40} className="text-slate-700" />
                   )}
-                  {a.lokasi_detail && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400">
-                      📍 {a.lokasi_detail.nama}
-                    </span>
-                  )}
-                  <span
-                    className={`px-2 py-0.5 rounded-md border ${getStatusAsetBadge(
-                      a.status
-                    )}`}
+
+                  {/* Checkbox overlay */}
+                  <button
+                    onClick={() => toggleSelect(a.id)}
+                    className={`absolute top-2 left-2 p-1.5 rounded-lg backdrop-blur-md transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-900/70 hover:bg-slate-900 text-slate-300 border border-slate-700'
+                    }`}
+                    title={isSelected ? 'Batal pilih' : 'Pilih untuk cetak'}
                   >
-                    {a.status}
-                  </span>
+                    {isSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                  </button>
+
+                  <div className="absolute top-2 right-2">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border backdrop-blur ${getKondisiBadge(
+                        a.kondisi
+                      )}`}
+                    >
+                      {a.kondisi}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                <div className="p-4 space-y-3">
                   <div>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">
-                      Jumlah
-                    </p>
-                    <p className="text-xs font-bold text-slate-300">
-                      {a.jumlah} {a.satuan}
-                    </p>
+                    <p className="text-[11px] font-mono text-indigo-400">{a.kode_aset}</p>
+                    <h3 className="font-bold text-slate-100 text-sm leading-tight mt-0.5 line-clamp-2">
+                      {a.nama_aset}
+                    </h3>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">
-                      Harga
-                    </p>
-                    <p className="text-xs font-bold text-teal-400 font-mono">
-                      {a.harga_perolehan
-                        ? formatRupiahShort(a.harga_perolehan)
-                        : '-'}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => handleOpenEdit(a)}
-                    className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition-colors cursor-pointer"
-                  >
-                    <Pencil size={11} /> Edit
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(a)}
-                    className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
-                    title="Hapus"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  <div className="flex flex-wrap gap-1.5 text-[10px]">
+                    {a.kategori && (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400">
+                        {a.kategori.nama}
+                      </span>
+                    )}
+                    {a.lokasi_detail && (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400">
+                        📍 {a.lokasi_detail.nama}
+                      </span>
+                    )}
+                    <span
+                      className={`px-2 py-0.5 rounded-md border ${getStatusAsetBadge(
+                        a.status
+                      )}`}
+                    >
+                      {a.status}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                    <div>
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">
+                        Jumlah
+                      </p>
+                      <p className="text-xs font-bold text-slate-300">
+                        {a.jumlah} {a.satuan}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">
+                        Harga
+                      </p>
+                      <p className="text-xs font-bold text-teal-400 font-mono">
+                        {a.harga_perolehan
+                          ? formatRupiahShort(a.harga_perolehan)
+                          : '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => handleOpenEdit(a)}
+                      className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition-colors cursor-pointer"
+                    >
+                      <Pencil size={11} /> Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(a)}
+                      className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
+                      title="Hapus"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -687,6 +817,12 @@ export function AsetTab() {
         onClose={() => setModalLokasiOpen(false)}
         lokasiList={lokasiList}
         onChanged={fetchAll}
+      />
+
+      <CetakLabelModal
+        open={cetakModalOpen}
+        onClose={() => setCetakModalOpen(false)}
+        asetList={selectedAssets}
       />
 
       <ConfirmModal
