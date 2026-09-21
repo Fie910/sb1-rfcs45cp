@@ -236,10 +236,10 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     groupTitle: 'Sarana & Prasarana',
     items: [
       {
-        key: 'inventaris_sarpras',
+        key: 'sarpras',
         label: 'Inventaris Sarpras',
         icon: Package,
-        path: '/inventaris_sarpras',
+        path: '/sarpras',
       },
     ],
   },
