@@ -508,7 +508,7 @@ export type InventarisPeminjaman = {
 };
 
 export type InventarisPeminjamanWithRelations = InventarisPeminjaman & {
-  aset: Pick<InventarisSarpras, 'id' | 'kode_aset' | 'nama_aset' | 'satuan'> | null;
+  aset: Pick<InventarisSarpras, 'id' | 'kode_aset' | 'nama_aset' | 'satuan' | 'foto_url'> | null;
   peminjam: Pick<Guru, 'id' | 'nama_lengkap'> | null;
   approver: Pick<Guru, 'id' | 'nama_lengkap'> | null;
 };
