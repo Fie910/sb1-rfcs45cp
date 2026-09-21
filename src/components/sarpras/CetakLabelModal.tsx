@@ -201,7 +201,8 @@ export function CetakLabelModal({ open, onClose, asetList }: CetakLabelModalProp
                   <QRCodeSVG
                     value={
                       a.qr_token
-                      ? `${window.location.origin}/scan/${a.qr_token}`
+                        ? `${window.location.origin}/scan/${a.qr_token}`
+                        : a.kode_aset}
                     size={preset.qrSize}
                     level="M"
                     marginSize={0}
