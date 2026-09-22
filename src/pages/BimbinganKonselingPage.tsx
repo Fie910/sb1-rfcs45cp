@@ -20,6 +20,8 @@ import { KonselingTab } from '@/components/bk/KonselingTab';
 import { KotakCurhatTab } from '@/components/bk/KotakCurhatTab';
 import { RujukanTab } from '@/components/bk/RujukanTab';
 import { AsesmenTab } from '@/components/bk/AsesmenTab';
+import { ProfilSiswaBKTab } from '@/components/bk/ProfilSiswaBKTab';
+import { DashboardBKTab } from '@/components/bk/DashboardBKTab';
 
 // Placeholder untuk tab yang belum dibuat
 function PlaceholderTab({
