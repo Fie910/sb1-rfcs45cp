@@ -32,6 +32,7 @@ import {
   MessageSquareWarning,
   Package,
   Boxes,
+  Heart,
 } from 'lucide-react';
 
 export type PageKey =
