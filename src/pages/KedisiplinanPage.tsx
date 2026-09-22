@@ -133,20 +133,8 @@ export function KedisiplinanPage() {
 
             {activeTab === 'prestasi' && <PrestasiTab />}
             {activeTab === 'sp' && <SuratPeringatanTab />}
-            {activeTab === 'rekap' && (
-              <PlaceholderTab
-                icon={ClipboardList}
-                title="Rekap Poin Siswa"
-                description="Rekapitulasi poin pelanggaran, prestasi, dan poin bersih setiap siswa."
-              />
-            )}
-            {activeTab === 'dashboard' && (
-              <PlaceholderTab
-                icon={BarChart3}
-                title="Dashboard Kedisiplinan"
-                description="KPI dan visualisasi: siswa bermasalah, siswa berprestasi, tren pelanggaran bulanan."
-              />
-            )}
+            {activeTab === 'rekap' && <RekapPoinTab />}
+            {activeTab === 'dashboard' && <DashboardKedisiplinanTab />}
           </div>
         </>
       )}
