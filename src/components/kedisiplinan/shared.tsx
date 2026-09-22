@@ -74,7 +74,7 @@ export function getLevelPelanggaranBadge(level: KategoriPelanggaranLevel | strin
   }
 }
 
-export function getLevelPelanggaranIcon(level: KategoriPelanggaranLevel | string | null) {
+export function getLevelPelanggaranIcon(level: KategoriPelanggaranLevel | string | null | undefined) {
   switch (level) {
     case 'Ringan':
       return AlertCircle;
