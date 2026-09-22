@@ -28,6 +28,8 @@ export interface Surat {
   nama_penerima_surat?: string | null;
   tanggal_terima_surat?: string | null;
   bukti_penerimaan_url?: string | null;
+  metode_pengiriman?: string | null;
+  no_resi?: string | null;
 
   created_at?: string;
 
