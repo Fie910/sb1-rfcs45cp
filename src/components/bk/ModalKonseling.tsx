@@ -8,7 +8,6 @@ import {
   User,
   Users,
   GraduationCap,
-  MessageSquare,
   Plus,
   X,
   Lock,
@@ -40,8 +39,9 @@ import type {
 // TYPES
 // =============================================================================
 
+// ✅ FIX #1: siswa_id = string (konsisten dengan type Siswa.id di database.ts)
 type KelompokAnggota = {
-  siswa_id: number;
+  siswa_id: string;
   nama_lengkap: string;
   nisn: string;
 };
@@ -145,9 +145,14 @@ export function ModalKonseling({
         is_rahasia: konseling.is_rahasia,
       });
 
+      // ✅ FIX #2: konversi siswa_id dari jsonb (number) → string untuk konsistensi
       setKelompokAnggota(
         Array.isArray(konseling.kelompok_anggota)
-          ? (konseling.kelompok_anggota as KelompokAnggota[])
+          ? (konseling.kelompok_anggota as any[]).map((a) => ({
+              siswa_id: String(a.siswa_id),
+              nama_lengkap: a.nama_lengkap ?? '',
+              nisn: a.nisn ?? '',
+            }))
           : []
       );
     } else {
@@ -165,7 +170,7 @@ export function ModalKonseling({
   const availableSiswaForKelompok = useMemo(
     () =>
       siswaList.filter(
-        (s) => !kelompokAnggota.some((a) => a.siswa_id === s.id)
+        (s) => !kelompokAnggota.some((a) => a.siswa_id === String(s.id))
       ),
     [siswaList, kelompokAnggota]
   );
@@ -173,14 +178,14 @@ export function ModalKonseling({
   const handleAddAnggota = (siswaId: string) => {
     const siswa = siswaList.find((s) => String(s.id) === siswaId);
     if (!siswa) return;
-    if (kelompokAnggota.some((a) => a.siswa_id === siswa.id)) {
+    if (kelompokAnggota.some((a) => a.siswa_id === String(siswa.id))) {
       showToast('info', 'Siswa sudah ada dalam kelompok');
       return;
     }
     setKelompokAnggota((prev) => [
       ...prev,
       {
-        siswa_id: siswa.id,
+        siswa_id: String(siswa.id), // ✅ FIX: pastikan string
         nama_lengkap: siswa.nama_lengkap,
         nisn: siswa.nisn,
       },
@@ -188,7 +193,7 @@ export function ModalKonseling({
     setSiswaPickerOpen(false);
   };
 
-  const handleRemoveAnggota = (siswaId: number) => {
+  const handleRemoveAnggota = (siswaId: string) => {
     setKelompokAnggota((prev) => prev.filter((a) => a.siswa_id !== siswaId));
   };
 
@@ -230,6 +235,16 @@ export function ModalKonseling({
 
     setSaving(true);
     try {
+      // ✅ FIX #3: konversi siswa_id ke number saat simpan ke DB (jsonb)
+      const kelompokPayload =
+        form.tipe === 'Kelompok'
+          ? kelompokAnggota.map((a) => ({
+              siswa_id: Number(a.siswa_id),
+              nama_lengkap: a.nama_lengkap,
+              nisn: a.nisn,
+            }))
+          : null;
+
       const payload: any = {
         tipe: form.tipe,
         siswa_id:
@@ -237,8 +252,7 @@ export function ModalKonseling({
             ? Number(form.siswa_id)
             : null,
         kelompok_nama: form.tipe === 'Kelompok' ? form.kelompok_nama.trim() : null,
-        kelompok_anggota:
-          form.tipe === 'Kelompok' ? kelompokAnggota : null,
+        kelompok_anggota: kelompokPayload,
         kelas_id: form.tipe === 'Klasikal' ? Number(form.kelas_id) : null,
         guru_bk_id: form.guru_bk_id,
         kategori_id: form.kategori_id || null,
@@ -629,7 +643,7 @@ export function ModalKonseling({
         </div>
       </div>
 
-      {/* ===================== MODAL: PICKER SISWA UNTUK KELOMPOK ===================== */}
+      {/* MODAL PICKER SISWA UNTUK KELOMPOK */}
       {siswaPickerOpen && (
         <Modal
           open={siswaPickerOpen}
