@@ -33,6 +33,7 @@ import {
   Package,
   Boxes,
   Heart,
+  ShieldAlert,
 } from 'lucide-react';
 
 export type PageKey =
