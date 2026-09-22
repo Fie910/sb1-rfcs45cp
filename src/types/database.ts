@@ -862,3 +862,170 @@ export type RekapPoinSiswa = {
   jumlah_prestasi: number;
   rekomendasi_sp: LevelSP | null;
 };
+
+// =============================================================================
+// MODUL PERPUSTAKAAN
+// =============================================================================
+
+// ---------- KATEGORI / DEWEY ----------
+export type PerpusKategori = {
+  id: string;
+  nama: string;
+  kode_dewey: string | null;
+  deskripsi: string | null;
+  warna: string | null;
+  created_at: string;
+};
+
+// ---------- RAK ----------
+export type PerpusRak = {
+  id: string;
+  nama: string;
+  lokasi: string | null;
+  keterangan: string | null;
+  is_aktif: boolean;
+  created_at: string;
+};
+
+// ---------- BUKU ----------
+export type KondisiBuku = 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
+
+export type PerpusBuku = {
+  id: string;
+  kode_buku: string | null;
+  judul: string;
+  pengarang: string | null;
+  penerbit: string | null;
+  tahun_terbit: number | null;
+  isbn: string | null;
+  kategori_id: string | null;
+  rak_id: string | null;
+  jumlah_total: number;
+  jumlah_tersedia: number;
+  kondisi: KondisiBuku;
+  sinopsis: string | null;
+  cover_url: string | null;
+  bahasa: string | null;
+  jumlah_halaman: number | null;
+  catatan: string | null;
+  is_aktif: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PerpusBukuWithRelations = PerpusBuku & {
+  kategori?: Pick<PerpusKategori, 'id' | 'nama' | 'kode_dewey' | 'warna'> | null;
+  rak?: Pick<PerpusRak, 'id' | 'nama' | 'lokasi'> | null;
+};
+
+// ---------- ANGGOTA ----------
+export type TipeAnggota = 'Siswa' | 'Guru' | 'Tendik' | 'Umum';
+export type StatusAnggota = 'Aktif' | 'Nonaktif' | 'Diblock' | 'Expired';
+
+export type PerpusAnggota = {
+  id: string;
+  kode_anggota: string;
+  tipe: TipeAnggota;
+  siswa_id: number | null;
+  guru_id: string | null;
+  nama_lengkap: string;
+  tanggal_daftar: string;
+  tanggal_expired: string | null;
+  status: StatusAnggota;
+  total_denda: number;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PerpusAnggotaWithRelations = PerpusAnggota & {
+  siswa?: Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> & {
+    kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
+  } | null;
+  guru?: Pick<Guru, 'id' | 'nama_lengkap' | 'nip'> | null;
+};
+
+// ---------- PEMINJAMAN ----------
+export type StatusPeminjamanPerpus = 'Dipinjam' | 'Dikembalikan' | 'Terlambat' | 'Hilang';
+
+export type PerpusPeminjaman = {
+  id: string;
+  anggota_id: string;
+  buku_id: string;
+  tanggal_pinjam: string;
+  tanggal_jatuh_tempo: string;
+  tanggal_kembali: string | null;
+  perpanjangan_ke: number;
+  kondisi_saat_pinjam: string;
+  kondisi_saat_kembali: string | null;
+  status: StatusPeminjamanPerpus;
+  denda: number;
+  denda_dibayar: boolean;
+  petugas_pinjam_id: string | null;
+  petugas_kembali_id: string | null;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PerpusPeminjamanWithRelations = PerpusPeminjaman & {
+  anggota?: PerpusAnggotaWithRelations | null;
+  buku?: Pick<PerpusBuku, 'id' | 'kode_buku' | 'judul' | 'pengarang' | 'cover_url'> | null;
+  petugas_pinjam?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  petugas_kembali?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+// ---------- SERIAL ----------
+export type JenisSerial = 'Majalah' | 'Jurnal' | 'Koran' | 'Buletin' | 'Lainnya';
+
+export type PerpusSerial = {
+  id: string;
+  nama: string;
+  jenis: JenisSerial;
+  penerbit: string | null;
+  edisi: string | null;
+  tanggal_terbit: string | null;
+  jumlah: number;
+  rak_id: string | null;
+  keterangan: string | null;
+  is_aktif: boolean;
+  created_at: string;
+};
+
+export type PerpusSerialWithRelations = PerpusSerial & {
+  rak?: Pick<PerpusRak, 'id' | 'nama' | 'lokasi'> | null;
+};
+
+// ---------- INVENTARISASI ----------
+export type StatusInventarisasi = 'Draft' | 'Final';
+
+export type PerpusInventarisasi = {
+  id: string;
+  tanggal: string;
+  petugas_id: string | null;
+  total_buku_sistem: number;
+  total_buku_fisik: number;
+  selisih: number;
+  buku_hilang_ids: any | null;
+  catatan: string | null;
+  status: StatusInventarisasi;
+  created_at: string;
+};
+
+// ---------- STATISTIK / DASHBOARD ----------
+export type PerpusTopBuku = {
+  buku_id: string;
+  judul: string;
+  pengarang: string | null;
+  cover_url: string | null;
+  total_pinjam: number;
+};
+
+export type PerpusStatistikLiterasi = {
+  siswa_id: number;
+  nama_lengkap: string;
+  nisn: string;
+  kelas: string;
+  total_pinjam: number;
+  total_buku_dibaca: number;
+};
