@@ -402,9 +402,11 @@ export function ModalPelanggaran({
         </div>
 
         {/* BUKTI */}
+                {/* BUKTI */}
         <div>
           <label className={LABEL_CLASS}>Bukti (Foto/Dokumen)</label>
 
+          {/* Preview bukti existing */}
           {form.bukti_url && !buktiFile && (
             <div className="mb-2 relative w-full h-32 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
               <img
@@ -422,6 +424,7 @@ export function ModalPelanggaran({
             </div>
           )}
 
+          {/* Preview file baru */}
           {buktiFile && (
             <div className="mb-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-xs">
               <Paperclip size={14} className="text-emerald-400 shrink-0" />
@@ -436,6 +439,7 @@ export function ModalPelanggaran({
             </div>
           )}
 
+          {/* Upload button */}
           {!buktiFile && !form.bukti_url && (
             <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-slate-800 hover:border-rose-500/40 bg-slate-950/50 hover:bg-rose-500/5 transition-all cursor-pointer">
               <UploadCloud size={20} className="text-rose-400 mb-1" />
@@ -449,7 +453,7 @@ export function ModalPelanggaran({
                 onChange={handleFileChange}
                 className="hidden"
               />
-            </div>
+            </label>
           )}
         </div>
 
