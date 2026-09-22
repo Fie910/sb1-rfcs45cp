@@ -14,33 +14,6 @@ import { SuratPeringatanTab } from '@/components/kedisiplinan/SuratPeringatanTab
 import { RekapPoinTab } from '@/components/kedisiplinan/RekapPoinTab';
 import { DashboardKedisiplinanTab } from '@/components/kedisiplinan/DashboardKedisiplinanTab';
 
-// Placeholder sementara
-function PlaceholderTab({
-  title,
-  description,
-  icon: Icon,
-}: {
-  title: string;
-  description: string;
-  icon: typeof ShieldAlert;
-}) {
-  return (
-    <div className="text-center py-20 px-6 bg-slate-900 border border-slate-800 rounded-3xl">
-      <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center mx-auto mb-4">
-        <Icon size={28} />
-      </div>
-      <h3 className="text-lg font-bold text-slate-100 mb-1.5">{title}</h3>
-      <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-        {description}
-      </p>
-      <div className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold">
-        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
-        Sedang dalam pengembangan
-      </div>
-    </div>
-  );
-}
-
 type TabKey = 'pelanggaran' | 'prestasi' | 'sp' | 'rekap' | 'dashboard';
 
 type TabDef = {
