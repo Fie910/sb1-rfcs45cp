@@ -592,3 +592,143 @@ export const METODE_PENGHAPUSAN: MetodePenghapusan[] = [
   'Dijual',
   'Lainnya',
 ];
+
+// =============================================================================
+// MODUL BK — Bimbingan & Konseling
+// =============================================================================
+
+export type BidangBK = 'Pribadi' | 'Sosial' | 'Belajar' | 'Karier';
+
+export type BkKategoriMasalah = {
+  id: string;
+  nama: string;
+  bidang: BidangBK;
+  deskripsi: string | null;
+  created_at: string;
+};
+
+export type TipeKonseling = 'Individual' | 'Kelompok' | 'Klasikal' | 'Online';
+export type StatusKonseling =
+  | 'Diajukan'
+  | 'Dijadwalkan'
+  | 'Berlangsung'
+  | 'Selesai'
+  | 'Batal';
+
+export type BkKonseling = {
+  id: string;
+  kode_sesi: string | null;
+  tipe: TipeKonseling;
+  siswa_id: number | null;
+  kelompok_nama: string | null;
+  kelompok_anggota: any[] | null;
+  kelas_id: number | null;
+  guru_bk_id: string | null;
+  kategori_id: string | null;
+  tanggal: string;
+  waktu_mulai: string | null;
+  waktu_selesai: string | null;
+  topik: string;
+  deskripsi: string | null;
+  catatan_rahasia: string | null;
+  hasil: string | null;
+  tindak_lanjut: string | null;
+  status: StatusKonseling;
+  is_rahasia: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BkKonselingWithRelations = BkKonseling & {
+  siswa?: Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> & {
+    kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
+  } | null;
+  guru_bk?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  kategori?: Pick<BkKategoriMasalah, 'id' | 'nama' | 'bidang'> | null;
+  kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
+};
+
+export type TingkatUrgensi = 'Rendah' | 'Sedang' | 'Tinggi' | 'Darurat';
+export type StatusCurhat = 'Baru' | 'Dibaca' | 'Dibalas' | 'Selesai';
+
+export type BkCurhat = {
+  id: string;
+  siswa_id: number | null;
+  is_anonim: boolean;
+  alias: string | null;
+  pesan: string;
+  kategori_id: string | null;
+  tingkat_urgensi: TingkatUrgensi;
+  balasan: string | null;
+  guru_bk_id: string | null;
+  tanggal_balas: string | null;
+  status: StatusCurhat;
+  created_at: string;
+};
+
+export type BkCurhatWithRelations = BkCurhat & {
+  siswa?: Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> | null;
+  guru_bk?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  kategori?: Pick<BkKategoriMasalah, 'id' | 'nama' | 'bidang'> | null;
+};
+
+export type SumberRujukan =
+  | 'Wali Kelas'
+  | 'Kesiswaan'
+  | 'Guru Mapel'
+  | 'Orang Tua'
+  | 'Inisiatif BK';
+
+export type StatusRujukan =
+  | 'Baru'
+  | 'Ditangani'
+  | 'Selesai'
+  | 'Dirujuk Eksternal';
+
+export type BkRujukan = {
+  id: string;
+  siswa_id: number;
+  pengrujuk_id: string | null;
+  sumber: SumberRujukan;
+  alasan: string;
+  deskripsi: string | null;
+  prioritas: 'Rendah' | 'Sedang' | 'Tinggi';
+  status: StatusRujukan;
+  guru_bk_id: string | null;
+  tanggal_rujuk: string;
+  tanggal_selesai: string | null;
+  catatan_penanganan: string | null;
+  created_at: string;
+};
+
+export type BkRujukanWithRelations = BkRujukan & {
+  siswa?: Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> & {
+    kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
+  } | null;
+  pengrujuk?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  guru_bk?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+export type JenisAsesmen =
+  | 'DCM'
+  | 'Minat Bakat'
+  | 'Kesehatan Mental'
+  | 'Gaya Belajar'
+  | 'Kepribadian';
+
+export type BkAsesmen = {
+  id: string;
+  siswa_id: number;
+  jenis: JenisAsesmen;
+  tanggal: string;
+  jawaban: any | null;
+  skor: any | null;
+  rekomendasi: string | null;
+  guru_bk_id: string | null;
+  created_at: string;
+};
+
+export type BkAsesmenWithRelations = BkAsesmen & {
+  siswa?: Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> | null;
+  guru_bk?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
