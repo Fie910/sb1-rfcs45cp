@@ -91,7 +91,7 @@ export function getLevelPelanggaranIcon(level: KategoriPelanggaranLevel | string
 // BADGE STYLES — PRESTASI
 // =============================================================================
 
-export function getKategoriPrestasiBadge(jenis: KategoriPrestasiJenis | string | null): string {
+export function getKategoriPrestasiBadge(jenis: KategoriPrestasiJenis | string | null | undefined): string {
   switch (jenis) {
     case 'Akademik':
       return 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30';
@@ -106,7 +106,7 @@ export function getKategoriPrestasiBadge(jenis: KategoriPrestasiJenis | string |
   }
 }
 
-export function getTingkatPrestasiBadge(tingkat: TingkatPrestasi | string | null): string {
+export function getTingkatPrestasiBadge(tingkat: TingkatPrestasi | string | null | undefined): string {
   switch (tingkat) {
     case 'Sekolah':
       return 'bg-slate-800 text-slate-300 border-slate-700';
@@ -125,7 +125,7 @@ export function getTingkatPrestasiBadge(tingkat: TingkatPrestasi | string | null
   }
 }
 
-export function getTingkatPrestasiIcon(tingkat: TingkatPrestasi | string | null) {
+export function getTingkatPrestasiIcon(tingkat: TingkatPrestasi | string | null | undefined) {
   switch (tingkat) {
     case 'Internasional':
       return Sparkles;
@@ -147,7 +147,7 @@ export function getTingkatPrestasiIcon(tingkat: TingkatPrestasi | string | null)
 // BADGE STYLES — SP
 // =============================================================================
 
-export function getLevelSPBadge(level: LevelSP | string | null): string {
+export function getLevelSPBadge(level: LevelSP | string | null | undefined): string {
   switch (level) {
     case 'SP1':
       return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
@@ -160,7 +160,7 @@ export function getLevelSPBadge(level: LevelSP | string | null): string {
   }
 }
 
-export function getStatusSPBadge(status: StatusSP | string | null): string {
+export function getStatusSPBadge(status: StatusSP | string | null | undefined): string {
   switch (status) {
     case 'Aktif':
       return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
