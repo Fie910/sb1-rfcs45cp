@@ -18,6 +18,8 @@ import { useAuth } from '@/context/AuthContext';
 import { isBkManager } from '@/components/bk/shared';
 import { KonselingTab } from '@/components/bk/KonselingTab';
 import { KotakCurhatTab } from '@/components/bk/KotakCurhatTab';
+import { RujukanTab } from '@/components/bk/RujukanTab';
+import { AsesmenTab } from '@/components/bk/AsesmenTab';
 
 // Placeholder untuk tab yang belum dibuat
 function PlaceholderTab({
