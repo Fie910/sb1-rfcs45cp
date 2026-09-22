@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isKedisiplinanManager } from '@/components/kedisiplinan/shared';
 import { PelanggaranTab } from '@/components/kedisiplinan/PelanggaranTab';
 import { PrestasiTab } from '@/components/kedisiplinan/PrestasiTab';
+import { SuratPeringatanTab } from '@/components/kedisiplinan/SuratPeringatanTab';
 
 // Placeholder sementara
 function PlaceholderTab({
