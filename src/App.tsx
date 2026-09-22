@@ -58,6 +58,7 @@ const KenaikanKelas = lazy(() => import('@/pages/KenaikanKelas').then((m) => ({ 
 const Kelulusan = lazy(() => import('@/pages/Kelulusan').then((m) => ({ default: m.Kelulusan })));
 const RiwayatSiswa = lazy(() => import('@/pages/RiwayatSiswa').then((m) => ({ default: m.RiwayatSiswa })));
 const MutasiSiswa = lazy(() => import('@/pages/MutasiSiswa').then((m) => ({ default: m.MutasiSiswa })));
+const BimbinganKonselingPage = lazy(() => import('@/pages/BimbinganKonselingPage').then((m) => ({ default: m.BimbinganKonselingPage })));
 
 // Master Data & Sistem
 const HariLiburPage = lazy(() => import('@/pages/HariLiburPage').then((m) => ({ default: m.HariLiburPage })));
