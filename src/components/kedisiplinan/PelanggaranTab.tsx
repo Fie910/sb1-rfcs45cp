@@ -1,11 +1,11 @@
 // src/components/kedisiplinan/PelanggaranTab.tsx
-// Tab Pelanggaran — daftar transaksi pelanggaran siswa + CRUD.
+// Tab Pelanggaran — daftar transaksi pelanggaran siswa + CRUD + kelola kategori.
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Search, Plus, X, Loader2, AlertTriangle, Pencil, Trash2,
-  Calendar, User, Eye, ShieldAlert, Filter, Download,
-  AlertCircle, FileText, TrendingUp, ExternalLink,
+  Calendar, User, Eye, ShieldAlert, Filter, Settings,
+  TrendingUp, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +14,7 @@ import { ConfirmModal, Modal } from '@/components/Modal';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { ModalPelanggaran } from './ModalPelanggaran';
+import { KategoriManagerModal } from './KategoriManagerModal';
 import {
   getLevelPelanggaranBadge,
   getLevelPelanggaranIcon,
@@ -23,7 +24,6 @@ import {
   formatDateShort,
   isKedisiplinanManager,
   INPUT_CLASS,
-  LABEL_CLASS,
   KATEGORI_PELANGGARAN_LEVELS,
 } from './shared';
 import type {
@@ -58,6 +58,7 @@ export function PelanggaranTab() {
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<KesiswaanPelanggaran | null>(null);
+  const [kategoriModalOpen, setKategoriModalOpen] = useState(false);
   const [detailTarget, setDetailTarget] =
     useState<KesiswaanPelanggaranWithRelations | null>(null);
   const [deleteTarget, setDeleteTarget] =
@@ -140,7 +141,7 @@ export function PelanggaranTab() {
   }, [list]);
 
   // ==========================================================================
-  // AGGREGATE POIN PER SISWA (untuk badge rekomendasi SP)
+  // AGGREGATE POIN PER SISWA
   // ==========================================================================
   const poinPerSiswa = useMemo(() => {
     const map = new Map<number, number>();
@@ -232,12 +233,20 @@ export function PelanggaranTab() {
             {filtered.length} dari {list.length} pelanggaran ditampilkan
           </p>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/20 transition-colors cursor-pointer"
-        >
-          <Plus size={14} /> Catat Pelanggaran
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setKategoriModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-rose-500/20 font-bold text-xs transition-colors cursor-pointer"
+          >
+            <Settings size={14} /> Kelola Kategori
+          </button>
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/20 transition-colors cursor-pointer"
+          >
+            <Plus size={14} /> Catat Pelanggaran
+          </button>
+        </div>
       </div>
 
       {/* KPI CARDS */}
@@ -503,7 +512,7 @@ export function PelanggaranTab() {
         </div>
       )}
 
-      {/* ==================== MODAL FORM ==================== */}
+      {/* ==================== MODAL FORM PELANGGARAN ==================== */}
       <ModalPelanggaran
         open={modalOpen}
         onClose={() => {
@@ -514,6 +523,14 @@ export function PelanggaranTab() {
         kategoriList={kategoriList}
         siswaList={siswaList}
         onSaved={fetchAll}
+      />
+
+      {/* ==================== MODAL KELOLA KATEGORI ==================== */}
+      <KategoriManagerModal
+        open={kategoriModalOpen}
+        onClose={() => setKategoriModalOpen(false)}
+        kategoriList={kategoriList}
+        onChanged={fetchAll}
       />
 
       {/* ==================== MODAL DETAIL ==================== */}
