@@ -147,20 +147,8 @@ export function BimbinganKonselingPage() {
             {activeTab === 'konseling' && <KonselingTab />}
 
             {activeTab === 'curhat' && <KotakCurhatTab />}
-            {activeTab === 'rujukan' && (
-              <PlaceholderTab
-                icon={UserCheck}
-                title="Rujukan Masalah"
-                description="Wali kelas, kesiswaan, atau guru mapel dapat merujuk siswa yang membutuhkan pendampingan BK."
-              />
-            )}
-            {activeTab === 'asesmen' && (
-              <PlaceholderTab
-                icon={ClipboardList}
-                title="Asesmen & Instrumen BK"
-                description="Daftar Cek Masalah (DCM), tes minat bakat, dan instrumen asesmen lainnya untuk memetakan kebutuhan siswa."
-              />
-            )}
+            {activeTab === 'rujukan' && <RujukanTab />}
+            {activeTab === 'asesmen' && <AsesmenTab />}
             {activeTab === 'profil' && (
               <PlaceholderTab
                 icon={UserCircle}
