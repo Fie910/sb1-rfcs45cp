@@ -4,6 +4,7 @@ import {
   Plus, Search, Trash2, Edit3, UserCheck, X, Calendar, FileText,
   Printer, MessageSquare, RotateCcw, Image as ImageIcon,
   Send, Truck, Clock, CheckCircle2, Paperclip, UploadCloud, Zap,
+  AlertCircle,
 } from 'lucide-react';
 import { JenisSurat, Surat, KategoriSurat, DisposisiSurat } from '../types/surat';
 import {
@@ -19,11 +20,15 @@ import { SearchableSelect } from '../components/SearchableSelect';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '../lib/supabase';
+import { logActivity, AUDIT_MODUL } from '../lib/audit';
 
 // =============================================================================
 // KONSTANTA
 // =============================================================================
 const METODE_PENGIRIMAN_OPTIONS = ['Email', 'Kurir', 'Pos', 'Langsung', 'WhatsApp', 'Lainnya'];
+
+// Safe accessor untuk AUDIT_MODUL.SURAT (fallback ke string literal)
+const MODUL_SURAT = (AUDIT_MODUL as any)?.SURAT ?? 'Surat & Persuratan';
 
 // =============================================================================
 // HELPER — Kompres & Konversi Gambar ke WebP
@@ -112,6 +117,7 @@ export const SuratPage: React.FC = () => {
   // MODAL: SURAT
   // =========================================================================
   const [showSuratModal, setShowSuratModal] = useState(false);
+  const [editingSurat, setEditingSurat] = useState<Surat | null>(null); // ✅ NEW: state edit
   const [formData, setFormData] = useState({
     kategori_id: '',
     nomor_surat: '',
@@ -152,7 +158,7 @@ export const SuratPage: React.FC = () => {
   });
 
   // =========================================================================
-  // MODAL: EKSPEDISI (BARU)
+  // MODAL: EKSPEDISI
   // =========================================================================
   const [ekspedisiTarget, setEkspedisiTarget] = useState<Surat | null>(null);
   const [ekspedisiForm, setEkspedisiForm] = useState<EkspedisiFormState>(emptyEkspedisiForm);
@@ -260,7 +266,7 @@ export const SuratPage: React.FC = () => {
   };
 
   // =========================================================================
-  // SURAT — MODAL & HANDLERS
+  // SURAT — HELPERS
   // =========================================================================
   const resetForm = () => {
     setFormData({
@@ -272,7 +278,31 @@ export const SuratPage: React.FC = () => {
       tanggal_surat: new Date().toISOString().split('T')[0],
     });
     setSelectedFile(null);
-    setIsNomorManual(false); // ✅ Reset flag
+    setIsNomorManual(false);
+    setEditingSurat(null);
+  };
+
+  // ✅ Buka modal untuk CREATE
+  const handleOpenCreateSurat = () => {
+    setEditingSurat(null);
+    resetForm();
+    setShowSuratModal(true);
+  };
+
+  // ✅ Buka modal untuk EDIT
+  const handleOpenEditSurat = (surat: Surat) => {
+    setEditingSurat(surat);
+    setFormData({
+      kategori_id: surat.kategori_id ?? '',
+      nomor_surat: surat.nomor_surat,
+      perihal: surat.perihal,
+      ringkasan: surat.ringkasan ?? '',
+      pengirim_atau_tujuan: surat.pengirim_atau_tujuan,
+      tanggal_surat: surat.tanggal_surat,
+    });
+    setIsNomorManual(true); // Existing nomor dianggap manual (jangan auto-overwrite)
+    setSelectedFile(null);
+    setShowSuratModal(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -316,7 +346,7 @@ export const SuratPage: React.FC = () => {
     }
   };
 
-  /** ✅ Generate ulang nomor otomatis dari kategori terpilih + tanggal */
+  // ✅ Generate ulang nomor otomatis dari kategori terpilih + tanggal
   const regenerateNomor = async () => {
     if (activeTab === 'KATEGORI') return;
     const kat = kategoriList.find((k) => k.id === formData.kategori_id);
@@ -331,7 +361,7 @@ export const SuratPage: React.FC = () => {
     showToast('info', 'Nomor surat di-reset ke auto-generate');
   };
 
-  /** ✅ Saat kategori berubah — auto-generate KALAU user belum edit manual */
+  // ✅ Saat kategori berubah — auto-generate KALAU user belum edit manual
   const handleKategoriChange = async (kategoriId: string) => {
     const kat = kategoriList.find((k) => k.id === kategoriId);
     if (!kat) {
@@ -339,46 +369,99 @@ export const SuratPage: React.FC = () => {
       return;
     }
 
-    // Kalau user belum edit manual → auto-generate (semua jenis surat)
     if (!isNomorManual) {
       const nextUrutan = await getNextUrutanSurat(activeTab as JenisSurat);
       const autoNomor = formatNomorSurat(nextUrutan, kat.kode, 'SMK-KHAWM', formData.tanggal_surat);
       setFormData((prev) => ({ ...prev, kategori_id: kategoriId, nomor_surat: autoNomor }));
     } else {
-      // Kalau sudah manual, hanya update kategori
       setFormData((prev) => ({ ...prev, kategori_id: kategoriId }));
     }
   };
 
+  // =========================================================================
+  // SURAT — SUBMIT (CREATE + UPDATE)
+  // =========================================================================
   const handleSubmitSurat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === 'KATEGORI') return;
 
     setLoading(true);
     try {
-      let fileUrl = null;
+      // Upload file baru kalau ada (kalau tidak ada, file lama tetap)
+      let fileUrl: string | null | undefined = undefined;
       if (selectedFile) {
         fileUrl = await uploadCompressedImage(selectedFile);
         if (!fileUrl) { setLoading(false); return; }
       }
 
-      await createSurat({
-        jenis_surat: activeTab,
+      const basePayload = {
         kategori_id: formData.kategori_id || null,
         nomor_surat: formData.nomor_surat,
         perihal: formData.perihal,
         ringkasan: formData.ringkasan,
         pengirim_atau_tujuan: formData.pengirim_atau_tujuan,
         tanggal_surat: formData.tanggal_surat,
-        file_url: fileUrl,
-      });
+      };
 
-      showToast('success', 'Surat berhasil disimpan');
+      // ==================== EDIT MODE ====================
+      if (editingSurat?.id) {
+        const updatePayload: any = { ...basePayload };
+        if (fileUrl) updatePayload.file_url = fileUrl; // Cuma replace file kalau ada upload baru
+
+        const { error } = await supabase
+          .from('surat')
+          .update(updatePayload)
+          .eq('id', editingSurat.id);
+        if (error) throw error;
+
+        // Deteksi field apa saja yang berubah
+        const perubahan: string[] = [];
+        if (editingSurat.nomor_surat !== formData.nomor_surat) perubahan.push('nomor');
+        if (editingSurat.perihal !== formData.perihal) perubahan.push('perihal');
+        if ((editingSurat.ringkasan ?? '') !== formData.ringkasan) perubahan.push('ringkasan');
+        if ((editingSurat.kategori_id ?? '') !== (formData.kategori_id ?? '')) perubahan.push('kategori');
+        if (editingSurat.pengirim_atau_tujuan !== formData.pengirim_atau_tujuan) perubahan.push('pengirim/tujuan');
+        if (editingSurat.tanggal_surat !== formData.tanggal_surat) perubahan.push('tanggal');
+        if (fileUrl) perubahan.push('berkas');
+
+        await logActivity({
+          aksi: 'UPDATE',
+          modul: MODUL_SURAT,
+          targetId: editingSurat.id,
+          deskripsi: `Edit surat ${editingSurat.nomor_surat} (${activeTab}) — field berubah: ${
+            perubahan.join(', ') || 'tidak ada'
+          }`,
+          metadata: {
+            perubahan,
+            nomor_lama: editingSurat.nomor_surat,
+            nomor_baru: formData.nomor_surat,
+          },
+        });
+
+        showToast('success', 'Surat berhasil diperbarui');
+      } else {
+        // ==================== CREATE MODE ====================
+        await createSurat({
+          jenis_surat: activeTab,
+          ...basePayload,
+          file_url: fileUrl ?? null,
+        });
+
+        await logActivity({
+          aksi: 'CREATE',
+          modul: MODUL_SURAT,
+          deskripsi: `Buat surat ${activeTab}: ${formData.nomor_surat} — ${formData.perihal}`,
+        });
+
+        showToast('success', 'Surat berhasil disimpan');
+      }
+
       setShowSuratModal(false);
       resetForm();
       loadData();
-    } catch (err) {
-      showToast('error', 'Gagal menyimpan surat');
+    } catch (err: any) {
+      console.error('Save error:', err);
+      showToast('error', 'Gagal menyimpan surat: ' + (err.message || 'Error'));
     } finally {
       setLoading(false);
     }
@@ -416,6 +499,14 @@ export const SuratPage: React.FC = () => {
       }
 
       await deleteSurat(id);
+
+      await logActivity({
+        aksi: 'DELETE',
+        modul: MODUL_SURAT,
+        targetId: id,
+        deskripsi: `Hapus surat ${activeTab} beserta ${jumlahDisposisi} disposisi terkait`,
+      });
+
       showToast('success', jumlahDisposisi > 0
         ? `Surat dan ${jumlahDisposisi} disposisi berhasil dihapus`
         : 'Surat berhasil dihapus');
@@ -554,7 +645,7 @@ export const SuratPage: React.FC = () => {
   };
 
   // =========================================================================
-  // EKSPEDISI — HANDLERS (BARU)
+  // EKSPEDISI — HANDLERS
   // =========================================================================
   const handleOpenEkspedisi = (surat: Surat) => {
     setEkspedisiTarget(surat);
@@ -598,7 +689,6 @@ export const SuratPage: React.FC = () => {
     try {
       let buktiUrl = ekspedisiForm.bukti_penerimaan_url;
 
-      // Upload bukti baru kalau ada
       if (ekspedisiBukti) {
         setUploadingBukti(true);
         const uploaded = await uploadCompressedImage(ekspedisiBukti);
@@ -619,6 +709,13 @@ export const SuratPage: React.FC = () => {
         .eq('id', ekspedisiTarget.id);
 
       if (error) throw error;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: MODUL_SURAT,
+        targetId: ekspedisiTarget.id,
+        deskripsi: `Update ekspedisi surat ${ekspedisiTarget.nomor_surat} — ${ekspedisiForm.metode_pengiriman} ke ${ekspedisiForm.nama_penerima_surat.trim()}`,
+      });
 
       showToast('success', 'Data ekspedisi berhasil disimpan');
       setEkspedisiTarget(null);
@@ -654,6 +751,13 @@ export const SuratPage: React.FC = () => {
         })
         .eq('id', ekspedisiTarget.id);
       if (error) throw error;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: MODUL_SURAT,
+        targetId: ekspedisiTarget.id,
+        deskripsi: `Reset data ekspedisi surat ${ekspedisiTarget.nomor_surat}`,
+      });
 
       showToast('success', 'Data ekspedisi direset');
       setEkspedisiTarget(null);
@@ -698,7 +802,7 @@ export const SuratPage: React.FC = () => {
           </button>
         ) : (
           <button
-            onClick={() => { resetForm(); setShowSuratModal(true); }}
+            onClick={handleOpenCreateSurat}
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-indigo-600/30 border border-indigo-400/20 cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Tambah Surat {activeTab}
@@ -820,7 +924,6 @@ export const SuratPage: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Ekspedisi status badge (KELUAR/SK) */}
                     {activeTab !== 'MASUK' && (
                       <div className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-lg border ${
                         ekspedisiSelesai
@@ -832,10 +935,7 @@ export const SuratPage: React.FC = () => {
                           {ekspedisiSelesai ? 'Terkirim' : 'Belum Terkirim'}
                         </span>
                         {item.metode_pengiriman && (
-                          <span className="text-slate-500">·</span>
-                        )}
-                        {item.metode_pengiriman && (
-                          <span>{item.metode_pengiriman}</span>
+                          <span className="text-slate-500">· {item.metode_pengiriman}</span>
                         )}
                       </div>
                     )}
@@ -863,6 +963,16 @@ export const SuratPage: React.FC = () => {
                             <Truck className="w-3 h-3" /> Ekspedisi
                           </button>
                         )}
+
+                        {/* ✅ NEW: Tombol Edit */}
+                        <button
+                          onClick={() => handleOpenEditSurat(item)}
+                          className="p-1.5 text-slate-400 hover:text-indigo-400 bg-slate-800/50 rounded-lg border border-white/5 transition cursor-pointer"
+                          title="Edit Surat"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+
                         <button onClick={() => item.id && handleDeleteSurat(item.id)}
                           className="p-1.5 text-slate-500 hover:text-rose-400 bg-slate-800/50 rounded-lg border border-white/5 cursor-pointer">
                           <Trash2 className="w-3.5 h-3.5" />
@@ -960,6 +1070,16 @@ export const SuratPage: React.FC = () => {
                               <Truck className="w-3.5 h-3.5" /> Ekspedisi
                             </button>
                           )}
+
+                          {/* ✅ NEW: Tombol Edit */}
+                          <button
+                            onClick={() => handleOpenEditSurat(item)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-white/5 transition cursor-pointer"
+                            title="Edit Surat"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+
                           <button onClick={() => item.id && handleDeleteSurat(item.id)}
                             className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-white/5 transition cursor-pointer">
                             <Trash2 className="w-4 h-4" />
@@ -1040,18 +1160,34 @@ export const SuratPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== MODAL SURAT ==================== */}
+      {/* ==================== MODAL SURAT (CREATE + EDIT) ==================== */}
       {showSuratModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center px-5 py-4 border-b border-white/10 bg-slate-900/50">
-              <h3 className="font-bold text-sm sm:text-base text-white">Tambah Surat {activeTab}</h3>
+              <h3 className="font-bold text-sm sm:text-base text-white">
+                {editingSurat ? `Edit Surat ${activeTab}` : `Tambah Surat ${activeTab}`}
+              </h3>
               <button onClick={() => setShowSuratModal(false)} className="text-slate-400 hover:text-slate-200 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmitSurat} className="p-5 space-y-4 overflow-y-auto">
+              {/* BANNER MODE EDIT */}
+              {editingSurat && (
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2.5">
+                  <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-[11px] text-amber-300/90 leading-relaxed">
+                    <p className="font-bold mb-0.5">Mode Edit</p>
+                    <p className="text-amber-400/70">
+                      Perubahan akan dicatat pada log audit sekolah. Jika surat
+                      sudah dikirim/disposisi, pastikan pihak terkait diberitahu.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* KATEGORI */}
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Kode Perihal / Kategori</label>
@@ -1095,7 +1231,7 @@ export const SuratPage: React.FC = () => {
                     value={formData.nomor_surat}
                     onChange={(e) => {
                       setFormData({ ...formData, nomor_surat: e.target.value });
-                      setIsNomorManual(true); // ✅ Set manual saat user edit
+                      setIsNomorManual(true);
                     }}
                     required
                   />
@@ -1164,7 +1300,9 @@ export const SuratPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">
-                  Unggah Scan/Foto Surat (Khusus Gambar: JPG, PNG, WebP)
+                  {editingSurat
+                    ? 'Ganti Scan/Foto Surat (Kosongkan jika tidak ganti)'
+                    : 'Unggah Scan/Foto Surat (Khusus Gambar: JPG, PNG, WebP)'}
                 </label>
                 <input
                   type="file"
@@ -1173,7 +1311,9 @@ export const SuratPage: React.FC = () => {
                   className="w-full text-xs text-slate-400 border border-white/10 rounded-xl p-2 bg-slate-950 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white cursor-pointer"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Otomatis dikompres & dikonversi ke format WebP sebelum diunggah.
+                  {editingSurat
+                    ? 'Upload gambar baru untuk menggantikan berkas lama. Kalau dibiarkan kosong, berkas lama tetap tersimpan.'
+                    : 'Otomatis dikompres & dikonversi ke format WebP sebelum diunggah.'}
                 </p>
               </div>
 
@@ -1183,8 +1323,12 @@ export const SuratPage: React.FC = () => {
                   Batal
                 </button>
                 <button type="submit" disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/30 cursor-pointer">
-                  {loading ? 'Mengompresi & Menyimpan...' : 'Simpan Surat'}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50">
+                  {loading
+                    ? 'Menyimpan...'
+                    : editingSurat
+                    ? 'Simpan Perubahan'
+                    : 'Simpan Surat'}
                 </button>
               </div>
             </form>
@@ -1359,7 +1503,7 @@ export const SuratPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== MODAL EKSPEDISI (BARU) ==================== */}
+      {/* ==================== MODAL EKSPEDISI ==================== */}
       {ekspedisiTarget && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
@@ -1379,7 +1523,6 @@ export const SuratPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmitEkspedisi} className="p-5 space-y-4 overflow-y-auto">
-              {/* INFO SURAT */}
               <div className="bg-slate-950/60 border border-white/10 rounded-xl p-3 text-xs">
                 <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Perihal</p>
                 <p className="text-slate-200 font-semibold">{ekspedisiTarget.perihal}</p>
@@ -1388,7 +1531,6 @@ export const SuratPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* METODE */}
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">
                   Metode Pengiriman
@@ -1452,13 +1594,11 @@ export const SuratPage: React.FC = () => {
                 />
               </div>
 
-              {/* BUKTI PENERIMAAN */}
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">
                   Bukti Penerimaan (Tanda Tangan / Foto)
                 </label>
 
-                {/* Preview existing */}
                 {ekspedisiForm.bukti_penerimaan_url && !ekspedisiBukti && (
                   <div className="mb-2 relative w-full h-32 rounded-xl overflow-hidden border border-white/10 bg-slate-950">
                     <img
@@ -1477,7 +1617,6 @@ export const SuratPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Preview new file */}
                 {ekspedisiBukti && (
                   <div className="mb-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-xs">
                     <Paperclip size={14} className="text-emerald-400 shrink-0" />
@@ -1492,7 +1631,6 @@ export const SuratPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Upload button */}
                 {!ekspedisiBukti && !ekspedisiForm.bukti_penerimaan_url && (
                   <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-white/10 hover:border-sky-500/40 bg-slate-950/50 hover:bg-sky-500/5 transition-all cursor-pointer">
                     <UploadCloud size={20} className="text-sky-400 mb-1" />
@@ -1518,7 +1656,6 @@ export const SuratPage: React.FC = () => {
                 )}
               </div>
 
-              {/* FOOTER */}
               <div className="flex items-center justify-between gap-2 pt-4 border-t border-white/10">
                 <button
                   type="button"
