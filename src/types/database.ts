@@ -732,3 +732,133 @@ export type BkAsesmenWithRelations = BkAsesmen & {
   siswa?: Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> | null;
   guru_bk?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
 };
+
+// =============================================================================
+// MODUL KEDISIPLINAN SISWA (Kesiswaan)
+// =============================================================================
+
+// ---------- KATEGORI PELANGGARAN ----------
+export type KategoriPelanggaranLevel = 'Ringan' | 'Sedang' | 'Berat';
+
+export type KesiswaanKategoriPelanggaran = {
+  id: string;
+  nama: string;
+  kategori: KategoriPelanggaranLevel;
+  poin_default: number;
+  deskripsi: string | null;
+  is_aktif: boolean;
+  created_at: string;
+};
+
+// ---------- PELANGGARAN ----------
+export type KesiswaanPelanggaran = {
+  id: string;
+  siswa_id: number;
+  kategori_id: string | null;
+  jenis_pelanggaran: string;
+  deskripsi: string | null;
+  poin: number;
+  tanggal: string;
+  pelapor_id: string | null;
+  tindakan: string | null;
+  bukti_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type KesiswaanPelanggaranWithRelations = KesiswaanPelanggaran & {
+  siswa?: (Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> & {
+    kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
+  }) | null;
+  pelapor?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  kategori?: Pick<KesiswaanKategoriPelanggaran, 'id' | 'nama' | 'kategori'> | null;
+};
+
+// ---------- KATEGORI PRESTASI ----------
+export type KategoriPrestasiJenis = 'Akademik' | 'Non-Akademik' | 'Keagamaan' | 'Lainnya';
+
+export type KesiswaanKategoriPrestasi = {
+  id: string;
+  nama: string;
+  kategori: KategoriPrestasiJenis;
+  poin_default: number;
+  deskripsi: string | null;
+  is_aktif: boolean;
+  created_at: string;
+};
+
+// ---------- PRESTASI ----------
+export type TingkatPrestasi =
+  | 'Sekolah'
+  | 'Kecamatan'
+  | 'Kabupaten'
+  | 'Provinsi'
+  | 'Nasional'
+  | 'Internasional';
+
+export type KesiswaanPrestasi = {
+  id: string;
+  siswa_id: number;
+  kategori_id: string | null;
+  nama_prestasi: string;
+  tingkat: TingkatPrestasi;
+  peringkat: string | null;
+  poin: number;
+  tanggal: string;
+  penyelenggara: string | null;
+  bukti_url: string | null;
+  pencatat_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type KesiswaanPrestasiWithRelations = KesiswaanPrestasi & {
+  siswa?: (Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> & {
+    kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
+  }) | null;
+  pencatat?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  kategori?: Pick<KesiswaanKategoriPrestasi, 'id' | 'nama' | 'kategori'> | null;
+};
+
+// ---------- SURAT PERINGATAN ----------
+export type LevelSP = 'SP1' | 'SP2' | 'SP3';
+export type StatusSP = 'Aktif' | 'Dicabut' | 'Selesai';
+
+export type KesiswaanSuratPeringatan = {
+  id: string;
+  siswa_id: number;
+  nomor_sp: string | null;
+  level: LevelSP;
+  total_poin_pelanggaran: number;
+  total_poin_prestasi: number;
+  alasan: string;
+  tanggal_terbit: string;
+  batas_waktu: string | null;
+  ditandatangani_oleh: string | null;
+  status: StatusSP;
+  bukti_ttd_ortu_url: string | null;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type KesiswaanSuratPeringatanWithRelations = KesiswaanSuratPeringatan & {
+  siswa?: (Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> & {
+    kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
+  }) | null;
+  penandatangan?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+// ---------- REKAP POIN (untuk tab Rekap & Dashboard) ----------
+export type RekapPoinSiswa = {
+  siswa_id: number;
+  nisn: string;
+  nama_lengkap: string;
+  kelas: string;
+  total_poin_pelanggaran: number;
+  total_poin_prestasi: number;
+  poin_bersih: number;
+  jumlah_pelanggaran: number;
+  jumlah_prestasi: number;
+  rekomendasi_sp: LevelSP | null;
+};
