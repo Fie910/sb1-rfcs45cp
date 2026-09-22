@@ -130,7 +130,6 @@ export function KedisiplinanPage() {
           {/* TAB CONTENT */}
           <div className="min-h-[400px]">
             {activeTab === 'pelanggaran' && <PelanggaranTab />}
-
             {activeTab === 'prestasi' && <PrestasiTab />}
             {activeTab === 'sp' && <SuratPeringatanTab />}
             {activeTab === 'rekap' && <RekapPoinTab />}
