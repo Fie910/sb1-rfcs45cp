@@ -61,7 +61,7 @@ export function getRekomendasiSP(totalPoinPelanggaran: number): LevelSP | null {
 // BADGE STYLES — PELANGGARAN
 // =============================================================================
 
-export function getLevelPelanggaranBadge(level: KategoriPelanggaranLevel | string | null): string {
+export function getLevelPelanggaranBadge(level: KategoriPelanggaranLevel | string | null | undefined ): string {
   switch (level) {
     case 'Ringan':
       return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
