@@ -511,7 +511,7 @@ export function SuratPeringatanTab() {
           siswa={{
             nisn: printTarget.siswa?.nisn ?? '-',
             nama_lengkap: printTarget.siswa?.nama_lengkap ?? '-',
-            jenis_kelamin: (printTarget.siswa as any)?.jenis_kelamin ?? 'L',
+            jenis_kelamin: printTarget.siswa?.jenis_kelamin ?? 'L',
             kelas: printTarget.siswa?.kelas?.nama_kelas ?? '-',
           }}
           penandatangan={{
