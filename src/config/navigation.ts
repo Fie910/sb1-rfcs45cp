@@ -203,6 +203,12 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
         path: '/presensi_kesiswaan',
       },
       {
+        key: 'kedisiplinan',
+        label: 'Kedisiplinan Siswa',
+        icon: ShieldAlert,
+        path: '/kedisiplinan',
+      },
+      {
         key: 'kenaikan_kelas',
         label: 'Kenaikan Kelas',
         icon: TrendingUp,
