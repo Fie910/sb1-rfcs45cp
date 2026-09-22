@@ -206,6 +206,7 @@ function AppContent() {
           <Route path="/kelulusan" element={<ProtectedRoute accessKey="kelulusan"><Kelulusan /></ProtectedRoute>} />
           <Route path="/riwayat_siswa" element={<ProtectedRoute accessKey="riwayat_siswa"><RiwayatSiswa /></ProtectedRoute>} />
           <Route path="/mutasi_siswa" element={<ProtectedRoute accessKey="mutasi_siswa"><MutasiSiswa /></ProtectedRoute>} />
+          <Route path="/kedisiplinan" element={<ProtectedRoute accessKey="kedisiplinan"><KedisiplinanPage /></ProtectedRoute>} />
 
           {/* Rute Presensi Kesiswaan */}
           <Route path="/presensi_kesiswaan" element={<ProtectedRoute accessKey="presensi_kesiswaan"><InputPresensiKesiswaanPage /></ProtectedRoute>} />
