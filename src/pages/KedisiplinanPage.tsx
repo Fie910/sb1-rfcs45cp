@@ -9,6 +9,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { isKedisiplinanManager } from '@/components/kedisiplinan/shared';
 import { PelanggaranTab } from '@/components/kedisiplinan/PelanggaranTab';
+import { PrestasiTab } from '@/components/kedisiplinan/PrestasiTab';
 
 // Placeholder sementara
 function PlaceholderTab({
@@ -127,13 +128,7 @@ export function KedisiplinanPage() {
           <div className="min-h-[400px]">
             {activeTab === 'pelanggaran' && <PelanggaranTab />}
 
-            {activeTab === 'prestasi' && (
-              <PlaceholderTab
-                icon={Trophy}
-                title="Prestasi Siswa"
-                description="Pencatatan prestasi akademik, non-akademik, dan keagamaan siswa di berbagai tingkat."
-              />
-            )}
+            {activeTab === 'prestasi' && <PrestasiTab />}
             {activeTab === 'sp' && (
               <PlaceholderTab
                 icon={FileWarning}
