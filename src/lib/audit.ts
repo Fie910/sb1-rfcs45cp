@@ -55,6 +55,7 @@ export const AUDIT_MODUL = {
   SARPRAS_PENGHAPUSAN: 'sarpras_penghapusan',
   SARPRAS_LOKASI: 'sarpras_lokasi',
   BK: 'Bimbingan & Konseling',
+  KEDISIPLINAN: 'Kedisiplinan Siswa',
 } as const;
 
 export type AuditModul = (typeof AUDIT_MODUL)[keyof typeof AUDIT_MODUL];
