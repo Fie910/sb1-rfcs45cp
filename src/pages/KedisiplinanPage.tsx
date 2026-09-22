@@ -130,13 +130,7 @@ export function KedisiplinanPage() {
             {activeTab === 'pelanggaran' && <PelanggaranTab />}
 
             {activeTab === 'prestasi' && <PrestasiTab />}
-            {activeTab === 'sp' && (
-              <PlaceholderTab
-                icon={FileWarning}
-                title="Surat Peringatan"
-                description="Penerbitan dan pencetakan Surat Peringatan (SP1, SP2, SP3) berdasarkan akumulasi poin pelanggaran."
-              />
-            )}
+            {activeTab === 'sp' && <SuratPeringatanTab />}
             {activeTab === 'rekap' && (
               <PlaceholderTab
                 icon={ClipboardList}
