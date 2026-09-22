@@ -250,6 +250,17 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     items: [{ key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' }],
   },
   {
+    groupTitle: 'Bimbingan & Konseling',
+    items: [
+      {
+        key: 'bk',
+        label: 'Bimbingan & Konseling',
+        icon: Heart,
+        path: '/bk',
+      },
+    ],
+  },
+  {
     groupTitle: 'Data Master & Sistem',
     items: [
       { key: 'sekolah', label: 'Data Sekolah', icon: Settings, path: '/sekolah' },
