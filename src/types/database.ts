@@ -843,10 +843,10 @@ export type KesiswaanSuratPeringatan = {
 };
 
 export type KesiswaanSuratPeringatanWithRelations = KesiswaanSuratPeringatan & {
-  siswa?: (Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn'> & {
+  siswa?: (Pick<Siswa, 'id' | 'nama_lengkap' | 'nisn' | 'jenis_kelamin'> & {
     kelas?: Pick<Kelas, 'id' | 'nama_kelas'> | null;
   }) | null;
-  penandatangan?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+  penandatangan?: Pick<Guru, 'id' | 'nama_lengkap'  | 'nip'> | null;
 };
 
 // ---------- REKAP POIN (untuk tab Rekap & Dashboard) ----------
