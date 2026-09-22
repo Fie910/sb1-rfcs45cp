@@ -151,20 +151,8 @@ export function BimbinganKonselingPage() {
             {activeTab === 'curhat' && <KotakCurhatTab />}
             {activeTab === 'rujukan' && <RujukanTab />}
             {activeTab === 'asesmen' && <AsesmenTab />}
-            {activeTab === 'profil' && (
-              <PlaceholderTab
-                icon={UserCircle}
-                title="Profil Perkembangan Siswa"
-                description="Timeline lengkap perjalanan siswa: konseling, rujukan, asesmen, dan catatan pendampingan lainnya."
-              />
-            )}
-            {activeTab === 'dashboard' && (
-              <PlaceholderTab
-                icon={BarChart3}
-                title="Dashboard BK"
-                description="KPI layanan BK: jumlah kasus, rasio siswa-konselor, tren bulanan, dan waktu layanan langsung (ASCA standard)."
-              />
-            )}
+            {activeTab === 'profil' && <ProfilSiswaBKTab />}
+            {activeTab === 'dashboard' && <DashboardBKTab />}
           </div>
         </>
       )}
