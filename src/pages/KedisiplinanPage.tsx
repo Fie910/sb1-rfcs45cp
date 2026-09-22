@@ -11,6 +11,8 @@ import { isKedisiplinanManager } from '@/components/kedisiplinan/shared';
 import { PelanggaranTab } from '@/components/kedisiplinan/PelanggaranTab';
 import { PrestasiTab } from '@/components/kedisiplinan/PrestasiTab';
 import { SuratPeringatanTab } from '@/components/kedisiplinan/SuratPeringatanTab';
+import { RekapPoinTab } from '@/components/kedisiplinan/RekapPoinTab';
+import { DashboardKedisiplinanTab } from '@/components/kedisiplinan/DashboardKedisiplinanTab';
 
 // Placeholder sementara
 function PlaceholderTab({
