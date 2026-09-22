@@ -143,13 +143,7 @@ export function BimbinganKonselingPage() {
           <div className="min-h-[400px]">
             {activeTab === 'konseling' && <KonselingTab />}
 
-            {activeTab === 'curhat' && (
-              <PlaceholderTab
-                icon={Heart}
-                title="Kotak Curhat"
-                description="Ruang aman bagi siswa untuk bercerita secara anonim atau terbuka. Guru BK akan merespons dengan penuh empati."
-              />
-            )}
+            {activeTab === 'curhat' && <KotakCurhatTab />}
             {activeTab === 'rujukan' && (
               <PlaceholderTab
                 icon={UserCheck}
