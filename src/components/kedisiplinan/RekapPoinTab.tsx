@@ -90,6 +90,7 @@ export function RekapPoinTab() {
     });
 
     return siswaList.map((s) => {
+      const sid = Number(s.id);
       const pel = pelanggaranMap.get(s.id) ?? { total: 0, count: 0 };
       const pres = prestasiMap.get(s.id) ?? { total: 0, count: 0 };
       const poinBersih = pel.total - pres.total;
