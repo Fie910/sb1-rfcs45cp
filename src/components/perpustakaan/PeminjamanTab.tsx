@@ -74,8 +74,11 @@ export function PeminjamanTab() {
           siswa:siswa_id (id, nama_lengkap, nisn, kelas:kelas_id (id, nama_kelas)),
           guru:guru_id (id, nama_lengkap, nip)
         `).eq('status', 'Aktif').order('nama_lengkap'),
-        supabase.from('perpus_buku').select('*').eq('is_aktif', true).order('judul'),
-      ]);
+        supabase.from('perpus_buku').select(`
+          *,
+          rak:rak_id (id, nama, lokasi)
+        `).eq('is_aktif', true).order('judul'),
+              ]);
 
       if (pinjamRes.error) throw pinjamRes.error;
 
