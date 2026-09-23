@@ -909,6 +909,7 @@ export type PerpusBuku = {
   jumlah_halaman: number | null;
   catatan: string | null;
   is_aktif: boolean;
+  qr_token: string; 
   created_at: string;
   updated_at: string;
 };
