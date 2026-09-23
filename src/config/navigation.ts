@@ -140,21 +140,10 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     ],
   },
   {
-    groupTitle: 'Perpustakaan',
-    items: [
-      
-    ],
-  },
-  {
     groupTitle: 'Kesiswaan',
     items: [
       { key: 'siswa', label: 'Data Siswa', icon: Users, path: '/siswa' },
-      {
-        key: 'presensi_kesiswaan',
-        label: 'Input Presensi Siswa (Kesiswaan)',
-        icon: UserCheck,
-        path: '/presensi_kesiswaan',
-      },
+      { key: 'presensi_kesiswaan', label: 'Input Presensi Siswa (Kesiswaan)', icon: UserCheck, path: '/presensi_kesiswaan'},
       {
         key: 'kedisiplinan',
         label: 'Kedisiplinan Siswa',
