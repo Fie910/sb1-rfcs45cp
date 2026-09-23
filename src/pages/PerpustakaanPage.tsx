@@ -11,6 +11,8 @@ import { isPustakawan } from '@/components/perpustakaan/shared';
 import { BukuTab } from '@/components/perpustakaan/BukuTab';
 import { AnggotaTab } from '@/components/perpustakaan/AnggotaTab';
 import { PeminjamanTab } from '@/components/perpustakaan/PeminjamanTab';
+import { SerialTab } from '@/components/perpustakaan/SerialTab';
+import { OPACTab } from '@/components/perpustakaan/OPACTab';
 
 function PlaceholderTab({
   title, description, icon: Icon,
