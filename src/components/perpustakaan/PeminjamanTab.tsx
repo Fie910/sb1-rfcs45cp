@@ -84,7 +84,7 @@ export function PeminjamanTab() {
 
       setList((pinjamRes.data as unknown as PerpusPeminjamanWithRelations[]) || []);
       setAnggotaList((anggotaRes.data as unknown as PerpusAnggotaWithRelations[]) || []);
-      setBukuList((bukuRes.data as PerpusBuku[]) || []);
+      setBukuList((bukuRes.data as unknown as PerpusBukuWithRelations[]) || []);
     } catch (err: any) {
       showToast('error', 'Gagal memuat peminjaman: ' + (err.message || 'Error'));
     } finally {
