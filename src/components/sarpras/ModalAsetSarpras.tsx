@@ -1,8 +1,11 @@
 // src/components/sarpras/ModalAsetSarpras.tsx
-// Modal form Tambah/Edit Aset Inventaris.
+// Modal form Tambah/Edit Aset Inventaris — dengan upload foto ke Supabase Storage.
 
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Package, Hash, ImageIcon } from 'lucide-react';
+import {
+  Loader2, Save, Package, Hash, ImageIcon, UploadCloud, X,
+  Paperclip, MapPin,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
@@ -23,9 +26,55 @@ import type {
   StatusAset,
 } from '@/types/database';
 
+// =============================================================================
+// KONSTANTA
+// =============================================================================
 const KONDISI_OPTIONS: KondisiAset[] = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
 const STATUS_OPTIONS: StatusAset[] = ['Aktif', 'Dipinjam', 'Perbaikan', 'Hilang', 'Dihapus'];
+const BUCKET_NAME = 'sarpras-foto';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+// =============================================================================
+// HELPER — Kompres & Konversi WebP
+// =============================================================================
+const compressAndConvertToWebP = (
+  file: File,
+  quality = 0.8,
+  maxWidth = 800
+): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.src = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(image.src);
+      const canvas = document.createElement('canvas');
+      let { width, height } = image;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Gagal memuat Canvas')); return; }
+      ctx.drawImage(image, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error('Gagal kompres')); return; }
+          const webpName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
+          resolve(new File([blob], webpName, { type: 'image/webp' }));
+        },
+        'image/webp',
+        quality
+      );
+    };
+    image.onerror = (error) => reject(error);
+  });
+};
+
+// =============================================================================
+// TYPES
+// =============================================================================
 type ModalAsetSarprasProps = {
   open: boolean;
   onClose: () => void;
@@ -59,6 +108,9 @@ const emptyForm = {
   keterangan: '',
 };
 
+// =============================================================================
+// KOMPONEN
+// =============================================================================
 export function ModalAsetSarpras({
   open,
   onClose,
@@ -73,7 +125,13 @@ export function ModalAsetSarpras({
   const [saving, setSaving] = useState(false);
   const [autoKode, setAutoKode] = useState('');
 
-  // Reset / populate form saat modal dibuka
+  // State khusus foto
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+
+  // ==========================================================================
+  // INIT
+  // ==========================================================================
   useEffect(() => {
     if (!open) return;
     if (aset) {
@@ -104,16 +162,17 @@ export function ModalAsetSarpras({
       setForm(emptyForm);
       setAutoKode('');
     }
+    setFotoFile(null);
   }, [open, aset]);
 
-  // Auto-generate kode aset saat kategori dipilih (hanya mode create)
+  // ==========================================================================
+  // AUTO-GENERATE KODE
+  // ==========================================================================
   useEffect(() => {
     if (isEdit || !open) return;
     const kategori = kategoriList.find((k) => k.id === form.kategori_id);
-    if (!kategori) {
-      setAutoKode('');
-      return;
-    }
+    if (!kategori) { setAutoKode(''); return; }
+
     const prefix = `SMK-${kategori.nama.slice(0, 3).toUpperCase().replace(/\s+/g, '')}`;
     (async () => {
       const { count } = await supabase
@@ -127,16 +186,76 @@ export function ModalAsetSarpras({
     })();
   }, [form.kategori_id, kategoriList, isEdit, open]);
 
+  // ==========================================================================
+  // HANDLER — Foto Upload
+  // ==========================================================================
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) { setFotoFile(null); return; }
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Foto harus berupa gambar (JPG, PNG, WebP)');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      showToast('error', 'Ukuran foto maksimal 5 MB');
+      e.target.value = '';
+      return;
+    }
+    setFotoFile(file);
+  };
+
+  const uploadFoto = async (file: File): Promise<string | null> => {
+    try {
+      const compressed = await compressAndConvertToWebP(file, 0.8, 800);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.webp`;
+      const filePath = `aset/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, compressed, {
+          cacheControl: '31536000',
+          upsert: false,
+        });
+
+      if (error) {
+        showToast('error', 'Gagal upload foto: ' + error.message);
+        return null;
+      }
+
+      const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (err: any) {
+      showToast('error', 'Gagal memproses foto: ' + (err.message || 'Error'));
+      return null;
+    }
+  };
+
+  const handleRemoveFoto = async () => {
+    const currentUrl = form.foto_url;
+    setForm((f) => ({ ...f, foto_url: '' }));
+    setFotoFile(null);
+
+    // Kalau foto lama di Supabase Storage, hapus dari storage
+    if (currentUrl && currentUrl.includes(BUCKET_NAME)) {
+      try {
+        const path = currentUrl.split(`${BUCKET_NAME}/`)[1]?.split('?')[0];
+        if (path) {
+          await supabase.storage.from(BUCKET_NAME).remove([path]);
+        }
+      } catch (err) {
+        console.warn('Gagal hapus file lama:', err);
+      }
+    }
+  };
+
+  // ==========================================================================
+  // SUBMIT
+  // ==========================================================================
   const handleSubmit = async () => {
-    // Validasi
-    if (!form.nama_aset.trim()) {
-      showToast('error', 'Nama aset wajib diisi');
-      return;
-    }
-    if (!form.kategori_id) {
-      showToast('error', 'Kategori wajib dipilih');
-      return;
-    }
+    if (!form.nama_aset.trim()) { showToast('error', 'Nama aset wajib diisi'); return; }
+    if (!form.kategori_id) { showToast('error', 'Kategori wajib dipilih'); return; }
     if (!form.kode_aset.trim()) {
       showToast('error', 'Kode aset belum terisi — pilih kategori terlebih dahulu');
       return;
@@ -144,12 +263,22 @@ export function ModalAsetSarpras({
 
     setSaving(true);
     try {
+      // Upload foto baru kalau ada
+      let finalFotoUrl = form.foto_url;
+      if (fotoFile) {
+        setUploadingFoto(true);
+        const uploaded = await uploadFoto(fotoFile);
+        setUploadingFoto(false);
+        if (!uploaded) { setSaving(false); return; }
+        finalFotoUrl = uploaded;
+      }
+
       const payload = {
         kode_aset: form.kode_aset.trim(),
         nama_aset: form.nama_aset.trim(),
         kategori_id: form.kategori_id || null,
         lokasi_id: form.lokasi_id || null,
-        lokasi: null, // legacy text — biarkan null, pakai lokasi_id
+        lokasi: null,
         jumlah: Number(form.jumlah) || 1,
         satuan: form.satuan || 'unit',
         kondisi: form.kondisi,
@@ -166,7 +295,7 @@ export function ModalAsetSarpras({
         model: form.model.trim() || null,
         vendor: form.vendor.trim() || null,
         pic_id: form.pic_id || null,
-        foto_url: form.foto_url.trim() || null,
+        foto_url: finalFotoUrl || null,
         keterangan: form.keterangan.trim() || null,
       };
 
@@ -211,9 +340,13 @@ export function ModalAsetSarpras({
       }
     } finally {
       setSaving(false);
+      setUploadingFoto(false);
     }
   };
 
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
   return (
     <Modal
       open={open}
@@ -221,7 +354,8 @@ export function ModalAsetSarpras({
       title={isEdit ? 'Edit Aset Inventaris' : 'Tambah Aset Inventaris'}
       size="lg"
     >
-      <div className="space-y-5 pt-1">
+      <div className="space-y-5 pt-1 max-h-[75vh] overflow-y-auto pr-1 custom-scrollbar">
+
         {/* SECTION 1: IDENTITAS */}
         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
@@ -249,10 +383,7 @@ export function ModalAsetSarpras({
                 Kode Aset {!isEdit && '(Otomatis)'}
               </label>
               <div className="relative">
-                <Hash
-                  size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-                />
+                <Hash size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   type="text"
                   value={form.kode_aset}
@@ -298,11 +429,7 @@ export function ModalAsetSarpras({
                 onChange={(e) => setForm({ ...form, satuan: e.target.value })}
                 className={`${INPUT_CLASS} cursor-pointer`}
               >
-                {SATUAN_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
+                {SATUAN_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
@@ -372,11 +499,7 @@ export function ModalAsetSarpras({
                 }
                 className={`${INPUT_CLASS} cursor-pointer`}
               >
-                {KONDISI_OPTIONS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
+                {KONDISI_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
               </select>
             </div>
             <div>
@@ -388,11 +511,7 @@ export function ModalAsetSarpras({
                 }
                 className={`${INPUT_CLASS} cursor-pointer`}
               >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
@@ -426,9 +545,7 @@ export function ModalAsetSarpras({
               <input
                 type="date"
                 value={form.tanggal_perolehan}
-                onChange={(e) =>
-                  setForm({ ...form, tanggal_perolehan: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, tanggal_perolehan: e.target.value })}
                 className={INPUT_CLASS}
               />
             </div>
@@ -440,11 +557,7 @@ export function ModalAsetSarpras({
                 className={`${INPUT_CLASS} cursor-pointer`}
               >
                 <option value="">-- Tidak disebutkan --</option>
-                {SUMBER_DANA_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
+                {SUMBER_DANA_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
@@ -456,9 +569,7 @@ export function ModalAsetSarpras({
                 type="number"
                 min={0}
                 value={form.harga_perolehan}
-                onChange={(e) =>
-                  setForm({ ...form, harga_perolehan: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, harga_perolehan: e.target.value })}
                 placeholder="0"
                 className={INPUT_CLASS}
               />
@@ -480,9 +591,7 @@ export function ModalAsetSarpras({
                 type="number"
                 min={0}
                 value={form.umur_ekonomis_bulan}
-                onChange={(e) =>
-                  setForm({ ...form, umur_ekonomis_bulan: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, umur_ekonomis_bulan: e.target.value })}
                 placeholder="60"
                 className={INPUT_CLASS}
               />
@@ -501,26 +610,86 @@ export function ModalAsetSarpras({
           </div>
         </div>
 
-        {/* SECTION 4: FOTO & KETERANGAN */}
+        {/* SECTION 4: FOTO & KETERANGAN — UPDATED */}
         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
             <ImageIcon size={14} /> Foto & Keterangan
           </h4>
 
+          {/* FOTO */}
           <div>
-            <label className={LABEL_CLASS}>URL Foto Aset (opsional)</label>
-            <input
-              type="url"
-              value={form.foto_url}
-              onChange={(e) => setForm({ ...form, foto_url: e.target.value })}
-              placeholder="https://..."
-              className={INPUT_CLASS}
-            />
-            <p className="text-[10px] text-slate-500 mt-1">
-              Upload foto via Supabase Storage manual atau tempel URL.
-            </p>
+            <label className={LABEL_CLASS}>Foto Aset</label>
+
+            {/* Preview foto existing (dari Supabase Storage) */}
+            {form.foto_url && !fotoFile && (
+              <div className="mb-2 relative w-full max-w-xs h-40 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                <img
+                  src={form.foto_url}
+                  alt="Foto aset"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveFoto}
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-slate-300 border border-slate-700 transition cursor-pointer"
+                  title="Hapus foto"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Preview file baru */}
+            {fotoFile && (
+              <div className="mb-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-xs max-w-xs">
+                <Paperclip size={14} className="text-emerald-400 shrink-0" />
+                <span className="text-emerald-300 truncate flex-1">
+                  {fotoFile.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFotoFile(null)}
+                  className="p-1 rounded text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
+            {/* Upload dropzone */}
+            {!fotoFile && !form.foto_url && (
+              <label className="flex flex-col items-center justify-center w-full h-28 rounded-xl border-2 border-dashed border-slate-800 hover:border-indigo-500/40 bg-slate-950/50 hover:bg-indigo-500/5 transition-all cursor-pointer">
+                <UploadCloud size={22} className="text-indigo-400 mb-1" />
+                <p className="text-[11px] text-slate-400 font-medium">
+                  Klik untuk upload foto aset
+                </p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  JPG, PNG, WebP · Maks 5 MB · Otomatis dikompres ke WebP
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFotoChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+
+            {/* Ganti foto button */}
+            {form.foto_url && !fotoFile && (
+              <label className="inline-flex items-center gap-1.5 mt-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold border border-slate-700 transition cursor-pointer">
+                <UploadCloud size={12} /> Ganti Foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFotoChange}
+                  className="hidden"
+                />
+              </label>
+            )}
           </div>
 
+          {/* KETERANGAN */}
           <div>
             <label className={LABEL_CLASS}>Keterangan</label>
             <textarea
@@ -534,7 +703,7 @@ export function ModalAsetSarpras({
         </div>
 
         {/* FOOTER */}
-        <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-800">
+        <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-800 sticky bottom-0 bg-slate-900">
           <button
             type="button"
             onClick={onClose}
@@ -546,11 +715,16 @@ export function ModalAsetSarpras({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={saving || !form.nama_aset.trim() || !form.kategori_id}
+            disabled={saving || uploadingFoto || !form.nama_aset.trim() || !form.kategori_id}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-colors disabled:opacity-50 cursor-pointer"
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            {isEdit ? 'Simpan Perubahan' : 'Simpan Aset'}
+            {uploadingFoto ? (
+              <><Loader2 size={14} className="animate-spin" /> Upload foto...</>
+            ) : saving ? (
+              <><Loader2 size={14} className="animate-spin" /> Menyimpan...</>
+            ) : (
+              <><Save size={14} /> {isEdit ? 'Simpan Perubahan' : 'Simpan Aset'}</>
+            )}
           </button>
         </div>
       </div>
