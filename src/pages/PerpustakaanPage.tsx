@@ -13,6 +13,7 @@ import { AnggotaTab } from '@/components/perpustakaan/AnggotaTab';
 import { PeminjamanTab } from '@/components/perpustakaan/PeminjamanTab';
 import { SerialTab } from '@/components/perpustakaan/SerialTab';
 import { OPACTab } from '@/components/perpustakaan/OPACTab';
+import { DashboardPerpusTab } from '@/components/perpustakaan/DashboardPerpusTab';
 
 function PlaceholderTab({
   title, description, icon: Icon,
