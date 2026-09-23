@@ -214,7 +214,8 @@ export function DashboardPerpusTab() {
     });
     return Array.from(map.entries())
       .map(([siswaId, total]) => {
-        const s = siswaMap.get(siswaId);
+        const sid = Number(siswaId);
+        const s = siswaMap.get(sid);
         return {
           siswa_id: siswaId,
           nama: s?.nama_lengkap ?? 'Siswa Terhapus',
