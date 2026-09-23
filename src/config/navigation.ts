@@ -81,7 +81,8 @@ export type PageKey =
   | 'mutasi_siswa'
   | 'kedisiplinan'
   | 'bk'
-  | 'perpustakaan';
+  | 'perpustakaan'
+  | 'hris';
 
 export type NavItem = {
   key: PageKey;
