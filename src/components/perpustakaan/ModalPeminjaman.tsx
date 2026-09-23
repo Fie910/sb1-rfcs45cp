@@ -26,7 +26,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   anggotaList: PerpusAnggotaWithRelations[];
-  bukuList: PerpusBukuWithRelations[];;
+  bukuList: PerpusBukuWithRelations[];
   onSaved: () => void;
 };
 
