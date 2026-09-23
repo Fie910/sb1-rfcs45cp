@@ -1,7 +1,7 @@
 // src/components/perpustakaan/QRScanner.tsx
 // Reusable QR Scanner menggunakan html5-qrcode.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { CameraOff, Loader2, ScanLine } from 'lucide-react';
 
@@ -17,7 +17,10 @@ export function QRScanner({
   hint = 'Posisikan QR di dalam kotak',
   pauseAfterScan = false,
 }: QRScannerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // useId dari React → generate ID unik untuk container (html5-qrcode butuh ID string)
+  const rawId = useId();
+  const containerId = `qr-${rawId.replace(/:/g, '_')}`;
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef<{ text: string; at: number }>({ text: '', at: 0 });
   const onScanRef = useRef(onScan);
@@ -31,10 +34,10 @@ export function QRScanner({
   }, [onScan]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
     let cancelled = false;
-    const container = containerRef.current;
-    const scanner = new Html5Qrcode(container);
+
+    // Buat scanner dengan ID string
+    const scanner = new Html5Qrcode(containerId);
     scannerRef.current = scanner;
 
     const start = async () => {
@@ -47,7 +50,6 @@ export function QRScanner({
             aspectRatio: 1.0,
           },
           (decodedText) => {
-            // Debounce — hindari scan berulang dalam 1.5 detik
             const now = Date.now();
             if (
               lastScanRef.current.text === decodedText &&
@@ -75,9 +77,9 @@ export function QRScanner({
         const name = err?.name ?? '';
         const msg = err?.message ?? '';
         if (name === 'NotAllowedError' || msg.includes('NotAllowed')) {
-          setError('Akses kamera ditolak. Izinkan akses di browser.');
+          setError('Akses kamera ditolak. Izinkan akses di browser Anda.');
         } else if (name === 'NotFoundError' || msg.includes('NotFound')) {
-          setError('Kamera tidak ditemukan.');
+          setError('Kamera tidak ditemukan pada perangkat ini.');
         } else if (name === 'NotReadableError' || msg.includes('NotReadable')) {
           setError('Kamera sedang digunakan aplikasi lain.');
         } else {
@@ -86,10 +88,12 @@ export function QRScanner({
       }
     };
 
-    start();
+    // Delay sedikit agar container sudah ada di DOM
+    const timer = setTimeout(start, 100);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       const s = scannerRef.current;
       if (s) {
         try { s.stop().catch(() => {}); } catch { /* ignore */ }
@@ -97,7 +101,7 @@ export function QRScanner({
       }
       scannerRef.current = null;
     };
-  }, [pauseAfterScan]);
+  }, [containerId, pauseAfterScan]);
 
   return (
     <>
@@ -105,11 +109,12 @@ export function QRScanner({
         className="relative bg-black rounded-2xl overflow-hidden border border-slate-800 qr-scanner-wrap"
         style={{ aspectRatio: '1 / 1' }}
       >
-        <div ref={containerRef} className="w-full h-full" />
+        {/* Container target html5-qrcode — pakai ID, bukan ref */}
+        <div id={containerId} className="w-full h-full" />
 
         {/* LOADING */}
         {status === 'loading' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-10 pointer-events-none">
             <Loader2 className="animate-spin text-indigo-400 mb-2" size={28} />
             <p className="text-xs text-slate-400">Menyiapkan kamera...</p>
           </div>
@@ -127,13 +132,11 @@ export function QRScanner({
         {/* READY overlay */}
         {status === 'ready' && (
           <>
-            {/* Corner markers */}
             <div className="absolute top-3 left-3 w-7 h-7 border-t-2 border-l-2 border-indigo-400 rounded-tl-lg pointer-events-none" />
             <div className="absolute top-3 right-3 w-7 h-7 border-t-2 border-r-2 border-indigo-400 rounded-tr-lg pointer-events-none" />
             <div className="absolute bottom-3 left-3 w-7 h-7 border-b-2 border-l-2 border-indigo-400 rounded-bl-lg pointer-events-none" />
             <div className="absolute bottom-3 right-3 w-7 h-7 border-b-2 border-r-2 border-indigo-400 rounded-br-lg pointer-events-none" />
 
-            {/* Hint bar */}
             <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
               <p className="text-[11px] text-slate-100 font-medium text-center flex items-center justify-center gap-1.5">
                 <ScanLine size={12} className="text-indigo-400" />
