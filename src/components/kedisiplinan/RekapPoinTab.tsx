@@ -116,7 +116,7 @@ export function RekapPoinTab() {
   const filtered = useMemo(() => {
     let result = rekapList.filter((r) => {
       if (filterKelas) {
-        const siswa = siswaList.find((s) => s.id === r.siswa_id);
+        const siswa = siswaList.find((s) => Number(s.id) === r.siswa_id);
         if (String(siswa?.kelas_id ?? '') !== filterKelas) return false;
       }
       if (filterSP) {
