@@ -1030,3 +1030,196 @@ export type PerpusStatistikLiterasi = {
   total_pinjam: number;
   total_buku_dibaca: number;
 };
+
+// =============================================================================
+// MODUL HRIS — Kepegawaian
+// =============================================================================
+
+// ---------- ENUM HELPER ----------
+export type StatusKepegawaian = 'Tetap' | 'Kontrak' | 'Honorer' | 'Magang' | 'GTT/PTT';
+
+export type JenisPTK =
+  | 'Guru'
+  | 'Kepala Sekolah'
+  | 'Wakil Kepala'
+  | 'Kepala Divisi'
+  | 'Staf Administrasi'
+  | 'Pustakawan'
+  | 'Laboran'
+  | 'Satpam'
+  | 'Kebersihan'
+  | 'Lainnya';
+
+// ---------- PROFIL PEGAWAI ----------
+export type Agama = 'Islam' | 'Kristen' | 'Katolik' | 'Hindu' | 'Buddha' | 'Konghucu' | 'Lainnya';
+export type GolonganDarah = 'A' | 'B' | 'AB' | 'O';
+export type StatusPernikahan = 'Belum Menikah' | 'Menikah' | 'Cerai Hidup' | 'Cerai Mati';
+
+export type HrisProfilPegawai = {
+  id: string;
+  nik: string | null;
+  tempat_lahir: string | null;
+  tanggal_lahir: string | null;
+  jenis_kelamin: 'L' | 'P' | null;
+  agama: Agama | null;
+  golongan_darah: GolonganDarah | null;
+  status_pernikahan: StatusPernikahan | null;
+  jumlah_anak: number;
+  no_hp: string | null;
+  email_pribadi: string | null;
+  alamat_ktp: string | null;
+  alamat_domisili: string | null;
+  nama_kontak_darurat: string | null;
+  hubungan_kontak_darurat: string | null;
+  no_hp_darurat: string | null;
+  bank_nama: string | null;
+  bank_nomor_rekening: string | null;
+  bank_atas_nama: string | null;
+  bpjs_kesehatan_no: string | null;
+  bpjs_ketenagakerjaan_no: string | null;
+  npwp: string | null;
+  tinggi_badan: number | null;
+  berat_badan: number | null;
+  hobi: string | null;
+  motto_hidup: string | null;
+  foto_profil_url: string | null;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HrisProfilWithGuru = HrisProfilPegawai & {
+  guru?: Pick<Guru, 'id' | 'nip' | 'nama_lengkap' | 'email' | 'role' | 'jenis_ptk' | 'status_kepegawaian' | 'tanggal_bergabung'> | null;
+};
+
+// ---------- DOKUMEN ----------
+export type KategoriDokumen =
+  | 'SK Pengangkatan'
+  | 'SK Kenaikan Pangkat'
+  | 'SK Berkala'
+  | 'Sertifikat Pendidik'
+  | 'Sertifikat Pelatihan'
+  | 'Ijazah'
+  | 'Transkrip Nilai'
+  | 'KTP'
+  | 'KK'
+  | 'NPWP'
+  | 'BPJS Kesehatan'
+  | 'BPJS Ketenagakerjaan'
+  | 'Buku Rekening'
+  | 'Kontrak Kerja'
+  | 'Surat Tugas'
+  | 'Piagam Penghargaan'
+  | 'Lainnya';
+
+export type HrisDokumen = {
+  id: string;
+  guru_id: string;
+  kategori: KategoriDokumen;
+  nama_dokumen: string;
+  nomor_dokumen: string | null;
+  tanggal_terbit: string | null;
+  tanggal_expired: string | null;
+  file_url: string | null;
+  ukuran_file: number | null;
+  keterangan: string | null;
+  is_verified: boolean;
+  verified_by: string | null;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HrisDokumenWithRelations = HrisDokumen & {
+  guru?: Pick<Guru, 'id' | 'nama_lengkap' | 'nip'> | null;
+  verifier?: Pick<Guru, 'id' | 'nama_lengkap'> | null;
+};
+
+// ---------- PENDIDIKAN ----------
+export type JenjangPendidikan = 'SD' | 'SMP' | 'SMA/SMK' | 'D3' | 'D4' | 'S1' | 'S2' | 'S3';
+
+export type HrisPendidikan = {
+  id: string;
+  guru_id: string;
+  jenjang: JenjangPendidikan;
+  institusi: string;
+  jurusan: string | null;
+  tahun_masuk: number | null;
+  tahun_lulus: number | null;
+  ipk: number | null;
+  nomor_ijazah: string | null;
+  file_url: string | null;
+  keterangan: string | null;
+  created_at: string;
+};
+
+// ---------- PEKERJAAN ----------
+export type JenisPekerjaan = 'Internal' | 'Eksternal';
+
+export type HrisPekerjaan = {
+  id: string;
+  guru_id: string;
+  jenis: JenisPekerjaan;
+  nama_perusahaan: string;
+  posisi: string | null;
+  bidang: string | null;
+  tanggal_mulai: string | null;
+  tanggal_selesai: string | null;
+  alasan_keluar: string | null;
+  file_url: string | null;
+  keterangan: string | null;
+  created_at: string;
+};
+
+// ---------- KELUARGA ----------
+export type HubunganKeluarga = 'Ayah' | 'Ibu' | 'Suami' | 'Istri' | 'Anak' | 'Saudara' | 'Lainnya';
+
+export type HrisKeluarga = {
+  id: string;
+  guru_id: string;
+  nama: string;
+  hubungan: HubunganKeluarga;
+  tanggal_lahir: string | null;
+  jenis_kelamin: 'L' | 'P' | null;
+  pekerjaan: string | null;
+  no_hp: string | null;
+  alamat: string | null;
+  is_kontak_darurat: boolean;
+  keterangan: string | null;
+  created_at: string;
+};
+
+// ---------- STATISTIK / DASHBOARD ----------
+export type HrisStatsOverview = {
+  total_pegawai: number;
+  pegawai_tetap: number;
+  pegawai_kontrak: number;
+  pegawai_honorer: number;
+  pegawai_gtt_ptt: number;
+  total_dokumen: number;
+  dokumen_verified: number;
+  dokumen_expired: number;
+  dokumen_expiring_soon: number;
+  profil_lengkap: number;
+  profil_incomplete: number;
+};
+
+export type HrisKelengkapanPegawai = {
+  guru_id: string;
+  nip: string | null;
+  nama_lengkap: string;
+  jenis_ptk: string | null;
+  status_kepegawaian: string | null;
+  has_profil: boolean;
+  has_nik: boolean;
+  has_tanggal_lahir: boolean;
+  has_no_hp: boolean;
+  has_alamat: boolean;
+  has_bank: boolean;
+  has_bpjs_kesehatan: boolean;
+  has_kontak_darurat: boolean;
+  has_foto: boolean;
+  total_dokumen: number;
+  dokumen_kategori_missing: string[];
+  completion_percent: number;
+};
