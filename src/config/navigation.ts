@@ -104,28 +104,17 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'profil', label: 'Profil Saya', icon: User, path: '/profil' },
       { key: 'kalender_akademik', label: 'Kalender Akademik', icon: CalendarRange, path: '/kalender_akademik' },
       { key: 'buku_tamu', label: 'Buku Tamu', icon: NotebookPen, path: '/buku_tamu' },
-      { key: 'todo', label: 'TodoList Divisi', icon: Briefcase, path: '/todo' },
-      { key: 'tugas_disposisi', label: 'Tugas Disposisi', icon: ClipboardCheck, path: '/tugas_disposisi' },
-      { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
       { key: 'saran_pengaduan', label: 'Saran & Pengaduan', icon: MessageSquareWarning, path: '/saran_pengaduan' },
+      { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
     ],
   },
   {
     groupTitle: 'Monitoring & Evaluasi',
     items: [
-      {
-        key: 'dashboard_kepsek',
-        label: 'Dashboard Kepsek',
-        icon: Eye,
-        path: '/dashboard_kepsek',
-      },
-      {
-        key: 'monev_divisi',
-        label: 'Monev Divisi',
-        icon: BarChart3,
-        path: '/monev_divisi',
-      },
-      
+      { key: 'dashboard_kepsek', label: 'Dashboard Kepsek', icon: Eye, path: '/dashboard_kepsek' },
+      { key: 'monev_divisi', label: 'Monev Divisi', icon: BarChart3, path: '/monev_divisi' },
+      { key: 'todo', label: 'TodoList Divisi', icon: Briefcase, path: '/todo' },
+      { key: 'tugas_disposisi', label: 'Tugas Disposisi', icon: ClipboardCheck, path: '/tugas_disposisi' },
     ],
   },
   {
@@ -135,6 +124,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'izin', label: 'Izin & Delegasi Tugas', icon: FileText, path: '/izin' },
       { key: 'presensi', label: 'Input Presensi Siswa', icon: CalendarCheck, path: '/presensi' },
       { key: 'nilai', label: 'Input Nilai Siswa', icon: ClipboardList, path: '/nilai' },
+      { key: 'perpustakaan', label: 'Perpustakaan', icon: Library, path: '/perpustakaan'},
       { key: 'jadwal_kbm', label: 'Jadwal KBM', icon: CalendarDays, path: '/jadwal_kbm' },
       { key: 'jadwal_kbm_jps', label: 'Jadwal KBM JPS', icon: CalendarDays, path: '/jadwal_kbm_jps' },
       { key: 'jadwal_piket', label: 'Jadwal Piket KBM', icon: CalendarCheck, path: '/jadwal_piket' },
@@ -144,29 +134,15 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     groupTitle: 'Piket & Pengawasan',
     items: [
       { key: 'piket', label: 'Dashboard Piket', icon: ShieldCheck, path: '/piket' },
-      {
-        key: 'kehadiran_piket',
-        label: 'Presensi Piket KBM',
-        icon: UserCheck,
-        path: '/kehadiran_piket',
-      },
-      {
-        key: 'kehadiran_piket_penyambutan',
-        label: 'Presensi Piket Penyambutan',
-        icon: UserCheck,
-        path: '/kehadiran_piket_penyambutan',
-      },
+      { key: 'kehadiran_piket', label: 'Presensi Piket KBM', icon: UserCheck, path: '/kehadiran_piket' },
+      { key: 'kehadiran_piket_penyambutan', label: 'Presensi Piket Penyambutan', icon: UserCheck, 
+         path:'/kehadiran_piket_penyambutan'},
     ],
   },
   {
     groupTitle: 'Perpustakaan',
     items: [
-      {
-        key: 'perpustakaan',
-        label: 'Perpustakaan',
-        icon: Library,
-        path: '/perpustakaan',
-      },
+      
     ],
   },
   {
