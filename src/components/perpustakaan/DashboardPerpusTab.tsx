@@ -217,7 +217,7 @@ export function DashboardPerpusTab() {
         const sid = Number(siswaId);
         const s = siswaMap.get(sid);
         return {
-          siswa_id: siswaId,
+          siswa_id: sid,
           nama: s?.nama_lengkap ?? 'Siswa Terhapus',
           nisn: s?.nisn ?? '-',
           kelas: s?.kelas?.nama_kelas ?? '-',
