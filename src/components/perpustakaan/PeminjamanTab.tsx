@@ -23,7 +23,7 @@ import {
 } from './shared';
 import type {
   PerpusPeminjaman, PerpusPeminjamanWithRelations,
-  PerpusAnggotaWithRelations, PerpusBuku,
+  PerpusAnggotaWithRelations, PerpusBukuWithRelations,
 } from '@/types/database';
 
 const MODUL_PERPUS = (AUDIT_MODUL as any)?.PERPUS ?? 'Perpustakaan';
