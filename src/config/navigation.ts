@@ -104,19 +104,9 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'profil', label: 'Profil Saya', icon: User, path: '/profil' },
       { key: 'buku_tamu', label: 'Buku Tamu', icon: NotebookPen, path: '/buku_tamu' },
       { key: 'todo', label: 'TodoList Divisi', icon: Briefcase, path: '/todo' },
-      {
-        key: 'tugas_disposisi',
-        label: 'Tugas Disposisi',
-        icon: ClipboardCheck,
-        path: '/tugas_disposisi',
-      },
+      { key: 'tugas_disposisi', label: 'Tugas Disposisi', icon: ClipboardCheck, path: '/tugas_disposisi' },
       { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
-      {
-        key: 'saran_pengaduan',
-        label: 'Saran & Pengaduan',
-        icon: MessageSquareWarning,
-        path: '/saran_pengaduan',
-      },
+      { key: 'saran_pengaduan', label: 'Saran & Pengaduan', icon: MessageSquareWarning, path: '/saran_pengaduan' },
     ],
   },
   {
@@ -270,6 +260,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
   {
     groupTitle: 'Humas-Kepegawaian-Tata Kelola',
     items: [{ key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' }],
+    items: [{ key: 'hris', label: 'Data Kepegawaian', icon: UserCog, path: '/hris' }],
   },
   {
     groupTitle: 'Bimbingan & Konseling',
