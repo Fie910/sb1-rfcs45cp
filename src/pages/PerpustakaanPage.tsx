@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Library, Book, Users, Send, Newspaper, BarChart3, Search,
-  Shield,
+  Shield, ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isPustakawan } from '@/components/perpustakaan/shared';
