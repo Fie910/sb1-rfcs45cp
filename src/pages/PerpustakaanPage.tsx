@@ -39,7 +39,7 @@ function PlaceholderTab({
   );
 }
 
-type TabKey = 'buku' | 'anggota' | 'peminjaman' | 'serial' | 'dashboard' | 'opac';
+type TabKey = 'buku' | 'anggota' | 'peminjaman' | 'serial' | 'inventarisasi' | 'opac' | 'dashboard';
 
 type TabDef = {
   key: TabKey;
