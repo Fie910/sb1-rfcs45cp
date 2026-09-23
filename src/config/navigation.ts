@@ -102,6 +102,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
       { key: 'profil', label: 'Profil Saya', icon: User, path: '/profil' },
+      { key: 'kalender_akademik', label: 'Kalender Akademik', icon: CalendarRange, path: '/kalender_akademik' },
       { key: 'buku_tamu', label: 'Buku Tamu', icon: NotebookPen, path: '/buku_tamu' },
       { key: 'todo', label: 'TodoList Divisi', icon: Briefcase, path: '/todo' },
       { key: 'tugas_disposisi', label: 'Tugas Disposisi', icon: ClipboardCheck, path: '/tugas_disposisi' },
@@ -124,31 +125,19 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
         icon: BarChart3,
         path: '/monev_divisi',
       },
-      {
-        key: 'kalender_akademik',
-        label: 'Kalender Akademik',
-        icon: CalendarRange,
-        path: '/kalender_akademik',
-      },
+      
     ],
   },
   {
-    groupTitle: 'KBM & Presensi',
+    groupTitle: 'Akademik',
     items: [
-      {
-        key: 'agenda',
-        label: 'Agenda & Presensi Guru',
-        icon: BookHeart,
-        path: '/agenda',
-      },
+      { key: 'agenda', label: 'Agenda & Presensi Guru', icon: BookHeart, path: '/agenda' },
       { key: 'izin', label: 'Izin & Delegasi Tugas', icon: FileText, path: '/izin' },
-      {
-        key: 'presensi',
-        label: 'Input Presensi Siswa',
-        icon: CalendarCheck,
-        path: '/presensi',
-      },
+      { key: 'presensi', label: 'Input Presensi Siswa', icon: CalendarCheck, path: '/presensi' },
       { key: 'nilai', label: 'Input Nilai Siswa', icon: ClipboardList, path: '/nilai' },
+      { key: 'jadwal_kbm', label: 'Jadwal KBM', icon: CalendarDays, path: '/jadwal_kbm' },
+      { key: 'jadwal_kbm_jps', label: 'Jadwal KBM JPS', icon: CalendarDays, path: '/jadwal_kbm_jps' },
+      { key: 'jadwal_piket', label: 'Jadwal Piket KBM', icon: CalendarCheck, path: '/jadwal_piket' },
     ],
   },
   {
@@ -166,24 +155,6 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
         label: 'Presensi Piket Penyambutan',
         icon: UserCheck,
         path: '/kehadiran_piket_penyambutan',
-      },
-    ],
-  },
-  {
-    groupTitle: 'Akademik',
-    items: [
-      { key: 'jadwal_kbm', label: 'Jadwal KBM', icon: CalendarDays, path: '/jadwal_kbm' },
-      {
-        key: 'jadwal_kbm_jps',
-        label: 'Jadwal KBM JPS',
-        icon: CalendarDays,
-        path: '/jadwal_kbm_jps',
-      },
-      {
-        key: 'jadwal_piket',
-        label: 'Jadwal Piket KBM',
-        icon: CalendarCheck,
-        path: '/jadwal_piket',
       },
     ],
   },
