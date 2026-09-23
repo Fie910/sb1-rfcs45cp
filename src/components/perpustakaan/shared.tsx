@@ -122,6 +122,16 @@ export function getJenisSerialBadge(jenis: JenisSerial | string | null | undefin
       return 'bg-slate-800 text-slate-300 border-slate-700';
   }
 }
+export function getStatusBadgeInventarisasi(status: string | null | undefined): string {
+  switch (status) {
+    case 'Draft':
+      return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+    case 'Final':
+      return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+    default:
+      return 'bg-slate-800 text-slate-300 border-slate-700';
+  }
+}
 
 // =============================================================================
 // ICON GETTERS
