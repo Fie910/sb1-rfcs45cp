@@ -17,7 +17,7 @@ import {
   calculateDueDate, formatDateLong, DURASI_PINJAM_HARI,
 } from './shared';
 import type {
-  PerpusAnggotaWithRelations, PerpusBuku, PerpusPeminjaman,
+  PerpusAnggotaWithRelations, PerpusBukuWithRelations, PerpusPeminjaman,
 } from '@/types/database';
 
 const MODUL_PERPUS = (AUDIT_MODUL as any)?.PERPUS ?? 'Perpustakaan';
@@ -26,7 +26,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   anggotaList: PerpusAnggotaWithRelations[];
-  bukuList: PerpusBuku[];
+  bukuList: PerpusBukuWithRelations[];;
   onSaved: () => void;
 };
 
