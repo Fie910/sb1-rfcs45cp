@@ -1,4 +1,4 @@
-// PengumumanBanner.tsx
+// /src/components/PengumumanBanner.tsx
 // Komponen carousel pengumuman resmi sekolah beserta modal detail-nya.
 
 import { useState, useEffect } from 'react';
