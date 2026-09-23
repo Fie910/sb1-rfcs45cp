@@ -116,20 +116,8 @@ export function PerpustakaanPage() {
         {activeTab === 'buku' && <BukuTab />}
         {activeTab === 'anggota' && <AnggotaTab />}
         {activeTab === 'peminjaman' && <PeminjamanTab />}
-        {activeTab === 'serial' && (
-          <PlaceholderTab
-            icon={Newspaper}
-            title="Majalah & Jurnal"
-            description="Kelola koleksi serial: majalah, jurnal, koran, dan buletin."
-          />
-        )}
-        {activeTab === 'opac' && (
-          <PlaceholderTab
-            icon={Search}
-            title="Pencarian Publik (OPAC)"
-            description="Katalog online yang bisa diakses siapa saja untuk cek ketersediaan buku."
-          />
-        )}
+        {activeTab === 'serial' && <SerialTab />}
+        {activeTab === 'opac' && <OPACTab />}
         {activeTab === 'dashboard' && (
           <PlaceholderTab
             icon={BarChart3}
