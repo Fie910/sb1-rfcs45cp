@@ -1,4 +1,4 @@
-// DashboardPage.tsx
+// /src/pages/DashboardPage.tsx
 
 import { useEffect, useState, useCallback } from 'react';
 import { Loader2, Sparkles, ShieldAlert } from 'lucide-react';
