@@ -121,13 +121,7 @@ export function PerpustakaanPage() {
         {activeTab === 'peminjaman' && <PeminjamanTab />}
         {activeTab === 'serial' && <SerialTab />}
         {activeTab === 'opac' && <OPACTab />}
-        {activeTab === 'dashboard' && (
-          <PlaceholderTab
-            icon={BarChart3}
-            title="Dashboard Perpustakaan"
-            description="Statistik literasi: buku terpopuler, siswa paling rajin, tren peminjaman bulanan."
-          />
-        )}
+        {activeTab === 'dashboard' && <DashboardPerpusTab />}
       </div>
     </div>
   );
