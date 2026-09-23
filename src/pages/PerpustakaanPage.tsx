@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isPustakawan } from '@/components/perpustakaan/shared';
 import { BukuTab } from '@/components/perpustakaan/BukuTab';
 import { AnggotaTab } from '@/components/perpustakaan/AnggotaTab';
+import { PeminjamanTab } from '@/components/perpustakaan/PeminjamanTab';
 
 function PlaceholderTab({
   title, description, icon: Icon,
