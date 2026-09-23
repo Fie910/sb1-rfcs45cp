@@ -60,6 +60,7 @@ const RiwayatSiswa = lazy(() => import('@/pages/RiwayatSiswa').then((m) => ({ de
 const MutasiSiswa = lazy(() => import('@/pages/MutasiSiswa').then((m) => ({ default: m.MutasiSiswa })));
 const BimbinganKonselingPage = lazy(() => import('@/pages/BimbinganKonselingPage').then((m) => ({ default: m.BimbinganKonselingPage })));
 const KedisiplinanPage = lazy(() => import('@/pages/KedisiplinanPage').then((m) => ({ default: m.KedisiplinanPage })));
+const PerpustakaanPage = lazy(() => import('@/pages/PerpustakaanPage').then((m) => ({ default: m.PerpustakaanPage })));
 
 // Master Data & Sistem
 const HariLiburPage = lazy(() => import('@/pages/HariLiburPage').then((m) => ({ default: m.HariLiburPage })));
@@ -236,6 +237,7 @@ function AppContent() {
           <Route path="/audit_log" element={<ProtectedRoute accessKey="audit_log"><AuditLogPage /></ProtectedRoute>} />
           <Route path="/buku_tamu" element={<ProtectedRoute accessKey="buku_tamu"><BukuTamuPage /></ProtectedRoute>} />
           <Route path="/bk" element={<ProtectedRoute accessKey="bk"><BimbinganKonselingPage /></ProtectedRoute>} />
+          <Route path="/perpustakaan" element={<ProtectedRoute accessKey="perpustakaan"><PerpustakaanPage /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
