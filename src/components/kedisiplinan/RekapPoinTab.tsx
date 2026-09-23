@@ -91,12 +91,12 @@ export function RekapPoinTab() {
 
     return siswaList.map((s) => {
       const sid = Number(s.id);
-      const pel = pelanggaranMap.get(s.id) ?? { total: 0, count: 0 };
-      const pres = prestasiMap.get(s.id) ?? { total: 0, count: 0 };
+      const pel = pelanggaranMap.get(sid) ?? { total: 0, count: 0 };
+      const pres = prestasiMap.get(sid) ?? { total: 0, count: 0 };
       const poinBersih = pel.total - pres.total;
 
       return {
-        siswa_id: s.id,
+        siswa_id: sid,
         nisn: s.nisn,
         nama_lengkap: s.nama_lengkap,
         kelas: s.kelas?.nama_kelas ?? '-',
