@@ -53,6 +53,7 @@ const ALL_TABS: TabDef[] = [
   { key: 'anggota', label: 'Anggota', icon: Users },
   { key: 'peminjaman', label: 'Peminjaman', icon: Send },
   { key: 'serial', label: 'Majalah & Jurnal', icon: Newspaper },
+  { key: 'inventarisasi', label: 'Inventarisasi', icon: ClipboardCheck, managerOnly: true },
   { key: 'opac', label: 'Pencarian Publik (OPAC)', icon: Search },
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3, managerOnly: true },
 ];
