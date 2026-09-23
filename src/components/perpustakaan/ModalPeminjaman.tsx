@@ -22,8 +22,7 @@ import type {
 
 const MODUL_PERPUS = (AUDIT_MODUL as any)?.PERPUS ?? 'Perpustakaan';
 
-type Props = {
-  
+type Props = {  
   open: boolean;
   onClose: () => void;
   anggotaList: PerpusAnggotaWithRelations[];
