@@ -14,6 +14,7 @@ import { PeminjamanTab } from '@/components/perpustakaan/PeminjamanTab';
 import { SerialTab } from '@/components/perpustakaan/SerialTab';
 import { OPACTab } from '@/components/perpustakaan/OPACTab';
 import { DashboardPerpusTab } from '@/components/perpustakaan/DashboardPerpusTab';
+import { InventarisasiTab } from '@/components/perpustakaan/InventarisasiTab';
 
 function PlaceholderTab({
   title, description, icon: Icon,
@@ -123,6 +124,7 @@ export function PerpustakaanPage() {
         {activeTab === 'serial' && <SerialTab />}
         {activeTab === 'opac' && <OPACTab />}
         {activeTab === 'dashboard' && <DashboardPerpusTab />}
+        {activeTab === 'inventarisasi' && <InventarisasiTab />}
       </div>
     </div>
   );
