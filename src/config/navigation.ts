@@ -197,6 +197,17 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     ],
   },
   {
+    groupTitle: 'Perpustakaan',
+    items: [
+      {
+        key: 'perpustakaan',
+        label: 'Perpustakaan',
+        icon: Library,
+        path: '/perpustakaan',
+      },
+    ],
+  },
+  {
     groupTitle: 'Kesiswaan',
     items: [
       { key: 'siswa', label: 'Data Siswa', icon: Users, path: '/siswa' },
