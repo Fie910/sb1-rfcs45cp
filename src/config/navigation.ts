@@ -34,6 +34,7 @@ import {
   Boxes,
   Heart,
   ShieldAlert,
+  Library,
 } from 'lucide-react';
 
 export type PageKey =
