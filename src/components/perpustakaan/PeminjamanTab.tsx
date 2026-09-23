@@ -36,7 +36,7 @@ export function PeminjamanTab() {
 
   const [list, setList] = useState<PerpusPeminjamanWithRelations[]>([]);
   const [anggotaList, setAnggotaList] = useState<PerpusAnggotaWithRelations[]>([]);
-  const [bukuList, setBukuList] = useState<PerpusBuku[]>([]);
+  const [bukuList, setBukuList] = useState<PerpusBukuWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
 
   // View tab
