@@ -115,13 +115,7 @@ export function PerpustakaanPage() {
       <div className="min-h-[400px]">
         {activeTab === 'buku' && <BukuTab />}
         {activeTab === 'anggota' && <AnggotaTab />}
-        {activeTab === 'peminjaman' && (
-          <PlaceholderTab
-            icon={Send}
-            title="Peminjaman & Pengembalian"
-            description="Sirkulasi buku dengan scan QR, perhitungan denda otomatis, dan riwayat peminjaman."
-          />
-        )}
+        {activeTab === 'peminjaman' && <PeminjamanTab />}
         {activeTab === 'serial' && (
           <PlaceholderTab
             icon={Newspaper}
