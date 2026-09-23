@@ -79,7 +79,8 @@ export type PageKey =
   | 'riwayat_siswa'
   | 'mutasi_siswa'
   | 'kedisiplinan'
-  | 'bk';
+  | 'bk'
+  | 'perpustakaan';
 
 export type NavItem = {
   key: PageKey;
