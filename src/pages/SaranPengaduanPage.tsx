@@ -333,7 +333,7 @@ export function SaranPengaduanPage() {
         const [takolaIds, adminIds, kepalaIds, akademikIds, kesiswaanIds, sarprasIds, keuanganIds] = await Promise.all([
           getGuruIdsByRole('takola'),
           getGuruIdsByRole('admin'),
-          getGuruIdsByRole('kepala_sekolah'),
+          getGuruIdsByRole('kepala'),
           getGuruIdsByRole('akademik'),
           getGuruIdsByRole('kesiswaan'),
           getGuruIdsByRole('sarpras'),
