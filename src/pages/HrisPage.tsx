@@ -14,7 +14,7 @@ import { DashboardHrTab } from '@/components/hris/DashboardHrTab';
 import { CalendarDays } from 'lucide-react';
 import { CutiIzinPage } from '@/components/hris/cuti/CutiIzinPage';
 
-type TabKey = 'pegawai' | 'profil_saya' | 'dokumen' | 'dashboard';
+type TabKey = 'pegawai' | 'profil_saya' | 'dokumen' | 'cuti' | 'dashboard';
 
 type TabDef = {
   key: TabKey;
@@ -116,6 +116,7 @@ export function HrisPage() {
         {activeTab === 'pegawai' && isManager && <PegawaiTab />}
         {activeTab === 'profil_saya' && <ProfilSayaTab />}
         {activeTab === 'dokumen' && <DokumenSayaTab />}
+        {activeTab === 'cuti' && <CutiIzinPage />}
         {activeTab === 'dashboard' && isManager && <DashboardHrTab />}
       </div>
     </div>
