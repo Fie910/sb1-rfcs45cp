@@ -13,6 +13,8 @@ import {
   formatDateShort,
   INPUT_CLASS,
 } from './shared';
+import { DokumenSection } from './DokumenSection';
+import { PendidikanSection } from './PendidikanSection';
 
 export function ProfilSayaTab() {
   const { guru } = useAuth();
