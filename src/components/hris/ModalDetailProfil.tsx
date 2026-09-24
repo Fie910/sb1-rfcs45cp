@@ -181,6 +181,17 @@ export function ModalDetailProfil({ open, onClose, pegawai, onRefresh }: ModalDe
                 </p>
               </div>
             )}
+                        {/* SECTION DOKUMEN */}
+            <DokumenSection
+              guruId={pegawai.id}
+              editable={isHrManager(currentGuruRole) || pegawai.id === currentGuruId}
+            />
+
+            {/* SECTION PENDIDIKAN */}
+            <PendidikanSection
+              guruId={pegawai.id}
+              editable={isHrManager(currentGuruRole) || pegawai.id === currentGuruId}
+            />
           </div>
         ) : null}
       </Modal>
