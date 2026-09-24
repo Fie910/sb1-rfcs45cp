@@ -7,6 +7,7 @@ import { ToastContainer } from '@/components/Toast';
 import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/lib/supabase';
 import type { PageKey } from '@/config/navigation';
+import VerifikasiSuratPage from '@/pages/VerifikasiSuratPage';
 
 // Lazy load seluruh halaman untuk optimasi bundle
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
