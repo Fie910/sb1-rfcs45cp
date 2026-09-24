@@ -434,17 +434,6 @@ export function hitungHariKalender(mulai: string, selesai: string): number {
   return Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 }
 
-// Role yang dianggap approver pada level tertentu
-export const HR_APPROVER_ROLES = ['takola', 'staf_takola'];
-export const KEPSEK_ROLES = ['kepala'];
-export const KEPALA_DIVISI_ROLES = [
-  'akademik',
-  'kesiswaan',
-  'sarpras',
-  'keuangan',
-  'takola',
-];
-
 // =============================================================================
 // KONSTANTA CUTI & IZIN — dipakai oleh ApprovalTab & PengajuanSayaTab
 // =============================================================================
