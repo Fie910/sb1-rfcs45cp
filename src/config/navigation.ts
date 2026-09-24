@@ -129,7 +129,6 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'presensi', label: 'Input Presensi Siswa', icon: CalendarCheck, path: '/presensi' },
       { key: 'nilai', label: 'Input Nilai Siswa', icon: ClipboardList, path: '/nilai' },
       { key: 'perpustakaan', label: 'Perpustakaan', icon: Library, path: '/perpustakaan'},
-      
     ],
   },
   {
@@ -156,12 +155,6 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
     groupTitle: 'Humas-Kepegawaian-Tata Kelola',
     items: [{ key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' }],
     items: [{ key: 'hris', label: 'Data Kepegawaian', icon: UserCog, path: '/hris' }],
-  },
-  {
-    groupTitle: 'Bimbingan & Konseling',
-    items: [
-      
-    ],
   },
   {
     groupTitle: 'Data Master & Sistem',
