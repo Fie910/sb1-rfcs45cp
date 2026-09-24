@@ -115,6 +115,10 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'monev_divisi', label: 'Monev Divisi', icon: BarChart3, path: '/monev_divisi' },
       { key: 'todo', label: 'TodoList Divisi', icon: Briefcase, path: '/todo' },
       { key: 'tugas_disposisi', label: 'Tugas Disposisi', icon: ClipboardCheck, path: '/tugas_disposisi' },
+      { key: 'piket', label: 'Dashboard Piket', icon: ShieldCheck, path: '/piket' },
+      { key: 'kehadiran_piket', label: 'Presensi Piket KBM', icon: UserCheck, path: '/kehadiran_piket' },
+      { key: 'kehadiran_piket_penyambutan', label: 'Presensi Piket Penyambutan', icon: UserCheck, 
+         path:'/kehadiran_piket_penyambutan'},
     ],
   },
   {
@@ -125,72 +129,27 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'presensi', label: 'Input Presensi Siswa', icon: CalendarCheck, path: '/presensi' },
       { key: 'nilai', label: 'Input Nilai Siswa', icon: ClipboardList, path: '/nilai' },
       { key: 'perpustakaan', label: 'Perpustakaan', icon: Library, path: '/perpustakaan'},
-      { key: 'jadwal_kbm', label: 'Jadwal KBM', icon: CalendarDays, path: '/jadwal_kbm' },
-      { key: 'jadwal_kbm_jps', label: 'Jadwal KBM JPS', icon: CalendarDays, path: '/jadwal_kbm_jps' },
-      { key: 'jadwal_piket', label: 'Jadwal Piket KBM', icon: CalendarCheck, path: '/jadwal_piket' },
-    ],
-  },
-  {
-    groupTitle: 'Piket & Pengawasan',
-    items: [
-      { key: 'piket', label: 'Dashboard Piket', icon: ShieldCheck, path: '/piket' },
-      { key: 'kehadiran_piket', label: 'Presensi Piket KBM', icon: UserCheck, path: '/kehadiran_piket' },
-      { key: 'kehadiran_piket_penyambutan', label: 'Presensi Piket Penyambutan', icon: UserCheck, 
-         path:'/kehadiran_piket_penyambutan'},
+      
     ],
   },
   {
     groupTitle: 'Kesiswaan',
     items: [
-      { key: 'siswa', label: 'Data Siswa', icon: Users, path: '/siswa' },
+      
       { key: 'presensi_kesiswaan', label: 'Input Presensi Siswa (Kesiswaan)', icon: UserCheck, path: '/presensi_kesiswaan'},
-      {
-        key: 'kedisiplinan',
-        label: 'Kedisiplinan Siswa',
-        icon: ShieldAlert,
-        path: '/kedisiplinan',
-      },
-      {
-        key: 'kenaikan_kelas',
-        label: 'Kenaikan Kelas',
-        icon: TrendingUp,
-        path: '/kenaikan_kelas',
-      },
-      {
-        key: 'kelulusan',
-        label: 'Kelulusan & Alumni',
-        icon: Award,
-        path: '/kelulusan',
-      },
-      {
-        key: 'riwayat_siswa',
-        label: 'Riwayat & Rekam Jejak',
-        icon: History,
-        path: '/riwayat_siswa',
-      },
-      {
-        key: 'mutasi_siswa',
-        label: 'Mutasi & Siswa Keluar',
-        icon: UserMinus,
-        path: '/mutasi_siswa',
-      },
-      {
-        key: 'jadwal_piket_penyambutan',
-        label: 'Jadwal Piket Penyambutan',
-        icon: CalendarCheck,
-        path: '/jadwal_piket_penyambutan',
-      },
+      { key: 'kedisiplinan', label: 'Kedisiplinan Siswa', icon: ShieldAlert, path: '/kedisiplinan' },
+      { key: 'bk', label: 'Bimbingan & Konseling', icon: Heart, path: '/bk' },
+      { key: 'kenaikan_kelas', label: 'Kenaikan Kelas', icon: TrendingUp, path: '/kenaikan_kelas' },
+      { key: 'kelulusan', label: 'Kelulusan & Alumni', icon: Award, path: '/kelulusan' },
+      { key: 'riwayat_siswa', label: 'Riwayat & Rekam Jejak', icon: History, path: '/riwayat_siswa' },
+      { key: 'mutasi_siswa', label: 'Mutasi & Siswa Keluar', icon: UserMinus, path: '/mutasi_siswa' },
+      
     ],
   },
   {
     groupTitle: 'Sarana & Prasarana',
     items: [
-      {
-        key: 'sarpras',
-        label: 'Inventaris Sarpras',
-        icon: Package,
-        path: '/sarpras',
-      },
+      { key: 'sarpras', label: 'Inventaris Sarpras', icon: Package, path: '/sarpras' },
     ],
   },
   {
@@ -201,12 +160,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
   {
     groupTitle: 'Bimbingan & Konseling',
     items: [
-      {
-        key: 'bk',
-        label: 'Bimbingan & Konseling',
-        icon: Heart,
-        path: '/bk',
-      },
+      
     ],
   },
   {
@@ -215,7 +169,13 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'sekolah', label: 'Data Sekolah', icon: Settings, path: '/sekolah' },
       { key: 'kelas', label: 'Data Kelas', icon: School, path: '/kelas' },
       { key: 'guru', label: 'Data Guru', icon: UserCog, path: '/guru' },
+      { key: 'siswa', label: 'Data Siswa', icon: Users, path: '/siswa' },
       { key: 'hari_libur', label: 'Hari Libur', icon: CalendarX, path: '/hari_libur' },
+      { key: 'jadwal_kbm', label: 'Jadwal KBM', icon: CalendarDays, path: '/jadwal_kbm' },
+      { key: 'jadwal_kbm_jps', label: 'Jadwal KBM JPS', icon: CalendarDays, path: '/jadwal_kbm_jps' },
+      { key: 'jadwal_piket', label: 'Jadwal Piket KBM', icon: CalendarCheck, path: '/jadwal_piket' },
+      { key: 'jadwal_piket_penyambutan', label: 'Jadwal Piket Penyambutan', icon: CalendarCheck,
+        path: '/jadwal_piket_penyambutan'},
       { key: 'audit_log', label: 'Audit Log', icon: ScrollText, path: '/audit_log' },
       { key: 'hak_akses', label: 'Kelola Hak Akses', icon: Shield, path: '/hak_akses' },
     ],
