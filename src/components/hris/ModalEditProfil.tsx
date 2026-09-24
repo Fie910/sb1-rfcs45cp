@@ -39,8 +39,7 @@ export function ModalEditProfil({ open, onClose, guru, profil, onSaved }: ModalE
     email: '',
     jenis_ptk: '',
     status_kepegawaian: '',
-    tanggal_bergabung: '',
-    mata_pelajaran: '',
+    tanggal_bergabung: '',    
   });
 
   const [profilForm, setProfilForm] = useState({
