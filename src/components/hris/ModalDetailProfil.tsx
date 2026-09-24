@@ -14,6 +14,7 @@ import {
 } from './shared';
 import { DokumenSection } from './DokumenSection';
 import { PendidikanSection } from './PendidikanSection';
+import { isHrManager } from './shared';
 
 type ModalDetailProfilProps = {
   open: boolean;
