@@ -1,5 +1,5 @@
 // src/pages/HrisPage.tsx
-// Container halaman HRIS dengan 4 tab.
+// Container halaman HRIS dengan 4 tab fungsional.
 
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -9,31 +9,8 @@ import { useAuth } from '@/context/AuthContext';
 import { isHrManager } from '@/components/hris/shared';
 import { PegawaiTab } from '@/components/hris/PegawaiTab';
 import { ProfilSayaTab } from '@/components/hris/ProfilSayaTab';
-
-// Placeholder untuk tab yang belum dibuat
-function PlaceholderTab({
-  title, description, icon: Icon,
-}: {
-  title: string;
-  description: string;
-  icon: typeof UserCog;
-}) {
-  return (
-    <div className="text-center py-20 px-6 bg-slate-900 border border-slate-800 rounded-3xl">
-      <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center mx-auto mb-4">
-        <Icon size={28} />
-      </div>
-      <h3 className="text-lg font-bold text-slate-100 mb-1.5">{title}</h3>
-      <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-        {description}
-      </p>
-      <div className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold">
-        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
-        Sedang dalam pengembangan
-      </div>
-    </div>
-  );
-}
+import { DokumenSayaTab } from '@/components/hris/DokumenSayaTab';
+import { DashboardHrTab } from '@/components/hris/DashboardHrTab';
 
 type TabKey = 'pegawai' | 'profil_saya' | 'dokumen' | 'dashboard';
 
@@ -72,7 +49,13 @@ export function HrisPage() {
   }, [isManager, activeTab]);
 
   // Guard: non-manager tidak boleh akses halaman
-  if (!isManager && guru?.role && !['guru', 'guru_piket', 'kesiswaan', 'bk', 'sarpras', 'keuangan'].includes(guru.role.toLowerCase())) {
+  if (
+    !isManager &&
+    guru?.role &&
+    !['guru', 'guru_piket', 'kesiswaan', 'bk', 'sarpras', 'keuangan'].includes(
+      guru.role.toLowerCase()
+    )
+  ) {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-8 text-center space-y-3">
@@ -129,21 +112,8 @@ export function HrisPage() {
       <div className="min-h-[400px]">
         {activeTab === 'pegawai' && isManager && <PegawaiTab />}
         {activeTab === 'profil_saya' && <ProfilSayaTab />}
-
-        {activeTab === 'dokumen' && (
-          <PlaceholderTab
-            icon={FolderOpen}
-            title="Dokumen Saya"
-            description="Kelola semua dokumen kepegawaian Anda: SK, sertifikat, ijazah, dan lainnya."
-          />
-        )}
-        {activeTab === 'dashboard' && (
-          <PlaceholderTab
-            icon={BarChart3}
-            title="Dashboard HR"
-            description="Statistik kepegawaian, kelengkapan dokumen, dan expiry tracker."
-          />
-        )}
+        {activeTab === 'dokumen' && <DokumenSayaTab />}
+        {activeTab === 'dashboard' && isManager && <DashboardHrTab />}
       </div>
     </div>
   );
