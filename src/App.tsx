@@ -48,6 +48,9 @@ const KehadiranPiketPage = lazy(() => import('@/pages/KehadiranPiketPage').then(
 
 // Halaman To-Do List Divisi
 const TodoListPage = lazy(() => import('@/pages/TodoListPage').then((m) => ({ default: m.TodoListPage })));
+const HrisPage = lazy(() =>
+  import('@/pages/HrisPage').then((m) => ({ default: m.HrisPage }))
+);
 
 // Halaman Presensi Kesiswaan
 const InputPresensiKesiswaanPage = lazy(() => import('@/pages/InputPresensiKesiswaanPage').then((m) => ({ default: m.InputPresensiKesiswaanPage })));
@@ -201,6 +204,14 @@ function AppContent() {
           <Route path="/presensi" element={<ProtectedRoute accessKey="presensi"><PresensiPage /></ProtectedRoute>} />
           <Route path="/surat" element={<ProtectedRoute accessKey="surat"><SuratPage /></ProtectedRoute>} />
           <Route path="/tugas_disposisi" element={<ProtectedRoute accessKey="tugas_disposisi"><TugasDisposisiPage /></ProtectedRoute>} />
+          <Route
+  path="/hris"
+  element={
+    <ProtectedRoute accessKey="hris">
+      <HrisPage />
+    </ProtectedRoute>
+  }
+/>
 
           {/* Rute Modul Kesiswaan */}
           <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
