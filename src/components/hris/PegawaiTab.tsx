@@ -113,21 +113,22 @@ export function PegawaiTab() {
       const kelCount = countBy(kelRes.data ?? []);
 
       const rows: PegawaiRow[] = gurus.map((g) => ({
-        id: g.id,
-        nip: g.nip,
-        nama_lengkap: g.nama_lengkap,
-        email: g.email,
-        role: g.role,
-        jenis_ptk: g.jenis_ptk,
-        status_kepegawaian: g.status_kepegawaian,
-        tanggal_bergabung: g.tanggal_bergabung,
-        mata_pelajaran: g.mata_pelajaran,
-        hris_profil_pegawai: profilMap.has(g.id) ? [profilMap.get(g.id)] : [],
-        total_dokumen: dokCount.get(g.id) ?? 0,
-        total_pendidikan: pendCount.get(g.id) ?? 0,
-        total_pekerjaan: kerjaCount.get(g.id) ?? 0,
-        total_keluarga: kelCount.get(g.id) ?? 0,
-      }));
+  id: g.id,
+  nip: g.nip,
+  nama_lengkap: g.nama_lengkap,
+  email: g.email,
+  role: g.role,
+  jenis_ptk: g.jenis_ptk,
+  status_kepegawaian: g.status_kepegawaian,
+  tanggal_bergabung: g.tanggal_bergabung,
+  mapel_id: g.mapel_id,
+  mata_pelajarans: g.mata_pelajarans,
+  hris_profil_pegawai: profilMap.has(g.id) ? [profilMap.get(g.id)] : [],
+  total_dokumen: dokCount.get(g.id) ?? 0,
+  total_pendidikan: pendCount.get(g.id) ?? 0,
+  total_pekerjaan: kerjaCount.get(g.id) ?? 0,
+  total_keluarga: kelCount.get(g.id) ?? 0,
+}));
 
       setList(rows);
     } catch (err: any) {
