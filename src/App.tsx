@@ -92,7 +92,7 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children
 // =============================================================================
 // ROUTE PUBLIK (tanpa login) — dipakai untuk scan QR code aset
 // =============================================================================
-const PUBLIC_PATH_PREFIXES = ['/scan'];
+const PUBLIC_PATH_PREFIXES = ['/scan', '/verifikasi-surat'];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
