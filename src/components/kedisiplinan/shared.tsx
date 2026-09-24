@@ -25,7 +25,7 @@ import type {
 
 export const KEDISIPLINAN_MANAGER_ROLES = [
   'admin',
-  'kepala',
+  'kepala_sekolah',
   'wakil_kepala',
   'kesiswaan',
   'bk',
