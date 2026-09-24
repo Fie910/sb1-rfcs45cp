@@ -76,10 +76,15 @@ export function PegawaiTab() {
     try {
       // 1. Fetch guru + profil + doc/pendidikan/pekerjaan/keluarga count
       const [guruRes, profilRes, dokRes, pendRes, kerjaRes, kelRes] = await Promise.all([
-        supabase
-          .from('gurus')
-          .select('id, nip, nama_lengkap, email, role, jenis_ptk, status_kepegawaian, tanggal_bergabung, mata_pelajaran')
-          .order('nama_lengkap'),
+  supabase
+    .from('gurus')
+    .select(`
+      id, nip, nama_lengkap, email, role,
+      jenis_ptk, status_kepegawaian, tanggal_bergabung,
+      mapel_id,
+      mata_pelajarans:mapel_id (id, nama_mapel)
+    `)
+    .order('nama_lengkap'),
         supabase.from('hris_profil_pegawai').select('*'),
         supabase.from('hris_dokumen').select('guru_id'),
         supabase.from('hris_pendidikan').select('guru_id'),
