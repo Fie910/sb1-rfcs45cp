@@ -10,7 +10,7 @@ import { ModalEditProfil } from './ModalEditProfil';
 import {
   getStatusKepegawaianBadge, getJenisPtkBadge,
   hitungKelengkapanProfil, hitungUmur, hitungMasaKerja,
-  formatDateShort, formatRupiah,
+  formatDateShort,
   INPUT_CLASS,
 } from './shared';
 
