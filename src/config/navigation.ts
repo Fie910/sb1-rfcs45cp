@@ -151,8 +151,10 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
   },
   {
     groupTitle: 'Humas-Kepegawaian-Tata Kelola',
-    items: [{ key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' }],
-    items: [{ key: 'hris', label: 'Data Kepegawaian', icon: UserCog, path: '/hris' }],
+    items: [
+      { key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' },
+      { key: 'hris', label: 'Data Kepegawaian', icon: UserCog, path: '/hris' },
+    ],
   },
   {
     groupTitle: 'Data Master & Sistem',
