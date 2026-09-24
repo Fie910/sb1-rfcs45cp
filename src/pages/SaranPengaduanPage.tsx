@@ -45,7 +45,7 @@ import {
 // KONSTANTA
 // =============================================================================
 
-const MANAGER_ROLES = ['admin', 'kepala_sekolah', 'wakil_kepala', 'takola', 'akademik', 'kesiswaan', 'sarpras', 'keuangan'];
+const MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala', 'takola', 'akademik', 'kesiswaan', 'sarpras', 'keuangan'];
 
 // =============================================================================
 // HELPER — Badge warna
