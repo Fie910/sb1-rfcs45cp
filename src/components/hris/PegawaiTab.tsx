@@ -17,6 +17,7 @@ import {
   INPUT_CLASS, STATUS_KEPEGAWAIAN_OPTIONS, JENIS_PTK_OPTIONS,
 } from './shared';
 import type { Guru } from '@/types/database';
+import { useAuth } from '@/context/AuthContext';
 
 // =============================================================================
 // TYPES
