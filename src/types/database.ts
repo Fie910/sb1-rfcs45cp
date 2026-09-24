@@ -1227,3 +1227,127 @@ export type HrisKelengkapanPegawai = {
   dokumen_kategori_missing: string[];
   completion_percent: number;
 };
+
+// =============================================================================
+// MODUL HRIS — CUTI, IZIN & SALDO
+// =============================================================================
+
+export type StatusCuti =
+  | 'Draft'
+  | 'Diajukan'
+  | 'Disetujui Atasan'
+  | 'Disetujui HR'
+  | 'Disetujui Kepsek'
+  | 'Disetujui'
+  | 'Ditolak'
+  | 'Dibatalkan';
+
+export type AksiApprovalCuti = 'Approve' | 'Reject' | 'Batal' | 'Auto-Skip';
+
+export type HrisJenisCuti = {
+  id: string;
+  nama: string;
+  deskripsi: string | null;
+  warna: string;
+  mengurangi_saldo_tahunan: boolean;
+  durasi_maksimal_hari: number | null;
+  durasi_minimal_hari: number;
+  butuh_approval_3level: boolean;
+  skip_level_hr: boolean;
+  wajib_lampiran: boolean;
+  syarat_lampiran: string | null;
+  is_aktif: boolean;
+  urutan_tampil: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HrisSaldoCuti = {
+  id: string;
+  guru_id: string;
+  tahun: number;
+  saldo_awal: number;
+  saldo_terpakai: number;
+  saldo_sisa: number;
+  carry_over_dari_tahun_lalu: number;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HrisCuti = {
+  id: string;
+  nomor_pengajuan: string | null;
+  guru_id: string;
+  jenis_id: string;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  jumlah_hari: number;
+  jam_mulai: string | null;
+  jam_selesai: string | null;
+  jumlah_jam: number | null;
+  alasan: string;
+  alamat_selama_cuti: string | null;
+  no_hp_selama_cuti: string | null;
+  lampiran_url: string | null;
+  status: StatusCuti;
+  current_level: number;
+  approved_by: string | null;
+  approved_at: string | null;
+  alasan_penolakan: string | null;
+  guru_pengganti_id: string | null;
+  catatan_pengganti: string | null;
+  mengurangi_saldo_tahunan: boolean | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HrisCutiApproval = {
+  id: string;
+  cuti_id: string;
+  approver_id: string;
+  approver_role: string | null;
+  level: number;
+  aksi: AksiApprovalCuti;
+  catatan: string | null;
+  created_at: string;
+};
+
+// Hasil dari view v_hris_cuti_lengkap
+export type HrisCutiWithRelations = HrisCuti & {
+  guru_nama?: string | null;
+  guru_nip?: string | null;
+  guru_role?: string | null;
+  guru_divisi_id?: string | null;
+  guru_divisi_nama?: string | null;
+  guru_jenis_ptk?: string | null;
+  guru_status_kepegawaian?: string | null;
+  jenis_nama?: string | null;
+  jenis_warna?: string | null;
+  pengganti_nama?: string | null;
+  approver_nama?: string | null;
+};
+
+export const STATUS_CUTI_OPTIONS: StatusCuti[] = [
+  'Draft',
+  'Diajukan',
+  'Disetujui Atasan',
+  'Disetujui HR',
+  'Disetujui Kepsek',
+  'Disetujui',
+  'Ditolak',
+  'Dibatalkan',
+];
+
+export const STATUS_CUTI_AKTIF: StatusCuti[] = [
+  'Diajukan',
+  'Disetujui Atasan',
+  'Disetujui HR',
+  'Disetujui Kepsek',
+];
+
+export const STATUS_CUTI_SELESAI: StatusCuti[] = [
+  'Disetujui',
+  'Ditolak',
+  'Dibatalkan',
+];
