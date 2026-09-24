@@ -31,7 +31,8 @@ type PegawaiRow = {
   jenis_ptk: string | null;
   status_kepegawaian: string | null;
   tanggal_bergabung: string | null;
-  mata_pelajaran: string | null;
+  mapel_id: string | null;
+  mata_pelajarans: { id: string; nama_mapel: string } | null;
   // From hris_profil_pegawai
   hris_profil_pegawai: {
     nik: string | null;
