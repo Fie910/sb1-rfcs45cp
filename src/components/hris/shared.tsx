@@ -444,3 +444,33 @@ export const KEPALA_DIVISI_ROLES = [
   'keuangan',
   'takola',
 ];
+
+// =============================================================================
+// KONSTANTA CUTI & IZIN — dipakai oleh ApprovalTab & PengajuanSayaTab
+// =============================================================================
+
+/** Status cuti yang masih dalam proses (belum selesai/ditolak) */
+export const STATUS_CUTI_AKTIF = [
+  'Diajukan',
+  'Disetujui Atasan',
+  'Disetujui HR',
+  'Disetujui Kepsek',
+] as const;
+
+/** Status cuti yang sudah final */
+export const STATUS_CUTI_SELESAI = [
+  'Disetujui',
+  'Ditolak',
+  'Dibatalkan',
+] as const;
+
+/** Role yang bertindak sebagai approver di level tertentu */
+export const HR_APPROVER_ROLES = ['takola', 'staf_takola'];
+export const KEPSEK_ROLES = ['kepala'];
+export const KEPALA_DIVISI_ROLES = [
+  'akademik',
+  'kesiswaan',
+  'sarpras',
+  'keuangan',
+  'takola',
+];
