@@ -131,11 +131,21 @@ export function ApprovalTab() {
         updateData.approved_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
-        .from('hris_cuti')
-        .update(updateData)
-        .eq('id', approveTarget.id);
-      if (error) throw error;
+      const { data: updatedRows, error } = await supabase
+  .from('hris_cuti')
+  .update(updateData)
+  .eq('id', approveTarget.id)
+  .select();  // ← WAJIB: untuk tahu apakah row benar-benar terupdate
+
+if (error) throw error;
+
+// Cek apakah benar-benar ada yang terupdate
+if (!updatedRows || updatedRows.length === 0) {
+  throw new Error(
+    'Update gagal — kemungkinan hak akses (RLS) memblokir. ' +
+    'Hubungi admin untuk cek policy hris_cuti.'
+  );
+}
 
       // Insert history
       await supabase.from('hris_cuti_approval').insert({
