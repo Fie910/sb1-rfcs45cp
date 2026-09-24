@@ -132,8 +132,7 @@ export function ModalEditProfil({ open, onClose, guru, profil, onSaved }: ModalE
         email: guruForm.email.trim() || guru.email,
         jenis_ptk: guruForm.jenis_ptk || null,
         status_kepegawaian: guruForm.status_kepegawaian || null,
-        tanggal_bergabung: guruForm.tanggal_bergabung || null,
-        mata_pelajaran: guruForm.mata_pelajaran.trim() || null,
+        tanggal_bergabung: guruForm.tanggal_bergabung || null,        
       };
 
       const { error: guruErr } = await supabase
