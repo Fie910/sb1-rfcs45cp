@@ -2,7 +2,7 @@
 // Tab Profil Saya — halaman self-service untuk pegawai lihat & edit profil sendiri.
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, User, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Loader2, User, AlertCircle, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
@@ -11,10 +11,11 @@ import {
   getStatusKepegawaianBadge, getJenisPtkBadge,
   hitungKelengkapanProfil, hitungUmur, hitungMasaKerja,
   formatDateShort,
-  INPUT_CLASS,
 } from './shared';
 import { DokumenSection } from './DokumenSection';
 import { PendidikanSection } from './PendidikanSection';
+import { PekerjaanSection } from './PekerjaanSection';
+import { KeluargaSection } from './KeluargaSection';
 
 export function ProfilSayaTab() {
   const { guru } = useAuth();
@@ -122,7 +123,10 @@ export function ProfilSayaTab() {
         </div>
       </div>
 
-      {/* GRID INFO */}
+      {/* ============================================================
+          GRID INFO — 6 kartu ringkas (masing-masing 1 kolom di mobile,
+          2 kolom di desktop)
+          ============================================================ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* SECTION: BIODATA */}
         <InfoSection title="Biodata" empty={!profil}>
@@ -171,15 +175,9 @@ export function ProfilSayaTab() {
           <InfoRow label="Tanggal Bergabung"
             value={guruData.tanggal_bergabung ? formatDateShort(guruData.tanggal_bergabung) : null} />
           <InfoRow label="Masa Kerja"
-            value={guruData.tanggal_bergabung ? hitungMasaKerja(guruData.tanggal_bergabung) : null} />          
+            value={guruData.tanggal_bergabung ? hitungMasaKerja(guruData.tanggal_bergabung) : null} />
         </InfoSection>
 
-              {/* SECTION DOKUMEN */}
-      <DokumenSection guruId={guruData.id} editable={true} />
-
-      {/* SECTION PENDIDIKAN */}
-      <PendidikanSection guruId={guruData.id} editable={true} />
-        
         {/* SECTION: FISIK & PERSONAL */}
         <InfoSection title="Info Personal" empty={!profil}>
           <InfoRow label="Tinggi Badan"
@@ -190,6 +188,19 @@ export function ProfilSayaTab() {
           <InfoRow label="Motto" value={profil?.motto_hidup} />
         </InfoSection>
       </div>
+
+      {/* ============================================================
+          SECTION FULL-WIDTH — riwayat & dokumen (di luar grid)
+          Urutan: Pendidikan → Pekerjaan → Keluarga → Dokumen
+          ============================================================ */}
+
+      <PendidikanSection guruId={guruData.id} editable={true} />
+
+      <PekerjaanSection guruId={guruData.id} editable={true} />
+
+      <KeluargaSection guruId={guruData.id} editable={true} />
+
+      <DokumenSection guruId={guruData.id} editable={true} />
 
       {/* MODAL EDIT */}
       <ModalEditProfil
