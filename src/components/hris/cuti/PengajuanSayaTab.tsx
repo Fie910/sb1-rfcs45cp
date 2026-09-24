@@ -273,14 +273,15 @@ export function PengajuanSayaTab() {
 
       {/* MODAL FORM */}
       <ModalPengajuanCuti
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSaved={fetchAll}
-        editing={editing as any}
-        guruList={guruList}
-        jenisList={jenisList}
-        guruId={guru?.id ?? ''}
-      />
+  open={modalOpen}
+  onClose={() => setModalOpen(false)}
+  onSaved={fetchAll}
+  editing={editing as any}
+  guruList={guruList}
+  jenisList={jenisList}
+  guruId={guru?.id ?? ''}
+  userRole={guru?.role}
+/>
 
       {/* MODAL DETAIL */}
       <Modal
