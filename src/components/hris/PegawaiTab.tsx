@@ -74,17 +74,18 @@ export function PegawaiTab() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch guru + profil + doc/pendidikan/pekerjaan/keluarga count
+      // ✅ FIX: Query terpisah agar tidak bergantung pada FK relationship.
+      // Ambil gurus tanpa embed, lalu ambil mata_pelajarans terpisah,
+      // dan gabungkan di client.
       const [guruRes, profilRes, dokRes, pendRes, kerjaRes, kelRes] = await Promise.all([
-  supabase
-    .from('gurus')
-    .select(`
-      id, nip, nama_lengkap, email, role,
-      jenis_ptk, status_kepegawaian, tanggal_bergabung,
-      mapel_id,
-      mata_pelajarans:mapel_id (id, nama_mapel)
-    `)
-    .order('nama_lengkap'),
+        supabase
+          .from('gurus')
+          .select(`
+            id, nip, nama_lengkap, email, role,
+            jenis_ptk, status_kepegawaian, tanggal_bergabung,
+            mapel_id
+          `)
+          .order('nama_lengkap'),
         supabase.from('hris_profil_pegawai').select('*'),
         supabase.from('hris_dokumen').select('guru_id'),
         supabase.from('hris_pendidikan').select('guru_id'),
@@ -95,6 +96,29 @@ export function PegawaiTab() {
       if (guruRes.error) throw guruRes.error;
 
       const gurus = (guruRes.data ?? []) as any[];
+
+      // ✅ Ambil mata pelajaran secara terpisah (aman jika FK belum terdaftar)
+      const mapelIds = Array.from(
+        new Set(gurus.map((g) => g.mapel_id).filter(Boolean))
+      ) as string[];
+
+      let mapelMap = new Map<string, { id: string; nama_mapel: string }>();
+      if (mapelIds.length > 0) {
+        const { data: mapelData, error: mapelErr } = await supabase
+          .from('mata_pelajarans')
+          .select('id, nama_mapel')
+          .in('id', mapelIds);
+
+        if (mapelErr) {
+          // Tidak fatal — kalau tabel mapel error, tetap lanjut tanpa mapel
+          console.warn('[PegawaiTab] Gagal load mata_pelajarans:', mapelErr.message);
+        } else {
+          mapelMap = new Map(
+            (mapelData ?? []).map((m: any) => [m.id, { id: m.id, nama_mapel: m.nama_mapel }])
+          );
+        }
+      }
+
       const profiles = profilRes.data ?? [];
 
       // Build profile map (1:1 by id)
@@ -113,22 +137,23 @@ export function PegawaiTab() {
       const kelCount = countBy(kelRes.data ?? []);
 
       const rows: PegawaiRow[] = gurus.map((g) => ({
-  id: g.id,
-  nip: g.nip,
-  nama_lengkap: g.nama_lengkap,
-  email: g.email,
-  role: g.role,
-  jenis_ptk: g.jenis_ptk,
-  status_kepegawaian: g.status_kepegawaian,
-  tanggal_bergabung: g.tanggal_bergabung,
-  mapel_id: g.mapel_id,
-  mata_pelajarans: g.mata_pelajarans,
-  hris_profil_pegawai: profilMap.has(g.id) ? [profilMap.get(g.id)] : [],
-  total_dokumen: dokCount.get(g.id) ?? 0,
-  total_pendidikan: pendCount.get(g.id) ?? 0,
-  total_pekerjaan: kerjaCount.get(g.id) ?? 0,
-  total_keluarga: kelCount.get(g.id) ?? 0,
-}));
+        id: g.id,
+        nip: g.nip,
+        nama_lengkap: g.nama_lengkap,
+        email: g.email,
+        role: g.role,
+        jenis_ptk: g.jenis_ptk,
+        status_kepegawaian: g.status_kepegawaian,
+        tanggal_bergabung: g.tanggal_bergabung,
+        mapel_id: g.mapel_id,
+        // ✅ Merge manual
+        mata_pelajarans: g.mapel_id ? mapelMap.get(g.mapel_id) ?? null : null,
+        hris_profil_pegawai: profilMap.has(g.id) ? [profilMap.get(g.id)] : [],
+        total_dokumen: dokCount.get(g.id) ?? 0,
+        total_pendidikan: pendCount.get(g.id) ?? 0,
+        total_pekerjaan: kerjaCount.get(g.id) ?? 0,
+        total_keluarga: kelCount.get(g.id) ?? 0,
+      }));
 
       setList(rows);
     } catch (err: any) {
@@ -402,15 +427,15 @@ export function PegawaiTab() {
 
       {/* MODAL DETAIL */}
       {detailTarget && (
-  <ModalDetailProfil
-    open={Boolean(detailTarget)}
-    onClose={() => setDetailTarget(null)}
-    pegawai={detailTarget as any}
-    onRefresh={fetchAll}
-    currentGuruId={currentGuru?.id}
-    currentGuruRole={currentGuru?.role}
-  />
-)}
+        <ModalDetailProfil
+          open={Boolean(detailTarget)}
+          onClose={() => setDetailTarget(null)}
+          pegawai={detailTarget as any}
+          onRefresh={fetchAll}
+          currentGuruId={currentGuru?.id}
+          currentGuruRole={currentGuru?.role}
+        />
+      )}
     </div>
   );
 }
