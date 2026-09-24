@@ -339,7 +339,7 @@ export function SaranPengaduanPage() {
           getGuruIdsByRole('sarpras'),
           getGuruIdsByRole('keuangan'),
         ]);
-        const targetIds = Array.from(new Set([...takolaIds, ...adminIds])).filter(
+        const targetIds = Array.from(new Set([...takolaIds, ...kepalaIds, ...akademikIds, ...kesiswaanIds, ...sarprasIds, ...keuanganIds, ...adminIds])).filter(
           (id) => id !== user.id
         );
 
