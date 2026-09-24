@@ -251,12 +251,7 @@ export function ModalEditProfil({ open, onClose, guru, profil, onSaved }: ModalE
               <input type="email" value={guruForm.email}
                 onChange={(e) => setGuruForm({ ...guruForm, email: e.target.value })}
                 className={INPUT_CLASS} />
-            </Field>
-            <Field label="Mata Pelajaran">
-              <input type="text" value={guruForm.mata_pelajaran}
-                onChange={(e) => setGuruForm({ ...guruForm, mata_pelajaran: e.target.value })}
-                className={INPUT_CLASS} />
-            </Field>
+            </Field>            
           </div>
         </Section>
 
