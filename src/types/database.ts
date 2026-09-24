@@ -22,6 +22,10 @@ export type Guru = {
   mata_pelajaran?: string | null;
   mapel_id?: string | null;
   jabatan?: string | null;
+  // HRIS fields (dari SQL migration HRIS)
+  tanggal_bergabung?: string | null;
+  status_kepegawaian?: string | null;
+  jenis_ptk?: string | null;
   created_at?: string;
 };
 
