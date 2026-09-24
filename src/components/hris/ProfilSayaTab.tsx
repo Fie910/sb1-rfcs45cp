@@ -175,6 +175,12 @@ export function ProfilSayaTab() {
           <InfoRow label="Mata Pelajaran" value={guruData.mata_pelajaran} />
         </InfoSection>
 
+              {/* SECTION DOKUMEN */}
+      <DokumenSection guruId={guruData.id} editable={true} />
+
+      {/* SECTION PENDIDIKAN */}
+      <PendidikanSection guruId={guruData.id} editable={true} />
+        
         {/* SECTION: FISIK & PERSONAL */}
         <InfoSection title="Info Personal" empty={!profil}>
           <InfoRow label="Tinggi Badan"
