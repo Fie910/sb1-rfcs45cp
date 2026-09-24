@@ -242,7 +242,7 @@ export function ModalDetailProfil({
                       : null
                   }
                 />
-                <InfoRow label="Mata Pelajaran" value={guru.mata_pelajaran} />
+                
                 <InfoRow label="Role Sistem" value={guru.role} />
               </InfoSection>
 
