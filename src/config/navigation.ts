@@ -133,16 +133,14 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
   },
   {
     groupTitle: 'Kesiswaan',
-    items: [
-      
+    items: [      
       { key: 'presensi_kesiswaan', label: 'Input Presensi Siswa (Kesiswaan)', icon: UserCheck, path: '/presensi_kesiswaan'},
       { key: 'kedisiplinan', label: 'Kedisiplinan Siswa', icon: ShieldAlert, path: '/kedisiplinan' },
       { key: 'bk', label: 'Bimbingan & Konseling', icon: Heart, path: '/bk' },
       { key: 'kenaikan_kelas', label: 'Kenaikan Kelas', icon: TrendingUp, path: '/kenaikan_kelas' },
       { key: 'kelulusan', label: 'Kelulusan & Alumni', icon: Award, path: '/kelulusan' },
       { key: 'riwayat_siswa', label: 'Riwayat & Rekam Jejak', icon: History, path: '/riwayat_siswa' },
-      { key: 'mutasi_siswa', label: 'Mutasi & Siswa Keluar', icon: UserMinus, path: '/mutasi_siswa' },
-      
+      { key: 'mutasi_siswa', label: 'Mutasi & Siswa Keluar', icon: UserMinus, path: '/mutasi_siswa' },      
     ],
   },
   {
