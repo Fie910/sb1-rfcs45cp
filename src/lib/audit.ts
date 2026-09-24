@@ -57,6 +57,7 @@ export const AUDIT_MODUL = {
   BK: 'Bimbingan & Konseling',
   KEDISIPLINAN: 'Kedisiplinan Siswa',
   PERPUS: 'Perpustakaan',
+  HRIS: 'Data Kepegawaian',
 } as const;
 
 export type AuditModul = (typeof AUDIT_MODUL)[keyof typeof AUDIT_MODUL];
