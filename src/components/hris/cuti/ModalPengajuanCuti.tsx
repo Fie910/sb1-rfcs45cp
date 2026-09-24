@@ -1,10 +1,10 @@
 // src/components/hris/cuti/ModalPengajuanCuti.tsx
-// Form pengajuan cuti/izin — single source of truth untuk create & edit.
+// Form pengajuan cuti/izin — dengan logika auto-skip level approval.
 
 import { useState, useEffect, useMemo } from 'react';
 import {
   Loader2, Save, UploadCloud, X, Paperclip, ExternalLink,
-  AlertTriangle, Info, Calendar as CalendarIcon,
+  AlertTriangle, Info, Calendar as CalendarIcon, Sparkles, CheckCircle2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -14,13 +14,92 @@ import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import {
   INPUT_CLASS, LABEL_CLASS,
   formatFileSize, hitungHariKerja, hitungHariKalender,
+  HR_APPROVER_ROLES, KEPSEK_ROLES, KEPALA_DIVISI_ROLES,
 } from '../shared';
 import type {
-  HrisCuti, HrisJenisCuti, Guru,
+  HrisCuti, HrisJenisCuti, Guru, StatusCuti,
 } from '@/types/database';
 
 const BUCKET = 'hris-files';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+// =============================================================================
+// AUTO-SKIP LOGIC
+// =============================================================================
+/**
+ * Tentukan level approval pertama berdasarkan role user + konfigurasi jenis cuti.
+ *
+ * Level mapping:
+ *   1 = Atasan Langsung (Kepala Divisi)
+ *   2 = HR Manager (takola / staf_takola)
+ *   3 = Kepala Sekolah (kepala)
+ *   4 = Disetujui (final)
+ *
+ * Auto-skip:
+ *   - Kepala Sekolah       → langsung level 4 (auto-approve)
+ *   - HR Manager           → mulai dari level 3 (skip atasan)
+ *   - Kepala Divisi        → mulai dari level 2 (skip diri sendiri)
+ *   - Guru biasa           → mulai dari level 1
+ *
+ * Jenis cuti modifier:
+ *   - butuh_approval_3level = false → langsung level 4
+ *   - skip_level_hr = true          → minimal level 3
+ */
+function determineStartLevel(
+  userRole: string | null | undefined,
+  jenis: HrisJenisCuti | null,
+): number {
+  // 1. Kalau jenis tidak butuh approval berjenjang → auto-approve
+  if (jenis && !jenis.butuh_approval_3level) {
+    return 4;
+  }
+
+  // 2. Base level dari role
+  const r = (userRole ?? '').toLowerCase();
+  let level = 1;
+
+  if (KEPSEK_ROLES.includes(r)) {
+    level = 4; // Kepala Sekolah: auto-approve
+  } else if (HR_APPROVER_ROLES.includes(r)) {
+    level = 3; // HR Manager: skip ke Kepsek
+  } else if (KEPALA_DIVISI_ROLES.includes(r)) {
+    level = 2; // Kepala Divisi: skip ke HR
+  }
+
+  // 3. Kalau jenis skip_level_hr, naikkan minimal ke 3
+  if (jenis?.skip_level_hr && level < 3) {
+    level = 3;
+  }
+
+  return level;
+}
+
+/**
+ * Map level → status setelah submission
+ *   level 1 → Diajukan (menunggu atasan)
+ *   level 2 → Disetujui Atasan (menunggu HR)
+ *   level 3 → Disetujui HR (menunggu Kepsek)
+ *   level 4 → Disetujui (final)
+ */
+function statusForLevel(level: number): StatusCuti {
+  if (level >= 4) return 'Disetujui';
+  if (level === 3) return 'Disetujui HR';
+  if (level === 2) return 'Disetujui Atasan';
+  return 'Diajukan';
+}
+
+/**
+ * Label ramah untuk suatu level (dipakai di UI).
+ */
+function labelForLevel(level: number): string {
+  switch (level) {
+    case 1: return 'Kepala Divisi (Atasan Langsung)';
+    case 2: return 'HR Manager / Takola';
+    case 3: return 'Kepala Sekolah';
+    case 4: return 'Disetujui Otomatis';
+    default: return '-';
+  }
+}
 
 // =============================================================================
 // TYPES
@@ -33,6 +112,8 @@ type Props = {
   guruList: Pick<Guru, 'id' | 'nama_lengkap' | 'nip' | 'jenis_ptk'>[];
   jenisList: HrisJenisCuti[];
   guruId: string;
+  /** Role user yang sedang login — untuk menentukan auto-skip */
+  userRole?: string | null;
 };
 
 const emptyForm = {
@@ -62,6 +143,7 @@ export function ModalPengajuanCuti({
   guruList,
   jenisList,
   guruId,
+  userRole,
 }: Props) {
   const [form, setForm] = useState(emptyForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -78,6 +160,14 @@ export function ModalPengajuanCuti({
     () => jenisList.find((j) => j.id === form.jenis_id) ?? null,
     [form.jenis_id, jenisList]
   );
+
+  // ✅ HITUNG START LEVEL (reactive ke role + jenis)
+  const startLevel = useMemo(
+    () => determineStartLevel(userRole, jenisTerpilih),
+    [userRole, jenisTerpilih]
+  );
+  const isAutoApprove = startLevel >= 4;
+  const isAutoSkipped = startLevel > 1 && startLevel < 4;
 
   // Reset form saat modal dibuka
   useEffect(() => {
@@ -111,8 +201,6 @@ export function ModalPengajuanCuti({
   useEffect(() => {
     if (!form.tanggal_mulai || !form.tanggal_selesai) return;
 
-    let jumlah = 0;
-    // Kalau setengah hari, pakai jam
     if (isSetengahHari) {
       const jm = parseFloat(form.jam_mulai?.split(':')[0] ?? '0') * 60 +
         parseFloat(form.jam_mulai?.split(':')[1] ?? '0');
@@ -123,8 +211,6 @@ export function ModalPengajuanCuti({
       return;
     }
 
-    // Untuk cuti sakit/melahirkan/dll → hitung hari kalender
-    // Untuk cuti tahunan/menikah/dll → hitung hari kerja
     const jenisNama = jenisTerpilih?.nama ?? '';
     const pakaiKalender = [
       'Cuti Sakit',
@@ -133,7 +219,7 @@ export function ModalPengajuanCuti({
       'Cuti Ibadah Haji',
     ].includes(jenisNama);
 
-    jumlah = pakaiKalender
+    const jumlah = pakaiKalender
       ? hitungHariKalender(form.tanggal_mulai, form.tanggal_selesai)
       : hitungHariKerja(form.tanggal_mulai, form.tanggal_selesai);
 
@@ -147,7 +233,7 @@ export function ModalPengajuanCuti({
     jenisTerpilih,
   ]);
 
-  // Auto-fill alamat & HP dari profil pegawai (saat create)
+  // Auto-fill alamat & HP dari profil pegawai
   useEffect(() => {
     if (!open || isEdit) return;
     (async () => {
@@ -236,7 +322,11 @@ export function ModalPengajuanCuti({
         lampiranUrl = uploaded;
       }
 
-      const payload = {
+      // ✅ Tentukan status & level berdasarkan auto-skip
+      const finalLevel = submitAsDraft ? 0 : startLevel;
+      const finalStatus: StatusCuti = submitAsDraft ? 'Draft' : statusForLevel(startLevel);
+
+      const payload: any = {
         guru_id: guruId,
         jenis_id: form.jenis_id,
         tanggal_mulai: form.tanggal_mulai,
@@ -252,9 +342,15 @@ export function ModalPengajuanCuti({
         guru_pengganti_id: form.guru_pengganti_id || null,
         catatan_pengganti: form.catatan_pengganti.trim() || null,
         mengurangi_saldo_tahunan: jenisTerpilih?.mengurangi_saldo_tahunan ?? false,
-        status: submitAsDraft ? 'Draft' : 'Diajukan',
-        current_level: submitAsDraft ? 0 : 1,
+        status: finalStatus,
+        current_level: finalLevel,
       };
+
+      // ✅ Kalau auto-approve (level 4), isi approved_by & approved_at
+      if (!submitAsDraft && isAutoApprove) {
+        payload.approved_by = guruId;
+        payload.approved_at = new Date().toISOString();
+      }
 
       if (isEdit && editing?.id) {
         const { error } = await supabase
@@ -278,16 +374,38 @@ export function ModalPengajuanCuti({
           .single();
         if (error) throw error;
 
+        // ✅ Kalau auto-approve, catat di history approval
+        if (!submitAsDraft && isAutoApprove && data?.id) {
+          await supabase.from('hris_cuti_approval').insert({
+            cuti_id: data.id,
+            approver_id: guruId,
+            approver_role: userRole ?? null,
+            level: 4,
+            aksi: 'Auto-Skip',
+            catatan: `Auto-approve oleh sistem (role: ${userRole ?? 'unknown'})`,
+          });
+        }
+
         await logActivity({
           aksi: 'CREATE',
           modul: AUDIT_MODUL.HRIS,
           targetId: data?.id,
-          deskripsi: `Ajukan cuti: ${jenisTerpilih?.nama} (${form.jumlah_hari} hari)`,
+          deskripsi: `Ajukan cuti: ${jenisTerpilih?.nama} (${form.jumlah_hari} hari) — ${finalStatus}`,
         });
-        showToast(
-          'success',
-          submitAsDraft ? 'Disimpan sebagai draft' : 'Pengajuan cuti berhasil dikirim'
-        );
+
+        // Toast message menyesuaikan kondisi
+        if (submitAsDraft) {
+          showToast('success', 'Disimpan sebagai draft');
+        } else if (isAutoApprove) {
+          showToast('success', 'Pengajuan langsung disetujui (auto-approve)');
+        } else if (isAutoSkipped) {
+          showToast(
+            'success',
+            `Pengajuan dikirim — mulai dari Level ${startLevel} (${labelForLevel(startLevel)})`
+          );
+        } else {
+          showToast('success', 'Pengajuan cuti berhasil dikirim');
+        }
       }
 
       onSaved();
@@ -311,6 +429,92 @@ export function ModalPengajuanCuti({
       size="lg"
     >
       <div className="space-y-4 pt-1 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
+        {/* ✅ INFO BOX — ALUR APPROVAL */}
+        {!isEdit && (
+          <div
+            className={`rounded-xl border p-3 ${
+              isAutoApprove
+                ? 'bg-emerald-500/5 border-emerald-500/20'
+                : isAutoSkipped
+                ? 'bg-amber-500/5 border-amber-500/20'
+                : 'bg-indigo-500/5 border-indigo-500/20'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              {isAutoApprove ? (
+                <Sparkles size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              ) : isAutoSkipped ? (
+                <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              ) : (
+                <Info size={16} className="text-indigo-400 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 text-xs">
+                {isAutoApprove ? (
+                  <>
+                    <p className="font-bold text-emerald-300">
+                      Pengajuan Anda akan langsung disetujui
+                    </p>
+                    <p className="text-slate-400 mt-0.5 leading-relaxed">
+                      Berdasarkan role Anda (<span className="font-mono text-emerald-300">{userRole}</span>),
+                      pengajuan tidak memerlukan approval berjenjang.
+                    </p>
+                  </>
+                ) : isAutoSkipped ? (
+                  <>
+                    <p className="font-bold text-amber-300">
+                      Auto-skip aktif — mulai dari Level {startLevel}
+                    </p>
+                    <p className="text-slate-400 mt-0.5 leading-relaxed">
+                      Berdasarkan role Anda (<span className="font-mono text-amber-300">{userRole}</span>),
+                      pengajuan akan langsung dikirim ke{' '}
+                      <span className="font-bold text-amber-200">{labelForLevel(startLevel)}</span>.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold text-indigo-300">
+                      Alur approval: 3 level
+                    </p>
+                    <p className="text-slate-400 mt-0.5 leading-relaxed">
+                      Level 1: Kepala Divisi → Level 2: HR Manager → Level 3: Kepala Sekolah
+                    </p>
+                  </>
+                )}
+
+                {/* Visualisasi flow (kalau bukan auto-approve) */}
+                {!isAutoApprove && (
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    {[1, 2, 3].map((lvl) => {
+                      const isPast = lvl < startLevel;
+                      const isCurrent = lvl === startLevel;
+                      const isFuture = lvl > startLevel;
+                      return (
+                        <div key={lvl} className="flex items-center gap-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              isPast
+                                ? 'bg-slate-800 text-slate-500 border-slate-700 line-through'
+                                : isCurrent
+                                ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                                : 'bg-slate-900 text-slate-400 border-slate-700'
+                            }`}
+                          >
+                            {isPast && <CheckCircle2 size={9} />}
+                            L{lvl}
+                          </span>
+                          {lvl < 3 && (
+                            <span className="text-slate-600 text-[10px]">→</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* JENIS CUTI */}
         <div>
           <label className={LABEL_CLASS}>Jenis Cuti / Izin *</label>
@@ -566,12 +770,18 @@ export function ModalPengajuanCuti({
             type="button"
             onClick={() => handleSubmit(false)}
             disabled={saving || uploading}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer"
+            className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition disabled:opacity-50 cursor-pointer ${
+              isAutoApprove
+                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
+                : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20'
+            }`}
           >
             {uploading ? (
               <><Loader2 size={14} className="animate-spin" /> Upload...</>
             ) : saving ? (
               <><Loader2 size={14} className="animate-spin" /> Simpan...</>
+            ) : isAutoApprove ? (
+              <><Sparkles size={14} /> {isEdit ? 'Simpan' : 'Ajukan & Setujui'}</>
             ) : (
               <><Save size={14} /> {isEdit ? 'Simpan' : 'Ajukan'}</>
             )}
