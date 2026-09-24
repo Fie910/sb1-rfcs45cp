@@ -55,7 +55,7 @@ export function HrisPage() {
   if (
     !isManager &&
     guru?.role &&
-    !['guru', 'guru_piket', 'kesiswaan', 'bk', 'sarpras', 'keuangan'].includes(
+    !['guru', 'guru_piket', 'bk', 'pustakawan', 'akademik', 'kesiswaan', 'sarpras', 'keuangan', ''].includes(
       guru.role.toLowerCase()
     )
   ) {
