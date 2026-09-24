@@ -65,7 +65,7 @@ export function IzinPage() {
 
   // Pengecekan Hak Akses untuk melihat Izin Guru Lain
   const userRole = (guru as any)?.role?.toLowerCase() || '';
-  const canViewOtherIzin = ['admin', 'kepala_sekolah', 'takola'].includes(userRole);
+  const canViewOtherIzin = ['admin', 'kepala', 'takola'].includes(userRole);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
