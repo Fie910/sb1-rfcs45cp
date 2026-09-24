@@ -395,13 +395,15 @@ export function PegawaiTab() {
 
       {/* MODAL DETAIL */}
       {detailTarget && (
-        <ModalDetailProfil
-          open={Boolean(detailTarget)}
-          onClose={() => setDetailTarget(null)}
-          pegawai={detailTarget as any}
-          onRefresh={fetchAll}
-        />
-      )}
+  <ModalDetailProfil
+    open={Boolean(detailTarget)}
+    onClose={() => setDetailTarget(null)}
+    pegawai={detailTarget as any}
+    onRefresh={fetchAll}
+    currentGuruId={currentGuru?.id}
+    currentGuruRole={currentGuru?.role}
+  />
+)}
     </div>
   );
 }
