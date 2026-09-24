@@ -167,8 +167,8 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'jadwal_piket', label: 'Jadwal Piket KBM', icon: CalendarCheck, path: '/jadwal_piket' },
       { key: 'jadwal_piket_penyambutan', label: 'Jadwal Piket Penyambutan', icon: CalendarCheck,
         path: '/jadwal_piket_penyambutan'},
-      { key: 'audit_log', label: 'Audit Log', icon: ScrollText, path: '/audit_log' },
       { key: 'hak_akses', label: 'Kelola Hak Akses', icon: Shield, path: '/hak_akses' },
+      { key: 'audit_log', label: 'Audit Log', icon: ScrollText, path: '/audit_log' },      
     ],
   },
   {
