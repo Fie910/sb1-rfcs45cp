@@ -333,6 +333,11 @@ export function SaranPengaduanPage() {
         const [takolaIds, adminIds] = await Promise.all([
           getGuruIdsByRole('takola'),
           getGuruIdsByRole('admin'),
+          getGuruIdsByRole('kepala'),
+          getGuruIdsByRole('akademik'),
+          getGuruIdsByRole('kesiswaan'),
+          getGuruIdsByRole('sarpras'),
+          getGuruIdsByRole('keuangan'),
         ]);
         const targetIds = Array.from(new Set([...takolaIds, ...adminIds])).filter(
           (id) => id !== user.id
