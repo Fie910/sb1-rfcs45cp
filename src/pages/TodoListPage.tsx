@@ -73,7 +73,7 @@ export function TodoListPage() {
 
     const SUPERVISOR_ROLES = [
       'admin',
-      'kepala_sekolah',
+      'kepala',
       'wakil_kepala',
       'kesiswaan',
       'akademik',
