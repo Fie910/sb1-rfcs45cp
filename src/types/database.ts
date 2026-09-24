@@ -1043,7 +1043,7 @@ export type PerpusStatistikLiterasi = {
 export type StatusKepegawaian = 'Tetap' | 'Kontrak' | 'Honorer' | 'Magang' | 'GTT/PTT';
 
 export type JenisPTK =
-  | 'Guru'
+  | 'Guru Mata Pelajaran'
   | 'Guru Bimbingan dan Konseling'
   | 'Kepala Sekolah'
   | 'Wakil Kepala'
