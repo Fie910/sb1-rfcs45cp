@@ -330,7 +330,7 @@ export function SaranPengaduanPage() {
 
       // Notifikasi ke pengelola (takola + admin)
       try {
-        const [takolaIds, adminIds] = await Promise.all([
+        const [takolaIds, adminIds, kepalaIds, akademikIds, kesiswaanIds, sarprasIds, keuanganIds] = await Promise.all([
           getGuruIdsByRole('takola'),
           getGuruIdsByRole('admin'),
           getGuruIdsByRole('kepala'),
