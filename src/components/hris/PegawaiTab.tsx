@@ -163,7 +163,7 @@ export function PegawaiTab() {
           g.nama_lengkap.toLowerCase().includes(q) ||
           (g.nip ?? '').toLowerCase().includes(q) ||
           g.email.toLowerCase().includes(q) ||
-          (g.mata_pelajaran ?? '').toLowerCase().includes(q);
+          (g.mata_pelajarans?.nama_mapel ?? '').toLowerCase().includes(q);
         if (!hit) return false;
       }
       return true;
