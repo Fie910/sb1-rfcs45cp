@@ -1,3 +1,4 @@
+// src/components/Modal.tsx
 import { type ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle, Info } from 'lucide-react';
