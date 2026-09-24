@@ -455,7 +455,7 @@ export const STATUS_CUTI_SELESAI = [
 
 /** Role yang bertindak sebagai approver di level tertentu */
 export const HR_APPROVER_ROLES = ['takola', 'staf_takola'];
-export const KEPSEK_ROLES = ['kepala_sekolah', 'admin'];
+export const KEPSEK_ROLES = ['kepala', 'admin'];
 export const KEPALA_DIVISI_ROLES = [
   'akademik',
   'kesiswaan',
