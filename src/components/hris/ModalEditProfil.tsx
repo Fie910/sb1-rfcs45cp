@@ -81,8 +81,7 @@ export function ModalEditProfil({ open, onClose, guru, profil, onSaved }: ModalE
       email: guru?.email ?? '',
       jenis_ptk: guru?.jenis_ptk ?? '',
       status_kepegawaian: guru?.status_kepegawaian ?? '',
-      tanggal_bergabung: guru?.tanggal_bergabung ?? '',
-      mata_pelajaran: guru?.mata_pelajaran ?? '',
+      tanggal_bergabung: guru?.tanggal_bergabung ?? '',      
     });
     setProfilForm({
       nik: profil?.nik ?? '',
