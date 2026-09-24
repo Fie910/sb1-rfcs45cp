@@ -11,7 +11,7 @@ import type { RencanaKegiatan } from '@/types/database';
 const ALLOWED_ROLES = [
   'admin',
   'wakil_kepala',
-  'kepala_sekolah',
+  'kepala',
   'kesiswaan',
   'akademik',
   'sarpras',
