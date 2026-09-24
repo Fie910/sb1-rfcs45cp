@@ -1,5 +1,5 @@
 // src/components/hris/ModalDetailProfil.tsx
-// Modal detail profil pegawai — view biodata + dokumen + pendidikan + edit.
+// Modal detail profil pegawai — view biodata + dokumen + pendidikan + pekerjaan + keluarga + edit.
 
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, User, Edit3, ShieldCheck } from 'lucide-react';
@@ -9,6 +9,8 @@ import { Modal } from '@/components/Modal';
 import { ModalEditProfil } from './ModalEditProfil';
 import { DokumenSection } from './DokumenSection';
 import { PendidikanSection } from './PendidikanSection';
+import { PekerjaanSection } from './PekerjaanSection';
+import { KeluargaSection } from './KeluargaSection';
 import {
   getStatusKepegawaianBadge, getJenisPtkBadge,
   hitungKelengkapanProfil, hitungUmur, hitungMasaKerja,
@@ -242,7 +244,6 @@ export function ModalDetailProfil({
                       : null
                   }
                 />
-                
                 <InfoRow label="Role Sistem" value={guru.role} />
               </InfoSection>
 
@@ -275,11 +276,17 @@ export function ModalDetailProfil({
               </div>
             )}
 
-            {/* ============ SECTION DOKUMEN ============ */}
-            <DokumenSection guruId={pegawai.id} editable={editable} />
-
-            {/* ============ SECTION PENDIDIKAN ============ */}
+            {/* ============ SECTION: RIWAYAT PENDIDIKAN ============ */}
             <PendidikanSection guruId={pegawai.id} editable={editable} />
+
+            {/* ============ SECTION: RIWAYAT PEKERJAAN ============ */}
+            <PekerjaanSection guruId={pegawai.id} editable={editable} />
+
+            {/* ============ SECTION: DATA KELUARGA ============ */}
+            <KeluargaSection guruId={pegawai.id} editable={editable} />
+
+            {/* ============ SECTION: DOKUMEN ============ */}
+            <DokumenSection guruId={pegawai.id} editable={editable} />
           </div>
         ) : null}
       </Modal>
