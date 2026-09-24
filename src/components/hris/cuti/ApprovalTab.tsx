@@ -1,17 +1,18 @@
 // src/components/hris/cuti/ApprovalTab.tsx
-// Tab Approval — daftar pengajuan yang perlu di-approve + aksi.
+// Tab Approval — daftar pengajuan yang perlu di-approve + aksi + cetak surat.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, ShieldCheck, CheckCircle2, XCircle, Clock,
-  Calendar, Eye, Inbox, History, MessageCircle,
+  Calendar, Eye, Inbox, History, Printer,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
-import { Modal, ConfirmModal } from '@/components/Modal';
+import { Modal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { WhatsAppButton } from './WhatsAppButton';
+import { generateSuratIzinPDF } from '@/lib/generateSuratIzin';
 import {
   getStatusCutiBadge, getJenisCutiBadge,
   formatJumlahHari, formatDateShort,
@@ -42,6 +43,7 @@ export function ApprovalTab() {
   const { guru } = useAuth();
   const [allPending, setAllPending] = useState<HrisCutiWithRelations[]>([]);
   const [myHistory, setMyHistory] = useState<(HrisCutiApproval & { cuti?: HrisCutiWithRelations })[]>([]);
+  const [approvedByMe, setApprovedByMe] = useState<HrisCutiWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [detailTarget, setDetailTarget] = useState<HrisCutiWithRelations | null>(null);
@@ -50,6 +52,7 @@ export function ApprovalTab() {
   const [approveTarget, setApproveTarget] = useState<HrisCutiWithRelations | null>(null);
   const [approveNote, setApproveNote] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [printingId, setPrintingId] = useState<string | null>(null);
 
   const myLevel = getApproverLevelFromRole(guru?.role);
 
@@ -60,7 +63,7 @@ export function ApprovalTab() {
     if (!guru?.id) return;
     setLoading(true);
     try {
-      const [pendingRes, historyRes] = await Promise.all([
+      const [pendingRes, historyRes, approvedRes] = await Promise.all([
         supabase
           .from('v_hris_cuti_lengkap')
           .select('*')
@@ -68,17 +71,22 @@ export function ApprovalTab() {
           .order('created_at', { ascending: true }),
         supabase
           .from('hris_cuti_approval')
-          .select(`
-            *,
-            cuti:hris_cuti!inner(id, nomor_pengajuan, guru_id, tanggal_mulai, tanggal_selesai, jumlah_hari, jenis_id, status)
-          `)
+          .select('*')
           .eq('approver_id', guru.id)
           .order('created_at', { ascending: false })
           .limit(20),
+        // Pengajuan yang sudah final disetujui (untuk cetak surat)
+        supabase
+          .from('v_hris_cuti_lengkap')
+          .select('*')
+          .eq('status', 'Disetujui')
+          .order('approved_at', { ascending: false })
+          .limit(30),
       ]);
 
       setAllPending((pendingRes.data as HrisCutiWithRelations[]) ?? []);
       setMyHistory((historyRes.data as any[]) ?? []);
+      setApprovedByMe((approvedRes.data as HrisCutiWithRelations[]) ?? []);
     } catch (err: any) {
       showToast('error', 'Gagal memuat: ' + (err.message || 'Error'));
     } finally {
@@ -94,19 +102,8 @@ export function ApprovalTab() {
   const myPending = useMemo(() => {
     if (myLevel === 0) return [];
     return allPending.filter((c) => {
-      // Hanya yang level saat ini = level saya
       if (c.current_level !== myLevel) return false;
-      // Jangan tampilkan pengajuan sendiri
       if (c.guru_id === guru?.id) return false;
-
-      // Level 1: hanya dari divisi yang sama
-      if (myLevel === 1) {
-        // Cek divisi user & pengaju (butuh data guru_id → divisi)
-        // Simplifikasi: tampilkan semua, karena data divisi tidak tersedia di view
-        // TODO: filter berdasarkan divisi kalau perlu
-        return true;
-      }
-
       return true;
     });
   }, [allPending, myLevel, guru?.id]);
@@ -121,7 +118,6 @@ export function ApprovalTab() {
       const nextLevel = approveTarget.current_level + 1;
       const newStatus = nextStatusForLevel(nextLevel);
 
-      // Update cuti
       const updateData: any = {
         current_level: nextLevel,
         status: newStatus,
@@ -132,22 +128,19 @@ export function ApprovalTab() {
       }
 
       const { data: updatedRows, error } = await supabase
-  .from('hris_cuti')
-  .update(updateData)
-  .eq('id', approveTarget.id)
-  .select();  // ← WAJIB: untuk tahu apakah row benar-benar terupdate
+        .from('hris_cuti')
+        .update(updateData)
+        .eq('id', approveTarget.id)
+        .select();
 
-if (error) throw error;
+      if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error(
+          'Update gagal — kemungkinan hak akses (RLS) memblokir. ' +
+          'Hubungi admin untuk cek policy hris_cuti.'
+        );
+      }
 
-// Cek apakah benar-benar ada yang terupdate
-if (!updatedRows || updatedRows.length === 0) {
-  throw new Error(
-    'Update gagal — kemungkinan hak akses (RLS) memblokir. ' +
-    'Hubungi admin untuk cek policy hris_cuti.'
-  );
-}
-
-      // Insert history
       await supabase.from('hris_cuti_approval').insert({
         cuti_id: approveTarget.id,
         approver_id: guru.id,
@@ -188,14 +181,21 @@ if (!updatedRows || updatedRows.length === 0) {
     }
     setProcessing(true);
     try {
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from('hris_cuti')
         .update({
           status: 'Ditolak',
           alasan_penolakan: rejectReason.trim(),
         })
-        .eq('id', rejectTarget.id);
+        .eq('id', rejectTarget.id)
+        .select();
+
       if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error(
+          'Update gagal — kemungkinan hak akses (RLS) memblokir.'
+        );
+      }
 
       await supabase.from('hris_cuti_approval').insert({
         cuti_id: rejectTarget.id,
@@ -213,7 +213,7 @@ if (!updatedRows || updatedRows.length === 0) {
         deskripsi: `Tolak ${rejectTarget.jenis_nama} — ${rejectTarget.guru_nama}: ${rejectReason.trim()}`,
       });
 
-      showToast('success', `Pengajuan ditolak`);
+      showToast('success', 'Pengajuan ditolak');
       setRejectTarget(null);
       setRejectReason('');
       fetchAll();
@@ -221,6 +221,60 @@ if (!updatedRows || updatedRows.length === 0) {
       showToast('error', 'Gagal: ' + (err.message || 'Error'));
     } finally {
       setProcessing(false);
+    }
+  };
+
+  // ==========================================================================
+  // CETAK SURAT
+  // ==========================================================================
+  const handleCetakSurat = async (item: HrisCutiWithRelations) => {
+    if (item.status !== 'Disetujui') {
+      showToast('error', 'Surat hanya bisa dicetak setelah disetujui final');
+      return;
+    }
+    if (!item.verification_token) {
+      showToast('error', 'Token verifikasi belum tersedia. Coba refresh halaman.');
+      return;
+    }
+
+    setPrintingId(item.id);
+    try {
+      const { data: guruData } = await supabase
+        .from('gurus')
+        .select('status_kepegawaian')
+        .eq('id', item.guru_id)
+        .single();
+
+      await generateSuratIzinPDF({
+        nomor_pengajuan: item.nomor_pengajuan ?? '-',
+        guru_nama: item.guru_nama ?? '-',
+        guru_nip: item.guru_nip ?? null,
+        jenis_ptk: item.guru_jenis_ptk ?? null,
+        status_kepegawaian: guruData?.status_kepegawaian ?? null,
+        jenis_nama: item.jenis_nama ?? '-',
+        tanggal_mulai: item.tanggal_mulai,
+        tanggal_selesai: item.tanggal_selesai,
+        jumlah_hari: item.jumlah_hari,
+        jam_mulai: item.jam_mulai,
+        jam_selesai: item.jam_selesai,
+        alasan: item.alasan,
+        alamat_selama_cuti: item.alamat_selama_cuti,
+        no_hp_selama_cuti: item.no_hp_selama_cuti,
+        verification_token: item.verification_token,
+      });
+
+      await logActivity({
+        aksi: 'EXPORT',
+        modul: AUDIT_MODUL.HRIS,
+        targetId: item.id,
+        deskripsi: `Cetak surat izin: ${item.nomor_pengajuan} — ${item.guru_nama}`,
+      });
+
+      showToast('success', 'Surat berhasil dicetak');
+    } catch (err: any) {
+      showToast('error', 'Gagal cetak surat: ' + (err.message || 'Error'));
+    } finally {
+      setPrintingId(null);
     }
   };
 
@@ -300,14 +354,38 @@ if (!updatedRows || updatedRows.length === 0) {
               <ApprovalCard
                 key={item.id}
                 item={item}
+                printing={false}
                 onDetail={() => setDetailTarget(item)}
                 onApprove={() => setApproveTarget(item)}
                 onReject={() => setRejectTarget(item)}
+                onCetak={handleCetakSurat}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* RIWAYAT CUTI DISETUJUI — CETAK ULANG */}
+      {approvedByMe.length > 0 && (
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-1.5">
+            <CheckCircle2 size={12} /> Cuti Disetujui — Cetak Surat
+          </h3>
+          <div className="space-y-3">
+            {approvedByMe.map((item) => (
+              <ApprovalCard
+                key={item.id}
+                item={item}
+                printing={printingId === item.id}
+                onDetail={() => setDetailTarget(item)}
+                onApprove={() => {}}
+                onReject={() => {}}
+                onCetak={handleCetakSurat}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* HISTORY SAYA */}
       {myHistory.length > 0 && (
@@ -460,7 +538,13 @@ if (!updatedRows || updatedRows.length === 0) {
         title="Detail Pengajuan"
         size="md"
       >
-        {detailTarget && <ApprovalDetail item={detailTarget} />}
+        {detailTarget && (
+          <ApprovalDetail
+            item={detailTarget}
+            onCetak={() => handleCetakSurat(detailTarget)}
+            printing={printingId === detailTarget.id}
+          />
+        )}
       </Modal>
     </div>
   );
@@ -470,13 +554,18 @@ if (!updatedRows || updatedRows.length === 0) {
 // SUB: Approval Card
 // =============================================================================
 function ApprovalCard({
-  item, onDetail, onApprove, onReject,
+  item, printing, onDetail, onApprove, onReject, onCetak,
 }: {
   item: HrisCutiWithRelations;
+  printing: boolean;
   onDetail: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onCetak: (item: HrisCutiWithRelations) => void;
 }) {
+  const isPending = STATUS_CUTI_AKTIF.includes(item.status as any);
+  const canPrint = item.status === 'Disetujui';
+
   return (
     <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 hover:border-indigo-500/40 transition">
       <div className="flex items-start gap-3">
@@ -515,26 +604,45 @@ function ApprovalCard({
 
           <p className="text-xs text-slate-400 line-clamp-2 mt-2">{item.alasan}</p>
 
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-800 flex-wrap">
             <button
               onClick={onDetail}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-[10px] font-bold transition cursor-pointer"
             >
               <Eye size={11} /> Detail
             </button>
-            <div className="flex-1" />
-            <button
-              onClick={onReject}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold transition cursor-pointer"
-            >
-              <XCircle size={11} /> Tolak
-            </button>
-            <button
-              onClick={onApprove}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer"
-            >
-              <CheckCircle2 size={11} /> Setujui
-            </button>
+
+            {canPrint && (
+              <button
+                onClick={() => onCetak(item)}
+                disabled={printing}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer disabled:opacity-50"
+              >
+                {printing ? (
+                  <><Loader2 size={11} className="animate-spin" /> Cetak...</>
+                ) : (
+                  <><Printer size={11} /> Cetak Surat</>
+                )}
+              </button>
+            )}
+
+            {isPending && (
+              <>
+                <div className="flex-1" />
+                <button
+                  onClick={onReject}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold transition cursor-pointer"
+                >
+                  <XCircle size={11} /> Tolak
+                </button>
+                <button
+                  onClick={onApprove}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer"
+                >
+                  <CheckCircle2 size={11} /> Setujui
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -545,7 +653,13 @@ function ApprovalCard({
 // =============================================================================
 // SUB: Detail Approval
 // =============================================================================
-function ApprovalDetail({ item }: { item: HrisCutiWithRelations }) {
+function ApprovalDetail({
+  item, onCetak, printing,
+}: {
+  item: HrisCutiWithRelations;
+  onCetak: () => void;
+  printing: boolean;
+}) {
   const waPesan = `Assalamualaikum ${item.guru_nama}, saya ingin konfirmasi pengajuan ${item.jenis_nama} Anda tanggal ${formatDateShort(item.tanggal_mulai)} - ${formatDateShort(item.tanggal_selesai)}.`;
 
   return (
@@ -583,6 +697,20 @@ function ApprovalDetail({ item }: { item: HrisCutiWithRelations }) {
         >
           Buka Lampiran
         </a>
+      )}
+
+      {item.status === 'Disetujui' && (
+        <button
+          onClick={onCetak}
+          disabled={printing}
+          className="inline-flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50"
+        >
+          {printing ? (
+            <><Loader2 size={14} className="animate-spin" /> Mencetak...</>
+          ) : (
+            <><Printer size={14} /> Cetak Surat Izin (PDF)</>
+          )}
+        </button>
       )}
 
       <WhatsAppButton
