@@ -11,6 +11,8 @@ import { PegawaiTab } from '@/components/hris/PegawaiTab';
 import { ProfilSayaTab } from '@/components/hris/ProfilSayaTab';
 import { DokumenSayaTab } from '@/components/hris/DokumenSayaTab';
 import { DashboardHrTab } from '@/components/hris/DashboardHrTab';
+import { CalendarDays } from 'lucide-react';
+import { CutiIzinPage } from '@/components/hris/cuti/CutiIzinPage';
 
 type TabKey = 'pegawai' | 'profil_saya' | 'dokumen' | 'dashboard';
 
@@ -25,6 +27,7 @@ const ALL_TABS: TabDef[] = [
   { key: 'pegawai', label: 'Data Pegawai', icon: Users, managerOnly: true },
   { key: 'profil_saya', label: 'Profil Saya', icon: User },
   { key: 'dokumen', label: 'Dokumen Saya', icon: FolderOpen },
+  { key: 'cuti', label: 'Cuti & Izin', icon: CalendarDays },
   { key: 'dashboard', label: 'Dashboard HR', icon: BarChart3, managerOnly: true },
 ];
 
