@@ -174,36 +174,12 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
   {
     groupTitle: 'Rekap & Laporan',
     items: [
-      {
-        key: 'rekap_presensi_siswa',
-        label: 'Rekap Presensi Siswa',
-        icon: FileBarChart,
-        path: '/rekap_presensi_siswa',
-      },
-      {
-        key: 'rekap_presensi_kesiswaan',
-        label: 'Rekap Presensi Siswa (Kesiswaan)',
-        icon: FileBarChart,
-        path: '/rekap_presensi_kesiswaan',
-      },
-      {
-        key: 'rekap_nilai',
-        label: 'Rekap Nilai Siswa',
-        icon: FileBarChart,
-        path: '/rekap_nilai',
-      },
-      {
-        key: 'rekap_presensi_guru',
-        label: 'Rekap Presensi Guru',
-        icon: FileBarChart,
-        path: '/rekap_presensi_guru',
-      },
-      {
-        key: 'rekap_agenda',
-        label: 'Rekap Agenda Guru',
-        icon: FileBarChart,
-        path: '/rekap_agenda',
-      },
+      { key: 'rekap_presensi_siswa', label: 'Rekap Presensi Siswa', icon: FileBarChart, path: '/rekap_presensi_siswa' },
+      { key: 'rekap_presensi_kesiswaan', label: 'Rekap Presensi Siswa (Kesiswaan)', icon: FileBarChart,
+        path: '/rekap_presensi_kesiswaan'},
+      { key: 'rekap_nilai', label: 'Rekap Nilai Siswa', icon: FileBarChart, path: '/rekap_nilai' },
+      { key: 'rekap_presensi_guru', label: 'Rekap Presensi Guru', icon: FileBarChart, path: '/rekap_presensi_guru' },
+      { key: 'rekap_agenda', label: 'Rekap Agenda Guru', icon: FileBarChart, path: '/rekap_agenda' },
       { key: 'rekap_izin', label: 'Rekap Izin Guru', icon: FileBarChart, path: '/rekap_izin' },
     ],
   },
