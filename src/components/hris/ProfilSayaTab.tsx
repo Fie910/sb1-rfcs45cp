@@ -171,8 +171,7 @@ export function ProfilSayaTab() {
           <InfoRow label="Tanggal Bergabung"
             value={guruData.tanggal_bergabung ? formatDateShort(guruData.tanggal_bergabung) : null} />
           <InfoRow label="Masa Kerja"
-            value={guruData.tanggal_bergabung ? hitungMasaKerja(guruData.tanggal_bergabung) : null} />
-          <InfoRow label="Mata Pelajaran" value={guruData.mata_pelajarans?.nama_mapel ?? guruData.mata_pelajaran} />
+            value={guruData.tanggal_bergabung ? hitungMasaKerja(guruData.tanggal_bergabung) : null} />          
         </InfoSection>
 
               {/* SECTION DOKUMEN */}
