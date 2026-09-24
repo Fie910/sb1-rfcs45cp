@@ -12,6 +12,8 @@ import {
   hitungKelengkapanProfil, hitungUmur, hitungMasaKerja,
   formatDateShort,
 } from './shared';
+import { DokumenSection } from './DokumenSection';
+import { PendidikanSection } from './PendidikanSection';
 
 type ModalDetailProfilProps = {
   open: boolean;
