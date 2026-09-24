@@ -343,3 +343,104 @@ export const INPUT_CLASS =
 
 export const LABEL_CLASS =
   'block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2';
+
+// =============================================================================
+// HELPER CUTI & IZIN (Modul Cuti HRIS)
+// =============================================================================
+
+/** Badge warna untuk status pengajuan cuti */
+export function getStatusCutiBadge(status: string | null | undefined): string {
+  switch (status) {
+    case 'Draft':
+      return 'bg-slate-800 text-slate-300 border-slate-700';
+    case 'Diajukan':
+      return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+    case 'Disetujui Atasan':
+    case 'Disetujui HR':
+    case 'Disetujui Kepsek':
+      return 'bg-blue-500/15 text-blue-400 border-blue-500/30';
+    case 'Disetujui':
+      return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+    case 'Ditolak':
+      return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+    case 'Dibatalkan':
+      return 'bg-slate-700 text-slate-400 border-slate-600';
+    default:
+      return 'bg-slate-800 text-slate-300 border-slate-700';
+  }
+}
+
+/** Badge warna untuk jenis cuti (dari kolom `warna` master) */
+export function getJenisCutiBadge(warna: string | null | undefined): string {
+  switch (warna) {
+    case 'indigo':
+      return 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30';
+    case 'rose':
+      return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+    case 'pink':
+      return 'bg-pink-500/15 text-pink-400 border-pink-500/30';
+    case 'purple':
+      return 'bg-purple-500/15 text-purple-400 border-purple-500/30';
+    case 'emerald':
+      return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+    case 'blue':
+      return 'bg-blue-500/15 text-blue-400 border-blue-500/30';
+    case 'cyan':
+      return 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
+    case 'amber':
+      return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+    case 'teal':
+      return 'bg-teal-500/15 text-teal-400 border-teal-500/30';
+    default:
+      return 'bg-slate-800 text-slate-300 border-slate-700';
+  }
+}
+
+/** Format jumlah hari (mis. 5, 0.5) */
+export function formatJumlahHari(hari: number | null | undefined): string {
+  if (!hari || hari <= 0) return '0 hari';
+  if (Number.isInteger(hari)) return `${hari} hari`;
+  return `${hari} hari`;
+}
+
+/**
+ * Hitung jumlah hari kerja (Senin–Sabtu, tidak termasuk Minggu)
+ * antara 2 tanggal. Dipakai untuk pre-fill jumlah_hari di form cuti.
+ */
+export function hitungHariKerja(mulai: string, selesai: string): number {
+  if (!mulai || !selesai) return 0;
+  const d1 = new Date(`${mulai}T00:00:00+07:00`);
+  const d2 = new Date(`${selesai}T00:00:00+07:00`);
+  if (d2 < d1) return 0;
+
+  let count = 0;
+  const cur = new Date(d1);
+  while (cur <= d2) {
+    const day = cur.getDay(); // 0 = Minggu
+    if (day !== 0) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
+/**
+ * Hitung selisih hari kalender (bukan hari kerja) — untuk cuti melahirkan, sakit, dsb.
+ */
+export function hitungHariKalender(mulai: string, selesai: string): number {
+  if (!mulai || !selesai) return 0;
+  const d1 = new Date(`${mulai}T00:00:00+07:00`);
+  const d2 = new Date(`${selesai}T00:00:00+07:00`);
+  if (d2 < d1) return 0;
+  return Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+// Role yang dianggap approver pada level tertentu
+export const HR_APPROVER_ROLES = ['takola', 'staf_takola'];
+export const KEPSEK_ROLES = ['kepala'];
+export const KEPALA_DIVISI_ROLES = [
+  'akademik',
+  'kesiswaan',
+  'sarpras',
+  'keuangan',
+  'takola',
+];
