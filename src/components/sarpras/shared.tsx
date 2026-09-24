@@ -16,7 +16,7 @@ import {
 // AKSES
 // =============================================================================
 
-export const SARPRAS_MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala', 'sarpras'];
+export const SARPRAS_MANAGER_ROLES = ['admin', 'kepala_sekolah', 'wakil_kepala', 'sarpras'];
 
 export function isSarprasManager(role: string | null | undefined): boolean {
   if (!role) return false;
