@@ -376,7 +376,7 @@ export function HakAksesPage() {
             </label>
             <input
               type="text"
-              placeholder="contoh: guru_bk, kepala_sekolah"
+              placeholder="contoh: guru_bk, kepala"
               value={newKodeRole}
               onChange={(e) => setNewKodeRole(e.target.value)}
               required
