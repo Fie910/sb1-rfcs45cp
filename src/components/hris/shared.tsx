@@ -28,7 +28,7 @@ import type {
 // =============================================================================
 // AKSES
 // =============================================================================
-export const HR_MANAGER_ROLES = ['admin', 'kepala_sekolah', 'wakil_kepala', 'takola', 'staf_takola'];
+export const HR_MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala', 'takola', 'staf_takola'];
 
 export function isHrManager(role: string | null | undefined): boolean {
   if (!role) return false;
