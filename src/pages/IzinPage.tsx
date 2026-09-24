@@ -38,7 +38,7 @@ import type {
 } from '@/types/database';
 
 // Role kepala divisi yang perlu tahu semua pengajuan izin.
-const ROLE_KEPALA_KEPEGAWAIAN = ['admin', 'kepala_sekolah', 'takola'];
+const ROLE_KEPALA_KEPEGAWAIAN = ['admin', 'kepala', 'takola'];
 
 export function IzinPage() {
   const { guru } = useAuth();
