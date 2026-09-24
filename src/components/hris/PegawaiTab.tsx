@@ -1,11 +1,10 @@
 // src/components/hris/PegawaiTab.tsx
-// Tab Data Pegawai — daftar lengkap semua guru & tendik.
+// Tab Data Pegawai — versi aman tanpa asumsi kolom mapel_id.
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Search, X, Users, Filter, UserCheck, Eye, Edit3,
-  User, Mail, Phone, Briefcase, Calendar, TrendingUp,
-  GraduationCap, ShieldCheck, AlertTriangle, Download,
+  Search, X, Users, Filter, UserCheck, Eye,
+  User, Mail, Phone, Briefcase, ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -16,7 +15,6 @@ import {
   hitungKelengkapanProfil, hitungMasaKerja, formatDateShort,
   INPUT_CLASS, STATUS_KEPEGAWAIAN_OPTIONS, JENIS_PTK_OPTIONS,
 } from './shared';
-import type { Guru } from '@/types/database';
 import { useAuth } from '@/context/AuthContext';
 
 // =============================================================================
@@ -31,9 +29,7 @@ type PegawaiRow = {
   jenis_ptk: string | null;
   status_kepegawaian: string | null;
   tanggal_bergabung: string | null;
-  mapel_id: string | null;
   mata_pelajarans: { id: string; nama_mapel: string } | null;
-  // From hris_profil_pegawai
   hris_profil_pegawai: {
     nik: string | null;
     tanggal_lahir: string | null;
@@ -44,7 +40,6 @@ type PegawaiRow = {
     nama_kontak_darurat: string | null;
     foto_profil_url: string | null;
   }[] | null;
-  // Aggregates
   total_dokumen: number;
   total_pendidikan: number;
   total_pekerjaan: number;
@@ -59,13 +54,11 @@ export function PegawaiTab() {
   const [list, setList] = useState<PegawaiRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterJenis, setFilterJenis] = useState('');
   const [filterKelengkapan, setFilterKelengkapan] = useState('');
 
-  // Modal
   const [detailTarget, setDetailTarget] = useState<PegawaiRow | null>(null);
 
   // ==========================================================================
@@ -74,16 +67,13 @@ export function PegawaiTab() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      // ✅ FIX: Query terpisah agar tidak bergantung pada FK relationship.
-      // Ambil gurus tanpa embed, lalu ambil mata_pelajarans terpisah,
-      // dan gabungkan di client.
+      // ✅ Query aman — hanya kolom yang dijamin ada.
       const [guruRes, profilRes, dokRes, pendRes, kerjaRes, kelRes] = await Promise.all([
         supabase
           .from('gurus')
           .select(`
             id, nip, nama_lengkap, email, role,
-            jenis_ptk, status_kepegawaian, tanggal_bergabung,
-            mapel_id
+            jenis_ptk, status_kepegawaian, tanggal_bergabung
           `)
           .order('nama_lengkap'),
         supabase.from('hris_profil_pegawai').select('*'),
@@ -96,36 +86,11 @@ export function PegawaiTab() {
       if (guruRes.error) throw guruRes.error;
 
       const gurus = (guruRes.data ?? []) as any[];
-
-      // ✅ Ambil mata pelajaran secara terpisah (aman jika FK belum terdaftar)
-      const mapelIds = Array.from(
-        new Set(gurus.map((g) => g.mapel_id).filter(Boolean))
-      ) as string[];
-
-      let mapelMap = new Map<string, { id: string; nama_mapel: string }>();
-      if (mapelIds.length > 0) {
-        const { data: mapelData, error: mapelErr } = await supabase
-          .from('mata_pelajarans')
-          .select('id, nama_mapel')
-          .in('id', mapelIds);
-
-        if (mapelErr) {
-          // Tidak fatal — kalau tabel mapel error, tetap lanjut tanpa mapel
-          console.warn('[PegawaiTab] Gagal load mata_pelajarans:', mapelErr.message);
-        } else {
-          mapelMap = new Map(
-            (mapelData ?? []).map((m: any) => [m.id, { id: m.id, nama_mapel: m.nama_mapel }])
-          );
-        }
-      }
-
       const profiles = profilRes.data ?? [];
 
-      // Build profile map (1:1 by id)
       const profilMap = new Map<string, any>();
       profiles.forEach((p: any) => profilMap.set(p.id, p));
 
-      // Count aggregates per guru
       const countBy = (arr: any[]) => {
         const m = new Map<string, number>();
         arr.forEach((r) => m.set(r.guru_id, (m.get(r.guru_id) ?? 0) + 1));
@@ -145,9 +110,8 @@ export function PegawaiTab() {
         jenis_ptk: g.jenis_ptk,
         status_kepegawaian: g.status_kepegawaian,
         tanggal_bergabung: g.tanggal_bergabung,
-        mapel_id: g.mapel_id,
-        // ✅ Merge manual
-        mata_pelajarans: g.mapel_id ? mapelMap.get(g.mapel_id) ?? null : null,
+        // Mapel belum tersedia sampai skema dipastikan
+        mata_pelajarans: null,
         hris_profil_pegawai: profilMap.has(g.id) ? [profilMap.get(g.id)] : [],
         total_dokumen: dokCount.get(g.id) ?? 0,
         total_pendidikan: pendCount.get(g.id) ?? 0,
@@ -187,8 +151,7 @@ export function PegawaiTab() {
         const hit =
           g.nama_lengkap.toLowerCase().includes(q) ||
           (g.nip ?? '').toLowerCase().includes(q) ||
-          g.email.toLowerCase().includes(q) ||
-          (g.mata_pelajarans?.nama_mapel ?? '').toLowerCase().includes(q);
+          g.email.toLowerCase().includes(q);
         if (!hit) return false;
       }
       return true;
@@ -238,7 +201,6 @@ export function PegawaiTab() {
   // ==========================================================================
   return (
     <div className="space-y-5">
-      {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-extrabold text-slate-100 flex items-center gap-2">
@@ -250,7 +212,6 @@ export function PegawaiTab() {
         </div>
       </div>
 
-      {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <KpiCard icon={Users} label="Total Pegawai" value={stats.total} color="indigo" />
         <KpiCard icon={UserCheck} label="Tetap" value={stats.tetap} color="emerald" />
@@ -259,7 +220,6 @@ export function PegawaiTab() {
         <KpiCard icon={ShieldCheck} label="Punya Profil" value={stats.denganProfil} color="teal" />
       </div>
 
-      {/* FILTER */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-300 font-bold text-xs uppercase tracking-wider">
@@ -314,7 +274,6 @@ export function PegawaiTab() {
         </div>
       </div>
 
-      {/* LIST */}
       {loading ? (
         <div className="text-center py-16 text-slate-500 text-sm">Memuat data pegawai...</div>
       ) : filtered.length === 0 ? (
@@ -425,7 +384,6 @@ export function PegawaiTab() {
         </div>
       )}
 
-      {/* MODAL DETAIL */}
       {detailTarget && (
         <ModalDetailProfil
           open={Boolean(detailTarget)}
