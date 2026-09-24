@@ -1,10 +1,10 @@
 // src/components/hris/cuti/PengajuanSayaTab.tsx
-// Tab Pengajuan Saya — list pengajuan cuti milik user + saldo + CRUD.
+// Tab Pengajuan Saya — list pengajuan cuti milik user + saldo + CRUD + cetak surat.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus, Loader2, Calendar, Clock, CheckCircle2, XCircle,
-  Pencil, Trash2, Eye, Building2, ChevronRight, MessageCircle,
+  Pencil, Trash2, Eye, ChevronRight, MessageCircle, Printer,
   TrendingUp, AlertTriangle, ShieldCheck, FileText, History,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -14,6 +14,7 @@ import { ConfirmModal, Modal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { WhatsAppButton } from './WhatsAppButton';
 import { ModalPengajuanCuti } from './ModalPengajuanCuti';
+import { generateSuratIzinPDF } from '@/lib/generateSuratIzin';
 import {
   getStatusCutiBadge, getJenisCutiBadge,
   formatJumlahHari, formatDateShort,
@@ -36,6 +37,7 @@ export function PengajuanSayaTab() {
   const [editing, setEditing] = useState<HrisCutiWithRelations | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HrisCutiWithRelations | null>(null);
   const [detailTarget, setDetailTarget] = useState<HrisCutiWithRelations | null>(null);
+  const [printingId, setPrintingId] = useState<string | null>(null);
 
   const currentYear = new Date().getFullYear();
 
@@ -170,6 +172,61 @@ export function PengajuanSayaTab() {
   };
 
   // ==========================================================================
+  // CETAK SURAT
+  // ==========================================================================
+  const handleCetakSurat = async (item: HrisCutiWithRelations) => {
+    if (item.status !== 'Disetujui') {
+      showToast('error', 'Surat hanya bisa dicetak setelah disetujui final');
+      return;
+    }
+    if (!item.verification_token) {
+      showToast('error', 'Token verifikasi belum tersedia. Coba refresh halaman.');
+      return;
+    }
+
+    setPrintingId(item.id);
+    try {
+      // Ambil status_kepegawaian dari gurus
+      const { data: guruData } = await supabase
+        .from('gurus')
+        .select('status_kepegawaian')
+        .eq('id', item.guru_id)
+        .single();
+
+      await generateSuratIzinPDF({
+        nomor_pengajuan: item.nomor_pengajuan ?? '-',
+        guru_nama: item.guru_nama ?? item.guru_nip ?? '-',
+        guru_nip: item.guru_nip ?? null,
+        jenis_ptk: item.guru_jenis_ptk ?? null,
+        status_kepegawaian: guruData?.status_kepegawaian ?? null,
+        jenis_nama: item.jenis_nama ?? '-',
+        tanggal_mulai: item.tanggal_mulai,
+        tanggal_selesai: item.tanggal_selesai,
+        jumlah_hari: item.jumlah_hari,
+        jam_mulai: item.jam_mulai,
+        jam_selesai: item.jam_selesai,
+        alasan: item.alasan,
+        alamat_selama_cuti: item.alamat_selama_cuti,
+        no_hp_selama_cuti: item.no_hp_selama_cuti,
+        verification_token: item.verification_token,
+      });
+
+      await logActivity({
+        aksi: 'EXPORT',
+        modul: AUDIT_MODUL.HRIS,
+        targetId: item.id,
+        deskripsi: `Cetak surat izin: ${item.nomor_pengajuan}`,
+      });
+
+      showToast('success', 'Surat berhasil dicetak');
+    } catch (err: any) {
+      showToast('error', 'Gagal cetak surat: ' + (err.message || 'Error'));
+    } finally {
+      setPrintingId(null);
+    }
+  };
+
+  // ==========================================================================
   // RENDER
   // ==========================================================================
   if (loading) {
@@ -221,7 +278,7 @@ export function PengajuanSayaTab() {
             <div className="w-40 h-1.5 bg-slate-950 rounded-full overflow-hidden">
               <div
                 className="h-full bg-amber-500 rounded-full transition-all"
-                style={{ width: `${(saldoTerpakai / saldoAwal) * 100}%` }}
+                style={{ width: `${Math.min(100, (saldoTerpakai / saldoAwal) * 100)}%` }}
               />
             </div>
           </div>
@@ -231,10 +288,10 @@ export function PengajuanSayaTab() {
       {/* FILTER INFO */}
       <div className="flex flex-wrap gap-2">
         {[
-          { label: `Semua (${stats.total})`, count: stats.total },
-          { label: `Menunggu (${stats.aktif})`, count: stats.aktif, color: 'amber' },
-          { label: `Disetujui (${stats.disetujui})`, count: stats.disetujui, color: 'emerald' },
-          { label: `Ditolak (${stats.ditolak})`, count: stats.ditolak, color: 'rose' },
+          { label: `Semua (${stats.total})` },
+          { label: `Menunggu (${stats.aktif})` },
+          { label: `Disetujui (${stats.disetujui})` },
+          { label: `Ditolak (${stats.ditolak})` },
         ].map((t) => (
           <span
             key={t.label}
@@ -262,10 +319,12 @@ export function PengajuanSayaTab() {
             <CutiCard
               key={item.id}
               item={item}
+              printingId={printingId}
               onEdit={() => handleOpenEdit(item)}
               onDelete={() => setDeleteTarget(item)}
               onDetail={() => setDetailTarget(item)}
               onBatalkan={() => handleBatalkan(item)}
+              onCetak={handleCetakSurat}
             />
           ))}
         </div>
@@ -273,15 +332,15 @@ export function PengajuanSayaTab() {
 
       {/* MODAL FORM */}
       <ModalPengajuanCuti
-  open={modalOpen}
-  onClose={() => setModalOpen(false)}
-  onSaved={fetchAll}
-  editing={editing as any}
-  guruList={guruList}
-  jenisList={jenisList}
-  guruId={guru?.id ?? ''}
-  userRole={guru?.role}
-/>
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSaved={fetchAll}
+        editing={editing as any}
+        guruList={guruList}
+        jenisList={jenisList}
+        guruId={guru?.id ?? ''}
+        userRole={guru?.role}
+      />
 
       {/* MODAL DETAIL */}
       <Modal
@@ -290,7 +349,15 @@ export function PengajuanSayaTab() {
         title="Detail Pengajuan"
         size="md"
       >
-        {detailTarget && <DetailPengajuan item={detailTarget} />}
+        {detailTarget && (
+          <DetailPengajuan
+            item={detailTarget}
+            onCetak={() => {
+              handleCetakSurat(detailTarget);
+            }}
+            printing={printingId === detailTarget.id}
+          />
+        )}
       </Modal>
 
       {/* CONFIRM DELETE */}
@@ -309,17 +376,20 @@ export function PengajuanSayaTab() {
 // SUB: Kartu Cuti
 // =============================================================================
 function CutiCard({
-  item, onEdit, onDelete, onDetail, onBatalkan,
+  item, printingId, onEdit, onDelete, onDetail, onBatalkan, onCetak,
 }: {
   item: HrisCutiWithRelations;
+  printingId: string | null;
   onEdit: () => void;
   onDelete: () => void;
   onDetail: () => void;
   onBatalkan: () => void;
+  onCetak: (item: HrisCutiWithRelations) => void;
 }) {
-  const isFinal = ['Disetujui', 'Ditolak', 'Dibatalkan'].includes(item.status);
   const canEdit = ['Draft', 'Diajukan'].includes(item.status);
   const canCancel = STATUS_CUTI_AKTIF.includes(item.status);
+  const isPrinting = printingId === item.id;
+  const canPrint = item.status === 'Disetujui';
 
   return (
     <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 hover:border-slate-700 transition group">
@@ -373,14 +443,27 @@ function CutiCard({
       <p className="text-xs text-slate-400 line-clamp-2 mb-3">{item.alasan}</p>
 
       {/* AKTIONS */}
-      <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-800">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-800 flex-wrap">
+        <div className="flex items-center gap-1 flex-wrap">
           <button
             onClick={onDetail}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 text-[10px] font-bold transition cursor-pointer"
           >
             <Eye size={11} /> Detail
           </button>
+          {canPrint && (
+            <button
+              onClick={() => onCetak(item)}
+              disabled={isPrinting}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-bold transition cursor-pointer disabled:opacity-50"
+            >
+              {isPrinting ? (
+                <><Loader2 size={11} className="animate-spin" /> Cetak...</>
+              ) : (
+                <><Printer size={11} /> Cetak Surat</>
+              )}
+            </button>
+          )}
           {canEdit && (
             <button
               onClick={onEdit}
@@ -414,7 +497,13 @@ function CutiCard({
 // =============================================================================
 // SUB: Detail Pengajuan
 // =============================================================================
-function DetailPengajuan({ item }: { item: HrisCutiWithRelations }) {
+function DetailPengajuan({
+  item, onCetak, printing,
+}: {
+  item: HrisCutiWithRelations;
+  onCetak: () => void;
+  printing: boolean;
+}) {
   const [history, setHistory] = useState<HrisCutiApproval[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -430,7 +519,6 @@ function DetailPengajuan({ item }: { item: HrisCutiWithRelations }) {
     })();
   }, [item.id]);
 
-  // Auto-fill pesan WA
   const waPesan = `Assalamualaikum, saya ${item.guru_nama}, mengajukan ${item.jenis_nama} dari ${formatDateShort(item.tanggal_mulai)} s/d ${formatDateShort(item.tanggal_selesai)} (${formatJumlahHari(item.jumlah_hari)}). Mohon diperiksa. Terima kasih.`;
 
   return (
@@ -471,10 +559,25 @@ function DetailPengajuan({ item }: { item: HrisCutiWithRelations }) {
           href={item.lampiran_url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer"
+          className="inline-flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
         >
           <FileText size={14} /> Buka Lampiran
         </a>
+      )}
+
+      {/* TOMBOL CETAK SURAT */}
+      {item.status === 'Disetujui' && (
+        <button
+          onClick={onCetak}
+          disabled={printing}
+          className="inline-flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50"
+        >
+          {printing ? (
+            <><Loader2 size={14} className="animate-spin" /> Mencetak...</>
+          ) : (
+            <><Printer size={14} /> Cetak Surat Izin (PDF)</>
+          )}
+        </button>
       )}
 
       {/* HISTORY APPROVAL */}
@@ -496,10 +599,12 @@ function DetailPengajuan({ item }: { item: HrisCutiWithRelations }) {
                       ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
                       : h.aksi === 'Reject'
                       ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                      : h.aksi === 'Auto-Skip'
+                      ? 'bg-purple-500/15 border-purple-500/30 text-purple-400'
                       : 'bg-slate-700 border-slate-600 text-slate-300'
                   }`}
                 >
-                  {h.aksi === 'Approve' ? '✓' : h.aksi === 'Reject' ? '✗' : '⊘'}
+                  {h.aksi === 'Approve' ? '✓' : h.aksi === 'Reject' ? '✗' : h.aksi === 'Auto-Skip' ? '⚡' : '⊘'}
                 </div>
                 <div className="flex-1">
                   <p className="text-slate-300 font-semibold">
