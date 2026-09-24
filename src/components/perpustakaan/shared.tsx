@@ -21,7 +21,7 @@ import type {
 // AKSES
 // =============================================================================
 
-export const PUSTAKAWAN_ROLES = ['admin', 'kepala', 'wakil_kepala', 'pustakawan'];
+export const PUSTAKAWAN_ROLES = ['admin', 'kepala_sekolah', 'wakil_kepala', 'pustakawan'];
 
 export function isPustakawan(role: string | null | undefined): boolean {
   if (!role) return false;
