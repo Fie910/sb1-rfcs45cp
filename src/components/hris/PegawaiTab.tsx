@@ -54,6 +54,7 @@ type PegawaiRow = {
 // KOMPONEN
 // =============================================================================
 export function PegawaiTab() {
+  const { guru: currentGuru } = useAuth();
   const [list, setList] = useState<PegawaiRow[]>([]);
   const [loading, setLoading] = useState(true);
 
