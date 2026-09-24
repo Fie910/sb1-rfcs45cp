@@ -1301,6 +1301,9 @@ export type HrisCuti = {
   guru_pengganti_id: string | null;
   catatan_pengganti: string | null;
   mengurangi_saldo_tahunan: boolean | null;
+  verification_token: string | null;
+  surat_generated_at: string | null;
+  surat_generated_by: string | null;
   created_at: string;
   updated_at: string;
 };
