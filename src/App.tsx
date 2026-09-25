@@ -7,9 +7,14 @@ import { ToastContainer } from '@/components/Toast';
 import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/lib/supabase';
 import type { PageKey } from '@/config/navigation';
-import VerifikasiSuratPage from '@/pages/VerifikasiSuratPage';
 
-// Lazy load seluruh halaman untuk optimasi bundle
+// ✅ Route publik — import langsung (bukan lazy) karena dipakai tanpa login & jarang diakses
+import VerifikasiSuratPage from '@/pages/VerifikasiSuratPage';
+import VerifikasiNotulensiPage from '@/pages/VerifikasiNotulensiPage';
+
+// =============================================================================
+// Lazy load seluruh halaman internal untuk optimasi bundle
+// =============================================================================
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const DashboardKepsekPage = lazy(() => import('@/pages/DashboardKepsekPage').then((m) => ({ default: m.DashboardKepsekPage })));
@@ -48,11 +53,9 @@ const JadwalPiketPenyambutanPage = lazy(() => import('@/pages/JadwalPiketPenyamb
 const KehadiranPiketPenyambutanPage = lazy(() => import('@/pages/KehadiranPiketPenyambutanPage').then((m) => ({ default: m.KehadiranPiketPenyambutanPage })));
 const KehadiranPiketPage = lazy(() => import('@/pages/KehadiranPiketPage').then((m) => ({ default: m.KehadiranPiketPage })));
 
-// Halaman To-Do List Divisi
+// Halaman To-Do List Divisi + HRIS
 const TodoListPage = lazy(() => import('@/pages/TodoListPage').then((m) => ({ default: m.TodoListPage })));
 const HrisPage = lazy(() => import('@/pages/HrisPage').then((m) => ({ default: m.HrisPage })));
-const VerifikasiNotulensiPage = lazy(() =>
-  import('@/pages/VerifikasiNotulensiPage').then((m) => ({ default: m.VerifikasiNotulensiPage })));
 
 // Halaman Presensi Kesiswaan
 const InputPresensiKesiswaanPage = lazy(() => import('@/pages/InputPresensiKesiswaanPage').then((m) => ({ default: m.InputPresensiKesiswaanPage })));
@@ -71,6 +74,9 @@ const PerpustakaanPage = lazy(() => import('@/pages/PerpustakaanPage').then((m) 
 const HariLiburPage = lazy(() => import('@/pages/HariLiburPage').then((m) => ({ default: m.HariLiburPage })));
 const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 
+// =============================================================================
+// SUB-COMPONENT
+// =============================================================================
 function PageLoadingFallback() {
   return (
     <div className="flex-1 min-h-[60vh] flex items-center justify-center">
@@ -90,9 +96,8 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children
   return children;
 }
 
-
 // =============================================================================
-// ROUTE PUBLIK (tanpa login) — dipakai untuk scan QR code aset
+// ROUTE PUBLIK (tanpa login) — scan QR aset + verifikasi surat/notulensi
 // =============================================================================
 const PUBLIC_PATH_PREFIXES = ['/scan', '/verifikasi-surat', '/verifikasi-notulensi'];
 
@@ -100,6 +105,9 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+// =============================================================================
+// APP CONTENT
+// =============================================================================
 function AppContent() {
   const { session, loading, guru } = useAuth();
   const location = useLocation();
@@ -144,9 +152,9 @@ function AppContent() {
     };
   }, [guru?.nama_lengkap]);
 
-  // -----------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   // LOADING
-  // -----------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -158,25 +166,25 @@ function AppContent() {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // ROUTE PUBLIK — bypass login & AppLayout (misal: /scan/:token)
-  // -----------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // ROUTE PUBLIK — bypass login & AppLayout
+  // -------------------------------------------------------------------------
   if (isPublicPath(location.pathname)) {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path="/scan/:token" element={<ScanAsetPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/verifikasi-surat/:token" element={<VerifikasiSuratPage />} />
           <Route path="/verifikasi-notulensi/:token" element={<VerifikasiNotulensiPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     );
   }
 
-  // -----------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   // BELUM LOGIN & BUKAN PUBLIC PATH → LoginPage
-  // -----------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   if (!session) {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -185,9 +193,9 @@ function AppContent() {
     );
   }
 
-  // -----------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   // SUDAH LOGIN → AppLayout + Routes
-  // -----------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageKey;
 
   return (
@@ -256,6 +264,9 @@ function AppContent() {
   );
 }
 
+// =============================================================================
+// APP
+// =============================================================================
 export default function App() {
   return (
     <AuthProvider>
