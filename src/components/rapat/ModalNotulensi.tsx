@@ -201,6 +201,12 @@ export function ModalNotulensi({
       showToast('error', 'Pembahasan wajib diisi');
       return;
     }
+    if (isEditingFinalized && !finalize) {
+  const ok = window.confirm(
+    'Rapat sudah selesai. Edit notulensi akan tercatat di audit log.\n\nLanjutkan?'
+  );
+  if (!ok) return;
+}
 
     setSaving(true);
     try {
