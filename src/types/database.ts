@@ -1357,3 +1357,135 @@ export const STATUS_CUTI_SELESAI: StatusCuti[] = [
   'Ditolak',
   'Dibatalkan',
 ];
+
+// =============================================================================
+// MODUL RAPAT & NOTULENSI
+// =============================================================================
+
+export type JenisRapat =
+  | 'Rapat Dinas'
+  | 'Rapat Divisi'
+  | 'Rapat Koordinasi'
+  | 'Rapat Pleno'
+  | 'Rapat Khusus'
+  | 'Rapat Evaluasi'
+  | 'Lainnya';
+
+export type StatusRapat =
+  | 'Draft'
+  | 'Akan Datang'
+  | 'Berlangsung'
+  | 'Selesai'
+  | 'Dibatalkan';
+
+export type JabatanDalamRapat =
+  | 'Pemimpin'
+  | 'Notulis'
+  | 'Peserta'
+  | 'Undangan'
+  | 'Narasumber';
+
+export type StatusKehadiranRapat =
+  | 'Belum Dikonfirmasi'
+  | 'Hadir'
+  | 'Tidak Hadir'
+  | 'Izin'
+  | 'Terlambat';
+
+export type StatusNotulensi = 'Draft' | 'Final';
+
+export type Rapat = {
+  id: string;
+  nomor_rapat: string | null;
+  judul: string;
+  jenis: JenisRapat;
+  deskripsi: string | null;
+  tanggal: string;
+  waktu_mulai: string;
+  waktu_selesai: string | null;
+  lokasi: string | null;
+  penyelenggara: string | null;
+  pemimpin_rapat_id: string | null;
+  notulis_id: string | null;
+  status: StatusRapat;
+  is_public: boolean;
+  catatan_umum: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RapatWithRelations = Rapat & {
+  pemimpin_nama?: string | null;
+  pemimpin_nip?: string | null;
+  notulis_nama?: string | null;
+  notulis_nip?: string | null;
+  created_by_nama?: string | null;
+  total_peserta?: number;
+  total_hadir?: number;
+  total_tidak_hadir?: number;
+  has_notulensi?: boolean;
+  notulensi_status?: StatusNotulensi | null;
+};
+
+export type RapatPeserta = {
+  id: string;
+  rapat_id: string;
+  guru_id: string;
+  jabatan_dalam_rapat: JabatanDalamRapat;
+  status_kehadiran: StatusKehadiranRapat;
+  catatan: string | null;
+  created_at: string;
+};
+
+export type RapatPesertaWithGuru = RapatPeserta & {
+  guru?: {
+    id: string;
+    nama_lengkap: string;
+    nip: string | null;
+    jenis_ptk: string | null;
+  } | null;
+};
+
+export type ActionItemRapat = {
+  pic_id: string | null;
+  pic_nama: string;
+  deskripsi: string;
+  deadline: string | null;
+  prioritas: 'Tinggi' | 'Sedang' | 'Rendah';
+  todo_id: string | null;
+  status: 'Belum' | 'Proses' | 'Selesai';
+};
+
+export type RapatNotulensi = {
+  id: string;
+  rapat_id: string;
+  ringkasan: string | null;
+  pembahasan: string | null;
+  keputusan: string | null;
+  action_items: ActionItemRapat[];
+  lampiran_url: string | null;
+  status: StatusNotulensi;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const JENIS_RAPAT_OPTIONS: JenisRapat[] = [
+  'Rapat Dinas', 'Rapat Divisi', 'Rapat Koordinasi',
+  'Rapat Pleno', 'Rapat Khusus', 'Rapat Evaluasi', 'Lainnya',
+];
+
+export const STATUS_RAPAT_OPTIONS: StatusRapat[] = [
+  'Draft', 'Akan Datang', 'Berlangsung', 'Selesai', 'Dibatalkan',
+];
+
+export const JABATAN_RAPAT_OPTIONS: JabatanDalamRapat[] = [
+  'Pemimpin', 'Notulis', 'Peserta', 'Undangan', 'Narasumber',
+];
+
+export const KEHADIRAN_RAPAT_OPTIONS: StatusKehadiranRapat[] = [
+  'Belum Dikonfirmasi', 'Hadir', 'Tidak Hadir', 'Izin', 'Terlambat',
+];
