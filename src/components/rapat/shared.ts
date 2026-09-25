@@ -163,3 +163,13 @@ export function isRapatManager(role: string | null | undefined): boolean {
   if (!role) return false;
   return RAPAT_MANAGER_ROLES.includes(role.toLowerCase());
 }
+
+// =============================================================================
+// RE-EXPORT CONSTANTS dari types — biar komponen cukup import dari 'shared'
+// =============================================================================
+export {
+  JENIS_RAPAT_OPTIONS,
+  STATUS_RAPAT_OPTIONS,
+  JABATAN_RAPAT_OPTIONS,
+  KEHADIRAN_RAPAT_OPTIONS,
+} from '@/types/database';
