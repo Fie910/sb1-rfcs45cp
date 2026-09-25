@@ -60,6 +60,7 @@ export function ModalNotulensi({
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
+  const [isEditingFinalized, setIsEditingFinalized] = useState(false);
 
   // ==========================================================================
   // LOAD saat open
