@@ -19,6 +19,8 @@ import {
 import type {
   RapatWithRelations, Guru,
 } from '@/types/database';
+import { Printer } from 'lucide-react';
+import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
 
 export function NotulensiSayaTab() {
   const { guru } = useAuth();
