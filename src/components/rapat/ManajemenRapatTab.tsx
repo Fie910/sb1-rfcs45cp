@@ -1,10 +1,11 @@
 // src/components/rapat/ManajemenRapatTab.tsx
-// Tab Manajemen Rapat — CRUD rapat, statistik, rekap.
+// Tab Manajemen Rapat — CRUD rapat, statistik, rekap, attendance override.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, Plus, Calendar, Users, BarChart3, Pencil, Trash2,
   Eye, CheckCircle2, Clock, TrendingUp, RefreshCw, AlertCircle,
+  UserCheck, UserX, Clock3, FileText, User as UserIcon, PlayCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -17,9 +18,11 @@ import {
   formatTanggalRapat, formatWaktuRapat, formatTanggalPendek,
   INPUT_CLASS,
   JENIS_RAPAT_OPTIONS,
+  KEHADIRAN_RAPAT_OPTIONS,
 } from './shared';
 import type {
   RapatWithRelations, Guru, RapatPesertaWithGuru,
+  StatusKehadiranRapat,
 } from '@/types/database';
 
 export function ManajemenRapatTab() {
@@ -338,14 +341,21 @@ export function ManajemenRapatTab() {
         currentGuruId={guru?.id ?? ''}
       />
 
-      {/* MODAL DETAIL */}
+      {/* MODAL DETAIL — dengan attendance override */}
       <Modal
         open={!!detailTarget}
         onClose={() => setDetailTarget(null)}
         title="Detail Rapat"
-        size="md"
+        size="lg"
       >
-        {detailTarget && <RapatDetail item={detailTarget} />}
+        {detailTarget && (
+          <RapatDetailManager
+            item={detailTarget}
+            currentGuruId={guru?.id}
+            currentGuruRole={guru?.role}
+            onRefresh={fetchAll}
+          />
+        )}
       </Modal>
 
       {/* CONFIRM DELETE */}
@@ -361,66 +371,289 @@ export function ManajemenRapatTab() {
 }
 
 // =============================================================================
-// SUB: Detail
+// SUB: Detail untuk Manager (dengan attendance override)
 // =============================================================================
-function RapatDetail({ item }: { item: RapatWithRelations }) {
+function RapatDetailManager({
+  item, currentGuruId, currentGuruRole, onRefresh,
+}: {
+  item: RapatWithRelations;
+  currentGuruId: string | undefined;
+  currentGuruRole: string | undefined;
+  onRefresh: () => void;
+}) {
   const [peserta, setPeserta] = useState<RapatPesertaWithGuru[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [startingMeeting, setStartingMeeting] = useState(false);
 
-  useEffect(() => {
-    (async () => {
+  const isPemimpin = item.pemimpin_rapat_id === currentGuruId;
+  const isNotulis = item.notulis_id === currentGuruId;
+  const canManage = isPemimpin || isNotulis || true; // Manager tab: selalu bisa
+
+  // ==========================================================================
+  // FETCH PESERTA
+  // ==========================================================================
+  const fetchPeserta = useCallback(async () => {
+    setLoading(true);
+    try {
       const { data } = await supabase
         .from('rapat_peserta')
         .select(`*, guru:gurus!guru_id(id, nama_lengkap, nip, jenis_ptk)`)
-        .eq('rapat_id', item.id);
+        .eq('rapat_id', item.id)
+        .order('jabatan_dalam_rapat', { ascending: true });
       setPeserta((data as RapatPesertaWithGuru[]) ?? []);
-    })();
+    } finally {
+      setLoading(false);
+    }
   }, [item.id]);
 
+  useEffect(() => { fetchPeserta(); }, [fetchPeserta]);
+
+  // ==========================================================================
+  // UPDATE KEHADIRAN
+  // ==========================================================================
+  const handleUpdateKehadiran = async (pesertaId: string, status: StatusKehadiranRapat) => {
+    setUpdatingId(pesertaId);
+    try {
+      const { error } = await supabase
+        .from('rapat_peserta')
+        .update({ status_kehadiran: status })
+        .eq('id', pesertaId);
+      if (error) throw error;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.TODO,
+        targetId: pesertaId,
+        deskripsi: `Update kehadiran rapat "${item.judul}": ${status}`,
+      });
+
+      showToast('success', `Kehadiran: ${status}`);
+      fetchPeserta();
+      onRefresh();
+    } catch (err: any) {
+      showToast('error', 'Gagal: ' + (err.message || 'Error'));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ==========================================================================
+  // BUKA SESI RAPAT
+  // ==========================================================================
+  const handleBukaSesi = async () => {
+    setStartingMeeting(true);
+    try {
+      const { error } = await supabase
+        .from('rapat')
+        .update({ status: 'Berlangsung' })
+        .eq('id', item.id);
+      if (error) throw error;
+
+      showToast('success', 'Sesi rapat dibuka!');
+      onRefresh();
+    } catch (err: any) {
+      showToast('error', 'Gagal: ' + (err.message || 'Error'));
+    } finally {
+      setStartingMeeting(false);
+    }
+  };
+
+  // ==========================================================================
+  // STATS
+  // ==========================================================================
+  const stats = useMemo(() => {
+    const total = peserta.length;
+    const hadir = peserta.filter((p) => p.status_kehadiran === 'Hadir').length;
+    const terlambat = peserta.filter((p) => p.status_kehadiran === 'Terlambat').length;
+    const izin = peserta.filter((p) => p.status_kehadiran === 'Izin').length;
+    const tidakHadir = peserta.filter((p) => p.status_kehadiran === 'Tidak Hadir').length;
+    const belum = peserta.filter((p) => p.status_kehadiran === 'Belum Dikonfirmasi').length;
+    const persen = total > 0 ? Math.round(((hadir + terlambat) / total) * 100) : 0;
+    return { total, hadir, terlambat, izin, tidakHadir, belum, persen };
+  }, [peserta]);
+
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
   return (
-    <div className="space-y-3 pt-1">
-      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
-        <p className="text-[10px] font-mono text-indigo-400">{item.nomor_rapat}</p>
-        <p className="text-sm font-bold text-slate-100 mt-0.5">{item.judul}</p>
-        <p className="text-xs text-slate-400 mt-1">
-          {formatTanggalRapat(item.tanggal)} · {formatWaktuRapat(item.waktu_mulai, item.waktu_selesai)}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5">
-          <p className="text-[10px] uppercase text-slate-500">Pemimpin</p>
-          <p className="font-bold text-slate-200 truncate">{item.pemimpin_nama ?? '-'}</p>
-        </div>
-        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5">
-          <p className="text-[10px] uppercase text-slate-500">Notulis</p>
-          <p className="font-bold text-slate-200 truncate">{item.notulis_nama ?? '-'}</p>
-        </div>
-      </div>
-
-      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
-        <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">
-          Peserta ({peserta.length})
-        </p>
-        <div className="space-y-1 max-h-40 overflow-y-auto">
-          {peserta.map((p) => (
-            <div key={p.id} className="flex items-center justify-between text-xs">
-              <span className="text-slate-300 truncate">
-                {p.guru?.nama_lengkap ?? '-'}
+    <div className="space-y-3 pt-1 max-h-[75vh] overflow-y-auto pr-1 custom-scrollbar">
+      {/* HEADER */}
+      <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getJenisRapatBadge(item.jenis)}`}>
+                {item.jenis}
               </span>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getKehadiranBadge(p.status_kehadiran)}`}>
-                {p.status_kehadiran}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getStatusRapatBadge(item.status)}`}>
+                {item.status}
               </span>
             </div>
-          ))}
+            <p className="text-[10px] font-mono text-indigo-400">
+              {item.nomor_rapat ?? '-'}
+            </p>
+            <p className="text-sm font-extrabold text-slate-100 mt-0.5">
+              {item.judul}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {formatTanggalRapat(item.tanggal)} · {formatWaktuRapat(item.waktu_mulai, item.waktu_selesai)}
+            </p>
+          </div>
+
+          {item.status === 'Akan Datang' && (
+            <button
+              onClick={handleBukaSesi}
+              disabled={startingMeeting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              {startingMeeting ? (
+                <><Loader2 size={12} className="animate-spin" /> ...</>
+              ) : (
+                <><PlayCircle size={12} /> Buka Sesi</>
+              )}
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* INFO GRID */}
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <DetailBox label="Pemimpin" value={item.pemimpin_nama ?? '-'} />
+        <DetailBox label="Notulis" value={item.notulis_nama ?? '-'} />
+        <DetailBox label="Lokasi" value={item.lokasi ?? '-'} />
+        <DetailBox label="Penyelenggara" value={item.penyelenggara ?? '-'} />
+      </div>
+
+      {item.deskripsi && (
+        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Deskripsi</p>
+          <p className="text-xs text-slate-200 whitespace-pre-wrap">{item.deskripsi}</p>
+        </div>
+      )}
+
+      {/* STAT KEHADIRAN */}
+      <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+            Statistik Kehadiran
+          </h4>
+          <span className={`text-base font-extrabold ${
+            stats.persen >= 75 ? 'text-emerald-400' :
+            stats.persen >= 50 ? 'text-amber-400' : 'text-rose-400'
+          }`}>
+            {stats.persen}%
+          </span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2 mb-3 text-center">
+          <MiniStat label="Hadir" value={stats.hadir} color="emerald" />
+          <MiniStat label="Terlambat" value={stats.terlambat} color="amber" />
+          <MiniStat label="Izin" value={stats.izin} color="blue" />
+          <MiniStat label="Tidak" value={stats.tidakHadir} color="rose" />
+          <MiniStat label="Belum" value={stats.belum} color="slate" />
+        </div>
+
+        <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex">
+          {stats.total > 0 && (
+            <>
+              <div className="h-full bg-emerald-500" style={{ width: `${(stats.hadir / stats.total) * 100}%` }} />
+              <div className="h-full bg-amber-500" style={{ width: `${(stats.terlambat / stats.total) * 100}%` }} />
+              <div className="h-full bg-blue-500" style={{ width: `${(stats.izin / stats.total) * 100}%` }} />
+              <div className="h-full bg-rose-500" style={{ width: `${(stats.tidakHadir / stats.total) * 100}%` }} />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* DAFTAR PESERTA — dropdown untuk ubah */}
+      <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+            Peserta ({peserta.length})
+          </h4>
+          <span className="text-[10px] font-bold text-purple-400 px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">
+            Manager Override
+          </span>
+        </div>
+
+        {loading ? (
+          <Loader2 className="animate-spin text-indigo-400 mx-auto" size={18} />
+        ) : peserta.length === 0 ? (
+          <p className="text-[11px] text-slate-500 text-center py-4">Belum ada peserta</p>
+        ) : (
+          <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+            {peserta.map((p) => {
+              const isUpdating = updatingId === p.id;
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-2 bg-slate-900/60 border border-slate-800/60 rounded-xl p-2.5"
+                >
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xs font-bold shrink-0">
+                    {(p.guru?.nama_lengkap ?? '?').charAt(0).toUpperCase()}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-200 truncate">
+                      {p.guru?.nama_lengkap ?? '-'}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {p.jabatan_dalam_rapat}
+                      {p.guru?.jenis_ptk ? ` · ${p.guru.jenis_ptk}` : ''}
+                    </p>
+                  </div>
+
+                  <select
+                    value={p.status_kehadiran}
+                    onChange={(e) => handleUpdateKehadiran(p.id, e.target.value as StatusKehadiranRapat)}
+                    disabled={isUpdating}
+                    className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shrink-0 ${getKehadiranBadge(p.status_kehadiran)} bg-slate-950`}
+                  >
+                    {KEHADIRAN_RAPAT_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // =============================================================================
-// SUB: KPI
+// SUB
 // =============================================================================
+function DetailBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5">
+      <p className="text-[10px] uppercase font-bold text-slate-500 mb-0.5">{label}</p>
+      <p className="text-xs font-semibold text-slate-200 truncate">{value}</p>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: {
+  label: string; value: number; color: 'emerald' | 'amber' | 'blue' | 'rose' | 'slate';
+}) {
+  const cm: Record<string, string> = {
+    emerald: 'text-emerald-400',
+    amber: 'text-amber-400',
+    blue: 'text-blue-400',
+    rose: 'text-rose-400',
+    slate: 'text-slate-400',
+  };
+  return (
+    <div className="bg-slate-900/60 border border-slate-800/60 rounded-lg p-2">
+      <p className={`text-base font-extrabold ${cm[color]}`}>{value}</p>
+      <p className="text-[9px] font-bold uppercase text-slate-500">{label}</p>
+    </div>
+  );
+}
+
 type KpiColor = 'indigo' | 'blue' | 'emerald' | 'rose' | 'purple';
 const CM: Record<KpiColor, { bg: string; text: string; border: string }> = {
   indigo: { bg: 'bg-indigo-500/15', text: 'text-indigo-400', border: 'border-indigo-500/30' },
