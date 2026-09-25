@@ -1,17 +1,18 @@
 // src/components/rapat/NotulensiSayaTab.tsx
-// Tab Notulensi Saya — daftar rapat yang saya adalah notulis atau pemimpin.
+// Tab Notulensi Saya — daftar rapat tugas notulis/pemimpin + isi notulensi + cetak PDF.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, ClipboardList, Calendar, Clock, MapPin,
-  Edit3, FileText, CheckCircle2, AlertCircle, Filter, X,
+  Edit3, FileText, CheckCircle2, AlertCircle, Printer,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { ModalNotulensi } from './ModalNotulensi';
+import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
 import {
-  getStatusRapatBadge, getJenisRapatBadge, getNotulensiBadge,
+  getJenisRapatBadge, getStatusRapatBadge,
   formatTanggalRapat, formatWaktuRapat,
   isToday, isPast, daysFromNow,
   INPUT_CLASS,
@@ -19,8 +20,6 @@ import {
 import type {
   RapatWithRelations, Guru,
 } from '@/types/database';
-import { Printer } from 'lucide-react';
-import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
 
 export function NotulensiSayaTab() {
   const { guru } = useAuth();
@@ -32,6 +31,7 @@ export function NotulensiSayaTab() {
   const [search, setSearch] = useState('');
 
   const [notulensiTarget, setNotulensiTarget] = useState<RapatWithRelations | null>(null);
+  const [printingId, setPrintingId] = useState<string | null>(null);
 
   // ==========================================================================
   // FETCH
@@ -70,7 +70,6 @@ export function NotulensiSayaTab() {
   // ==========================================================================
   const filtered = useMemo(() => {
     return list.filter((r) => {
-      // Filter notulensi
       if (filterNotulensi === 'belum' && r.has_notulensi) return false;
       if (filterNotulensi === 'draft' && r.notulensi_status !== 'Draft') return false;
       if (filterNotulensi === 'final' && r.notulensi_status !== 'Final') return false;
@@ -93,6 +92,77 @@ export function NotulensiSayaTab() {
     const final = list.filter((r) => r.notulensi_status === 'Final').length;
     return { total, belum, draft, final };
   }, [list]);
+
+  // ==========================================================================
+  // CETAK NOTULENSI
+  // ==========================================================================
+  const handleCetakNotulensi = async (rapat: RapatWithRelations) => {
+    if (rapat.notulensi_status !== 'Final') {
+      showToast('error', 'Notulensi harus difinalisasi dulu sebelum dicetak');
+      return;
+    }
+
+    setPrintingId(rapat.id);
+    try {
+      const [notRes, pesertaRes] = await Promise.all([
+        supabase
+          .from('rapat_notulensi')
+          .select('*')
+          .eq('rapat_id', rapat.id)
+          .single(),
+        supabase
+          .from('rapat_peserta')
+          .select(`
+            status_kehadiran,
+            jabatan_dalam_rapat,
+            guru:gurus!guru_id(nama_lengkap)
+          `)
+          .eq('rapat_id', rapat.id)
+          .order('jabatan_dalam_rapat'),
+      ]);
+
+      if (notRes.error) throw notRes.error;
+
+      const notulensi = notRes.data as any;
+      if (!notulensi.verification_token) {
+        showToast('error', 'Token verifikasi belum tersedia. Coba refresh halaman.');
+        return;
+      }
+
+      await generateNotulensiPDF({
+        nomor_rapat: rapat.nomor_rapat ?? '-',
+        judul_rapat: rapat.judul,
+        jenis_rapat: rapat.jenis,
+        tanggal: rapat.tanggal,
+        waktu_mulai: rapat.waktu_mulai,
+        waktu_selesai: rapat.waktu_selesai,
+        lokasi: rapat.lokasi,
+        penyelenggara: rapat.penyelenggara,
+        pemimpin_nama: rapat.pemimpin_nama ?? null,
+        pemimpin_nip: rapat.pemimpin_nip ?? null,
+        notulis_nama: rapat.notulis_nama ?? null,
+        notulis_nip: rapat.notulis_nip ?? null,
+        total_peserta: rapat.total_peserta ?? 0,
+        total_hadir: rapat.total_hadir ?? 0,
+        ringkasan: notulensi.ringkasan,
+        pembahasan: notulensi.pembahasan,
+        keputusan: notulensi.keputusan,
+        action_items: Array.isArray(notulensi.action_items) ? notulensi.action_items : [],
+        verification_token: notulensi.verification_token,
+        peserta: (pesertaRes.data ?? []).map((p: any) => ({
+          nama: p.guru?.nama_lengkap ?? '-',
+          jabatan: p.jabatan_dalam_rapat,
+          kehadiran: p.status_kehadiran,
+        })),
+      });
+
+      showToast('success', 'Notulensi berhasil dicetak');
+    } catch (err: any) {
+      showToast('error', 'Gagal cetak: ' + (err.message || 'Error'));
+    } finally {
+      setPrintingId(null);
+    }
+  };
 
   // ==========================================================================
   // RENDER
@@ -170,7 +240,9 @@ export function NotulensiSayaTab() {
             <NotulensiCard
               key={item.id}
               item={item}
+              printingId={printingId}
               onOpenNotulensi={() => setNotulensiTarget(item)}
+              onCetak={handleCetakNotulensi}
             />
           ))}
         </div>
@@ -193,14 +265,16 @@ export function NotulensiSayaTab() {
 // SUB: Card
 // =============================================================================
 function NotulensiCard({
-  item, onOpenNotulensi,
+  item, printingId, onOpenNotulensi, onCetak,
 }: {
   item: RapatWithRelations;
+  printingId: string | null;
   onOpenNotulensi: () => void;
+  onCetak: (item: RapatWithRelations) => void;
 }) {
   const today = isToday(item.tanggal);
   const past = isPast(item.tanggal);
-  const days = daysFromNow(item.tanggal);
+  const isPrinting = printingId === item.id;
 
   // Status label
   let statusLabel = 'Belum Diisi';
@@ -271,7 +345,20 @@ function NotulensiCard({
             )}
           </div>
 
-          <div className="flex justify-end mt-3 pt-3 border-t border-slate-800">
+          <div className="flex flex-wrap items-center justify-end gap-2 mt-3 pt-3 border-t border-slate-800">
+            {item.notulensi_status === 'Final' && (
+              <button
+                onClick={() => onCetak(item)}
+                disabled={isPrinting}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer disabled:opacity-50"
+              >
+                {isPrinting ? (
+                  <><Loader2 size={11} className="animate-spin" /> Cetak...</>
+                ) : (
+                  <><Printer size={11} /> Cetak Notulensi</>
+                )}
+              </button>
+            )}
             <button
               onClick={onOpenNotulensi}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold transition cursor-pointer"
