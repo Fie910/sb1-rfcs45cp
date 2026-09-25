@@ -99,6 +99,9 @@ export function ModalNotulensi({
         });
         setActionItems([]);
       }
+      if (notulensi && rapat?.status === 'Selesai') {
+  setIsEditingFinalized(true);
+}
 
       // Load peserta untuk konteks AI
       const { data: peserta } = await supabase
