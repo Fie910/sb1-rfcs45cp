@@ -1410,6 +1410,9 @@ export type Rapat = {
   status: StatusRapat;
   is_public: boolean;
   catatan_umum: string | null;
+  closed_at: string | null;
+  closed_by: string | null;
+  close_note: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
