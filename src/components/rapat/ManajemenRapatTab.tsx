@@ -1,12 +1,12 @@
 // src/components/rapat/ManajemenRapatTab.tsx
-// Tab Manajemen Rapat — CRUD rapat, statistik, rekap, attendance override,
-// tombol Tutup/Batalkan/Reopen + auto-close trigger.
+// Tab Manajemen Rapat — CRUD, statistik, attendance override, Tutup/Batalkan/Reopen,
+// auto-close trigger, dan cetak notulensi PDF.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, Plus, Calendar, Users, BarChart3, Pencil, Trash2,
   Eye, CheckCircle2, Clock, TrendingUp, RefreshCw, AlertCircle,
-  PlayCircle, XCircle, RotateCcw, Lock, FileCheck2,
+  PlayCircle, XCircle, RotateCcw, Lock, FileCheck2, Printer,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +14,7 @@ import { showToast } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { ModalRapat } from './ModalRapat';
+import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
 import {
   getStatusRapatBadge, getJenisRapatBadge, getKehadiranBadge,
   formatTanggalRapat, formatWaktuRapat, formatTanggalPendek,
@@ -49,10 +50,10 @@ export function ManajemenRapatTab() {
   const [deleteTarget, setDeleteTarget] = useState<RapatWithRelations | null>(null);
   const [detailTarget, setDetailTarget] = useState<RapatWithRelations | null>(null);
 
-  // Confirm modal untuk close/cancel/reopen
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
-  const [confirmNote, setConfirmNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  const [printingId, setPrintingId] = useState<string | null>(null);
 
   // ==========================================================================
   // FETCH
@@ -60,7 +61,6 @@ export function ManajemenRapatTab() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      // ✅ Batch 6D-2b: auto-close stale rapat dulu
       const closed = await autoCloseStaleRapat();
       if (closed > 0) {
         showToast('info', `${closed} rapat menggantung di-close otomatis`);
@@ -121,7 +121,7 @@ export function ManajemenRapatTab() {
   }, [list]);
 
   // ==========================================================================
-  // HANDLERS
+  // HANDLERS — CRUD
   // ==========================================================================
   const handleOpenCreate = () => {
     setEditing(null);
@@ -156,7 +156,9 @@ export function ManajemenRapatTab() {
     }
   };
 
-  // ✅ Batch 6D-2b: Tutup / Batalkan / Reopen
+  // ==========================================================================
+  // HANDLERS — Close / Cancel / Reopen
+  // ==========================================================================
   const handleExecuteAction = async () => {
     if (!confirmAction || !guru?.id) return;
     setActionLoading(true);
@@ -172,7 +174,7 @@ export function ManajemenRapatTab() {
           status: 'Selesai',
           closed_at: new Date().toISOString(),
           closed_by: guru.id,
-          close_note: confirmNote.trim() || 'Ditutup oleh manager',
+          close_note: 'Ditutup oleh manager',
         };
         logMsg = `Tutup rapat: ${rapat.judul}`;
       } else if (type === 'cancel') {
@@ -180,7 +182,7 @@ export function ManajemenRapatTab() {
           status: 'Dibatalkan',
           closed_at: new Date().toISOString(),
           closed_by: guru.id,
-          close_note: confirmNote.trim() || 'Dibatalkan oleh manager',
+          close_note: 'Dibatalkan oleh manager',
         };
         logMsg = `Batalkan rapat: ${rapat.judul}`;
       } else if (type === 'reopen') {
@@ -208,13 +210,90 @@ export function ManajemenRapatTab() {
 
       showToast('success', logMsg);
       setConfirmAction(null);
-      setConfirmNote('');
       setDetailTarget(null);
       fetchAll();
     } catch (err: any) {
       showToast('error', 'Gagal: ' + (err.message || 'Error'));
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // ==========================================================================
+  // HANDLERS — Cetak Notulensi PDF
+  // ==========================================================================
+  const handleCetakNotulensi = async (rapat: RapatWithRelations) => {
+    if (rapat.notulensi_status !== 'Final') {
+      showToast('error', 'Notulensi harus difinalisasi dulu sebelum dicetak');
+      return;
+    }
+
+    setPrintingId(rapat.id);
+    try {
+      const [notRes, pesertaRes] = await Promise.all([
+        supabase
+          .from('rapat_notulensi')
+          .select('*')
+          .eq('rapat_id', rapat.id)
+          .single(),
+        supabase
+          .from('rapat_peserta')
+          .select(`
+            status_kehadiran,
+            jabatan_dalam_rapat,
+            guru:gurus!guru_id(nama_lengkap)
+          `)
+          .eq('rapat_id', rapat.id)
+          .order('jabatan_dalam_rapat'),
+      ]);
+
+      if (notRes.error) throw notRes.error;
+
+      const notulensi = notRes.data as any;
+      if (!notulensi.verification_token) {
+        showToast('error', 'Token verifikasi belum tersedia. Coba refresh.');
+        return;
+      }
+
+      await generateNotulensiPDF({
+        nomor_rapat: rapat.nomor_rapat ?? '-',
+        judul_rapat: rapat.judul,
+        jenis_rapat: rapat.jenis,
+        tanggal: rapat.tanggal,
+        waktu_mulai: rapat.waktu_mulai,
+        waktu_selesai: rapat.waktu_selesai,
+        lokasi: rapat.lokasi,
+        penyelenggara: rapat.penyelenggara,
+        pemimpin_nama: rapat.pemimpin_nama ?? null,
+        pemimpin_nip: rapat.pemimpin_nip ?? null,
+        notulis_nama: rapat.notulis_nama ?? null,
+        notulis_nip: rapat.notulis_nip ?? null,
+        total_peserta: rapat.total_peserta ?? 0,
+        total_hadir: rapat.total_hadir ?? 0,
+        ringkasan: notulensi.ringkasan,
+        pembahasan: notulensi.pembahasan,
+        keputusan: notulensi.keputusan,
+        action_items: Array.isArray(notulensi.action_items) ? notulensi.action_items : [],
+        verification_token: notulensi.verification_token,
+        peserta: (pesertaRes.data ?? []).map((p: any) => ({
+          nama: p.guru?.nama_lengkap ?? '-',
+          jabatan: p.jabatan_dalam_rapat,
+          kehadiran: p.status_kehadiran,
+        })),
+      });
+
+      await logActivity({
+        aksi: 'EXPORT',
+        modul: AUDIT_MODUL.TODO,
+        targetId: rapat.id,
+        deskripsi: `Cetak notulensi: ${rapat.nomor_rapat}`,
+      });
+
+      showToast('success', 'Notulensi berhasil dicetak');
+    } catch (err: any) {
+      showToast('error', 'Gagal cetak: ' + (err.message || 'Error'));
+    } finally {
+      setPrintingId(null);
     }
   };
 
@@ -433,8 +512,10 @@ export function ManajemenRapatTab() {
           <RapatDetailManager
             item={detailTarget}
             currentGuruId={guru?.id}
+            printingId={printingId}
             onRefresh={fetchAll}
             onAction={(type) => setConfirmAction({ type, rapat: detailTarget })}
+            onCetak={handleCetakNotulensi}
           />
         )}
       </Modal>
@@ -442,10 +523,7 @@ export function ManajemenRapatTab() {
       {/* CONFIRM ACTION (close/cancel/reopen) */}
       <ConfirmModal
         open={!!confirmAction}
-        onClose={() => {
-          setConfirmAction(null);
-          setConfirmNote('');
-        }}
+        onClose={() => setConfirmAction(null)}
         onConfirm={handleExecuteAction}
         title={
           confirmAction?.type === 'close'
@@ -490,15 +568,17 @@ export function ManajemenRapatTab() {
 }
 
 // =============================================================================
-// SUB: Detail dengan Action Buttons
+// SUB: Detail dengan Action Buttons + Cetak
 // =============================================================================
 function RapatDetailManager({
-  item, currentGuruId, onRefresh, onAction,
+  item, currentGuruId, printingId, onRefresh, onAction, onCetak,
 }: {
   item: RapatWithRelations;
   currentGuruId: string | undefined;
+  printingId: string | null;
   onRefresh: () => void;
   onAction: (type: 'close' | 'cancel' | 'reopen') => void;
+  onCetak: (rapat: RapatWithRelations) => void;
 }) {
   const [peserta, setPeserta] = useState<RapatPesertaWithGuru[]>([]);
   const [loading, setLoading] = useState(true);
@@ -506,12 +586,14 @@ function RapatDetailManager({
   const [startingMeeting, setStartingMeeting] = useState(false);
 
   const canReopen = useMemo(() => {
-    // Bisa reopen kalau status Selesai < 7 hari
     if (item.status !== 'Selesai' || !item.closed_at) return false;
     const closedAt = new Date(item.closed_at).getTime();
     const daysSince = (Date.now() - closedAt) / (1000 * 60 * 60 * 24);
     return daysSince <= 7;
   }, [item.status, item.closed_at]);
+
+  const canPrint = item.notulensi_status === 'Final';
+  const isPrinting = printingId === item.id;
 
   const fetchPeserta = useCallback(async () => {
     setLoading(true);
@@ -606,7 +688,7 @@ function RapatDetailManager({
           </div>
         </div>
 
-        {/* ✅ ACTION BUTTONS */}
+        {/* ACTION BUTTONS */}
         <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-800/60">
           {item.status === 'Akan Datang' && (
             <>
@@ -653,7 +735,22 @@ function RapatDetailManager({
             </button>
           )}
 
-          {item.status === 'Selesai' && item.close_note && (
+          {/* ✅ CETAK NOTULENSI — muncul kalau notulensi Final */}
+          {canPrint && (
+            <button
+              onClick={() => onCetak(item)}
+              disabled={isPrinting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
+            >
+              {isPrinting ? (
+                <><Loader2 size={12} className="animate-spin" /> Cetak...</>
+              ) : (
+                <><Printer size={12} /> Cetak Notulensi</>
+              )}
+            </button>
+          )}
+
+          {item.close_note && (
             <div className="flex-1 min-w-[200px] text-[10px] text-slate-400 flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800">
               <Lock size={10} className="shrink-0" />
               <span className="truncate">{item.close_note}</span>
