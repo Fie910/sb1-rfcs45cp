@@ -31,6 +31,13 @@ export function RapatPage() {
   const { guru } = useAuth();
   const isManager = isRapatManager(guru?.role);
 
+  // ✅ Auto-close rapat menggantung > 7 hari (trigger sekali saat mount)
+  useAutoCloseRapat((count) => {
+    if (count > 0) {
+      showToast('info', `${count} rapat menggantung di-close otomatis`);
+    }
+  });
+
   const visibleTabs = useMemo(
     () => ALL_TABS.filter((t) => !t.managerOnly || isManager),
     [isManager]
