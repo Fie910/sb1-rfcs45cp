@@ -1,11 +1,12 @@
 // src/components/rapat/ManajemenRapatTab.tsx
-// Tab Manajemen Rapat — CRUD rapat, statistik, rekap, attendance override.
+// Tab Manajemen Rapat — CRUD rapat, statistik, rekap, attendance override,
+// tombol Tutup/Batalkan/Reopen + auto-close trigger.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, Plus, Calendar, Users, BarChart3, Pencil, Trash2,
   Eye, CheckCircle2, Clock, TrendingUp, RefreshCw, AlertCircle,
-  UserCheck, UserX, Clock3, FileText, User as UserIcon, PlayCircle,
+  PlayCircle, XCircle, RotateCcw, Lock, FileCheck2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -19,11 +20,20 @@ import {
   INPUT_CLASS,
   JENIS_RAPAT_OPTIONS,
   KEHADIRAN_RAPAT_OPTIONS,
+  autoCloseStaleRapat,
 } from './shared';
 import type {
   RapatWithRelations, Guru, RapatPesertaWithGuru,
   StatusKehadiranRapat,
 } from '@/types/database';
+
+// =============================================================================
+// TYPES
+// =============================================================================
+type ConfirmAction = {
+  type: 'close' | 'cancel' | 'reopen';
+  rapat: RapatWithRelations;
+};
 
 export function ManajemenRapatTab() {
   const { guru } = useAuth();
@@ -39,12 +49,23 @@ export function ManajemenRapatTab() {
   const [deleteTarget, setDeleteTarget] = useState<RapatWithRelations | null>(null);
   const [detailTarget, setDetailTarget] = useState<RapatWithRelations | null>(null);
 
+  // Confirm modal untuk close/cancel/reopen
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [confirmNote, setConfirmNote] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
   // ==========================================================================
   // FETCH
   // ==========================================================================
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
+      // ✅ Batch 6D-2b: auto-close stale rapat dulu
+      const closed = await autoCloseStaleRapat();
+      if (closed > 0) {
+        showToast('info', `${closed} rapat menggantung di-close otomatis`);
+      }
+
       const [rapatRes, guruRes] = await Promise.all([
         supabase
           .from('v_rapat_lengkap')
@@ -68,7 +89,7 @@ export function ManajemenRapatTab() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // ==========================================================================
-  // FILTER
+  // FILTER + STATS
   // ==========================================================================
   const filtered = useMemo(() => {
     return list.filter((r) => {
@@ -84,9 +105,6 @@ export function ManajemenRapatTab() {
     });
   }, [list, filterJenis, search]);
 
-  // ==========================================================================
-  // STATS
-  // ==========================================================================
   const stats = useMemo(() => {
     const total = list.length;
     const byStatus: Record<string, number> = {};
@@ -99,7 +117,6 @@ export function ManajemenRapatTab() {
     });
     const denganNotulensi = list.filter((r) => r.has_notulensi).length;
     const notulensiFinal = list.filter((r) => r.notulensi_status === 'Final').length;
-
     return { total, byStatus, byJenis, denganNotulensi, notulensiFinal };
   }, [list]);
 
@@ -136,6 +153,68 @@ export function ManajemenRapatTab() {
       fetchAll();
     } catch (err: any) {
       showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+    }
+  };
+
+  // ✅ Batch 6D-2b: Tutup / Batalkan / Reopen
+  const handleExecuteAction = async () => {
+    if (!confirmAction || !guru?.id) return;
+    setActionLoading(true);
+
+    const { type, rapat } = confirmAction;
+
+    try {
+      let updatePayload: any = {};
+      let logMsg = '';
+
+      if (type === 'close') {
+        updatePayload = {
+          status: 'Selesai',
+          closed_at: new Date().toISOString(),
+          closed_by: guru.id,
+          close_note: confirmNote.trim() || 'Ditutup oleh manager',
+        };
+        logMsg = `Tutup rapat: ${rapat.judul}`;
+      } else if (type === 'cancel') {
+        updatePayload = {
+          status: 'Dibatalkan',
+          closed_at: new Date().toISOString(),
+          closed_by: guru.id,
+          close_note: confirmNote.trim() || 'Dibatalkan oleh manager',
+        };
+        logMsg = `Batalkan rapat: ${rapat.judul}`;
+      } else if (type === 'reopen') {
+        updatePayload = {
+          status: 'Berlangsung',
+          closed_at: null,
+          closed_by: null,
+          close_note: null,
+        };
+        logMsg = `Reopen rapat: ${rapat.judul}`;
+      }
+
+      const { error } = await supabase
+        .from('rapat')
+        .update(updatePayload)
+        .eq('id', rapat.id);
+      if (error) throw error;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.TODO,
+        targetId: rapat.id,
+        deskripsi: logMsg,
+      });
+
+      showToast('success', logMsg);
+      setConfirmAction(null);
+      setConfirmNote('');
+      setDetailTarget(null);
+      fetchAll();
+    } catch (err: any) {
+      showToast('error', 'Gagal: ' + (err.message || 'Error'));
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -194,10 +273,7 @@ export function ManajemenRapatTab() {
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {JENIS_RAPAT_OPTIONS.filter((j) => (stats.byJenis[j] ?? 0) > 0).map((j) => (
-            <div
-              key={j}
-              className={`px-3 py-2.5 rounded-xl border ${getJenisRapatBadge(j)}`}
-            >
+            <div key={j} className={`px-3 py-2.5 rounded-xl border ${getJenisRapatBadge(j)}`}>
               <p className="text-[10px] font-bold opacity-80">{j}</p>
               <p className="text-xl font-extrabold mt-0.5">{stats.byJenis[j] ?? 0}</p>
             </div>
@@ -255,13 +331,18 @@ export function ManajemenRapatTab() {
                   <tr key={r.id} className="hover:bg-slate-800/30 transition">
                     <td className="px-4 py-3">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
+                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getJenisRapatBadge(r.jenis)}`}>
                             {r.jenis}
                           </span>
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getStatusRapatBadge(r.status)}`}>
                             {r.status}
                           </span>
+                          {r.close_note && r.close_note.includes('Auto-close') && (
+                            <span className="text-[9px] font-bold text-slate-400 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 inline-flex items-center gap-0.5">
+                              <Lock size={8} /> auto
+                            </span>
+                          )}
                         </div>
                         <p className="font-bold text-slate-200 truncate max-w-[260px]">
                           {r.judul}
@@ -341,7 +422,7 @@ export function ManajemenRapatTab() {
         currentGuruId={guru?.id ?? ''}
       />
 
-      {/* MODAL DETAIL — dengan attendance override */}
+      {/* MODAL DETAIL */}
       <Modal
         open={!!detailTarget}
         onClose={() => setDetailTarget(null)}
@@ -352,11 +433,49 @@ export function ManajemenRapatTab() {
           <RapatDetailManager
             item={detailTarget}
             currentGuruId={guru?.id}
-            currentGuruRole={guru?.role}
             onRefresh={fetchAll}
+            onAction={(type) => setConfirmAction({ type, rapat: detailTarget })}
           />
         )}
       </Modal>
+
+      {/* CONFIRM ACTION (close/cancel/reopen) */}
+      <ConfirmModal
+        open={!!confirmAction}
+        onClose={() => {
+          setConfirmAction(null);
+          setConfirmNote('');
+        }}
+        onConfirm={handleExecuteAction}
+        title={
+          confirmAction?.type === 'close'
+            ? 'Tutup Rapat'
+            : confirmAction?.type === 'cancel'
+            ? 'Batalkan Rapat'
+            : 'Reopen Rapat'
+        }
+        message={
+          confirmAction?.type === 'close'
+            ? `Tutup rapat "${confirmAction.rapat.judul}" tanpa finalisasi notulensi? Rapat akan ditandai Selesai dan tidak bisa check-in lagi.`
+            : confirmAction?.type === 'cancel'
+            ? `Batalkan rapat "${confirmAction.rapat.judul}"? Peserta akan melihat status Dibatalkan.`
+            : `Buka kembali rapat "${confirmAction?.rapat.judul}"? Status akan kembali ke Berlangsung.`
+        }
+        variant={
+          confirmAction?.type === 'cancel'
+            ? 'danger'
+            : confirmAction?.type === 'close'
+            ? 'warning'
+            : 'default'
+        }
+        confirmLabel={
+          confirmAction?.type === 'close'
+            ? 'Ya, Tutup'
+            : confirmAction?.type === 'cancel'
+            ? 'Ya, Batalkan'
+            : 'Ya, Reopen'
+        }
+      />
 
       {/* CONFIRM DELETE */}
       <ConfirmModal
@@ -371,28 +490,29 @@ export function ManajemenRapatTab() {
 }
 
 // =============================================================================
-// SUB: Detail untuk Manager (dengan attendance override)
+// SUB: Detail dengan Action Buttons
 // =============================================================================
 function RapatDetailManager({
-  item, currentGuruId, currentGuruRole, onRefresh,
+  item, currentGuruId, onRefresh, onAction,
 }: {
   item: RapatWithRelations;
   currentGuruId: string | undefined;
-  currentGuruRole: string | undefined;
   onRefresh: () => void;
+  onAction: (type: 'close' | 'cancel' | 'reopen') => void;
 }) {
   const [peserta, setPeserta] = useState<RapatPesertaWithGuru[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [startingMeeting, setStartingMeeting] = useState(false);
 
-  const isPemimpin = item.pemimpin_rapat_id === currentGuruId;
-  const isNotulis = item.notulis_id === currentGuruId;
-  const canManage = isPemimpin || isNotulis || true; // Manager tab: selalu bisa
+  const canReopen = useMemo(() => {
+    // Bisa reopen kalau status Selesai < 7 hari
+    if (item.status !== 'Selesai' || !item.closed_at) return false;
+    const closedAt = new Date(item.closed_at).getTime();
+    const daysSince = (Date.now() - closedAt) / (1000 * 60 * 60 * 24);
+    return daysSince <= 7;
+  }, [item.status, item.closed_at]);
 
-  // ==========================================================================
-  // FETCH PESERTA
-  // ==========================================================================
   const fetchPeserta = useCallback(async () => {
     setLoading(true);
     try {
@@ -409,9 +529,6 @@ function RapatDetailManager({
 
   useEffect(() => { fetchPeserta(); }, [fetchPeserta]);
 
-  // ==========================================================================
-  // UPDATE KEHADIRAN
-  // ==========================================================================
   const handleUpdateKehadiran = async (pesertaId: string, status: StatusKehadiranRapat) => {
     setUpdatingId(pesertaId);
     try {
@@ -438,9 +555,6 @@ function RapatDetailManager({
     }
   };
 
-  // ==========================================================================
-  // BUKA SESI RAPAT
-  // ==========================================================================
   const handleBukaSesi = async () => {
     setStartingMeeting(true);
     try {
@@ -459,9 +573,6 @@ function RapatDetailManager({
     }
   };
 
-  // ==========================================================================
-  // STATS
-  // ==========================================================================
   const stats = useMemo(() => {
     const total = peserta.length;
     const hadir = peserta.filter((p) => p.status_kehadiran === 'Hadir').length;
@@ -473,9 +584,6 @@ function RapatDetailManager({
     return { total, hadir, terlambat, izin, tidakHadir, belum, persen };
   }, [peserta]);
 
-  // ==========================================================================
-  // RENDER
-  // ==========================================================================
   return (
     <div className="space-y-3 pt-1 max-h-[75vh] overflow-y-auto pr-1 custom-scrollbar">
       {/* HEADER */}
@@ -490,29 +598,66 @@ function RapatDetailManager({
                 {item.status}
               </span>
             </div>
-            <p className="text-[10px] font-mono text-indigo-400">
-              {item.nomor_rapat ?? '-'}
-            </p>
-            <p className="text-sm font-extrabold text-slate-100 mt-0.5">
-              {item.judul}
-            </p>
+            <p className="text-[10px] font-mono text-indigo-400">{item.nomor_rapat ?? '-'}</p>
+            <p className="text-sm font-extrabold text-slate-100 mt-0.5">{item.judul}</p>
             <p className="text-[11px] text-slate-400 mt-1">
               {formatTanggalRapat(item.tanggal)} · {formatWaktuRapat(item.waktu_mulai, item.waktu_selesai)}
             </p>
           </div>
+        </div>
 
+        {/* ✅ ACTION BUTTONS */}
+        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-800/60">
           {item.status === 'Akan Datang' && (
+            <>
+              <button
+                onClick={handleBukaSesi}
+                disabled={startingMeeting}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50"
+              >
+                {startingMeeting ? <Loader2 size={12} className="animate-spin" /> : <PlayCircle size={12} />}
+                Buka Sesi
+              </button>
+              <button
+                onClick={() => onAction('cancel')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[11px] font-bold transition cursor-pointer"
+              >
+                <XCircle size={12} /> Batalkan
+              </button>
+            </>
+          )}
+
+          {item.status === 'Berlangsung' && (
+            <>
+              <button
+                onClick={() => onAction('close')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow-lg shadow-indigo-600/20 transition cursor-pointer"
+              >
+                <FileCheck2 size={12} /> Tutup Rapat
+              </button>
+              <button
+                onClick={() => onAction('cancel')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[11px] font-bold transition cursor-pointer"
+              >
+                <XCircle size={12} /> Batalkan
+              </button>
+            </>
+          )}
+
+          {item.status === 'Selesai' && canReopen && (
             <button
-              onClick={handleBukaSesi}
-              disabled={startingMeeting}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50 shrink-0"
+              onClick={() => onAction('reopen')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold transition cursor-pointer"
             >
-              {startingMeeting ? (
-                <><Loader2 size={12} className="animate-spin" /> ...</>
-              ) : (
-                <><PlayCircle size={12} /> Buka Sesi</>
-              )}
+              <RotateCcw size={12} /> Reopen (max 7 hari)
             </button>
+          )}
+
+          {item.status === 'Selesai' && item.close_note && (
+            <div className="flex-1 min-w-[200px] text-[10px] text-slate-400 flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800">
+              <Lock size={10} className="shrink-0" />
+              <span className="truncate">{item.close_note}</span>
+            </div>
           )}
         </div>
       </div>
@@ -566,7 +711,7 @@ function RapatDetailManager({
         </div>
       </div>
 
-      {/* DAFTAR PESERTA — dropdown untuk ubah */}
+      {/* DAFTAR PESERTA */}
       <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">
@@ -586,14 +731,10 @@ function RapatDetailManager({
             {peserta.map((p) => {
               const isUpdating = updatingId === p.id;
               return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-2 bg-slate-900/60 border border-slate-800/60 rounded-xl p-2.5"
-                >
+                <div key={p.id} className="flex items-center gap-2 bg-slate-900/60 border border-slate-800/60 rounded-xl p-2.5">
                   <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xs font-bold shrink-0">
                     {(p.guru?.nama_lengkap ?? '?').charAt(0).toUpperCase()}
                   </div>
-
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-slate-200 truncate">
                       {p.guru?.nama_lengkap ?? '-'}
@@ -603,7 +744,6 @@ function RapatDetailManager({
                       {p.guru?.jenis_ptk ? ` · ${p.guru.jenis_ptk}` : ''}
                     </p>
                   </div>
-
                   <select
                     value={p.status_kehadiran}
                     onChange={(e) => handleUpdateKehadiran(p.id, e.target.value as StatusKehadiranRapat)}
