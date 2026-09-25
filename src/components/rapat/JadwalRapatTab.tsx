@@ -556,6 +556,24 @@ const isLocked = isPeserta && item.status === 'Selesai' && myPesertaRow?.status_
       {/* ============================================================
           SELF CHECK-IN PANEL — muncul kalau user = peserta
           ============================================================ */}
+      {/* ✅ Batch 6D-2b: Lock info kalau rapat sudah selesai */}
+{isLocked && (
+  <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
+    <div className="flex items-start gap-2.5">
+      <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+      <div className="flex-1 text-xs">
+        <p className="font-bold text-amber-300">
+          Rapat sudah selesai — check-in ditutup
+        </p>
+        <p className="text-slate-400 mt-0.5 leading-relaxed">
+          Anda belum konfirmasi kehadiran. Hubungi notulis atau pemimpin rapat
+          kalau perlu diubah manual.
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+      
       {canSelfCheckin && myPesertaRow && (
         <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
