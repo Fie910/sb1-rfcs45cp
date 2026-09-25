@@ -1,20 +1,22 @@
 // src/components/rapat/NotulensiSayaTab.tsx
-// Tab Notulensi Saya — daftar rapat tugas notulis/pemimpin + isi notulensi + cetak PDF.
+// Tab Notulensi Saya — daftar rapat tugas notulis/pemimpin + isi notulensi + cetak PDF + WA share.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, ClipboardList, Calendar, Clock, MapPin,
-  Edit3, FileText, CheckCircle2, AlertCircle, Printer,
+  Edit3, FileText, CheckCircle2, AlertCircle, Printer, Share2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { ModalNotulensi } from './ModalNotulensi';
 import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
+import { buildWaShareLinkNotulensi } from '@/lib/rapatNotifications';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import {
-  getJenisRapatBadge, getStatusRapatBadge,
-  formatTanggalRapat, formatWaktuRapat,
-  isToday, isPast, daysFromNow,
+  getJenisRapatBadge,
+  formatWaktuRapat,
+  isToday, isPast,
   INPUT_CLASS,
 } from './shared';
 import type {
@@ -156,11 +158,43 @@ export function NotulensiSayaTab() {
         })),
       });
 
+      await logActivity({
+        aksi: 'EXPORT',
+        modul: AUDIT_MODUL.TODO,
+        targetId: rapat.id,
+        deskripsi: `Cetak notulensi: ${rapat.nomor_rapat}`,
+      });
+
       showToast('success', 'Notulensi berhasil dicetak');
     } catch (err: any) {
       showToast('error', 'Gagal cetak: ' + (err.message || 'Error'));
     } finally {
       setPrintingId(null);
+    }
+  };
+
+  // ==========================================================================
+  // SHARE WA
+  // ==========================================================================
+  const handleShareWa = async (rapat: RapatWithRelations) => {
+    try {
+      const { data } = await supabase
+        .from('rapat_notulensi')
+        .select('ringkasan')
+        .eq('rapat_id', rapat.id)
+        .maybeSingle();
+
+      const link = buildWaShareLinkNotulensi(rapat, data?.ringkasan ?? null);
+      window.open(link, '_blank', 'noopener,noreferrer');
+
+      await logActivity({
+        aksi: 'VIEW',
+        modul: AUDIT_MODUL.TODO,
+        targetId: rapat.id,
+        deskripsi: `Share notulensi via WA: ${rapat.nomor_rapat}`,
+      });
+    } catch (err: any) {
+      showToast('error', 'Gagal share: ' + (err.message || 'Error'));
     }
   };
 
@@ -243,6 +277,7 @@ export function NotulensiSayaTab() {
               printingId={printingId}
               onOpenNotulensi={() => setNotulensiTarget(item)}
               onCetak={handleCetakNotulensi}
+              onShare={handleShareWa}
             />
           ))}
         </div>
@@ -265,12 +300,13 @@ export function NotulensiSayaTab() {
 // SUB: Card
 // =============================================================================
 function NotulensiCard({
-  item, printingId, onOpenNotulensi, onCetak,
+  item, printingId, onOpenNotulensi, onCetak, onShare,
 }: {
   item: RapatWithRelations;
   printingId: string | null;
   onOpenNotulensi: () => void;
   onCetak: (item: RapatWithRelations) => void;
+  onShare: (item: RapatWithRelations) => void;
 }) {
   const today = isToday(item.tanggal);
   const past = isPast(item.tanggal);
@@ -347,17 +383,26 @@ function NotulensiCard({
 
           <div className="flex flex-wrap items-center justify-end gap-2 mt-3 pt-3 border-t border-slate-800">
             {item.notulensi_status === 'Final' && (
-              <button
-                onClick={() => onCetak(item)}
-                disabled={isPrinting}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer disabled:opacity-50"
-              >
-                {isPrinting ? (
-                  <><Loader2 size={11} className="animate-spin" /> Cetak...</>
-                ) : (
-                  <><Printer size={11} /> Cetak Notulensi</>
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => onShare(item)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 text-[10px] font-bold transition cursor-pointer"
+                  title="Share notulensi via WhatsApp"
+                >
+                  <Share2 size={11} /> Share WA
+                </button>
+                <button
+                  onClick={() => onCetak(item)}
+                  disabled={isPrinting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer disabled:opacity-50"
+                >
+                  {isPrinting ? (
+                    <><Loader2 size={11} className="animate-spin" /> Cetak...</>
+                  ) : (
+                    <><Printer size={11} /> Cetak Notulensi</>
+                  )}
+                </button>
+              </>
             )}
             <button
               onClick={onOpenNotulensi}
