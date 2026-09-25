@@ -13,6 +13,7 @@ import { SearchableSelect } from '@/components/SearchableSelect';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { generateResumeNotulensi, checkAiAvailable } from '@/lib/ai';
 import { INPUT_CLASS, LABEL_CLASS, formatTanggalRapat } from './shared';
+import { AlertTriangle } from 'lucide-react';
 import type {
   RapatWithRelations, RapatNotulensi, RapatPesertaWithGuru,
   ActionItemRapat, Guru, StatusNotulensi,
