@@ -376,7 +376,15 @@ function DetailRapatContent({
   const myPesertaRow = pesertaList.find((p) => p.guru_id === currentGuruId);
   const isPeserta = Boolean(myPesertaRow);
   const isMeetingStarted = item.status === 'Berlangsung' || item.status === 'Selesai';
-  const canSelfCheckin = isPeserta && item.status !== 'Dibatalkan' && item.status !== 'Draft';
+  // ✅ Batch 6D-2b: Lock self check-in setelah rapat Selesai
+const canSelfCheckin =
+  isPeserta &&
+  item.status !== 'Dibatalkan' &&
+  item.status !== 'Draft' &&
+  item.status !== 'Selesai';
+
+// Peserta yang belum check-in & rapat sudah selesai → info lock
+const isLocked = isPeserta && item.status === 'Selesai' && myPesertaRow?.status_kehadiran === 'Belum Dikonfirmasi';
 
   // ==========================================================================
   // FETCH PESERTA
