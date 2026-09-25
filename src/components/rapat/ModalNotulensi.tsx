@@ -296,6 +296,17 @@ export function ModalNotulensi({
     >
       <div className="space-y-4 pt-1 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
         {/* HEADER RAPAT */}
+        {isEditingFinalized && (
+  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2.5">
+    <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+    <div className="text-xs">
+      <p className="font-bold text-amber-300">Rapat sudah selesai</p>
+      <p className="text-slate-400 mt-0.5 leading-relaxed">
+        Perubahan notulensi akan tercatat di audit log. Pastikan revisi benar sebelum menyimpan.
+      </p>
+    </div>
+  </div>
+)}
         <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-4">
           <p className="text-[10px] font-mono text-indigo-400">
             {rapat.nomor_rapat ?? '-'}
