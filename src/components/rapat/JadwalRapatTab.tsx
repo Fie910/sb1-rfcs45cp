@@ -1,24 +1,28 @@
 // src/components/rapat/JadwalRapatTab.tsx
-// Tab Jadwal Rapat — kalender & list rapat untuk semua user.
+// Tab Jadwal Rapat — kalender & list rapat + self check-in + notulis override.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, Calendar, Clock, MapPin, Users, Filter, X,
-  Eye, CheckCircle2, AlertCircle, CalendarCheck, TrendingUp,
+  Eye, CheckCircle2, AlertCircle, CalendarCheck, PlayCircle,
+  UserCheck, UserX, Clock3, FileText, User,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import {
   getStatusRapatBadge, getJenisRapatBadge, getKehadiranBadge,
   formatTanggalRapat, formatTanggalPendek, formatWaktuRapat,
   isToday, isPast, daysFromNow,
-  INPUT_CLASS, LABEL_CLASS,
+  INPUT_CLASS,
   JENIS_RAPAT_OPTIONS, STATUS_RAPAT_OPTIONS,
+  KEHADIRAN_RAPAT_OPTIONS,
 } from './shared';
 import type {
-  RapatWithRelations, RapatPesertaWithGuru, StatusRapat,
+  RapatWithRelations, RapatPesertaWithGuru,
+  StatusKehadiranRapat, StatusRapat,
 } from '@/types/database';
 
 export function JadwalRapatTab() {
@@ -26,13 +30,11 @@ export function JadwalRapatTab() {
   const [list, setList] = useState<RapatWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter
   const [search, setSearch] = useState('');
   const [filterJenis, setFilterJenis] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterTimeframe, setFilterTimeframe] = useState<'semua' | 'akan_datang' | 'bulan_ini' | 'selesai'>('akan_datang');
 
-  // Modal
   const [detailTarget, setDetailTarget] = useState<RapatWithRelations | null>(null);
 
   // ==========================================================================
@@ -42,7 +44,6 @@ export function JadwalRapatTab() {
     if (!guru?.id) return;
     setLoading(true);
     try {
-      // Rapat yang: public, atau saya terlibat (peserta/pemimpin/notulis/creator)
       const { data: rapatIds } = await supabase
         .from('rapat_peserta')
         .select('rapat_id')
@@ -50,14 +51,12 @@ export function JadwalRapatTab() {
 
       const idsFromPeserta = (rapatIds ?? []).map((r: any) => r.rapat_id);
 
-      // Build query filter
       let query = supabase
         .from('v_rapat_lengkap')
         .select('*')
         .order('tanggal', { ascending: false })
         .order('waktu_mulai', { ascending: false });
 
-      // Filter visibility: public OR saya terlibat
       const orConditions = [
         'is_public.eq.true',
         `created_by.eq.${guru.id}`,
@@ -90,7 +89,6 @@ export function JadwalRapatTab() {
       if (filterJenis && r.jenis !== filterJenis) return false;
       if (filterStatus && r.status !== filterStatus) return false;
 
-      // Timeframe
       if (filterTimeframe === 'akan_datang') {
         if (r.status !== 'Akan Datang' && r.status !== 'Berlangsung') return false;
         if (daysFromNow(r.tanggal) < 0 && r.status !== 'Berlangsung') return false;
@@ -162,7 +160,6 @@ export function JadwalRapatTab() {
           )}
         </div>
 
-        {/* Timeframe chips */}
         <div className="flex flex-wrap gap-2">
           {[
             { key: 'akan_datang' as const, label: 'Akan Datang' },
@@ -184,7 +181,6 @@ export function JadwalRapatTab() {
           ))}
         </div>
 
-        {/* Search + selects */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input
             type="text"
@@ -217,9 +213,6 @@ export function JadwalRapatTab() {
           <p className="text-sm font-bold text-slate-300">
             {hasFilter ? 'Tidak ada rapat cocok' : 'Belum ada rapat'}
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            {hasFilter ? 'Coba ubah filter' : 'Rapat akan muncul di sini'}
-          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -245,6 +238,7 @@ export function JadwalRapatTab() {
           <DetailRapatContent
             item={detailTarget}
             currentGuruId={guru?.id}
+            currentGuruRole={guru?.role}
             onRefresh={fetchAll}
           />
         )}
@@ -275,7 +269,6 @@ function RapatCard({
       }`}
     >
       <div className="flex items-start gap-3">
-        {/* Date box */}
         <div className={`w-14 shrink-0 rounded-xl border text-center py-2 ${
           today
             ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300'
@@ -336,7 +329,7 @@ function RapatCard({
               </span>
             )}
             <span className="inline-flex items-center gap-1">
-              <Users size={10} /> {item.total_peserta ?? 0} peserta
+              <Users size={10} /> {item.total_hadir ?? 0}/{item.total_peserta ?? 0} hadir
             </span>
             {item.has_notulensi && (
               <span className="inline-flex items-center gap-1 text-emerald-400">
@@ -350,7 +343,7 @@ function RapatCard({
               onClick={onDetail}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold transition cursor-pointer"
             >
-              <Eye size={11} /> Lihat Detail
+              <Eye size={11} /> Lihat Detail & Kehadiran
             </button>
           </div>
         </div>
@@ -360,25 +353,37 @@ function RapatCard({
 }
 
 // =============================================================================
-// SUB: Detail Content
+// SUB: Detail Content (dengan attendance system)
 // =============================================================================
 function DetailRapatContent({
-  item, currentGuruId, onRefresh,
+  item, currentGuruId, currentGuruRole, onRefresh,
 }: {
   item: RapatWithRelations;
   currentGuruId: string | undefined;
+  currentGuruRole: string | undefined;
   onRefresh: () => void;
 }) {
   const [pesertaList, setPesertaList] = useState<RapatPesertaWithGuru[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [startingMeeting, setStartingMeeting] = useState(false);
 
   const isPemimpin = item.pemimpin_rapat_id === currentGuruId;
   const isNotulis = item.notulis_id === currentGuruId;
   const canManage = isPemimpin || isNotulis;
 
-  useEffect(() => {
-    (async () => {
+  // Cek apakah user ini peserta (dan dapat barisnya)
+  const myPesertaRow = pesertaList.find((p) => p.guru_id === currentGuruId);
+  const isPeserta = Boolean(myPesertaRow);
+  const isMeetingStarted = item.status === 'Berlangsung' || item.status === 'Selesai';
+  const canSelfCheckin = isPeserta && item.status !== 'Dibatalkan' && item.status !== 'Draft';
+
+  // ==========================================================================
+  // FETCH PESERTA
+  // ==========================================================================
+  const fetchPeserta = useCallback(async () => {
+    setLoading(true);
+    try {
       const { data } = await supabase
         .from('rapat_peserta')
         .select(`
@@ -386,13 +391,54 @@ function DetailRapatContent({
           guru:gurus!guru_id(id, nama_lengkap, nip, jenis_ptk)
         `)
         .eq('rapat_id', item.id)
-        .order('jabatan_dalam_rapat');
+        .order('jabatan_dalam_rapat', { ascending: true });
       setPesertaList((data as RapatPesertaWithGuru[]) ?? []);
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-    })();
+    }
   }, [item.id]);
 
-  const handleUpdateKehadiran = async (pesertaId: string, status: string) => {
+  useEffect(() => { fetchPeserta(); }, [fetchPeserta]);
+
+  // ==========================================================================
+  // SELF CHECK-IN
+  // ==========================================================================
+  const handleSelfCheckin = async (status: StatusKehadiranRapat) => {
+    if (!myPesertaRow) return;
+    setUpdatingId(myPesertaRow.id);
+    try {
+      const { error } = await supabase
+        .from('rapat_peserta')
+        .update({
+          status_kehadiran: status,
+          catatan: `Self check-in: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
+        })
+        .eq('id', myPesertaRow.id);
+      if (error) throw error;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.TODO,
+        targetId: myPesertaRow.id,
+        deskripsi: `Self check-in rapat "${item.judul}": ${status}`,
+      });
+
+      showToast('success', `Konfirmasi tersimpan: ${status}`);
+      fetchPeserta();
+      onRefresh();
+    } catch (err: any) {
+      showToast('error', 'Gagal: ' + (err.message || 'Error'));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ==========================================================================
+  // NOTULIS / PEMIMPIN — OVERRIDE KEHADIRAN
+  // ==========================================================================
+  const handleUpdateKehadiran = async (pesertaId: string, status: StatusKehadiranRapat) => {
     setUpdatingId(pesertaId);
     try {
       const { error } = await supabase
@@ -400,16 +446,9 @@ function DetailRapatContent({
         .update({ status_kehadiran: status })
         .eq('id', pesertaId);
       if (error) throw error;
-      showToast('success', 'Kehadiran diperbarui');
-      const { data } = await supabase
-        .from('rapat_peserta')
-        .select(`
-          *,
-          guru:gurus!guru_id(id, nama_lengkap, nip, jenis_ptk)
-        `)
-        .eq('rapat_id', item.id)
-        .order('jabatan_dalam_rapat');
-      setPesertaList((data as RapatPesertaWithGuru[]) ?? []);
+
+      showToast('success', `Kehadiran diperbarui: ${status}`);
+      fetchPeserta();
       onRefresh();
     } catch (err: any) {
       showToast('error', 'Gagal update: ' + (err.message || 'Error'));
@@ -418,11 +457,57 @@ function DetailRapatContent({
     }
   };
 
+  // ==========================================================================
+  // BUKA SESI RAPAT (notulis/pemimpin)
+  // ==========================================================================
+  const handleBukaSesi = async () => {
+    if (!canManage) return;
+    setStartingMeeting(true);
+    try {
+      const { error } = await supabase
+        .from('rapat')
+        .update({ status: 'Berlangsung' })
+        .eq('id', item.id);
+      if (error) throw error;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.TODO,
+        targetId: item.id,
+        deskripsi: `Buka sesi rapat: ${item.judul}`,
+      });
+
+      showToast('success', 'Sesi rapat dibuka! Peserta bisa check-in.');
+      onRefresh();
+    } catch (err: any) {
+      showToast('error', 'Gagal: ' + (err.message || 'Error'));
+    } finally {
+      setStartingMeeting(false);
+    }
+  };
+
+  // ==========================================================================
+  // STATS
+  // ==========================================================================
+  const attendanceStats = useMemo(() => {
+    const total = pesertaList.length;
+    const hadir = pesertaList.filter((p) => p.status_kehadiran === 'Hadir').length;
+    const terlambat = pesertaList.filter((p) => p.status_kehadiran === 'Terlambat').length;
+    const izin = pesertaList.filter((p) => p.status_kehadiran === 'Izin').length;
+    const tidakHadir = pesertaList.filter((p) => p.status_kehadiran === 'Tidak Hadir').length;
+    const belum = pesertaList.filter((p) => p.status_kehadiran === 'Belum Dikonfirmasi').length;
+    const persen = total > 0 ? Math.round(((hadir + terlambat) / total) * 100) : 0;
+    return { total, hadir, terlambat, izin, tidakHadir, belum, persen };
+  }, [pesertaList]);
+
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
   return (
-    <div className="space-y-4 pt-1 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
+    <div className="space-y-4 pt-1 max-h-[75vh] overflow-y-auto pr-1 custom-scrollbar">
       {/* HEADER */}
-      <div className={`bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border rounded-2xl p-5 ${getStatusRapatBadge(item.status).replace('text-', 'border-').replace('bg-', 'bg-')}`}>
-        <div className="flex items-start justify-between gap-2 flex-wrap">
+      <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getJenisRapatBadge(item.jenis)}`}>
@@ -431,14 +516,91 @@ function DetailRapatContent({
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getStatusRapatBadge(item.status)}`}>
                 {item.status}
               </span>
+              {isToday(item.tanggal) && (
+                <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 animate-pulse">
+                  HARI INI
+                </span>
+              )}
             </div>
             <h3 className="text-lg font-extrabold text-slate-100">{item.judul}</h3>
             <p className="text-[11px] font-mono text-indigo-400 mt-0.5">
               {item.nomor_rapat ?? '-'}
             </p>
           </div>
+
+          {/* TOMBOL BUKA SESI (kalau belum dimulai & canManage) */}
+          {canManage && item.status === 'Akan Datang' && (
+            <button
+              onClick={handleBukaSesi}
+              disabled={startingMeeting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              {startingMeeting ? (
+                <><Loader2 size={13} className="animate-spin" /> Memulai...</>
+              ) : (
+                <><PlayCircle size={13} /> Buka Sesi Rapat</>
+              )}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* ============================================================
+          SELF CHECK-IN PANEL — muncul kalau user = peserta
+          ============================================================ */}
+      {canSelfCheckin && myPesertaRow && (
+        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <UserCheck size={14} className="text-indigo-400" />
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+              Konfirmasi Kehadiran Anda
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <SelfCheckinButton
+              status="Hadir"
+              current={myPesertaRow.status_kehadiran}
+              onClick={() => handleSelfCheckin('Hadir')}
+              disabled={updatingId === myPesertaRow.id}
+              icon={CheckCircle2}
+              color="emerald"
+            />
+            <SelfCheckinButton
+              status="Terlambat"
+              current={myPesertaRow.status_kehadiran}
+              onClick={() => handleSelfCheckin('Terlambat')}
+              disabled={updatingId === myPesertaRow.id}
+              icon={Clock3}
+              color="amber"
+            />
+            <SelfCheckinButton
+              status="Izin"
+              current={myPesertaRow.status_kehadiran}
+              onClick={() => handleSelfCheckin('Izin')}
+              disabled={updatingId === myPesertaRow.id}
+              icon={FileText}
+              color="blue"
+            />
+            <SelfCheckinButton
+              status="Tidak Hadir"
+              current={myPesertaRow.status_kehadiran}
+              onClick={() => handleSelfCheckin('Tidak Hadir')}
+              disabled={updatingId === myPesertaRow.id}
+              icon={UserX}
+              color="rose"
+            />
+          </div>
+
+          <p className="text-[10px] text-slate-500 mt-2.5 text-center">
+            Status saat ini:{' '}
+            <span className={`font-bold ${getKehadiranBadge(myPesertaRow.status_kehadiran).split(' ')[1]}`}>
+              {myPesertaRow.status_kehadiran}
+            </span>
+            {' '}· Bisa diubah kapan saja selama rapat belum selesai
+          </p>
+        </div>
+      )}
 
       {/* INFO GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
@@ -446,8 +608,8 @@ function DetailRapatContent({
         <InfoBox icon={Clock} label="Waktu" value={formatWaktuRapat(item.waktu_mulai, item.waktu_selesai)} />
         <InfoBox icon={MapPin} label="Lokasi" value={item.lokasi ?? '-'} />
         <InfoBox icon={Users} label="Penyelenggara" value={item.penyelenggara ?? '-'} />
-        <InfoBox icon={Users} label="Pemimpin" value={item.pemimpin_nama ?? '-'} />
-        <InfoBox icon={Users} label="Notulis" value={item.notulis_nama ?? '-'} />
+        <InfoBox icon={User} label="Pemimpin" value={item.pemimpin_nama ?? '-'} />
+        <InfoBox icon={FileText} label="Notulis" value={item.notulis_nama ?? '-'} />
       </div>
 
       {item.deskripsi && (
@@ -457,47 +619,175 @@ function DetailRapatContent({
         </div>
       )}
 
-      {/* PESERTA */}
+      {/* ============================================================
+          STAT BAR KEHADIRAN
+          ============================================================ */}
+      <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+            Statistik Kehadiran
+          </h4>
+          <span className={`text-base font-extrabold ${
+            attendanceStats.persen >= 75 ? 'text-emerald-400' :
+            attendanceStats.persen >= 50 ? 'text-amber-400' : 'text-rose-400'
+          }`}>
+            {attendanceStats.persen}%
+          </span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2 mb-3 text-center">
+          <MiniStat label="Hadir" value={attendanceStats.hadir} color="emerald" />
+          <MiniStat label="Terlambat" value={attendanceStats.terlambat} color="amber" />
+          <MiniStat label="Izin" value={attendanceStats.izin} color="blue" />
+          <MiniStat label="Tidak" value={attendanceStats.tidakHadir} color="rose" />
+          <MiniStat label="Belum" value={attendanceStats.belum} color="slate" />
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex">
+          {attendanceStats.total > 0 && (
+            <>
+              <div className="h-full bg-emerald-500" style={{ width: `${(attendanceStats.hadir / attendanceStats.total) * 100}%` }} />
+              <div className="h-full bg-amber-500" style={{ width: `${(attendanceStats.terlambat / attendanceStats.total) * 100}%` }} />
+              <div className="h-full bg-blue-500" style={{ width: `${(attendanceStats.izin / attendanceStats.total) * 100}%` }} />
+              <div className="h-full bg-rose-500" style={{ width: `${(attendanceStats.tidakHadir / attendanceStats.total) * 100}%` }} />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ============================================================
+          DAFTAR PESERTA
+          ============================================================ */}
       <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">
             Peserta ({pesertaList.length})
           </h4>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="text-emerald-400 font-bold">
-              ✓ {pesertaList.filter((p) => p.status_kehadiran === 'Hadir').length} hadir
+          {canManage && (
+            <span className="text-[10px] font-bold text-purple-400 px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">
+              Anda bisa ubah kehadiran
             </span>
-          </div>
+          )}
         </div>
 
         {loading ? (
-          <Loader2 className="animate-spin text-indigo-400 mx-auto" size={20} />
+          <div className="text-center py-4">
+            <Loader2 size={16} className="animate-spin text-indigo-400 mx-auto" />
+          </div>
         ) : pesertaList.length === 0 ? (
           <p className="text-[11px] text-slate-500 text-center py-4">Belum ada peserta</p>
         ) : (
           <div className="space-y-2">
-            {pesertaList.map((p) => (
-              <div key={p.id} className="flex items-center gap-2 bg-slate-900/60 border border-slate-800/60 rounded-xl p-2.5">
-                <div className="w-8 h-8 rounded-full bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs font-bold shrink-0">
-                  {(p.guru?.nama_lengkap ?? '?').charAt(0).toUpperCase()}
+            {pesertaList.map((p) => {
+              const isMe = p.guru_id === currentGuruId;
+              const isUpdating = updatingId === p.id;
+              return (
+                <div
+                  key={p.id}
+                  className={`flex items-center gap-2 border rounded-xl p-2.5 ${
+                    isMe
+                      ? 'bg-indigo-500/10 border-indigo-500/30'
+                      : 'bg-slate-900/60 border-slate-800/60'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                    isMe
+                      ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-300'
+                      : 'bg-slate-800 border border-slate-700 text-slate-400'
+                  }`}>
+                    {(p.guru?.nama_lengkap ?? '?').charAt(0).toUpperCase()}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-xs font-bold text-slate-200 truncate">
+                        {p.guru?.nama_lengkap ?? '-'}
+                      </p>
+                      {isMe && (
+                        <span className="text-[9px] font-bold text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30">
+                          Anda
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-500">
+                      {p.jabatan_dalam_rapat}
+                      {p.guru?.jenis_ptk ? ` · ${p.guru.jenis_ptk}` : ''}
+                    </p>
+                  </div>
+
+                  {/* NOTULIS/PEMIMPIN: dropdown | PESERTA BIASA: badge */}
+                  {canManage && !isMe ? (
+                    <select
+                      value={p.status_kehadiran}
+                      onChange={(e) => handleUpdateKehadiran(p.id, e.target.value as StatusKehadiranRapat)}
+                      disabled={isUpdating}
+                      className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shrink-0 ${getKehadiranBadge(p.status_kehadiran)} bg-slate-950`}
+                    >
+                      {KEHADIRAN_RAPAT_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 ${getKehadiranBadge(p.status_kehadiran)}`}>
+                      {isUpdating ? '...' : p.status_kehadiran}
+                    </span>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-slate-200 truncate">
-                    {p.guru?.nama_lengkap ?? '-'}
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    {p.jabatan_dalam_rapat} {p.guru?.jenis_ptk ? `· ${p.guru.jenis_ptk}` : ''}
-                  </p>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${getKehadiranBadge(p.status_kehadiran)}`}>
-                  {p.status_kehadiran}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// SUB: Self Check-in Button
+// =============================================================================
+function SelfCheckinButton({
+  status, current, onClick, disabled, icon: Icon, color,
+}: {
+  status: StatusKehadiranRapat;
+  current: StatusKehadiranRapat;
+  onClick: () => void;
+  disabled: boolean;
+  icon: any;
+  color: 'emerald' | 'amber' | 'blue' | 'rose';
+}) {
+  const isActive = current === status;
+  const CM: Record<string, { active: string; inactive: string }> = {
+    emerald: {
+      active: 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20',
+      inactive: 'bg-slate-950 border-slate-800 text-slate-400 hover:border-emerald-500/40 hover:text-emerald-400',
+    },
+    amber: {
+      active: 'bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/20',
+      inactive: 'bg-slate-950 border-slate-800 text-slate-400 hover:border-amber-500/40 hover:text-amber-400',
+    },
+    blue: {
+      active: 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/20',
+      inactive: 'bg-slate-950 border-slate-800 text-slate-400 hover:border-blue-500/40 hover:text-blue-400',
+    },
+    rose: {
+      active: 'bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/20',
+      inactive: 'bg-slate-950 border-slate-800 text-slate-400 hover:border-rose-500/40 hover:text-rose-400',
+    },
+  };
+  const c = CM[color];
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-[11px] font-bold transition cursor-pointer disabled:opacity-50 ${
+        isActive ? c.active : c.inactive
+      }`}
+    >
+      <Icon size={16} />
+      <span>{status}</span>
+      {isActive && <span className="text-[9px] opacity-80">✓ Tersimpan</span>}
+    </button>
   );
 }
 
@@ -513,6 +803,24 @@ function InfoBox({ icon: Icon, label, value }: {
         <Icon size={10} /> {label}
       </div>
       <p className="text-xs font-semibold text-slate-200 truncate">{value}</p>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: {
+  label: string; value: number; color: 'emerald' | 'amber' | 'blue' | 'rose' | 'slate';
+}) {
+  const cm: Record<string, string> = {
+    emerald: 'text-emerald-400',
+    amber: 'text-amber-400',
+    blue: 'text-blue-400',
+    rose: 'text-rose-400',
+    slate: 'text-slate-400',
+  };
+  return (
+    <div className="bg-slate-900/60 border border-slate-800/60 rounded-lg p-2">
+      <p className={`text-base font-extrabold ${cm[color]}`}>{value}</p>
+      <p className="text-[9px] font-bold uppercase text-slate-500">{label}</p>
     </div>
   );
 }
