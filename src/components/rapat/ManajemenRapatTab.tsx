@@ -1,12 +1,12 @@
 // src/components/rapat/ManajemenRapatTab.tsx
 // Tab Manajemen Rapat — CRUD, statistik, attendance override, Tutup/Batalkan/Reopen,
-// auto-close trigger, dan cetak notulensi PDF.
+// auto-close trigger, cetak notulensi PDF, share WA, notif cancel.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Loader2, Plus, Calendar, Users, BarChart3, Pencil, Trash2,
+  Loader2, Plus, Calendar, BarChart3, Pencil, Trash2,
   Eye, CheckCircle2, Clock, TrendingUp, RefreshCw, AlertCircle,
-  PlayCircle, XCircle, RotateCcw, Lock, FileCheck2, Printer,
+  PlayCircle, XCircle, RotateCcw, Lock, FileCheck2, Printer, Share2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +15,7 @@ import { ConfirmModal, Modal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { ModalRapat } from './ModalRapat';
 import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
+import { buildWaShareLinkRapat, notifyRapatCancelled } from '@/lib/rapatNotifications';
 import {
   getStatusRapatBadge, getJenisRapatBadge, getKehadiranBadge,
   formatTanggalRapat, formatWaktuRapat, formatTanggalPendek,
@@ -208,7 +209,26 @@ export function ManajemenRapatTab() {
         deskripsi: logMsg,
       });
 
-      showToast('success', logMsg);
+      // ✅ Notif peserta kalau dibatalkan
+      if (type === 'cancel') {
+        try {
+          const { data: freshRapat } = await supabase
+            .from('v_rapat_lengkap')
+            .select('*')
+            .eq('id', rapat.id)
+            .single();
+          if (freshRapat) {
+            await notifyRapatCancelled(freshRapat as any, guru.id);
+          }
+        } catch (notifErr) {
+          console.warn('[notif] Gagal kirim notif cancel:', notifErr);
+        }
+      }
+
+      showToast(
+        'success',
+        type === 'cancel' ? 'Rapat dibatalkan & peserta dinotifikasi' : logMsg
+      );
       setConfirmAction(null);
       setDetailTarget(null);
       fetchAll();
@@ -294,6 +314,25 @@ export function ManajemenRapatTab() {
       showToast('error', 'Gagal cetak: ' + (err.message || 'Error'));
     } finally {
       setPrintingId(null);
+    }
+  };
+
+  // ==========================================================================
+  // HANDLERS — Share WA
+  // ==========================================================================
+  const handleShareWa = (rapat: RapatWithRelations) => {
+    try {
+      const link = buildWaShareLinkRapat(rapat);
+      window.open(link, '_blank', 'noopener,noreferrer');
+
+      logActivity({
+        aksi: 'VIEW',
+        modul: AUDIT_MODUL.TODO,
+        targetId: rapat.id,
+        deskripsi: `Share rapat via WA: ${rapat.nomor_rapat}`,
+      }).catch(() => {});
+    } catch (err: any) {
+      showToast('error', 'Gagal share: ' + (err.message || 'Error'));
     }
   };
 
@@ -516,6 +555,7 @@ export function ManajemenRapatTab() {
             onRefresh={fetchAll}
             onAction={(type) => setConfirmAction({ type, rapat: detailTarget })}
             onCetak={handleCetakNotulensi}
+            onShareWa={handleShareWa}
           />
         )}
       </Modal>
@@ -536,7 +576,7 @@ export function ManajemenRapatTab() {
           confirmAction?.type === 'close'
             ? `Tutup rapat "${confirmAction.rapat.judul}" tanpa finalisasi notulensi? Rapat akan ditandai Selesai dan tidak bisa check-in lagi.`
             : confirmAction?.type === 'cancel'
-            ? `Batalkan rapat "${confirmAction.rapat.judul}"? Peserta akan melihat status Dibatalkan.`
+            ? `Batalkan rapat "${confirmAction.rapat.judul}"? Peserta akan dinotifikasi dan melihat status Dibatalkan.`
             : `Buka kembali rapat "${confirmAction?.rapat.judul}"? Status akan kembali ke Berlangsung.`
         }
         variant={
@@ -550,7 +590,7 @@ export function ManajemenRapatTab() {
           confirmAction?.type === 'close'
             ? 'Ya, Tutup'
             : confirmAction?.type === 'cancel'
-            ? 'Ya, Batalkan'
+            ? 'Ya, Batalkan & Notif'
             : 'Ya, Reopen'
         }
       />
@@ -568,10 +608,10 @@ export function ManajemenRapatTab() {
 }
 
 // =============================================================================
-// SUB: Detail dengan Action Buttons + Cetak
+// SUB: Detail dengan Action Buttons + Cetak + WA Share
 // =============================================================================
 function RapatDetailManager({
-  item, currentGuruId, printingId, onRefresh, onAction, onCetak,
+  item, currentGuruId, printingId, onRefresh, onAction, onCetak, onShareWa,
 }: {
   item: RapatWithRelations;
   currentGuruId: string | undefined;
@@ -579,6 +619,7 @@ function RapatDetailManager({
   onRefresh: () => void;
   onAction: (type: 'close' | 'cancel' | 'reopen') => void;
   onCetak: (rapat: RapatWithRelations) => void;
+  onShareWa: (rapat: RapatWithRelations) => void;
 }) {
   const [peserta, setPeserta] = useState<RapatPesertaWithGuru[]>([]);
   const [loading, setLoading] = useState(true);
@@ -735,7 +776,7 @@ function RapatDetailManager({
             </button>
           )}
 
-          {/* ✅ CETAK NOTULENSI — muncul kalau notulensi Final */}
+          {/* ✅ CETAK NOTULENSI */}
           {canPrint && (
             <button
               onClick={() => onCetak(item)}
@@ -749,6 +790,15 @@ function RapatDetailManager({
               )}
             </button>
           )}
+
+          {/* ✅ SHARE WA — selalu tampil */}
+          <button
+            onClick={() => onShareWa(item)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px] font-bold transition cursor-pointer"
+            title="Share link rapat via WhatsApp"
+          >
+            <Share2 size={12} /> Share WA
+          </button>
 
           {item.close_note && (
             <div className="flex-1 min-w-[200px] text-[10px] text-slate-400 flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800">
