@@ -1,16 +1,17 @@
 // src/components/rapat/ModalRapat.tsx
-// Form create/edit rapat + pilih peserta.
+// Form create/edit rapat + pilih peserta + notifikasi otomatis.
 
 import { useState, useEffect, useMemo } from 'react';
 import {
   Loader2, Save, Users, X, Search, Check, AlertTriangle,
-  Calendar as CalendarIcon, Clock, MapPin, UserCog,
+  Calendar as CalendarIcon, Clock, MapPin, UserCog, Bell,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { notifyRapatCreated, notifyRapatUpdated } from '@/lib/rapatNotifications';
 import {
   INPUT_CLASS, LABEL_CLASS,
   JENIS_RAPAT_OPTIONS, STATUS_RAPAT_OPTIONS,
@@ -83,7 +84,6 @@ export function ModalRapat({
         catatan_umum: editing.catatan_umum ?? '',
       });
 
-      // Load peserta
       (async () => {
         setLoadingPeserta(true);
         const { data } = await supabase
@@ -171,7 +171,7 @@ export function ModalRapat({
 
         await logActivity({
           aksi: 'UPDATE',
-          modul: AUDIT_MODUL.TODO, // pakai TODO sebagai closest, atau tambah 'rapat' di audit
+          modul: AUDIT_MODUL.TODO,
           targetId: editing.id,
           deskripsi: `Update rapat: ${payload.judul}`,
         });
@@ -198,10 +198,14 @@ export function ModalRapat({
         .from('rapat_peserta')
         .delete()
         .eq('rapat_id', rapatId)
-        .not('guru_id', 'in', `(${pesertaIds.length > 0 ? pesertaIds.join(',') : '00000000-0000-0000-0000-000000000000'})`);
+        .not(
+          'guru_id',
+          'in',
+          `(${pesertaIds.length > 0 ? pesertaIds.join(',') : '00000000-0000-0000-0000-000000000000'})`
+        );
       if (delErr) console.warn('Delete peserta:', delErr);
 
-      // 2. Insert peserta baru (skip yang sudah ada)
+      // 2. Insert peserta baru
       const existing = await supabase
         .from('rapat_peserta')
         .select('guru_id')
@@ -244,7 +248,31 @@ export function ModalRapat({
           .eq('guru_id', form.notulis_id);
       }
 
-      showToast('success', isEdit ? 'Rapat diperbarui' : 'Rapat berhasil dibuat');
+      // ✅ NOTIFIKASI KE PESERTA
+      try {
+        const { data: freshRapat } = await supabase
+          .from('v_rapat_lengkap')
+          .select('*')
+          .eq('id', rapatId)
+          .single();
+
+        if (freshRapat) {
+          if (isEdit) {
+            await notifyRapatUpdated(freshRapat as any, currentGuruId);
+          } else {
+            await notifyRapatCreated(freshRapat as any, currentGuruId);
+          }
+        }
+      } catch (notifErr) {
+        console.warn('[notif] Gagal kirim notif:', notifErr);
+      }
+
+      showToast(
+        'success',
+        isEdit
+          ? 'Rapat diperbarui & peserta dinotifikasi'
+          : 'Rapat dibuat & peserta dinotifikasi'
+      );
       onSaved();
       onClose();
     } catch (err: any) {
@@ -265,6 +293,20 @@ export function ModalRapat({
       size="lg"
     >
       <div className="space-y-4 pt-1 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
+        {/* INFO NOTIF */}
+        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 flex items-start gap-2.5">
+          <Bell size={14} className="text-indigo-400 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <p className="font-bold text-indigo-300">
+              Notifikasi Otomatis
+            </p>
+            <p className="text-slate-400 mt-0.5 leading-relaxed">
+              Setelah disimpan, semua peserta akan menerima notifikasi undangan rapat
+              beserta detail jadwal & lokasi.
+            </p>
+          </div>
+        </div>
+
         {/* JUDUL */}
         <div>
           <label className={LABEL_CLASS}>Judul Rapat *</label>
@@ -525,9 +567,9 @@ export function ModalRapat({
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer"
           >
             {saving ? (
-              <><Loader2 size={14} className="animate-spin" /> Simpan...</>
+              <><Loader2 size={14} className="animate-spin" /> Simpan & Kirim Notif...</>
             ) : (
-              <><Save size={14} /> {isEdit ? 'Simpan Perubahan' : 'Buat Rapat'}</>
+              <><Save size={14} /> {isEdit ? 'Simpan Perubahan' : 'Buat & Kirim Undangan'}</>
             )}
           </button>
         </div>
