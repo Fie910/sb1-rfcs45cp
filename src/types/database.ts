@@ -1475,6 +1475,9 @@ export type RapatNotulensi = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  verification_token: string | null;
+  pdf_generated_at: string | null;
+  pdf_generated_by: string | null;
 };
 
 export const JENIS_RAPAT_OPTIONS: JenisRapat[] = [
