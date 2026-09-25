@@ -50,9 +50,9 @@ const KehadiranPiketPage = lazy(() => import('@/pages/KehadiranPiketPage').then(
 
 // Halaman To-Do List Divisi
 const TodoListPage = lazy(() => import('@/pages/TodoListPage').then((m) => ({ default: m.TodoListPage })));
-const HrisPage = lazy(() =>
-  import('@/pages/HrisPage').then((m) => ({ default: m.HrisPage }))
-);
+const HrisPage = lazy(() => import('@/pages/HrisPage').then((m) => ({ default: m.HrisPage })));
+const VerifikasiNotulensiPage = lazy(() =>
+  import('@/pages/VerifikasiNotulensiPage').then((m) => ({ default: m.VerifikasiNotulensiPage })));
 
 // Halaman Presensi Kesiswaan
 const InputPresensiKesiswaanPage = lazy(() => import('@/pages/InputPresensiKesiswaanPage').then((m) => ({ default: m.InputPresensiKesiswaanPage })));
