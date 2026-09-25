@@ -6,10 +6,11 @@ import {
   CalendarCheck, ClipboardList, BarChart3, Users,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { isRapatManager } from '@/components/rapat/shared';
 import { JadwalRapatTab } from '@/components/rapat/JadwalRapatTab';
 import { NotulensiSayaTab } from '@/components/rapat/NotulensiSayaTab';
 import { ManajemenRapatTab } from '@/components/rapat/ManajemenRapatTab';
+import { isRapatManager, useAutoCloseRapat } from '@/components/rapat/shared';
+import { showToast } from '@/components/Toast';
 
 type TabKey = 'jadwal' | 'notulensi' | 'manajemen';
 
