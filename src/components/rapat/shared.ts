@@ -173,3 +173,70 @@ export {
   JABATAN_RAPAT_OPTIONS,
   KEHADIRAN_RAPAT_OPTIONS,
 } from '@/types/database';
+
+// =============================================================================
+// HOOK: Auto-close rapat yang menggantung > 7 hari
+// =============================================================================
+// Rapat dengan status 'Berlangsung' lebih dari 7 hari → auto-set ke 'Selesai'
+// dengan close_note = 'Auto-close sistem (>7 hari tanpa finalisasi)'
+//
+// Catatan: Ini client-side. Kalau user buka aplikasi, baru di-trigger.
+// Idealnya pakai pg_cron, tapi untuk MVP cukup.
+// =============================================================================
+
+import { useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+
+const AUTO_CLOSE_AFTER_DAYS = 7;
+
+export async function autoCloseStaleRapat(): Promise<number> {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - AUTO_CLOSE_AFTER_DAYS);
+    const cutoffStr = cutoffDate.toISOString().slice(0, 10);
+
+    // Cari rapat yang perlu di-close
+    const { data: stale } = await supabase
+      .from('rapat')
+      .select('id, judul')
+      .eq('status', 'Berlangsung')
+      .lte('tanggal', cutoffStr);
+
+    if (!stale || stale.length === 0) return 0;
+
+    const ids = stale.map((r) => r.id);
+
+    // Update ke Selesai
+    const { error } = await supabase
+      .from('rapat')
+      .update({
+        status: 'Selesai',
+        closed_at: new Date().toISOString(),
+        close_note: `Auto-close sistem (${AUTO_CLOSE_AFTER_DAYS} hari tanpa finalisasi)`,
+      })
+      .in('id', ids);
+
+    if (error) {
+      console.warn('[auto-close] Gagal:', error.message);
+      return 0;
+    }
+
+    console.log(`[auto-close] ${stale.length} rapat di-close otomatis`);
+    return stale.length;
+  } catch (err) {
+    console.warn('[auto-close] Error:', err);
+    return 0;
+  }
+}
+
+/** Hook untuk di-mount di RapatPage — trigger auto-close sekali saat mount */
+export function useAutoCloseRapat(onClosed?: (count: number) => void) {
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const count = await autoCloseStaleRapat();
+      if (mounted && count > 0 && onClosed) onClosed(count);
+    })();
+    return () => { mounted = false; };
+  }, [onClosed]);
+}
