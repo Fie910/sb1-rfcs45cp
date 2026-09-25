@@ -1424,6 +1424,7 @@ export type RapatWithRelations = Rapat & {
   notulis_nama?: string | null;
   notulis_nip?: string | null;
   created_by_nama?: string | null;
+  closed_by_nama?: string | null;
   total_peserta?: number;
   total_hadir?: number;
   total_tidak_hadir?: number;
