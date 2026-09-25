@@ -1,10 +1,11 @@
 // src/components/rapat/ModalNotulensi.tsx
-// Form notulensi rapat — dengan tombol "Generate dengan AI".
+// Form notulensi rapat — AI + konversi action items → todos + notifikasi.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Loader2, Save, Sparkles, Plus, X, Trash2, Wand2,
-  AlertTriangle, FileText, CheckCircle2, ListChecks, Clock,
+  AlertTriangle, Info, CheckCircle2, ListChecks, Send,
+  FileText, Link2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -12,6 +13,8 @@ import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { generateResumeNotulensi, checkAiAvailable } from '@/lib/ai';
+import { convertActionItemsToTodos, hasConvertibleItems } from '@/lib/rapatActions';
+import { notifyNotulensiFinal } from '@/lib/rapatNotifications';
 import { INPUT_CLASS, LABEL_CLASS, formatTanggalRapat } from './shared';
 import type {
   RapatWithRelations, RapatNotulensi, RapatPesertaWithGuru,
@@ -60,6 +63,13 @@ export function ModalNotulensi({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
   const [isEditingFinalized, setIsEditingFinalized] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [convertedCount, setConvertedCount] = useState(0);
+
+  const canConvert = useMemo(
+    () => hasConvertibleItems(actionItems),
+    [actionItems]
+  );
 
   // ==========================================================================
   // LOAD saat open
@@ -68,7 +78,6 @@ export function ModalNotulensi({
     if (!open || !rapat) return;
 
     (async () => {
-      // Load notulensi existing
       const { data: notulensi } = await supabase
         .from('rapat_notulensi')
         .select('*')
@@ -87,6 +96,10 @@ export function ModalNotulensi({
         setActionItems(
           Array.isArray(notulensi.action_items) ? notulensi.action_items : []
         );
+        setIsEditingFinalized(notulensi.status === 'Final');
+        setConvertedCount(
+          (notulensi.action_items ?? []).filter((a: any) => a.todo_id).length
+        );
       } else {
         setExistingId(null);
         setForm({
@@ -97,23 +110,17 @@ export function ModalNotulensi({
           lampiran_url: '',
         });
         setActionItems([]);
+        setIsEditingFinalized(false);
+        setConvertedCount(0);
       }
-      if (notulensi && rapat?.status === 'Selesai') {
-  setIsEditingFinalized(true);
-}
 
-      // Load peserta untuk konteks AI
       const { data: peserta } = await supabase
         .from('rapat_peserta')
-        .select(`
-          *,
-          guru:gurus!guru_id(id, nama_lengkap, nip, jenis_ptk)
-        `)
+        .select(`*, guru:gurus!guru_id(id, nama_lengkap, nip, jenis_ptk)`)
         .eq('rapat_id', rapat.id);
       setPesertaList((peserta as RapatPesertaWithGuru[]) ?? []);
     })();
 
-    // Check AI availability
     checkAiAvailable().then(setAiAvailable);
   }, [open, rapat]);
 
@@ -140,7 +147,6 @@ export function ModalNotulensi({
           .filter(Boolean),
       });
 
-      // Map pic_nama → pic_id berdasarkan peserta
       const mappedActions: ActionItemRapat[] = result.action_items.map((a) => {
         const matched = pesertaList.find((p) =>
           p.guru?.nama_lengkap
@@ -175,7 +181,7 @@ export function ModalNotulensi({
   };
 
   // ==========================================================================
-  // ACTION ITEMS
+  // ACTION ITEMS CRUD
   // ==========================================================================
   const addActionItem = () => {
     setActionItems([...actionItems, { ...emptyAction }]);
@@ -192,6 +198,58 @@ export function ModalNotulensi({
   };
 
   // ==========================================================================
+  // KONVERSI ACTION ITEMS → TODOS
+  // ==========================================================================
+  const handleConvert = async () => {
+    if (!rapat) return;
+    const cleaned = actionItems.filter((a) => a.deskripsi.trim());
+    if (cleaned.length === 0) {
+      showToast('error', 'Belum ada action items untuk dikonversi');
+      return;
+    }
+
+    const convertible = cleaned.filter((a) => a.pic_id && !a.todo_id);
+    if (convertible.length === 0) {
+      showToast('error', 'Semua action items sudah dikonversi, atau belum ada PIC');
+      return;
+    }
+
+    setConverting(true);
+    try {
+      const result = await convertActionItemsToTodos(cleaned, {
+        rapatId: rapat.id,
+        rapatJudul: rapat.judul,
+        nomorRapat: rapat.nomor_rapat,
+        dibuatOlehId: currentGuruId,
+      });
+
+      if (result.berhasil > 0) {
+        // Action items sudah ter-update di place (todo_id terisi)
+        setActionItems([...cleaned]);
+        setConvertedCount((c) => c + result.berhasil);
+
+        await logActivity({
+          aksi: 'CREATE',
+          modul: AUDIT_MODUL.TODO,
+          targetId: rapat.id,
+          deskripsi: `Konversi ${result.berhasil} action items rapat "${rapat.judul}" ke Todo`,
+        });
+
+        showToast(
+          'success',
+          `${result.berhasil} action items dikonversi ke Todo${result.gagal > 0 ? ` · ${result.gagal} gagal` : ''}`
+        );
+      } else if (result.gagal > 0) {
+        showToast('error', `Gagal konversi: ${result.detail[0]?.error ?? 'unknown'}`);
+      }
+    } catch (err: any) {
+      showToast('error', 'Gagal konversi: ' + (err.message || 'Error'));
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  // ==========================================================================
   // SUBMIT
   // ==========================================================================
   const handleSubmit = async (finalize = false) => {
@@ -200,16 +258,17 @@ export function ModalNotulensi({
       showToast('error', 'Pembahasan wajib diisi');
       return;
     }
+
+    // Konfirmasi kalau edit after final
     if (isEditingFinalized && !finalize) {
-  const ok = window.confirm(
-    'Rapat sudah selesai. Edit notulensi akan tercatat di audit log.\n\nLanjutkan?'
-  );
-  if (!ok) return;
-}
+      const ok = window.confirm(
+        'Rapat sudah selesai. Edit notulensi akan tercatat di audit log.\n\nLanjutkan?'
+      );
+      if (!ok) return;
+    }
 
     setSaving(true);
     try {
-      // Filter action items kosong
       const cleanedActions = actionItems.filter((a) => a.deskripsi.trim());
 
       const payload: any = {
@@ -228,20 +287,18 @@ export function ModalNotulensi({
         payload.approved_at = new Date().toISOString();
       }
 
-      let notulensiId: string;
       if (existingId) {
         const { error } = await supabase
           .from('rapat_notulensi')
           .update(payload)
           .eq('id', existingId);
         if (error) throw error;
-        notulensiId = existingId;
 
         await logActivity({
           aksi: 'UPDATE',
           modul: AUDIT_MODUL.TODO,
           targetId: existingId,
-          deskripsi: `Update notulensi: ${rapat.judul}`,
+          deskripsi: `Update notulensi: ${rapat.judul}${finalize ? ' (Final)' : ''}`,
         });
       } else {
         const { data, error } = await supabase
@@ -250,7 +307,6 @@ export function ModalNotulensi({
           .select()
           .single();
         if (error) throw error;
-        notulensiId = data.id;
 
         await logActivity({
           aksi: 'CREATE',
@@ -260,17 +316,24 @@ export function ModalNotulensi({
         });
       }
 
-      // Kalau finalize, update status rapat ke Selesai
+      // Kalau finalize, update status rapat + kirim notif
       if (finalize) {
         await supabase
           .from('rapat')
-          .update({ status: 'Selesai' })
+          .update({ status: 'Selesai', closed_at: new Date().toISOString(), closed_by: currentGuruId })
           .eq('id', rapat.id);
+
+        // ✅ Notifikasi ke peserta
+        try {
+          await notifyNotulensiFinal(rapat, currentGuruId);
+        } catch (notifErr) {
+          console.warn('[notif] Gagal kirim notif:', notifErr);
+        }
       }
 
       showToast(
         'success',
-        finalize ? 'Notulensi difinalisasi & rapat selesai' : 'Notulensi disimpan sebagai draft'
+        finalize ? 'Notulensi difinalisasi & peserta dinotifikasi' : 'Notulensi disimpan sebagai draft'
       );
       onSaved();
       onClose();
@@ -287,25 +350,9 @@ export function ModalNotulensi({
   // RENDER
   // ==========================================================================
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Notulensi Rapat"
-      size="lg"
-    >
+    <Modal open={open} onClose={onClose} title="Notulensi Rapat" size="lg">
       <div className="space-y-4 pt-1 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
         {/* HEADER RAPAT */}
-        {isEditingFinalized && (
-  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2.5">
-    <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
-    <div className="text-xs">
-      <p className="font-bold text-amber-300">Rapat sudah selesai</p>
-      <p className="text-slate-400 mt-0.5 leading-relaxed">
-        Perubahan notulensi akan tercatat di audit log. Pastikan revisi benar sebelum menyimpan.
-      </p>
-    </div>
-  </div>
-)}
         <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-4">
           <p className="text-[10px] font-mono text-indigo-400">
             {rapat.nomor_rapat ?? '-'}
@@ -318,6 +365,19 @@ export function ModalNotulensi({
           </p>
         </div>
 
+        {/* WARNING — Edit after final */}
+        {isEditingFinalized && (
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2.5">
+            <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <p className="font-bold text-amber-300">Notulensi sudah Final</p>
+              <p className="text-slate-400 mt-0.5 leading-relaxed">
+                Perubahan akan tercatat di audit log. Pastikan revisi benar sebelum menyimpan.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* AI BUTTON */}
         <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-3">
           <div className="flex items-start gap-3">
@@ -329,12 +389,11 @@ export function ModalNotulensi({
                 Buat Resume dengan AI
               </p>
               <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
-                Isi pembahasan mentah dulu (min 20 karakter), lalu klik tombol untuk auto-generate ringkasan, pembahasan terstruktur, keputusan, dan action items.
+                Isi pembahasan mentah dulu (min 20 karakter), lalu klik tombol untuk auto-generate.
               </p>
               {aiAvailable === false && (
                 <p className="text-[10px] text-rose-400 mt-1.5 flex items-center gap-1">
-                  <AlertTriangle size={10} />
-                  AI tidak tersedia. Cek API key di .env.local.
+                  <AlertTriangle size={10} /> AI tidak tersedia. Cek API key.
                 </p>
               )}
             </div>
@@ -353,7 +412,7 @@ export function ModalNotulensi({
           </div>
         </div>
 
-        {/* PEMBAHASAN (input mentah) */}
+        {/* PEMBAHASAN */}
         <div>
           <label className={LABEL_CLASS}>
             Pembahasan Mentah *
@@ -365,7 +424,7 @@ export function ModalNotulensi({
             rows={6}
             value={form.pembahasan}
             onChange={(e) => setForm({ ...form, pembahasan: e.target.value })}
-            placeholder="Contoh: rapat bahas persiapan UAS, pak Budi lapor kelas 12A butuh tambahan jam matematika, bu Ani usul adakan tryout minggu depan, keputusan: tryout tanggal 15, PIC bu Ani, dll..."
+            placeholder="Contoh: rapat bahas persiapan UAS, pak Budi lapor kelas 12A butuh tambahan jam matematika, bu Ani usul adakan tryout minggu depan, keputusan: tryout tanggal 15, PIC bu Ani..."
             className={INPUT_CLASS + ' resize-none font-mono text-xs leading-relaxed'}
           />
         </div>
@@ -397,9 +456,16 @@ export function ModalNotulensi({
         {/* ACTION ITEMS */}
         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-3">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <ListChecks size={12} /> Action Items ({actionItems.length})
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <ListChecks size={12} /> Action Items ({actionItems.length})
+              </label>
+              {convertedCount > 0 && (
+                <span className="text-[9px] font-bold text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  {convertedCount} ter-konversi
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={addActionItem}
@@ -411,12 +477,19 @@ export function ModalNotulensi({
 
           {actionItems.length === 0 ? (
             <p className="text-[11px] text-slate-500 text-center py-3">
-              Belum ada action item. Isi pembahasan lalu Generate AI, atau tambah manual.
+              Belum ada action item. Generate AI, atau tambah manual.
             </p>
           ) : (
             <div className="space-y-2">
               {actionItems.map((item, idx) => (
-                <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                <div
+                  key={idx}
+                  className={`border rounded-xl p-2.5 space-y-2 ${
+                    item.todo_id
+                      ? 'bg-emerald-500/5 border-emerald-500/20'
+                      : 'bg-slate-900 border-slate-800'
+                  }`}
+                >
                   <div className="flex items-start gap-2">
                     <span className="text-[10px] font-mono text-slate-500 mt-1 shrink-0">
                       #{idx + 1}
@@ -426,23 +499,23 @@ export function ModalNotulensi({
                       value={item.deskripsi}
                       onChange={(e) => updateActionItem(idx, { deskripsi: e.target.value })}
                       placeholder="Deskripsi tugas..."
-                      className={INPUT_CLASS + ' resize-none text-xs flex-1'}
+                      disabled={Boolean(item.todo_id)}
+                      className={INPUT_CLASS + ' resize-none text-xs flex-1 disabled:opacity-60'}
                     />
-                    <button
-                      type="button"
-                      onClick={() => removeActionItem(idx)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer shrink-0"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    {!item.todo_id && (
+                      <button
+                        type="button"
+                        onClick={() => removeActionItem(idx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer shrink-0"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <SearchableSelect
-                      options={guruList.map((g) => ({
-                        value: g.id,
-                        label: g.nama_lengkap,
-                      }))}
+                      options={guruList.map((g) => ({ value: g.id, label: g.nama_lengkap }))}
                       value={item.pic_id ?? ''}
                       onChange={(v) => {
                         const guru = guruList.find((g) => g.id === v);
@@ -457,10 +530,9 @@ export function ModalNotulensi({
                     />
                     <select
                       value={item.prioritas}
-                      onChange={(e) => updateActionItem(idx, {
-                        prioritas: e.target.value as any,
-                      })}
-                      className={INPUT_CLASS + ' text-xs cursor-pointer py-2'}
+                      onChange={(e) => updateActionItem(idx, { prioritas: e.target.value as any })}
+                      disabled={Boolean(item.todo_id)}
+                      className={INPUT_CLASS + ' text-xs cursor-pointer py-2 disabled:opacity-60'}
                     >
                       <option value="Tinggi">🔴 Tinggi</option>
                       <option value="Sedang">🟡 Sedang</option>
@@ -468,19 +540,42 @@ export function ModalNotulensi({
                     </select>
                   </div>
 
-                  <div>
-                    <input
-                      type="date"
-                      value={item.deadline ?? ''}
-                      onChange={(e) => updateActionItem(idx, {
-                        deadline: e.target.value || null,
-                      })}
-                      placeholder="Deadline"
-                      className={INPUT_CLASS + ' text-xs font-mono py-2'}
-                    />
-                  </div>
+                  <input
+                    type="date"
+                    value={item.deadline ?? ''}
+                    onChange={(e) => updateActionItem(idx, { deadline: e.target.value || null })}
+                    disabled={Boolean(item.todo_id)}
+                    className={INPUT_CLASS + ' text-xs font-mono py-2 disabled:opacity-60'}
+                  />
+
+                  {item.todo_id && (
+                    <p className="text-[10px] text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 size={10} /> Sudah dikonversi ke Todo
+                    </p>
+                  )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* TOMBOL KONVERSI */}
+          {canConvert && (
+            <div className="mt-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={handleConvert}
+                disabled={converting}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50"
+              >
+                {converting ? (
+                  <><Loader2 size={14} className="animate-spin" /> Konversi...</>
+                ) : (
+                  <><Send size={14} /> Konversi Action Items ke Todo</>
+                )}
+              </button>
+              <p className="text-[10px] text-slate-500 text-center mt-1.5">
+                Akan dibuat tugas baru di menu Todo untuk setiap action item yang punya PIC.
+              </p>
             </div>
           )}
         </div>
@@ -488,13 +583,16 @@ export function ModalNotulensi({
         {/* LAMPIRAN */}
         <div>
           <label className={LABEL_CLASS}>Link Lampiran (opsional)</label>
-          <input
-            type="url"
-            value={form.lampiran_url}
-            onChange={(e) => setForm({ ...form, lampiran_url: e.target.value })}
-            placeholder="https://drive.google.com/..."
-            className={INPUT_CLASS}
-          />
+          <div className="relative">
+            <Link2 size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="url"
+              value={form.lampiran_url}
+              onChange={(e) => setForm({ ...form, lampiran_url: e.target.value })}
+              placeholder="https://drive.google.com/..."
+              className={INPUT_CLASS + ' pl-10'}
+            />
+          </div>
         </div>
 
         {/* FOOTER */}
@@ -524,7 +622,7 @@ export function ModalNotulensi({
             {saving ? (
               <><Loader2 size={14} className="animate-spin" /> Simpan...</>
             ) : (
-              <><CheckCircle2 size={14} /> Finalisasi</>
+              <><CheckCircle2 size={14} /> Finalisasi & Notif Peserta</>
             )}
           </button>
         </div>
