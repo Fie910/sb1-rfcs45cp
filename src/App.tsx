@@ -11,6 +11,7 @@ import type { PageKey } from '@/config/navigation';
 // ✅ Route publik — import langsung (bukan lazy) karena dipakai tanpa login & jarang diakses
 import VerifikasiSuratPage from '@/pages/VerifikasiSuratPage';
 import VerifikasiNotulensiPage from '@/pages/VerifikasiNotulensiPage';
+import VerifikasiArsipPage from '@/pages/VerifikasiArsipPage';
 
 // =============================================================================
 // Lazy load seluruh halaman internal untuk optimasi bundle
