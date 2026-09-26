@@ -223,7 +223,10 @@ export function IzinPage() {
         const hariIzin = getHariFromDateString(form.tanggal_izin);
 
         const guruPiketIds = await getGuruIdsPiketHari(hariIzin);
-        const kepalaIds = await getGuruIdsByRole(ROLE_KEPALA_KEPEGAWAIAN);
+        const kepalaArrays = await Promise.all(
+  ROLE_KEPALA_KEPEGAWAIAN.map((role) => getGuruIdsByRole(role))
+);
+const kepalaIds = kepalaArrays.flat();
 
         const penerimaIds = Array.from(new Set([...guruPiketIds, ...kepalaIds])).filter(
           (id) => id !== guru.id
