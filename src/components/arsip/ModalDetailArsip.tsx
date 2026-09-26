@@ -342,14 +342,14 @@ export function ModalDetailArsip({
                     <Download size={12} /> Download
                   </a>
                   {/* ✅ QR BUTTON */}
-    {dokumen.versi_token && (
-      <QRButton
-        verificationToken={dokumen.versi_token}
-        contentHash={dokumen.versi_hash ?? null}
-        nomorDokumen={dokumen.nomor_dokumen}
-        judul={dokumen.judul}
-      />
-    )}
+                  {dokumen.versi_token && (
+                    <QRButton
+                      verificationToken={dokumen.versi_token}
+                      contentHash={dokumen.versi_hash ?? null}
+                      nomorDokumen={dokumen.nomor_dokumen}
+                      judul={dokumen.judul}
+                    />
+                  )}
                 </>
               )}
 
