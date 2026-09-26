@@ -344,7 +344,7 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
     ? window.location.origin
     : 'https://app-anda.com';
   const hashShort = data.content_hash ? data.content_hash.slice(0, 16) : '';
-const verifyUrl = `${baseUrl}/verifikasi-surat/${data.verification_token}${hashShort ? `?h=${hashShort}` : ''}`;
+  const verifyUrl = `${baseUrl}/verifikasi-surat/${data.verification_token}${hashShort ? `?h=${hashShort}` : ''}`;
 
   try {
     const qrDataUrl = await generateQrDataUrl(verifyUrl);
