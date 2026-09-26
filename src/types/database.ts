@@ -1304,6 +1304,10 @@ export type HrisCuti = {
   verification_token: string | null;
   surat_generated_at: string | null;
   surat_generated_by: string | null;
+  content_hash: string | null;
+  hash_algorithm: string | null;
+  frozen_at: string | null;
+  frozen_by: string | null;
   created_at: string;
   updated_at: string;
 };
