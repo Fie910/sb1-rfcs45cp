@@ -261,6 +261,7 @@ export function ApprovalTab() {
         alamat_selama_cuti: item.alamat_selama_cuti,
         no_hp_selama_cuti: item.no_hp_selama_cuti,
         verification_token: item.verification_token,
+        content_hash: item.content_hash,
       });
 
       await logActivity({
