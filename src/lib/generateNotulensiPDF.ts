@@ -34,6 +34,7 @@ export type NotulensiPDFData = {
     jabatan: string;
     kehadiran: string;
   }[];
+  content_hash: string | null;
 };
 
 // =============================================================================
