@@ -1496,3 +1496,154 @@ export const JABATAN_RAPAT_OPTIONS: JabatanDalamRapat[] = [
 export const KEHADIRAN_RAPAT_OPTIONS: StatusKehadiranRapat[] = [
   'Belum Dikonfirmasi', 'Hadir', 'Tidak Hadir', 'Izin', 'Terlambat',
 ];
+
+// =============================================================================
+// MODUL ARSIP DIGITAL
+// =============================================================================
+
+export type AksesLevel = 'Public' | 'Internal' | 'Confidential';
+export type StatusDokumenArsip = 'Draft' | 'Aktif' | 'Obsolete' | 'Dicabut' | 'Selesai';
+export type StorageProvider = 'supabase' | 'google_drive' | 'dropbox' | 'external' | 'telegram';
+export type AksiArsip =
+  | 'Create' | 'Update' | 'Upload_Versi' | 'Publish'
+  | 'Obsolete' | 'Cabut' | 'View' | 'Download' | 'Acknowledge'
+  | 'Revisi' | 'Hapus' | 'Restore' | 'Cleanup';
+
+export type ArsipKategori = {
+  id: string;
+  nama: string;
+  deskripsi: string | null;
+  icon: string | null;
+  warna: string;
+  akses_level: AksesLevel;
+  roles_allowed: string[] | null;
+  retensi_default_bulan: number;
+  is_aktif: boolean;
+  urutan_tampil: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ArsipDokumen = {
+  id: string;
+  nomor_dokumen: string | null;
+  kategori_id: string;
+  judul: string;
+  deskripsi: string | null;
+  tags: string[];
+  status: StatusDokumenArsip;
+  versi_aktif_id: string | null;
+  total_versi: number;
+  akses_level: AksesLevel | null;
+  roles_allowed: string[] | null;
+  tanggal_berlaku: string | null;
+  tanggal_expired: string | null;
+  tanggal_retensi: string | null;
+  retensi_bulan: number | null;
+  total_views: number;
+  total_downloads: number;
+  pemilik_id: string | null;
+  created_by: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ArsipVersi = {
+  id: string;
+  dokumen_id: string;
+  versi: number;
+  nomor_revisi: string | null;
+  storage_provider: StorageProvider;
+  file_url: string;
+  external_url: string | null;
+  file_size: number | null;
+  original_size: number | null;
+  compression_ratio: number | null;
+  file_type: string | null;
+  file_name: string | null;
+  ringkasan_perubahan: string | null;
+  is_aktif: boolean;
+  content_hash: string | null;
+  hash_algorithm: string;
+  frozen_at: string | null;
+  frozen_by: string | null;
+  verification_token: string;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type ArsipPembaca = {
+  id: string;
+  dokumen_id: string;
+  versi_id: string | null;
+  guru_id: string;
+  sudah_baca: boolean;
+  sudah_download: boolean;
+  sudah_acknowledge: boolean;
+  first_viewed_at: string | null;
+  last_viewed_at: string | null;
+  acknowledged_at: string | null;
+  jumlah_view: number;
+  wajib_baca: boolean;
+  deadline_baca: string | null;
+  created_at: string;
+};
+
+export type ArsipAktivitas = {
+  id: string;
+  dokumen_id: string | null;
+  versi_id: string | null;
+  guru_id: string | null;
+  aksi: AksiArsip;
+  catatan: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type ArsipWithRelations = ArsipDokumen & {
+  kategori_nama?: string;
+  kategori_icon?: string;
+  kategori_warna?: string;
+  kategori_akses_level?: AksesLevel;
+  versi_aktif_nomor?: number;
+  versi_aktif_revisi?: string | null;
+  file_url?: string;
+  external_url?: string | null;
+  file_size?: number | null;
+  original_size?: number | null;
+  compression_ratio?: number | null;
+  file_type?: string | null;
+  file_name?: string | null;
+  storage_provider?: StorageProvider;
+  versi_changelog?: string | null;
+  versi_token?: string;
+  versi_hash?: string | null;
+  versi_frozen_at?: string | null;
+  pemilik_nama?: string | null;
+  created_by_nama?: string | null;
+  total_pembaca?: number;
+  total_sudah_baca?: number;
+  total_acknowledge?: number;
+};
+
+export const AKSES_LEVEL_OPTIONS: AksesLevel[] = ['Public', 'Internal', 'Confidential'];
+export const STATUS_DOKUMEN_ARSIP_OPTIONS: StatusDokumenArsip[] = [
+  'Draft', 'Aktif', 'Obsolete', 'Dicabut', 'Selesai',
+];
+export const STORAGE_PROVIDER_OPTIONS: StorageProvider[] = [
+  'supabase', 'google_drive', 'dropbox', 'external', 'telegram',
+];
+
+/** File diterima untuk upload arsip (TIFF ditolak) */
+export const ARSIP_ACCEPT_MIME = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
