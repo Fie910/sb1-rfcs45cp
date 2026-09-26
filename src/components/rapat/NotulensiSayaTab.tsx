@@ -151,6 +151,7 @@ export function NotulensiSayaTab() {
         keputusan: notulensi.keputusan,
         action_items: Array.isArray(notulensi.action_items) ? notulensi.action_items : [],
         verification_token: notulensi.verification_token,
+        content_hash: notulensi.content_hash,
         peserta: (pesertaRes.data ?? []).map((p: any) => ({
           nama: p.guru?.nama_lengkap ?? '-',
           jabatan: p.jabatan_dalam_rapat,
