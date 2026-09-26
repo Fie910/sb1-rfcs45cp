@@ -1045,6 +1045,7 @@ export type StatusKepegawaian = 'Tetap' | 'Kontrak' | 'Honorer' | 'Magang' | 'GT
 export type JenisPTK =
   | 'Guru Mata Pelajaran'
   | 'Guru Bimbingan dan Konseling'
+  | 'Guru'
   | 'Kepala Sekolah'
   | 'Wakil Kepala'
   | 'Kepala Divisi'
