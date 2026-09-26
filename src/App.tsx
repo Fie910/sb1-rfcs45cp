@@ -220,6 +220,7 @@ function AppContent() {
           <Route path="/tugas_disposisi" element={<ProtectedRoute accessKey="tugas_disposisi"><TugasDisposisiPage /></ProtectedRoute>} />
           <Route path="/hris" element={<ProtectedRoute accessKey="hris"><HrisPage /></ProtectedRoute>} />
           <Route path="/rapat" element={<ProtectedRoute accessKey="rapat"><RapatPage /></ProtectedRoute>} />
+          <Route path="/arsip" element={<ProtectedRoute accessKey="arsip"><ArsipPage /></ProtectedRoute>} />
 
           {/* Rute Modul Kesiswaan */}
           <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
