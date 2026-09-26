@@ -83,7 +83,8 @@ export type PageKey =
   | 'bk'
   | 'perpustakaan'
   | 'hris'
-  | 'rapat';
+  | 'rapat'
+  | 'arsip' ;
 
 export type NavItem = {
   key: PageKey;
