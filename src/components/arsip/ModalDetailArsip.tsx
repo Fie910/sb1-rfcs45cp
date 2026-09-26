@@ -24,6 +24,7 @@ import type {
   ArsipWithRelations, ArsipKategori, ArsipVersi, ArsipPembaca,
   ArsipAktivitas, Guru, StatusDokumenArsip,
 } from '@/types/database';
+import { QRButton } from './QRButton';
 
 const BUCKET = 'arsip-files';
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
