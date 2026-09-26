@@ -435,7 +435,8 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
   const baseUrl = typeof window !== 'undefined'
     ? window.location.origin
     : 'https://app-anda.com';
-  const verifyUrl = `${baseUrl}/verifikasi-notulensi/${data.verification_token}`;
+  const hashShort = data.content_hash ? data.content_hash.slice(0, 16) : '';
+  const verifyUrl = `${baseUrl}/verifikasi-notulensi/${data.verification_token}${hashShort ? `?h=${hashShort}` : ''}`;
 
   try {
     const qrDataUrl = await generateQrDataUrl(verifyUrl);
