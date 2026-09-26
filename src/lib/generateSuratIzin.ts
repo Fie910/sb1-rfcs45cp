@@ -24,6 +24,7 @@ export type SuratIzinData = {
   alamat_selama_cuti: string | null;
   no_hp_selama_cuti: string | null;
   verification_token: string;
+  content_hash: string | null;
 };
 
 type PengaturanSekolah = {
