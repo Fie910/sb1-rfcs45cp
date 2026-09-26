@@ -439,7 +439,7 @@ export function hitungHariKalender(mulai: string, selesai: string): number {
 // =============================================================================
 
 /** Status cuti yang masih dalam proses (belum selesai/ditolak) */
-export const STATUS_CUTI_AKTIF = [
+export const STATUS_CUTI_AKTIF: StatusCuti[] = [
   'Diajukan',
   'Disetujui Atasan',
   'Disetujui HR',
