@@ -35,6 +35,7 @@ import {
   Heart,
   ShieldAlert,
   Library,
+  FolderArchive,
 } from 'lucide-react';
 
 export type PageKey =
