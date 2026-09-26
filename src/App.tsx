@@ -179,6 +179,7 @@ function AppContent() {
           <Route path="/scan/:token" element={<ScanAsetPage />} />
           <Route path="/verifikasi-surat/:token" element={<VerifikasiSuratPage />} />
           <Route path="/verifikasi-notulensi/:token" element={<VerifikasiNotulensiPage />} />
+          <Route path="/verifikasi-arsip/:token" element={<VerifikasiArsipPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
