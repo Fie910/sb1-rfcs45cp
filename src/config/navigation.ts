@@ -158,6 +158,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'surat', label: 'Tata Kelola Surat', icon: Mails, path: '/surat' },
       { key: 'hris', label: 'Data Kepegawaian', icon: UserCog, path: '/hris' },
       { key: 'rapat', label: 'Rapat & Notulensi', icon: CalendarCheck, path: '/rapat', kategori: 'Tata Kelola' },
+      { key: 'arsip', label: 'Arsip Digital', icon: FolderArchive, path: '/arsip', kategori: 'Tata Kelola' },
     ],
   },
   {
