@@ -92,6 +92,7 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   path: string;
+  kategori?: string; 
 };
 
 export type NavGroup = {
