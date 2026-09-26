@@ -23,6 +23,7 @@ import type {
   KategoriDokumen,
   StatusKepegawaian,
   StatusPernikahan,
+  StatusCuti, 
 } from '@/types/database';
 
 // =============================================================================
