@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { CommandPalette } from '@/components/CommandPalette';
 import type { PageKey } from '@/config/navigation';
+import VerifikasiArsipPage from '@/pages/VerifikasiArsipPage';
 
 type LayoutProps = {
   current: PageKey;
