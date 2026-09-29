@@ -501,9 +501,17 @@ type Props = {
 // KOMPONEN
 // =============================================================================
 export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
+  const { hasAccess } = useAuth();
+
   const valid = shortcuts
-    .filter((s) => PAGE_CONFIG[s.page_key])
+    .filter((s) => {
+      // Filter: ada di config + user punya akses
+      if (!PAGE_CONFIG[s.page_key]) return false;
+      if (!hasAccess(s.page_key as PageKey)) return false;
+      return true;
+    })
     .sort((a, b) => a.urutan - b.urutan);
+
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
