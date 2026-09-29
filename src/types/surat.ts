@@ -31,6 +31,10 @@ export interface Surat {
   metode_pengiriman?: string | null;
   no_resi?: string | null;
 
+  // ✅ Batch 12A — AI Ringkasan Surat
+  ai_ringkasan?: RingkasanSuratAI | null;
+  ai_processed_at?: string | null;
+
   created_at?: string;
 
   // Relation JOIN Data
