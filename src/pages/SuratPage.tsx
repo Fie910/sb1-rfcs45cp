@@ -1354,10 +1354,10 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
                   className="w-full text-xs text-slate-400 border border-white/10 rounded-xl p-2 bg-slate-950 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white cursor-pointer"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">
-                  {editingSurat
-                    ? 'Upload gambar baru untuk menggantikan berkas lama. Kalau dibiarkan kosong, berkas lama tetap tersimpan.'
-                    : 'Otomatis dikompres & dikonversi ke format WebP sebelum diunggah.'}
-                </p>
+  {editingSurat
+    ? 'Upload berkas baru untuk menggantikan berkas lama. Kalau dibiarkan kosong, berkas lama tetap tersimpan.'
+    : 'PDF atau gambar. Gambar otomatis dikompres ke WebP. PDF besar (>1 MB) otomatis dikompres.'}
+</p>
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
