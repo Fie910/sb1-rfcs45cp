@@ -1,16 +1,19 @@
 // src/components/dashboard/ModalKustomShortcut.tsx
 // Modal kustom shortcut — pilih, reorder, simpan.
+// ✅ Options difilter berdasarkan role user (via hasAccess).
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Loader2, Save, X, Plus, GripVertical, ChevronUp, ChevronDown,
-  RotateCcw, Info, Check, Search,
+  RotateCcw, Info, Check, Search, Lock,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { PAGE_CONFIG, COLOR_MAP, type ShortcutConfig } from './ShortcutGrid';
+import type { PageKey } from '@/config/navigation';
 
 // =============================================================================
 // KONSTANTA
@@ -46,6 +49,8 @@ type Props = {
 export function ModalKustomShortcut({
   open, onClose, onSaved, currentShortcuts, guruId,
 }: Props) {
+  const { hasAccess } = useAuth();
+
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -54,25 +59,41 @@ export function ModalKustomShortcut({
   const [showReset, setShowReset] = useState(false);
 
   // ==========================================================================
+  // FILTER PAGE_CONFIG BY ROLE
+  // ==========================================================================
+  const accessibleKeys = useMemo(() => {
+    return Object.keys(PAGE_CONFIG).filter((key) => {
+      // hasAccess() butuh PageKey — page_key di sini kebetulan sama
+      return hasAccess(key as PageKey);
+    });
+  }, [hasAccess]);
+
+  // Cek apakah user bisa akses shortcut tertentu
+  const canAccess = (key: string) => accessibleKeys.includes(key);
+
+  // ==========================================================================
   // LOAD saat open
   // ==========================================================================
   useEffect(() => {
     if (!open) return;
+
+    // Filter shortcut yang sudah disimpan: buang yang tidak accessible
     const keys = currentShortcuts
-      .filter((s) => PAGE_CONFIG[s.page_key])
+      .filter((s) => PAGE_CONFIG[s.page_key] && canAccess(s.page_key))
       .sort((a, b) => a.urutan - b.urutan)
       .map((s) => s.page_key);
+
     setSelectedKeys(keys);
     setSearch('');
     setDraggingIndex(null);
     setDragOverIndex(null);
-  }, [open, currentShortcuts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, currentShortcuts, accessibleKeys]);
 
   // ==========================================================================
   // DERIVED
   // ==========================================================================
-  const allKeys = Object.keys(PAGE_CONFIG);
-  const unselectedKeys = allKeys.filter((k) => !selectedKeys.includes(k));
+  const unselectedKeys = accessibleKeys.filter((k) => !selectedKeys.includes(k));
 
   const filteredAvailable = search.trim()
     ? unselectedKeys.filter((k) =>
@@ -85,6 +106,7 @@ export function ModalKustomShortcut({
   // ==========================================================================
   const handleAdd = (key: string) => {
     if (selectedKeys.includes(key)) return;
+    if (!canAccess(key)) return;
     setSelectedKeys([...selectedKeys, key]);
   };
 
@@ -149,9 +171,11 @@ export function ModalKustomShortcut({
   // HANDLERS — RESET & SAVE
   // ==========================================================================
   const handleReset = () => {
-    setSelectedKeys([...DEFAULT_SHORTCUTS]);
+    // Filter DEFAULT_SHORTCUTS: hanya yang user bisa akses
+    const filtered = DEFAULT_SHORTCUTS.filter((k) => canAccess(k));
+    setSelectedKeys(filtered);
     setShowReset(false);
-    showToast('info', 'Shortcut direset ke default');
+    showToast('info', `Shortcut direset ke default (${filtered.length} menu)`);
   };
 
   const handleSave = async () => {
@@ -209,11 +233,14 @@ export function ModalKustomShortcut({
           {/* INFO */}
           <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 flex items-start gap-2.5">
             <Info size={14} className="text-indigo-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <div className="text-[11px] text-slate-400 leading-relaxed">
               Pilih shortcut yang tampil di dashboard Anda.{' '}
               <strong className="text-slate-300">Seret</strong> atau gunakan{' '}
               <strong className="text-slate-300">tombol panah</strong> untuk mengatur urutan.
-            </p>
+              <span className="block mt-1 text-[10px] text-indigo-300/70">
+                🔒 Menu yang tampil disesuaikan dengan hak akses role Anda ({accessibleKeys.length} menu tersedia).
+              </span>
+            </div>
           </div>
 
           {/* ==================== TERPILIH ==================== */}
@@ -334,7 +361,7 @@ export function ModalKustomShortcut({
             {unselectedKeys.length === 0 ? (
               <div className="text-center py-4 border border-dashed border-slate-800 rounded-xl">
                 <p className="text-[11px] text-emerald-400 font-bold">
-                  ✓ Semua menu sudah dipilih
+                  ✓ Semua menu yang bisa Anda akses sudah dipilih
                 </p>
               </div>
             ) : (
@@ -428,7 +455,7 @@ export function ModalKustomShortcut({
         onClose={() => setShowReset(false)}
         onConfirm={handleReset}
         title="Reset Shortcut"
-        message="Reset ke pengaturan default? Shortcut Anda akan digantikan dengan 11 menu standar."
+        message="Reset ke pengaturan default? Shortcut Anda akan digantikan dengan menu standar sesuai role Anda."
         variant="warning"
         confirmLabel="Ya, Reset"
       />
