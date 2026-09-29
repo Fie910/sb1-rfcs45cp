@@ -312,5 +312,5 @@ export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
 // =============================================================================
 // EXPORT PAGE CONFIG (untuk Modal Kustom nanti)
 // =============================================================================
-export { PAGE_CONFIG };
+export { PAGE_CONFIG, COLOR_MAP };
 export type { ShortcutConfig };
