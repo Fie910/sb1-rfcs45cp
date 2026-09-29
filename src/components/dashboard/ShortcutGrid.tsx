@@ -1,338 +1,464 @@
-// src/components/dashboard/ShortcutGrid.tsx
-// Grid shortcut dashboard — customizable oleh user.
-// Dual label: label (panjang, untuk picker) + shortLabel (pendek, untuk grid).
+// src/components/dashboard/ModalKustomShortcut.tsx
+// Modal kustom shortcut — pilih, reorder, simpan.
+// ✅ Options difilter berdasarkan role user (via hasAccess).
 
+import { useState, useEffect, useMemo } from 'react';
 import {
-  CalendarDays, BookOpenCheck, FileText, ClipboardCheck, UserCheck,
-  ShieldCheck, ListChecks, Inbox, MessageSquare, UserCog, Users,
-  Building2, FolderArchive, TrendingUp, GraduationCap, Wallet,
-  FileSignature, History, BarChart3, Settings, Bell, HelpCircle,
-  Loader2, Edit3, Plus,
+  Loader2, Save, X, Plus, GripVertical, ChevronUp, ChevronDown,
+  RotateCcw, Info, Check, Search, Lock,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { showToast } from '@/components/Toast';
+import { Modal, ConfirmModal } from '@/components/Modal';
+import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { PAGE_CONFIG, COLOR_MAP, type ShortcutConfig } from './ShortcutGrid';
+import type { PageKey } from '@/config/navigation';
 
 // =============================================================================
-// PAGE MAPPING — label & shortLabel
+// KONSTANTA
 // =============================================================================
-type ShortcutConfig = {
-  label: string;        // label panjang (untuk picker)
-  shortLabel: string;   // label pendek (untuk grid)
-  icon: any;
-  path: string;
-  color: string;
-};
-
-const PAGE_CONFIG: Record<string, ShortcutConfig> = {
-  // ── Presensi & Agenda ──
-  kalender_akademik: {
-    label: 'Kalender Akademik',
-    shortLabel: 'Kalender',
-    icon: CalendarDays,
-    path: '/kalender_akademik',
-    color: 'indigo',
-  },
-  agenda: {
-    label: 'Agenda & Presensi Guru',
-    shortLabel: 'Agenda Guru',
-    icon: BookOpenCheck,
-    path: '/agenda',
-    color: 'blue',
-  },
-  izin: {
-    label: 'Izin & Delegasi Tugas',
-    shortLabel: 'Izin & Tugas',
-    icon: FileText,
-    path: '/izin',
-    color: 'amber',
-  },
-  presensi: {
-    label: 'Input Presensi Siswa',
-    shortLabel: 'Presensi Siswa',
-    icon: ClipboardCheck,
-    path: '/presensi',
-    color: 'emerald',
-  },
-  kehadiran_piket_penyambutan: {
-    label: 'Presensi Piket Penyambutan',
-    shortLabel: 'Penyambutan',
-    icon: UserCheck,
-    path: '/kehadiran_piket_penyambutan',
-    color: 'teal',
-  },
-  piket: {
-    label: 'Dashboard Piket',
-    shortLabel: 'Piket',
-    icon: ShieldCheck,
-    path: '/piket',
-    color: 'cyan',
-  },
-
-  // ── Kerja ──
-  todo: {
-    label: 'Todo List Divisi',
-    shortLabel: 'Todo Divisi',
-    icon: ListChecks,
-    path: '/todo',
-    color: 'purple',
-  },
-  tugas_disposisi: {
-    label: 'Tugas Disposisi',
-    shortLabel: 'Disposisi',
-    icon: Inbox,
-    path: '/tugas_disposisi',
-    color: 'indigo',
-  },
-  saran_pengaduan: {
-    label: 'Saran & Pengaduan',
-    shortLabel: 'Saran',
-    icon: MessageSquare,
-    path: '/saran_pengaduan',
-    color: 'rose',
-  },
-
-  // ── Kepegawaian & Manajemen ──
-  hris: {
-    label: 'Data Kepegawaian',
-    shortLabel: 'Data Pegawai',
-    icon: UserCog,
-    path: '/hris',
-    color: 'pink',
-  },
-  rapat: {
-    label: 'Rapat & Notulensi',
-    shortLabel: 'Rapat',
-    icon: Users,
-    path: '/rapat',
-    color: 'indigo',
-  },
-  mitra: {
-    label: 'Mitra DUDI',
-    shortLabel: 'Mitra',
-    icon: Building2,
-    path: '/mitra',
-    color: 'teal',
-  },
-  arsip: {
-    label: 'Arsip Digital',
-    shortLabel: 'Arsip',
-    icon: FolderArchive,
-    path: '/arsip',
-    color: 'purple',
-  },
-
-  // ── Siswa ──
-  siswa: {
-    label: 'Data Siswa',
-    shortLabel: 'Siswa',
-    icon: GraduationCap,
-    path: '/siswa',
-    color: 'emerald',
-  },
-  nilai: {
-    label: 'Nilai',
-    shortLabel: 'Nilai',
-    icon: TrendingUp,
-    path: '/nilai',
-    color: 'amber',
-  },
-  kelas: {
-    label: 'Kelas',
-    shortLabel: 'Kelas',
-    icon: BookOpenCheck,
-    path: '/kelas',
-    color: 'blue',
-  },
-
-  // ── Sarana & lain ──
-  sarpras: {
-    label: 'Sarana Prasarana',
-    shortLabel: 'Inventaris',
-    icon: Building2,
-    path: '/sarpras',
-    color: 'cyan',
-  },
-  rekap_nilai: {
-    label: 'Rekap Nilai',
-    shortLabel: 'Rekap Nilai',
-    icon: BarChart3,
-    path: '/rekap_nilai',
-    color: 'indigo',
-  },
-  pengumuman: {
-    label: 'Pengumuman',
-    shortLabel: 'Pengumuman',
-    icon: Bell,
-    path: '/pengumuman',
-    color: 'amber',
-  },
-  profile: {
-    label: 'Profil Saya',
-    shortLabel: 'Profil',
-    icon: UserCog,
-    path: '/profil',
-    color: 'slate',
-  },
-};
-
-// =============================================================================
-// COLOR STYLE
-// =============================================================================
-const COLOR_MAP: Record<string, { bg: string; text: string; border: string; hoverBorder: string }> = {
-  indigo: {
-    bg: 'bg-indigo-500/15',
-    text: 'text-indigo-400',
-    border: 'border-indigo-500/30',
-    hoverBorder: 'hover:border-indigo-500/60',
-  },
-  blue: {
-    bg: 'bg-blue-500/15',
-    text: 'text-blue-400',
-    border: 'border-blue-500/30',
-    hoverBorder: 'hover:border-blue-500/60',
-  },
-  emerald: {
-    bg: 'bg-emerald-500/15',
-    text: 'text-emerald-400',
-    border: 'border-emerald-500/30',
-    hoverBorder: 'hover:border-emerald-500/60',
-  },
-  amber: {
-    bg: 'bg-amber-500/15',
-    text: 'text-amber-400',
-    border: 'border-amber-500/30',
-    hoverBorder: 'hover:border-amber-500/60',
-  },
-  teal: {
-    bg: 'bg-teal-500/15',
-    text: 'text-teal-400',
-    border: 'border-teal-500/30',
-    hoverBorder: 'hover:border-teal-500/60',
-  },
-  cyan: {
-    bg: 'bg-cyan-500/15',
-    text: 'text-cyan-400',
-    border: 'border-cyan-500/30',
-    hoverBorder: 'hover:border-cyan-500/60',
-  },
-  purple: {
-    bg: 'bg-purple-500/15',
-    text: 'text-purple-400',
-    border: 'border-purple-500/30',
-    hoverBorder: 'hover:border-purple-500/60',
-  },
-  rose: {
-    bg: 'bg-rose-500/15',
-    text: 'text-rose-400',
-    border: 'border-rose-500/30',
-    hoverBorder: 'hover:border-rose-500/60',
-  },
-  pink: {
-    bg: 'bg-pink-500/15',
-    text: 'text-pink-400',
-    border: 'border-pink-500/30',
-    hoverBorder: 'hover:border-pink-500/60',
-  },
-  slate: {
-    bg: 'bg-slate-800',
-    text: 'text-slate-400',
-    border: 'border-slate-700',
-    hoverBorder: 'hover:border-slate-600',
-  },
-};
+const DEFAULT_SHORTCUTS = [
+  'kalender_akademik',
+  'agenda',
+  'izin',
+  'presensi',
+  'kehadiran_piket_penyambutan',
+  'piket',
+  'todo',
+  'tugas_disposisi',
+  'saran_pengaduan',
+  'hris',
+  'rapat',
+];
 
 // =============================================================================
 // TYPES
 // =============================================================================
-type ShortcutItem = {
-  page_key: string;
-  urutan: number;
-};
-
 type Props = {
-  shortcuts: ShortcutItem[];
-  loading?: boolean;
-  onEdit: () => void;
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+  currentShortcuts: { page_key: string; urutan: number }[];
+  guruId: string;
 };
 
 // =============================================================================
 // KOMPONEN
 // =============================================================================
-export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
-  const valid = shortcuts
-    .filter((s) => PAGE_CONFIG[s.page_key])
-    .sort((a, b) => a.urutan - b.urutan);
+export function ModalKustomShortcut({
+  open, onClose, onSaved, currentShortcuts, guruId,
+}: Props) {
+  const { hasAccess } = useAuth();
 
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+
+  // ==========================================================================
+  // FILTER PAGE_CONFIG BY ROLE
+  // ==========================================================================
+  const accessibleKeys = useMemo(() => {
+    return Object.keys(PAGE_CONFIG).filter((key) => {
+      // hasAccess() butuh PageKey — page_key di sini kebetulan sama
+      return hasAccess(key as PageKey);
+    });
+  }, [hasAccess]);
+
+  // Cek apakah user bisa akses shortcut tertentu
+  const canAccess = (key: string) => accessibleKeys.includes(key);
+
+  // ==========================================================================
+  // LOAD saat open
+  // ==========================================================================
+  useEffect(() => {
+    if (!open) return;
+
+    // Filter shortcut yang sudah disimpan: buang yang tidak accessible
+    const keys = currentShortcuts
+      .filter((s) => PAGE_CONFIG[s.page_key] && canAccess(s.page_key))
+      .sort((a, b) => a.urutan - b.urutan)
+      .map((s) => s.page_key);
+
+    setSelectedKeys(keys);
+    setSearch('');
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, currentShortcuts, accessibleKeys]);
+
+  // ==========================================================================
+  // DERIVED
+  // ==========================================================================
+  const unselectedKeys = accessibleKeys.filter((k) => !selectedKeys.includes(k));
+
+  const filteredAvailable = search.trim()
+    ? unselectedKeys.filter((k) =>
+        PAGE_CONFIG[k].label.toLowerCase().includes(search.toLowerCase())
+      )
+    : unselectedKeys;
+
+  // ==========================================================================
+  // HANDLERS — SELECTION
+  // ==========================================================================
+  const handleAdd = (key: string) => {
+    if (selectedKeys.includes(key)) return;
+    if (!canAccess(key)) return;
+    setSelectedKeys([...selectedKeys, key]);
+  };
+
+  const handleRemove = (key: string) => {
+    setSelectedKeys(selectedKeys.filter((k) => k !== key));
+  };
+
+  const handleClearAll = () => {
+    setSelectedKeys([]);
+  };
+
+  // ==========================================================================
+  // HANDLERS — REORDER
+  // ==========================================================================
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const arr = [...selectedKeys];
+    [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+    setSelectedKeys(arr);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index === selectedKeys.length - 1) return;
+    const arr = [...selectedKeys];
+    [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
+    setSelectedKeys(arr);
+  };
+
+  // ==========================================================================
+  // HANDLERS — DRAG & DROP
+  // ==========================================================================
+  const handleDragStart = (index: number) => {
+    setDraggingIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === index) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => {
+    if (draggingIndex === null || draggingIndex === index) {
+      setDraggingIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const arr = [...selectedKeys];
+    const [moved] = arr.splice(draggingIndex, 1);
+    arr.splice(index, 0, moved);
+    setSelectedKeys(arr);
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // ==========================================================================
+  // HANDLERS — RESET & SAVE
+  // ==========================================================================
+  const handleReset = () => {
+    // Filter DEFAULT_SHORTCUTS: hanya yang user bisa akses
+    const filtered = DEFAULT_SHORTCUTS.filter((k) => canAccess(k));
+    setSelectedKeys(filtered);
+    setShowReset(false);
+    showToast('info', `Shortcut direset ke default (${filtered.length} menu)`);
+  };
+
+  const handleSave = async () => {
+    if (selectedKeys.length === 0) {
+      showToast('error', 'Minimal pilih 1 shortcut');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // 1. Delete existing
+      const { error: delErr } = await supabase
+        .from('user_dashboard_shortcuts')
+        .delete()
+        .eq('guru_id', guruId);
+      if (delErr) throw delErr;
+
+      // 2. Insert baru dengan urutan baru
+      const rows = selectedKeys.map((key, i) => ({
+        guru_id: guruId,
+        page_key: key,
+        urutan: i + 1,
+      }));
+
+      const { error: insErr } = await supabase
+        .from('user_dashboard_shortcuts')
+        .insert(rows);
+      if (insErr) throw insErr;
+
+      await logActivity({
+        aksi: 'UPDATE',
+        modul: AUDIT_MODUL.AUTH,
+        targetId: guruId,
+        deskripsi: `Update shortcut dashboard (${rows.length} item)`,
+      });
+
+      showToast('success', `${rows.length} shortcut disimpan`);
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      showToast('error', 'Gagal menyimpan: ' + (err.message || 'Error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
-            <TrendingUp size={14} />
+    <>
+      <Modal open={open} onClose={onClose} title="Atur Shortcut" size="lg">
+        <div className="space-y-4 pt-1 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
+
+          {/* INFO */}
+          <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 flex items-start gap-2.5">
+            <Info size={14} className="text-indigo-400 shrink-0 mt-0.5" />
+            <div className="text-[11px] text-slate-400 leading-relaxed">
+              Pilih shortcut yang tampil di dashboard Anda.{' '}
+              <strong className="text-slate-300">Seret</strong> atau gunakan{' '}
+              <strong className="text-slate-300">tombol panah</strong> untuk mengatur urutan.
+              <span className="block mt-1 text-[10px] text-indigo-300/70">
+                🔒 Menu yang tampil disesuaikan dengan hak akses role Anda ({accessibleKeys.length} menu tersedia).
+              </span>
+            </div>
           </div>
+
+          {/* ==================== TERPILIH ==================== */}
           <div>
-            <h2 className="text-sm font-bold text-slate-100">Shortcut Saya</h2>
-            <p className="text-[10px] text-slate-500">
-              {valid.length} menu · bisa dikustomisasi
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                <Check size={12} /> Terpilih ({selectedKeys.length})
+              </label>
+              {selectedKeys.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-[10px] font-bold text-rose-400 hover:text-rose-300 transition cursor-pointer"
+                >
+                  Kosongkan
+                </button>
+              )}
+            </div>
+
+            {selectedKeys.length === 0 ? (
+              <div className="text-center py-6 border-2 border-dashed border-slate-800 rounded-xl">
+                <p className="text-[11px] text-slate-500">Belum ada shortcut terpilih</p>
+                <p className="text-[10px] text-slate-600 mt-0.5">Pilih dari daftar di bawah</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {selectedKeys.map((key, index) => {
+                  const cfg = PAGE_CONFIG[key];
+                  if (!cfg) return null;
+                  const Icon = cfg.icon;
+                  const colors = COLOR_MAP[cfg.color] ?? COLOR_MAP.indigo;
+                  const isDragging = draggingIndex === index;
+                  const isDragOver = dragOverIndex === index && draggingIndex !== index;
+
+                  return (
+                    <div
+                      key={key}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDrop={() => handleDrop(index)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center gap-2 bg-slate-950/60 border rounded-xl p-2.5 transition ${
+                        isDragging
+                          ? 'opacity-40 border-indigo-500/40'
+                          : isDragOver
+                          ? 'border-indigo-500/60 bg-indigo-500/5 scale-[1.01]'
+                          : 'border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      {/* Drag handle */}
+                      <div className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 shrink-0 select-none">
+                        <GripVertical size={14} />
+                      </div>
+
+                      {/* Nomor */}
+                      <span className="text-[10px] font-mono font-bold text-slate-500 w-5 shrink-0 text-center">
+                        {index + 1}
+                      </span>
+
+                      {/* Icon */}
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${colors.bg} ${colors.border} ${colors.text}`}>
+                        <Icon size={14} />
+                      </div>
+
+                      {/* Label */}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-slate-200 truncate">
+                          {cfg.label}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveUp(index)}
+                          disabled={index === 0}
+                          className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Naik"
+                        >
+                          <ChevronUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveDown(index)}
+                          disabled={index === selectedKeys.length - 1}
+                          className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Turun"
+                        >
+                          <ChevronDown size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(key)}
+                          className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                          title="Hapus"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ==================== TERSEDIA ==================== */}
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+              <Plus size={12} /> Tambah Shortcut
+              <span className="text-slate-600 font-normal normal-case">
+                ({unselectedKeys.length} tersedia)
+              </span>
+            </label>
+
+            {unselectedKeys.length === 0 ? (
+              <div className="text-center py-4 border border-dashed border-slate-800 rounded-xl">
+                <p className="text-[11px] text-emerald-400 font-bold">
+                  ✓ Semua menu yang bisa Anda akses sudah dipilih
+                </p>
+              </div>
+            ) : (
+              <>
+                {unselectedKeys.length > 4 && (
+                  <div className="relative mb-2">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Cari menu..."
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                  {filteredAvailable.map((key) => {
+                    const cfg = PAGE_CONFIG[key];
+                    const Icon = cfg.icon;
+                    const colors = COLOR_MAP[cfg.color] ?? COLOR_MAP.indigo;
+
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleAdd(key)}
+                        className="flex items-center gap-2 bg-slate-950/60 border border-slate-800 hover:border-indigo-500/40 hover:bg-indigo-500/5 rounded-xl p-2 transition cursor-pointer text-left group"
+                      >
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition group-hover:scale-110 ${colors.bg} ${colors.border} ${colors.text}`}>
+                          <Icon size={12} />
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-300 truncate flex-1">
+                          {cfg.label}
+                        </p>
+                        <Plus size={11} className="text-slate-600 group-hover:text-indigo-400 transition shrink-0" />
+                      </button>
+                    );
+                  })}
+                  {filteredAvailable.length === 0 && search.trim() && (
+                    <p className="text-[11px] text-slate-500 text-center py-3 col-span-full">
+                      Menu &quot;{search}&quot; tidak ditemukan
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ==================== FOOTER ==================== */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-slate-800 sticky bottom-0 bg-slate-900">
+            <button
+              type="button"
+              onClick={() => setShowReset(true)}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-amber-400 hover:bg-amber-500/10 border border-amber-500/30 text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw size={11} /> Reset Default
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                className="px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-bold text-xs transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || selectedKeys.length === 0}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer"
+              >
+                {saving ? (
+                  <><Loader2 size={14} className="animate-spin" /> Menyimpan...</>
+                ) : (
+                  <><Save size={14} /> Simpan</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-        <button
-          onClick={onEdit}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] font-bold transition cursor-pointer"
-        >
-          <Edit3 size={11} /> Atur
-        </button>
-      </div>
+      </Modal>
 
-      {/* Loading */}
-      {loading ? (
-        <div className="text-center py-8">
-          <Loader2 size={20} className="animate-spin text-indigo-400 mx-auto" />
-        </div>
-      ) : valid.length === 0 ? (
-        <div className="text-center py-8 border border-dashed border-slate-800 rounded-xl">
-          <Plus size={24} className="mx-auto text-slate-600 mb-2" />
-          <p className="text-xs text-slate-500 mb-3">Belum ada shortcut</p>
-          <button
-            onClick={onEdit}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold transition cursor-pointer"
-          >
-            <Plus size={11} /> Tambah Shortcut
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
-          {valid.map((s) => {
-            const cfg = PAGE_CONFIG[s.page_key];
-            const Icon = cfg.icon;
-            const colors = COLOR_MAP[cfg.color] ?? COLOR_MAP.indigo;
-
-            return (
-              <Link
-                key={s.page_key}
-                to={cfg.path}
-                className={`group flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-950/60 border ${colors.border} ${colors.hoverBorder} transition active:scale-95 cursor-pointer`}
-                title={cfg.label}
-              >
-                <div className={`w-10 h-10 rounded-xl ${colors.bg} ${colors.border} border ${colors.text} flex items-center justify-center transition group-hover:scale-110`}>
-                  <Icon size={18} />
-                </div>
-                {/* ✅ Pakai shortLabel untuk grid */}
-                <p className="text-[10px] font-bold text-slate-300 text-center leading-tight line-clamp-2">
-                  {cfg.shortLabel}
-                </p>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
+      {/* CONFIRM RESET */}
+      <ConfirmModal
+        open={showReset}
+        onClose={() => setShowReset(false)}
+        onConfirm={handleReset}
+        title="Reset Shortcut"
+        message="Reset ke pengaturan default? Shortcut Anda akan digantikan dengan menu standar sesuai role Anda."
+        variant="warning"
+        confirmLabel="Ya, Reset"
+      />
+    </>
   );
 }
-
-// =============================================================================
-// EXPORT PAGE CONFIG (untuk Modal Kustom)
-// =============================================================================
-export { PAGE_CONFIG, COLOR_MAP };
-export type { ShortcutConfig };
