@@ -198,15 +198,10 @@ export function ModalDetailSurat({ surat, onClose, onSaved }: Props) {
 
               {canPreview && !previewError ? (
   fileIsPdf ? (
-    // ✅ Batch 12C: pakai Google Docs Viewer sebagai proxy
-    // Supabase Storage kirim X-Frame-Options: DENY → tidak bisa iframe langsung
-    <iframe
-      src={`https://docs.google.com/viewer?url=${encodeURIComponent(
-        surat.file_url
-      )}&embedded=true`}
-      className="w-full h-96 bg-slate-950"
-      title={surat.perihal}
-      onError={() => setPreviewError(true)}
+    // ✅ Batch 12C: render PDF client-side via pdfjs
+    <PdfPreview
+      url={surat.file_url}
+      maxHeight="400px"
     />
   ) : (
     <img
