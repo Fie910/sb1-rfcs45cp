@@ -346,7 +346,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         showToast('error', 'Gagal mengunggah gambar: ' + uploadError.message);
         return null;
       }
-      const { data } = supabase.storage.from('surat-berkas').getPublicUrl(filePath);
+      const { data } = supabase.storage.from('dokumen-surat').getPublicUrl(filePath);
       return data.publicUrl;
     } catch (err: any) {
       showToast('error', 'Gagal memproses gambar: ' + (err.message || 'Error tidak diketahui'));
