@@ -57,3 +57,24 @@ export interface DisposisiSurat {
   created_at?: string;
   updated_at?: string;
 }
+
+// =============================================================================
+// AI RINGKASAN SURAT — Batch 12A
+// =============================================================================
+
+export type KlasifikasiSurat =
+  | 'Undangan'
+  | 'Pemberitahuan'
+  | 'Permohonan'
+  | 'Tugas'
+  | 'Lainnya';
+
+export type PrioritasSurat = 'Tinggi' | 'Sedang' | 'Rendah';
+
+export type RingkasanSuratAI = {
+  inti: string;
+  poin_penting: string[];
+  tindak_lanjut: string;
+  klasifikasi: KlasifikasiSurat;
+  prioritas: PrioritasSurat;
+};
