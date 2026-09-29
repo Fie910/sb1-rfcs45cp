@@ -6,6 +6,7 @@ import {
   Loader2, FileSignature, Building2, Calendar, Clock, User,
   ExternalLink, Edit3, History, CheckCircle2, AlertTriangle,
   ShieldCheck, Copy, FileText, MapPin, Phone, TrendingUp,
+  Bell,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -18,6 +19,7 @@ import {
   daysToExpiry,
 } from './shared';
 import type { MouWithRelations } from '@/types/database';
+import { sendManualMouReminder } from '@/lib/mitraNotifications';
 
 type Props = {
   open: boolean;
