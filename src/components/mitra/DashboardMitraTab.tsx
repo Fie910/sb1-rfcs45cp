@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Loader2, BarChart3, Building2, FileSignature, TrendingUp,
   AlertTriangle, Clock, Users, Briefcase, GraduationCap, RefreshCw,
-  CheckCircle2, XCircle, Calendar, Star, Activity, Award,
+  CheckCircle2, XCircle, Calendar, Star, Activity, Award, Bell,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
