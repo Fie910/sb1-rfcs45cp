@@ -85,6 +85,7 @@ export type PageKey =
   | 'perpustakaan'
   | 'hris'
   | 'rapat'
+  | 'mitra'
   | 'arsip' ;
 
 export type NavItem = {
