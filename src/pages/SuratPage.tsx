@@ -989,6 +989,14 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
                             <Truck className="w-3 h-3" /> Ekspedisi
                           </button>
                         )}
+                        {/* ✅ NEW: Tombol Detail (AI Ringkasan) */}
+<button
+  onClick={() => setDetailSurat(item)}
+  className="p-1.5 text-slate-400 hover:text-purple-400 bg-slate-800/50 rounded-lg border border-white/5 transition cursor-pointer"
+  title="Detail & AI Ringkasan"
+>
+  <Sparkles className="w-3.5 h-3.5" />
+</button>
 
                         {/* ✅ NEW: Tombol Edit */}
                         <button
