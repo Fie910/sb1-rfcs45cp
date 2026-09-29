@@ -1656,3 +1656,151 @@ export const ARSIP_ACCEPT_MIME = [
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ];
+
+// =============================================================================
+// MODUL MITRA DUDI & MoU
+// =============================================================================
+
+export type JenisMitra = 'PT' | 'CV' | 'Yayasan' | 'Sekolah' | 'Pemerintah' | 'UMKM' | 'Lainnya';
+export type SkalaMitra = 'Kecil' | 'Menengah' | 'Besar' | 'Multinasional';
+export type StatusMitra = 'Aktif' | 'Nonaktif' | 'Blacklist';
+export type JenisMou = 'MoU' | 'PKS' | 'IoA' | 'Addendum' | 'Perjanjian';
+export type StatusMou = 'Draft' | 'Review' | 'Ttd' | 'Aktif' | 'Expired' | 'Diperpanjang' | 'Dicabut';
+export type JenisAktivitasMitra =
+  | 'PKL' | 'UKK' | 'Rekrutmen' | 'Pelatihan Guru' | 'Pelatihan Siswa'
+  | 'CSR' | 'Kunjungan Industri' | 'Guest Teacher' | 'Lainnya';
+
+export type Mitra = {
+  id: string;
+  kode_mitra: string | null;
+  nama: string;
+  jenis_mitra: JenisMitra;
+  bidang_industri: string | null;
+  deskripsi: string | null;
+  logo_url: string | null;
+  kategori_kerjasama: string[];
+  alamat: string | null;
+  kota: string | null;
+  provinsi: string | null;
+  kode_pos: string | null;
+  website: string | null;
+  telepon: string | null;
+  email: string | null;
+  pic_nama: string | null;
+  pic_jabatan: string | null;
+  pic_no_hp: string | null;
+  pic_email: string | null;
+  skala: SkalaMitra | null;
+  rating: number;
+  status: StatusMitra;
+  catatan: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MitraWithRelations = Mitra & {
+  total_mou?: number;
+  total_mou_aktif?: number;
+  mou_expiring_soon?: number;
+  total_pkl?: number;
+  total_siswa_pkl?: number;
+  total_siswa_direkrut?: number;
+  created_by_nama?: string | null;
+};
+
+export type Mou = {
+  id: string;
+  nomor_mou: string | null;
+  mitra_id: string;
+  jenis_mou: JenisMou;
+  judul: string;
+  deskripsi: string | null;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  durasi_bulan: number | null;
+  status: StatusMou;
+  penandatangan_sekolah_id: string | null;
+  penandatangan_mitra_nama: string | null;
+  penandatangan_mitra_jabatan: string | null;
+  lingkup_kerjasama: string | null;
+  nilai_kerjasama: number | null;
+  file_url: string | null;
+  file_size: number | null;
+  parent_mou_id: string | null;
+  reminder_h30_sent_at: string | null;
+  reminder_h7_sent_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MouWithRelations = Mou & {
+  mitra_nama?: string | null;
+  kode_mitra?: string | null;
+  jenis_mitra?: JenisMitra | null;
+  bidang_industri?: string | null;
+  mitra_logo?: string | null;
+  pic_nama?: string | null;
+  pic_no_hp?: string | null;
+  penandatangan_sekolah_nama?: string | null;
+  penandatangan_sekolah_nip?: string | null;
+  created_by_nama?: string | null;
+  parent_mou_nomor?: string | null;
+  hari_ke_expired?: number | null;
+  expiry_status?: 'Expired' | 'H7' | 'H30' | 'Aman' | null;
+};
+
+export type MitraAktivitas = {
+  id: string;
+  mitra_id: string;
+  mou_id: string | null;
+  jenis: JenisAktivitasMitra;
+  judul: string;
+  deskripsi: string | null;
+  tanggal: string;
+  jumlah_siswa: number | null;
+  jumlah_guru: number | null;
+  file_url: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type MitraAktivitasWithRelations = MitraAktivitas & {
+  mitra_nama?: string | null;
+  kode_mitra?: string | null;
+  mou_nomor?: string | null;
+  created_by_nama?: string | null;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OPSI KONSTANTA
+// ─────────────────────────────────────────────────────────────────────────────
+export const JENIS_MITRA_OPTIONS: JenisMitra[] = [
+  'PT', 'CV', 'Yayasan', 'Sekolah', 'Pemerintah', 'UMKM', 'Lainnya',
+];
+
+export const SKALA_MITRA_OPTIONS: SkalaMitra[] = [
+  'Kecil', 'Menengah', 'Besar', 'Multinasional',
+];
+
+export const STATUS_MITRA_OPTIONS: StatusMitra[] = [
+  'Aktif', 'Nonaktif', 'Blacklist',
+];
+
+export const KATEGORI_KERJASAMA_OPTIONS = [
+  'PKL', 'UKK', 'Rekrutmen', 'CSR', 'Pelatihan', 'Kunjungan', 'Lainnya',
+];
+
+export const JENIS_MOU_OPTIONS: JenisMou[] = [
+  'MoU', 'PKS', 'IoA', 'Addendum', 'Perjanjian',
+];
+
+export const STATUS_MOU_OPTIONS: StatusMou[] = [
+  'Draft', 'Review', 'Ttd', 'Aktif', 'Expired', 'Diperpanjang', 'Dicabut',
+];
+
+export const JENIS_AKTIVITAS_OPTIONS: JenisAktivitasMitra[] = [
+  'PKL', 'UKK', 'Rekrutmen', 'Pelatihan Guru', 'Pelatihan Siswa',
+  'CSR', 'Kunjungan Industri', 'Guest Teacher', 'Lainnya',
+];
