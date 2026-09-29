@@ -1,11 +1,10 @@
 // src/components/dashboard/PengumumanCard.tsx
-// Kartu pengumuman untuk dashboard.
+// Kartu pengumuman untuk dashboard — clickable ke modal detail.
 
 import {
-  AlertCircle, Info, AlertTriangle, Flame, Calendar, ArrowRight,
-  Image as ImageIcon, ExternalLink,
+  AlertCircle, Info, AlertTriangle, Flame, Calendar,
+  MousePointerClick,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 // =============================================================================
 // TYPES
@@ -19,6 +18,11 @@ type PengumumanData = {
   gambar_url?: string | null;
   url?: string | null;
   prioritas?: string | null;
+};
+
+type Props = {
+  item: PengumumanData;
+  onClick?: () => void;
 };
 
 // =============================================================================
@@ -72,7 +76,7 @@ function getPrioritasConfig(prioritas: string | null | undefined) {
 // =============================================================================
 // KOMPONEN
 // =============================================================================
-export function PengumumanCard({ item }: { item: PengumumanData }) {
+export function PengumumanCard({ item, onClick }: Props) {
   const cfg = getPrioritasConfig(item.prioritas);
   const Icon = cfg.Icon;
 
@@ -84,10 +88,15 @@ export function PengumumanCard({ item }: { item: PengumumanData }) {
       year: 'numeric',
     });
 
-  const isExternalLink = item.url && item.url.startsWith('http');
-
   return (
-    <div className={`border rounded-2xl p-4 transition ${cfg.border} ${cfg.bg}`}>
+    <div
+      onClick={onClick}
+      className={`border rounded-2xl p-4 transition ${cfg.border} ${cfg.bg} ${
+        onClick
+          ? 'cursor-pointer hover:border-indigo-500/60 active:scale-[0.99]'
+          : ''
+      }`}
+    >
       <div className="flex items-start gap-3">
         {/* Icon */}
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${cfg.iconBg}`}>
@@ -107,50 +116,22 @@ export function PengumumanCard({ item }: { item: PengumumanData }) {
                   s.d. {formatTanggal(item.tanggal_selesai)}
                 </span>
               </div>
-              <p className="text-sm font-bold text-slate-100">{item.judul}</p>
+              <p className="text-sm font-bold text-slate-100 line-clamp-2">
+                {item.judul}
+              </p>
             </div>
           </div>
 
-          {/* Isi */}
-          <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 mt-1">
+          {/* Isi preview */}
+          <p className="text-xs text-slate-300 leading-relaxed line-clamp-2 mt-1">
             {item.isi}
           </p>
 
-          {/* Gambar (kalau ada) */}
-          {item.gambar_url && (
-            <div className="mt-3 rounded-xl overflow-hidden border border-slate-800">
-              <img
-                src={item.gambar_url}
-                alt=""
-                className="w-full max-h-40 object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-
-          {/* Link */}
-          {item.url && (
-            <div className="mt-2">
-              {isExternalLink ? (
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`inline-flex items-center gap-1 text-[11px] font-bold ${cfg.text} hover:underline`}
-                >
-                  <ExternalLink size={10} /> Buka Tautan
-                </a>
-              ) : (
-                <Link
-                  to={item.url}
-                  className={`inline-flex items-center gap-1 text-[11px] font-bold ${cfg.text} hover:underline`}
-                >
-                  <ArrowRight size={10} /> Selengkapnya
-                </Link>
-              )}
-            </div>
+          {/* Hint klik */}
+          {onClick && (
+            <p className="text-[10px] text-indigo-400 font-bold mt-2 inline-flex items-center gap-1">
+              <MousePointerClick size={10} /> Klik untuk detail
+            </p>
           )}
         </div>
       </div>
