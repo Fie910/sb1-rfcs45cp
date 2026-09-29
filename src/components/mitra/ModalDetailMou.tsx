@@ -64,6 +64,30 @@ export function ModalDetailMou({
   const isH7 = mou.status === 'Aktif' && days >= 0 && days <= 7;
   const isH30 = mou.status === 'Aktif' && days > 7 && days <= 30;
 
+  const [sendingReminder, setSendingReminder] = useState(false);
+
+const handleSendReminder = async () => {
+  if (!mou) return;
+  setSendingReminder(true);
+  try {
+    const result = await sendManualMouReminder({
+      id: mou.id,
+      nomor_mou: mou.nomor_mou,
+      judul: mou.judul,
+      mitra_nama: mou.mitra_nama ?? null,
+      tanggal_selesai: mou.tanggal_selesai,
+    });
+
+    if (result.success) {
+      showToast('success', result.message);
+    } else {
+      showToast('error', result.message);
+    }
+  } finally {
+    setSendingReminder(false);
+  }
+};
+
   const handleCopyNomor = () => {
     if (!mou.nomor_mou) return;
     navigator.clipboard.writeText(mou.nomor_mou);
