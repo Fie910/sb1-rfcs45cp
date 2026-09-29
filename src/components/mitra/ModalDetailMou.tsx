@@ -1,17 +1,17 @@
 // src/components/mitra/ModalDetailMou.tsx
-// Modal detail MoU — info + riwayat perpanjangan + file + WA.
+// Modal detail MoU — info + riwayat perpanjangan + file + WA + tombol Reminder.
 
 import { useState, useEffect } from 'react';
 import {
   Loader2, FileSignature, Building2, Calendar, Clock, User,
   ExternalLink, Edit3, History, CheckCircle2, AlertTriangle,
-  ShieldCheck, Copy, FileText, MapPin, Phone, TrendingUp,
-  Bell,
+  ShieldCheck, Copy, FileText, Phone, TrendingUp, Bell,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { WhatsAppButton } from '@/components/hris/cuti/WhatsAppButton';
+import { sendManualMouReminder } from '@/lib/mitraNotifications';
 import {
   getStatusMouBadge, getExpiryStatusBadge, getExpiryStatusLabel,
   getJenisMitraBadge,
@@ -19,7 +19,6 @@ import {
   daysToExpiry,
 } from './shared';
 import type { MouWithRelations } from '@/types/database';
-import { sendManualMouReminder } from '@/lib/mitraNotifications';
 
 type Props = {
   open: boolean;
@@ -35,6 +34,7 @@ export function ModalDetailMou({
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [riwayat, setRiwayat] = useState<MouWithRelations[]>([]);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   useEffect(() => {
     if (!open || !mou?.id) return;
@@ -42,7 +42,6 @@ export function ModalDetailMou({
 
     (async () => {
       try {
-        // Cari MoU yang parent_mou_id = mou.id (perpanjangan dari MoU ini)
         const { data } = await supabase
           .from('v_mou_lengkap')
           .select('*')
@@ -64,34 +63,32 @@ export function ModalDetailMou({
   const isH7 = mou.status === 'Aktif' && days >= 0 && days <= 7;
   const isH30 = mou.status === 'Aktif' && days > 7 && days <= 30;
 
-  const [sendingReminder, setSendingReminder] = useState(false);
-
-const handleSendReminder = async () => {
-  if (!mou) return;
-  setSendingReminder(true);
-  try {
-    const result = await sendManualMouReminder({
-      id: mou.id,
-      nomor_mou: mou.nomor_mou,
-      judul: mou.judul,
-      mitra_nama: mou.mitra_nama ?? null,
-      tanggal_selesai: mou.tanggal_selesai,
-    });
-
-    if (result.success) {
-      showToast('success', result.message);
-    } else {
-      showToast('error', result.message);
-    }
-  } finally {
-    setSendingReminder(false);
-  }
-};
-
   const handleCopyNomor = () => {
     if (!mou.nomor_mou) return;
     navigator.clipboard.writeText(mou.nomor_mou);
     showToast('success', 'Nomor MoU disalin');
+  };
+
+  const handleSendReminder = async () => {
+    if (!mou) return;
+    setSendingReminder(true);
+    try {
+      const result = await sendManualMouReminder({
+        id: mou.id,
+        nomor_mou: mou.nomor_mou,
+        judul: mou.judul,
+        mitra_nama: mou.mitra_nama ?? null,
+        tanggal_selesai: mou.tanggal_selesai,
+      });
+
+      if (result.success) {
+        showToast('success', result.message);
+      } else {
+        showToast('error', result.message);
+      }
+    } finally {
+      setSendingReminder(false);
+    }
   };
 
   const waPesan = `Assalamualaikum ${mou.pic_nama ?? 'Bapak/Ibu'}, saya dari SMK KH. A. Wahab Muhsin Sukahideng ingin berkoordinasi terkait MoU "${mou.judul}". Terima kasih.`;
@@ -149,15 +146,16 @@ const handleSendReminder = async () => {
                   {sendingReminder ? (
                     <><Loader2 size={12} className="animate-spin" /> Mengirim...</>
                   ) : (
-        <><Bell size={12} /> Reminder</>
-      )}
-    </button>
-    <button
-      onClick={onEdit}
-      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow-lg shadow-indigo-600/20 transition cursor-pointer"
-    >
-                <Edit3 size={12} /> Edit
-              </button>
+                    <><Bell size={12} /> Reminder</>
+                  )}
+                </button>
+                <button
+                  onClick={onEdit}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow-lg shadow-indigo-600/20 transition cursor-pointer"
+                >
+                  <Edit3 size={12} /> Edit
+                </button>
+              </div>
             )}
           </div>
 
@@ -211,10 +209,13 @@ const handleSendReminder = async () => {
           <InfoBox icon={Clock} label="Durasi" value={mou.durasi_bulan ? `${mou.durasi_bulan} bulan` : '-'} />
           <InfoBox icon={TrendingUp} label="Nilai Kerjasama" value={formatRupiah(mou.nilai_kerjasama)} />
           <InfoBox icon={User} label="Penandatangan Sekolah" value={mou.penandatangan_sekolah_nama ?? '-'} />
-          <InfoBox icon={User} label="Penandatangan Mitra"
+          <InfoBox
+            icon={User}
+            label="Penandatangan Mitra"
             value={mou.penandatangan_mitra_nama
               ? `${mou.penandatangan_mitra_nama}${mou.penandatangan_mitra_jabatan ? ` (${mou.penandatangan_mitra_jabatan})` : ''}`
-              : '-'} />
+              : '-'}
+          />
         </div>
 
         {mou.lingkup_kerjasama && (
@@ -275,7 +276,7 @@ const handleSendReminder = async () => {
           </div>
         )}
 
-        {/* RIWAYAT PERPANJANGAN */}
+        {/* RIWAYAT PERPANJANGAN (parent) */}
         {mou.parent_mou_nomor && (
           <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3">
             <p className="text-[10px] uppercase font-bold text-cyan-400 mb-1 flex items-center gap-1">
@@ -285,7 +286,7 @@ const handleSendReminder = async () => {
           </div>
         )}
 
-        {/* CHILD MoU — perpanjangan setelah ini */}
+        {/* CHILD MoU (perpanjangan setelah ini) */}
         {riwayat.length > 0 && (
           <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-3">
             <p className="text-[10px] uppercase font-bold text-cyan-400 mb-2 flex items-center gap-1">
