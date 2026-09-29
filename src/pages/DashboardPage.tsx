@@ -1,11 +1,12 @@
 // src/pages/DashboardPage.tsx
-// Dashboard baru — sambutan + pengumuman + shortcut customizable.
+// Dashboard baru — sambutan + pengumuman carousel + shortcut customizable.
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
-import { PengumumanCard, PengumumanEmpty } from '@/components/dashboard/PengumumanCard';
+import { PengumumanEmpty } from '@/components/dashboard/PengumumanCard';
+import { PengumumanCarousel } from '@/components/dashboard/PengumumanCarousel';
+import { ModalDetailPengumuman } from '@/components/dashboard/ModalDetailPengumuman';
 import { ShortcutGrid } from '@/components/dashboard/ShortcutGrid';
 import { ModalKustomShortcut } from '@/components/dashboard/ModalKustomShortcut';
 import {
@@ -66,13 +67,16 @@ type Shortcut = {
 // =============================================================================
 export function DashboardPage() {
   const { guru } = useAuth();
+
   const [pengumumanList, setPengumumanList] = useState<Pengumuman[]>([]);
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingShortcuts, setLoadingShortcuts] = useState(true);
+
+  const [detailPengumuman, setDetailPengumuman] = useState<Pengumuman | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  // Waktu real-time
+  // Waktu real-time (update tiap menit)
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60 * 1000);
@@ -220,11 +224,10 @@ export function DashboardPage() {
         ) : pengumumanList.length === 0 ? (
           <PengumumanEmpty />
         ) : (
-          <div className="space-y-3">
-            {pengumumanList.map((p) => (
-              <PengumumanCard key={p.id} item={p} />
-            ))}
-          </div>
+          <PengumumanCarousel
+            items={pengumumanList}
+            onItemClick={(item) => setDetailPengumuman(item)}
+          />
         )}
       </div>
 
@@ -235,7 +238,14 @@ export function DashboardPage() {
         onEdit={() => setEditModalOpen(true)}
       />
 
-      {/* ==================== MODAL KUSTOM ==================== */}
+      {/* ==================== MODAL DETAIL PENGUMUMAN ==================== */}
+      <ModalDetailPengumuman
+        open={!!detailPengumuman}
+        onClose={() => setDetailPengumuman(null)}
+        pengumuman={detailPengumuman}
+      />
+
+      {/* ==================== MODAL KUSTOM SHORTCUT ==================== */}
       <ModalKustomShortcut
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
