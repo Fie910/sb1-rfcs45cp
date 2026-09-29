@@ -188,6 +188,8 @@ function AppContent() {
           <Route path="/verifikasi-surat/:token" element={<VerifikasiSuratPage />} />
           <Route path="/verifikasi-notulensi/:token" element={<VerifikasiNotulensiPage />} />
           <Route path="/verifikasi-arsip/:token" element={<VerifikasiArsipPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
