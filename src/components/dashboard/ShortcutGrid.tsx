@@ -1,5 +1,6 @@
 // src/components/dashboard/ShortcutGrid.tsx
 // Grid shortcut dashboard — customizable oleh user.
+// Dual label: label (panjang, untuk picker) + shortLabel (pendek, untuk grid).
 
 import {
   CalendarDays, BookOpenCheck, FileText, ClipboardCheck, UserCheck,
@@ -11,10 +12,11 @@ import {
 import { Link } from 'react-router-dom';
 
 // =============================================================================
-// PAGE MAPPING
+// PAGE MAPPING — label & shortLabel
 // =============================================================================
 type ShortcutConfig = {
-  label: string;
+  label: string;        // label panjang (untuk picker)
+  shortLabel: string;   // label pendek (untuk grid)
   icon: any;
   path: string;
   color: string;
@@ -24,36 +26,42 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Presensi & Agenda ──
   kalender_akademik: {
     label: 'Kalender Akademik',
+    shortLabel: 'Kalender',
     icon: CalendarDays,
     path: '/kalender_akademik',
     color: 'indigo',
   },
   agenda: {
     label: 'Agenda & Presensi Guru',
+    shortLabel: 'Agenda',
     icon: BookOpenCheck,
     path: '/agenda',
     color: 'blue',
   },
   izin: {
     label: 'Izin & Delegasi Tugas',
+    shortLabel: 'Izin',
     icon: FileText,
     path: '/izin',
     color: 'amber',
   },
   presensi: {
     label: 'Input Presensi Siswa',
+    shortLabel: 'Presensi',
     icon: ClipboardCheck,
     path: '/presensi',
     color: 'emerald',
   },
   kehadiran_piket_penyambutan: {
     label: 'Presensi Piket Penyambutan',
+    shortLabel: 'Piket Sambut',
     icon: UserCheck,
     path: '/kehadiran_piket_penyambutan',
     color: 'teal',
   },
   piket: {
     label: 'Dashboard Piket',
+    shortLabel: 'Piket',
     icon: ShieldCheck,
     path: '/piket',
     color: 'cyan',
@@ -62,18 +70,21 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Kerja ──
   todo: {
     label: 'Todo List Divisi',
+    shortLabel: 'Todo',
     icon: ListChecks,
     path: '/todo',
     color: 'purple',
   },
   tugas_disposisi: {
     label: 'Tugas Disposisi',
+    shortLabel: 'Disposisi',
     icon: Inbox,
     path: '/tugas_disposisi',
     color: 'indigo',
   },
   saran_pengaduan: {
     label: 'Saran & Pengaduan',
+    shortLabel: 'Saran',
     icon: MessageSquare,
     path: '/saran_pengaduan',
     color: 'rose',
@@ -82,24 +93,28 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Kepegawaian & Manajemen ──
   hris: {
     label: 'Data Kepegawaian',
+    shortLabel: 'Kepegawaian',
     icon: UserCog,
     path: '/hris',
     color: 'pink',
   },
   rapat: {
     label: 'Rapat & Notulensi',
+    shortLabel: 'Rapat',
     icon: Users,
     path: '/rapat',
     color: 'indigo',
   },
   mitra: {
     label: 'Mitra DUDI',
+    shortLabel: 'Mitra',
     icon: Building2,
     path: '/mitra',
     color: 'teal',
   },
   arsip: {
     label: 'Arsip Digital',
+    shortLabel: 'Arsip',
     icon: FolderArchive,
     path: '/arsip',
     color: 'purple',
@@ -108,18 +123,21 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Siswa ──
   siswa: {
     label: 'Data Siswa',
+    shortLabel: 'Siswa',
     icon: GraduationCap,
     path: '/siswa',
     color: 'emerald',
   },
   nilai: {
     label: 'Nilai',
+    shortLabel: 'Nilai',
     icon: TrendingUp,
     path: '/nilai',
     color: 'amber',
   },
   kelas: {
     label: 'Kelas',
+    shortLabel: 'Kelas',
     icon: BookOpenCheck,
     path: '/kelas',
     color: 'blue',
@@ -128,24 +146,28 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Sarana & lain ──
   sarpras: {
     label: 'Sarana Prasarana',
+    shortLabel: 'Sarpras',
     icon: Building2,
     path: '/sarpras',
     color: 'cyan',
   },
   rekap_nilai: {
     label: 'Rekap Nilai',
+    shortLabel: 'Rekap Nilai',
     icon: BarChart3,
     path: '/rekap_nilai',
     color: 'indigo',
   },
   pengumuman: {
     label: 'Pengumuman',
+    shortLabel: 'Pengumuman',
     icon: Bell,
     path: '/pengumuman',
     color: 'amber',
   },
   profile: {
     label: 'Profil Saya',
+    shortLabel: 'Profil',
     icon: UserCog,
     path: '/profil',
     color: 'slate',
@@ -236,7 +258,6 @@ type Props = {
 // KOMPONEN
 // =============================================================================
 export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
-  // Filter yang ada di PAGE_CONFIG & sort by urutan
   const valid = shortcuts
     .filter((s) => PAGE_CONFIG[s.page_key])
     .sort((a, b) => a.urutan - b.urutan);
@@ -297,8 +318,9 @@ export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
                 <div className={`w-10 h-10 rounded-xl ${colors.bg} ${colors.border} border ${colors.text} flex items-center justify-center transition group-hover:scale-110`}>
                   <Icon size={18} />
                 </div>
+                {/* ✅ Pakai shortLabel untuk grid */}
                 <p className="text-[10px] font-bold text-slate-300 text-center leading-tight line-clamp-2">
-                  {cfg.label}
+                  {cfg.shortLabel}
                 </p>
               </Link>
             );
@@ -310,7 +332,7 @@ export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
 }
 
 // =============================================================================
-// EXPORT PAGE CONFIG (untuk Modal Kustom nanti)
+// EXPORT PAGE CONFIG (untuk Modal Kustom)
 // =============================================================================
 export { PAGE_CONFIG, COLOR_MAP };
 export type { ShortcutConfig };
