@@ -13,8 +13,16 @@ import { supabase } from './supabase';
 // - 'gemini-2.5-flash'  → stabil, retiring Okt 2026
 // - 'gemini-3.5-flash'  → stabil, recommended
 // - 'gemini-3.6-flash'  → terbaru, stabil
-const GEMINI_MODEL = 'gemini-3.8-flash';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// Model list — dicoba berurutan saat model utama gagal (503/429)
+const GEMINI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+];
+
+function getApiUrl(model: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 
