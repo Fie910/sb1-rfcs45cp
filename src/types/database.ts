@@ -1854,3 +1854,36 @@ export type KalenderEvent = {
   warna: KalenderWarna;
   kategori_label: string;
 };
+
+// =============================================================================
+// KEHADIRAN GURU — SUMMARY (dari agenda_gurus)
+// =============================================================================
+
+export type KehadiranStats = {
+  hadir_jp: number;
+  alpa_jp: number;
+  izin_jp: number;
+  sakit_jp: number;
+  total_jp: number;
+  rate: number;                   // 0-100
+
+  // Info tambahan (bukan untuk rate)
+  total_menit_terlambat: number;
+  total_terlambat_jp: number;     // menit/30 (info saja)
+  total_sesi: number;
+  total_sesi_terlambat: number;
+};
+
+// Row join minimal dari agenda_gurus + jadwal_kbms
+export type AgendaGuruKehadiranRow = {
+  id: number;
+  tanggal: string;
+  status_kehadiran: string;
+  menit_terlambat: number | null;
+  alpa_jam_pelajaran: number | null;
+  jadwal_kbms: {
+    id: number;
+    waktu_mulai: string | null;
+    waktu_selesai: string | null;
+  } | null;
+};
