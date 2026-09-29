@@ -26,6 +26,7 @@ const SaranPengaduanPage = lazy(() => import('@/pages/SaranPengaduanPage').then(
 const InventarisSarprasPage = lazy(() => import('@/pages/InventarisSarprasPage').then((m) => ({ default: m.InventarisSarprasPage })));
 const RapatPage = lazy(() => import('@/pages/RapatPage').then((m) => ({ default: m.RapatPage })));
 const ArsipPage = lazy(() => import('@/pages/ArsipPage').then((m) => ({ default: m.ArsipPage })));
+const MitraPage = lazy(() => import('@/pages/MitraPage').then((m) => ({ default: m.MitraPage })));
 const ScanAsetPage = lazy(() => import('@/pages/ScanAsetPage').then((m) => ({ default: m.ScanAsetPage })));
 const SiswaPage = lazy(() => import('@/pages/SiswaPage').then((m) => ({ default: m.SiswaPage })));
 const KelasPage = lazy(() => import('@/pages/KelasPage').then((m) => ({ default: m.KelasPage })));
