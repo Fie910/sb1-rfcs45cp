@@ -139,10 +139,23 @@ const handleSendReminder = async () => {
             </div>
 
             {isManager && (
-              <button
-                onClick={onEdit}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow-lg shadow-indigo-600/20 transition cursor-pointer shrink-0"
-              >
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleSendReminder}
+                  disabled={sendingReminder}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
+                  title="Kirim reminder ke manager"
+                >
+                  {sendingReminder ? (
+                    <><Loader2 size={12} className="animate-spin" /> Mengirim...</>
+                  ) : (
+        <><Bell size={12} /> Reminder</>
+      )}
+    </button>
+    <button
+      onClick={onEdit}
+      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow-lg shadow-indigo-600/20 transition cursor-pointer"
+    >
                 <Edit3 size={12} /> Edit
               </button>
             )}
