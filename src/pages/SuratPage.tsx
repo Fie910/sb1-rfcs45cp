@@ -416,7 +416,7 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
       // Upload file baru kalau ada (kalau tidak ada, file lama tetap)
       let fileUrl: string | null | undefined = undefined;
       if (selectedFile) {
-        fileUrl = await uploadCompressedImage(selectedFile);
+        fileUrl = await uploadSuratBerkas(selectedFile);
         if (!fileUrl) { setLoading(false); return; }
       }
 
