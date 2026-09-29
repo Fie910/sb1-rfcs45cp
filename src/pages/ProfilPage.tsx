@@ -90,6 +90,8 @@ export function ProfilPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto">
+      {/* ✅ TAMBAHKAN DI PALING ATAS */}
+      <KartuKehadiran />
       {/* CARD 1: INFORMASI PROFIL */}
       <div className="relative group overflow-hidden bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl backdrop-blur-xl">
         {/* Glow ambient effect */}
