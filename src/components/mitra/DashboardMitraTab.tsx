@@ -215,12 +215,25 @@ const handleCheckReminders = async () => {
             Statistik mitra, MoU, dan aktivitas kerjasama
           </p>
         </div>
-        <button
-          onClick={fetchAll}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition cursor-pointer"
-        >
-          <RefreshCw size={13} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+  <button
+    onClick={handleCheckReminders}
+    disabled={checkingReminders}
+    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+  >
+    {checkingReminders ? (
+      <><Loader2 size={13} className="animate-spin" /> Cek...</>
+    ) : (
+      <><Bell size={13} /> Cek Reminder</>
+    )}
+  </button>
+  <button
+    onClick={fetchAll}
+    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition cursor-pointer"
+  >
+    <RefreshCw size={13} /> Refresh
+  </button>
+</div>
       </div>
 
       {/* KPI UTAMA */}
