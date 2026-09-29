@@ -103,7 +103,14 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children
 // =============================================================================
 // ROUTE PUBLIK (tanpa login) — scan QR aset + verifikasi surat/notulensi
 // =============================================================================
-const PUBLIC_PATH_PREFIXES = ['/scan', '/verifikasi-surat', '/verifikasi-notulensi', '/verifikasi-arsip'];
+const PUBLIC_PATH_PREFIXES = [
+  '/scan', 
+  '/verifikasi-surat', 
+  '/verifikasi-notulensi', 
+  '/verifikasi-arsip', 
+  '/forgot-password', 
+  '/reset-password'
+];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
