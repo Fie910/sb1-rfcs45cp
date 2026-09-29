@@ -33,28 +33,28 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   },
   agenda: {
     label: 'Agenda & Presensi Guru',
-    shortLabel: 'Agenda',
+    shortLabel: 'Agenda Guru',
     icon: BookOpenCheck,
     path: '/agenda',
     color: 'blue',
   },
   izin: {
     label: 'Izin & Delegasi Tugas',
-    shortLabel: 'Izin',
+    shortLabel: 'Izin & Tugas',
     icon: FileText,
     path: '/izin',
     color: 'amber',
   },
   presensi: {
     label: 'Input Presensi Siswa',
-    shortLabel: 'Presensi',
+    shortLabel: 'Presensi Siswa',
     icon: ClipboardCheck,
     path: '/presensi',
     color: 'emerald',
   },
   kehadiran_piket_penyambutan: {
     label: 'Presensi Piket Penyambutan',
-    shortLabel: 'Piket Sambut',
+    shortLabel: 'Penyambutan',
     icon: UserCheck,
     path: '/kehadiran_piket_penyambutan',
     color: 'teal',
@@ -70,7 +70,7 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Kerja ──
   todo: {
     label: 'Todo List Divisi',
-    shortLabel: 'Todo',
+    shortLabel: 'Todo Divisi',
     icon: ListChecks,
     path: '/todo',
     color: 'purple',
@@ -93,7 +93,7 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Kepegawaian & Manajemen ──
   hris: {
     label: 'Data Kepegawaian',
-    shortLabel: 'Kepegawaian',
+    shortLabel: 'Data Pegawai',
     icon: UserCog,
     path: '/hris',
     color: 'pink',
@@ -146,7 +146,7 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
   // ── Sarana & lain ──
   sarpras: {
     label: 'Sarana Prasarana',
-    shortLabel: 'Sarpras',
+    shortLabel: 'Inventaris',
     icon: Building2,
     path: '/sarpras',
     color: 'cyan',
