@@ -339,7 +339,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const filePath = `berkas/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('surat-berkas')
+        .from('dokumen-surat')
         .upload(filePath, compressedFile, { cacheControl: '31536000', upsert: false });
 
       if (uploadError) {
