@@ -8,6 +8,12 @@ import {
   Building2, FolderArchive, TrendingUp, GraduationCap, Wallet,
   FileSignature, History, BarChart3, Settings, Bell, HelpCircle,
   Loader2, Edit3, Plus,
+  // Tambahan
+  LayoutDashboard, LineChart, Mail, ArrowUpCircle, Award,
+  ArrowRightLeft, AlertOctagon, School, CalendarClock, Clock,
+  CalendarCheck, FileSpreadsheet, KeyRound, CalendarX, FileSearch,
+  UserPlus, Heart, Library, UserMinus, Archive, BookMarked,
+  ClipboardList, Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -15,15 +21,17 @@ import { Link } from 'react-router-dom';
 // PAGE MAPPING — label & shortLabel
 // =============================================================================
 type ShortcutConfig = {
-  label: string;        // label panjang (untuk picker)
-  shortLabel: string;   // label pendek (untuk grid)
+  label: string;
+  shortLabel: string;
   icon: any;
   path: string;
   color: string;
 };
 
 const PAGE_CONFIG: Record<string, ShortcutConfig> = {
-  // ── Presensi & Agenda ──
+  // ─────────────────────────────────────────────────────────────────
+  // PRESENSI & AGENDA
+  // ─────────────────────────────────────────────────────────────────
   kalender_akademik: {
     label: 'Kalender Akademik',
     shortLabel: 'Kalender',
@@ -67,7 +75,9 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     color: 'cyan',
   },
 
-  // ── Kerja ──
+  // ─────────────────────────────────────────────────────────────────
+  // KERJA / TUGAS
+  // ─────────────────────────────────────────────────────────────────
   todo: {
     label: 'Todo List Divisi',
     shortLabel: 'Todo Divisi',
@@ -90,7 +100,9 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     color: 'rose',
   },
 
-  // ── Kepegawaian & Manajemen ──
+  // ─────────────────────────────────────────────────────────────────
+  // KEPEGAWAIAN & MANAJEMEN
+  // ─────────────────────────────────────────────────────────────────
   hris: {
     label: 'Data Kepegawaian',
     shortLabel: 'Data Pegawai',
@@ -120,7 +132,9 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     color: 'purple',
   },
 
-  // ── Siswa ──
+  // ─────────────────────────────────────────────────────────────────
+  // SISWA & KELAS
+  // ─────────────────────────────────────────────────────────────────
   siswa: {
     label: 'Data Siswa',
     shortLabel: 'Siswa',
@@ -128,28 +142,30 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     path: '/siswa',
     color: 'emerald',
   },
-  nilai: {
-    label: 'Nilai',
-    shortLabel: 'Nilai',
-    icon: TrendingUp,
-    path: '/nilai',
-    color: 'amber',
-  },
   kelas: {
-    label: 'Kelas',
+    label: 'Data Kelas',
     shortLabel: 'Kelas',
     icon: BookOpenCheck,
     path: '/kelas',
     color: 'blue',
   },
+  guru: {
+    label: 'Data Guru',
+    shortLabel: 'Data Guru',
+    icon: UserCog,
+    path: '/guru',
+    color: 'pink',
+  },
 
-  // ── Sarana & lain ──
-  sarpras: {
-    label: 'Sarana Prasarana',
-    shortLabel: 'Inventaris',
-    icon: Building2,
-    path: '/sarpras',
-    color: 'cyan',
+  // ─────────────────────────────────────────────────────────────────
+  // NILAI
+  // ─────────────────────────────────────────────────────────────────
+  nilai: {
+    label: 'Input Nilai',
+    shortLabel: 'Nilai',
+    icon: TrendingUp,
+    path: '/nilai',
+    color: 'amber',
   },
   rekap_nilai: {
     label: 'Rekap Nilai',
@@ -158,6 +174,163 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     path: '/rekap_nilai',
     color: 'indigo',
   },
+
+  // ─────────────────────────────────────────────────────────────────
+  // SARANA & PRASARANA
+  // ─────────────────────────────────────────────────────────────────
+  sarpras: {
+    label: 'Sarana Prasarana',
+    shortLabel: 'Inventaris',
+    icon: Building2,
+    path: '/sarpras',
+    color: 'cyan',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // KESISWAAN
+  // ─────────────────────────────────────────────────────────────────
+  kenaikan_kelas: {
+    label: 'Kenaikan Kelas',
+    shortLabel: 'Kenaikan',
+    icon: ArrowUpCircle,
+    path: '/kenaikan_kelas',
+    color: 'emerald',
+  },
+  kelulusan: {
+    label: 'Kelulusan Siswa',
+    shortLabel: 'Kelulusan',
+    icon: Award,
+    path: '/kelulusan',
+    color: 'amber',
+  },
+  riwayat_siswa: {
+    label: 'Riwayat Siswa',
+    shortLabel: 'Riwayat',
+    icon: History,
+    path: '/riwayat_siswa',
+    color: 'slate',
+  },
+  mutasi_siswa: {
+    label: 'Mutasi Siswa',
+    shortLabel: 'Mutasi',
+    icon: ArrowRightLeft,
+    path: '/mutasi_siswa',
+    color: 'indigo',
+  },
+  kedisiplinan: {
+    label: 'Kedisiplinan Siswa',
+    shortLabel: 'Disiplin',
+    icon: AlertOctagon,
+    path: '/kedisiplinan',
+    color: 'rose',
+  },
+  presensi_kesiswaan: {
+    label: 'Presensi Kesiswaan',
+    shortLabel: 'Presensi Kesiswaan',
+    icon: ClipboardCheck,
+    path: '/presensi_kesiswaan',
+    color: 'teal',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // JADWAL
+  // ─────────────────────────────────────────────────────────────────
+  jadwal_kbm: {
+    label: 'Jadwal KBM',
+    shortLabel: 'Jadwal KBM',
+    icon: CalendarClock,
+    path: '/jadwal_kbm',
+    color: 'indigo',
+  },
+  jadwal_kbm_jps: {
+    label: 'Jadwal KBM JPS',
+    shortLabel: 'KBM JPS',
+    icon: Clock,
+    path: '/jadwal_kbm_jps',
+    color: 'blue',
+  },
+  jadwal_piket: {
+    label: 'Jadwal Piket',
+    shortLabel: 'Jadwal Piket',
+    icon: CalendarCheck,
+    path: '/jadwal_piket',
+    color: 'cyan',
+  },
+  jadwal_piket_penyambutan: {
+    label: 'Jadwal Piket Penyambutan',
+    shortLabel: 'Jadwal Sambut',
+    icon: CalendarDays,
+    path: '/jadwal_piket_penyambutan',
+    color: 'teal',
+  },
+  kehadiran_piket: {
+    label: 'Kehadiran Piket',
+    shortLabel: 'Kehadiran Piket',
+    icon: UserCheck,
+    path: '/kehadiran_piket',
+    color: 'emerald',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // REKAP
+  // ─────────────────────────────────────────────────────────────────
+  rekap_presensi_siswa: {
+    label: 'Rekap Presensi Siswa',
+    shortLabel: 'Rekap Presensi',
+    icon: FileSpreadsheet,
+    path: '/rekap_presensi_siswa',
+    color: 'emerald',
+  },
+  rekap_presensi_kesiswaan: {
+    label: 'Rekap Presensi Kesiswaan',
+    shortLabel: 'Rekap Kesiswaan',
+    icon: FileSpreadsheet,
+    path: '/rekap_presensi_kesiswaan',
+    color: 'teal',
+  },
+  rekap_presensi_guru: {
+    label: 'Rekap Presensi Guru',
+    shortLabel: 'Rekap Guru',
+    icon: FileSpreadsheet,
+    path: '/rekap_presensi_guru',
+    color: 'blue',
+  },
+  rekap_agenda: {
+    label: 'Rekap Agenda',
+    shortLabel: 'Rekap Agenda',
+    icon: FileSpreadsheet,
+    path: '/rekap_agenda',
+    color: 'indigo',
+  },
+  rekap_izin: {
+    label: 'Rekap Izin',
+    shortLabel: 'Rekap Izin',
+    icon: FileSpreadsheet,
+    path: '/rekap_izin',
+    color: 'amber',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // BK & PERPUSTAKAAN
+  // ─────────────────────────────────────────────────────────────────
+  bk: {
+    label: 'Bimbingan Konseling',
+    shortLabel: 'BK',
+    icon: Heart,
+    path: '/bk',
+    color: 'pink',
+  },
+  perpustakaan: {
+    label: 'Perpustakaan',
+    shortLabel: 'Perpus',
+    icon: Library,
+    path: '/perpustakaan',
+    color: 'purple',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // KOMUNIKASI & DOKUMEN
+  // ─────────────────────────────────────────────────────────────────
   pengumuman: {
     label: 'Pengumuman',
     shortLabel: 'Pengumuman',
@@ -165,6 +338,74 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     path: '/pengumuman',
     color: 'amber',
   },
+  surat: {
+    label: 'Surat Menyurat',
+    shortLabel: 'Surat',
+    icon: Mail,
+    path: '/surat',
+    color: 'indigo',
+  },
+  buku_tamu: {
+    label: 'Buku Tamu',
+    shortLabel: 'Buku Tamu',
+    icon: UserPlus,
+    path: '/buku_tamu',
+    color: 'teal',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // MASTER DATA & SISTEM
+  // ─────────────────────────────────────────────────────────────────
+  sekolah: {
+    label: 'Data Sekolah',
+    shortLabel: 'Data Sekolah',
+    icon: School,
+    path: '/sekolah',
+    color: 'indigo',
+  },
+  hak_akses: {
+    label: 'Hak Akses',
+    shortLabel: 'Hak Akses',
+    icon: KeyRound,
+    path: '/hak_akses',
+    color: 'rose',
+  },
+  hari_libur: {
+    label: 'Hari Libur',
+    shortLabel: 'Hari Libur',
+    icon: CalendarX,
+    path: '/hari_libur',
+    color: 'amber',
+  },
+  audit_log: {
+    label: 'Audit Log',
+    shortLabel: 'Audit Log',
+    icon: FileSearch,
+    path: '/audit_log',
+    color: 'slate',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // DASHBOARD KHUSUS
+  // ─────────────────────────────────────────────────────────────────
+  dashboard_kepsek: {
+    label: 'Dashboard Kepala Sekolah',
+    shortLabel: 'Dash Kepsek',
+    icon: LayoutDashboard,
+    path: '/dashboard_kepsek',
+    color: 'rose',
+  },
+  monev_divisi: {
+    label: 'Monev Divisi',
+    shortLabel: 'Monev',
+    icon: LineChart,
+    path: '/monev_divisi',
+    color: 'purple',
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // PROFIL
+  // ─────────────────────────────────────────────────────────────────
   profile: {
     label: 'Profil Saya',
     shortLabel: 'Profil',
@@ -318,7 +559,6 @@ export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
                 <div className={`w-10 h-10 rounded-xl ${colors.bg} ${colors.border} border ${colors.text} flex items-center justify-center transition group-hover:scale-110`}>
                   <Icon size={18} />
                 </div>
-                {/* ✅ Pakai shortLabel untuk grid */}
                 <p className="text-[10px] font-bold text-slate-300 text-center leading-tight line-clamp-2">
                   {cfg.shortLabel}
                 </p>
