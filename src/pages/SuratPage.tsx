@@ -21,6 +21,8 @@ import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '../lib/supabase';
 import { logActivity, AUDIT_MODUL } from '../lib/audit';
+import { ModalDetailSurat } from '@/components/surat/ModalDetailSurat';
+import { uploadSuratFile, formatCompressionInfo } from '@/lib/uploadSuratFile';
 
 // =============================================================================
 // KONSTANTA
