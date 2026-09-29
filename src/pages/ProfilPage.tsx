@@ -3,6 +3,7 @@ import { User, Hash, Save, Loader2, Lock, KeyRound, CheckCircle2, Sparkles, Shie
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { KartuKehadiran } from '@/components/profil/KartuKehadiran';
 
 export function ProfilPage() {
   const { user, guru, refreshGuru } = useAuth();
