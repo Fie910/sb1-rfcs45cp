@@ -10,6 +10,7 @@ import {
 import { RingkasanAiSurat } from './RingkasanAiSurat';
 import type { RingkasanSuratAI } from '@/types/database';
 import type { Surat } from '@/types/surat';
+import { PdfPreview } from './PdfPreview';
 
 // =============================================================================
 // TYPES
