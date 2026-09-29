@@ -309,24 +309,28 @@ export const SuratPage: React.FC = () => {
     setShowSuratModal(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) { setSelectedFile(null); return; }
+const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) { setSelectedFile(null); return; }
 
-    if (!file.type.startsWith('image/')) {
-      showToast('error', 'Berkas harus berupa gambar (JPG, PNG, WebP)');
-      e.target.value = '';
-      setSelectedFile(null);
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      showToast('error', 'Ukuran berkas mentah tidak boleh melebihi 10 MB');
-      e.target.value = '';
-      setSelectedFile(null);
-      return;
-    }
-    setSelectedFile(file);
-  };
+  // ✅ Batch 12B: Terima image + PDF
+  const allowed = [
+    'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
+  ];
+  if (!allowed.includes(file.type)) {
+    showToast('error', 'Berkas harus berupa gambar (JPG, PNG, WebP) atau PDF');
+    e.target.value = '';
+    setSelectedFile(null);
+    return;
+  }
+  if (file.size > 25 * 1024 * 1024) {
+    showToast('error', 'Ukuran berkas tidak boleh melebihi 25 MB');
+    e.target.value = '';
+    setSelectedFile(null);
+    return;
+  }
+  setSelectedFile(file);
+};
 
   const uploadCompressedImage = async (file: File): Promise<string | null> => {
     try {
