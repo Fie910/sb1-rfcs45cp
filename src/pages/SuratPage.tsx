@@ -4,7 +4,7 @@ import {
   Plus, Search, Trash2, Edit3, UserCheck, X, Calendar, FileText,
   Printer, MessageSquare, RotateCcw, Image as ImageIcon,
   Send, Truck, Clock, CheckCircle2, Paperclip, UploadCloud, Zap,
-  AlertCircle,
+  AlertCircle, Sparkles, Eye,
 } from 'lucide-react';
 import { JenisSurat, Surat, KategoriSurat, DisposisiSurat } from '../types/surat';
 import {
