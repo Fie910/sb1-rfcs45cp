@@ -132,6 +132,8 @@ export const SuratPage: React.FC = () => {
 
   /** ✅ Flag: apakah user sudah mengedit nomor secara manual */
   const [isNomorManual, setIsNomorManual] = useState(false);
+  // ✅ NEW: State untuk modal detail + AI ringkasan
+  const [detailSurat, setDetailSurat] = useState<Surat | null>(null);
 
   // =========================================================================
   // MODAL: KATEGORI
