@@ -10,7 +10,7 @@ import type { RingkasanSuratAI } from '@/types/database';
 // =============================================================================
 // CONFIG
 // =============================================================================
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.8-flash';
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 const MAX_INLINE_SIZE = 15 * 1024 * 1024; // 15 MB — limit aman Gemini inline
 
