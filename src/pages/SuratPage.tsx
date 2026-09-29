@@ -1345,7 +1345,7 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
                 <label className="block text-xs font-medium text-slate-400 mb-1">
                   {editingSurat
                     ? 'Ganti Scan/Foto Surat (Kosongkan jika tidak ganti)'
-                    : 'Unggah Scan/Foto Surat (Khusus Gambar: JPG, PNG, WebP)'}
+                    : 'Unggah Berkas Surat (PDF atau Gambar: JPG, PNG, WebP)'}
                 </label>
                 <input
                   type="file"
@@ -1762,6 +1762,13 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
           onClose={() => setPrintDisposisiData(null)}
         />
       )}
+
+      {/* ==================== MODAL DETAIL + AI RINGKASAN ==================== */}
+<ModalDetailSurat
+  surat={detailSurat}
+  onClose={() => setDetailSurat(null)}
+  onSaved={loadData}
+/>
     </div>
   );
 };
