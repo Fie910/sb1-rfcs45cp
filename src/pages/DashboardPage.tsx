@@ -1,5 +1,5 @@
 // src/pages/DashboardPage.tsx
-// Dashboard baru — sambutan + pengumuman carousel + shortcut customizable.
+// Dashboard baru — header compact + pengumuman carousel + shortcut customizable.
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -10,27 +10,25 @@ import { ModalDetailPengumuman } from '@/components/dashboard/ModalDetailPengumu
 import { ShortcutGrid } from '@/components/dashboard/ShortcutGrid';
 import { ModalKustomShortcut } from '@/components/dashboard/ModalKustomShortcut';
 import {
-  Megaphone, Sparkles, Loader2, Calendar, Clock, ArrowRight,
+  Megaphone, Loader2, ArrowRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // =============================================================================
+// KONSTANTA SEKOLAH
+// =============================================================================
+const SCHOOL_SLOGAN = 'Merawat Fitrah, Mengukir Karya';
+const SCHOOL_GREETING = 'Allãh Yubãrik Fïkum';
+
+// =============================================================================
 // HELPER
 // =============================================================================
-function getSapaan(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Selamat Pagi';
-  if (hour < 15) return 'Selamat Siang';
-  if (hour < 18) return 'Selamat Sore';
-  return 'Selamat Malam';
-}
-
-function formatTanggalPanjang(d: Date): string {
+function formatTanggalCompact(d: Date): string {
   return d.toLocaleDateString('id-ID', {
     timeZone: 'Asia/Jakarta',
-    weekday: 'long',
+    weekday: 'short',
     day: 'numeric',
-    month: 'long',
+    month: 'short',
     year: 'numeric',
   });
 }
@@ -113,7 +111,6 @@ export function DashboardPage() {
     setLoadingShortcuts(true);
 
     try {
-      // 1. Cek existing shortcuts
       const { data: existing, error } = await supabase
         .from('user_dashboard_shortcuts')
         .select('page_key, urutan')
@@ -125,7 +122,6 @@ export function DashboardPage() {
         return;
       }
 
-      // 2. Kalau belum ada → seed default via RPC
       if (!existing || existing.length === 0) {
         const { error: rpcError } = await supabase.rpc('seed_default_shortcuts', {
           p_guru_id: guru.id,
@@ -136,7 +132,6 @@ export function DashboardPage() {
           return;
         }
 
-        // 3. Fetch ulang setelah seed
         const { data: seeded } = await supabase
           .from('user_dashboard_shortcuts')
           .select('page_key, urutan')
@@ -166,29 +161,27 @@ export function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
-      {/* ==================== SAMBUTAN ==================== */}
-      <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-5">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 mb-1">
-              {getSapaan()} 👋
+      {/* ==================== HEADER COMPACT ==================== */}
+      <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl px-4 py-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {/* Kiri: Slogan + Greeting */}
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] italic text-indigo-300/80 tracking-wide truncate">
+              {SCHOOL_SLOGAN}
             </p>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 truncate">
-              {namaPanggilan}
-            </h1>
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-400">
-              <span className="inline-flex items-center gap-1.5">
-                <Calendar size={12} className="text-indigo-400" />
-                {formatTanggalPanjang(now)}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Clock size={12} className="text-indigo-400" />
-                {formatJam(now)} WIB
-              </span>
-            </div>
+            <p className="text-sm md:text-base font-extrabold text-slate-100 truncate mt-0.5">
+              {SCHOOL_GREETING}, {namaPanggilan}!
+            </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Sparkles size={20} className="text-amber-400" />
+
+          {/* Kanan: Tanggal + Jam */}
+          <div className="text-right shrink-0">
+            <p className="text-[10px] md:text-[11px] font-bold text-slate-300">
+              {formatTanggalCompact(now)}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {formatJam(now)} WIB
+            </p>
           </div>
         </div>
       </div>
