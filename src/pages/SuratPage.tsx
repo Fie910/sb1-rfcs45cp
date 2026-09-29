@@ -353,6 +353,24 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       return null;
     }
   };
+  /**
+ * Upload universal — handle image (auto WebP) + PDF (auto compress kalau > 1 MB).
+ */
+const uploadSuratBerkas = async (file: File): Promise<string | null> => {
+  try {
+    const result = await uploadSuratFile(file, {
+      folderId: guru?.id ?? 'umum',
+    });
+    const info = formatCompressionInfo(result);
+    if (info) {
+      showToast('info', info);
+    }
+    return result.file_url;
+  } catch (err: any) {
+    showToast('error', err.message || 'Gagal upload berkas');
+    return null;
+  }
+};
 
   // ✅ Generate ulang nomor otomatis dari kategori terpilih + tanggal
   const regenerateNomor = async () => {
