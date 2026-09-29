@@ -182,22 +182,26 @@ export function ModalDetailSurat({ surat, onClose, onSaved }: Props) {
               </div>
 
               {canPreview && !previewError ? (
-                fileIsPdf ? (
-                  <iframe
-                    src={surat.file_url}
-                    className="w-full h-96 bg-slate-950"
-                    title={surat.perihal}
-                    onError={() => setPreviewError(true)}
-                  />
-                ) : (
-                  <img
-                    src={surat.file_url}
-                    alt={surat.perihal}
-                    className="w-full max-h-96 object-contain bg-slate-950"
-                    onError={() => setPreviewError(true)}
-                  />
-                )
-              ) : (
+  fileIsPdf ? (
+    // ✅ Batch 12C: pakai Google Docs Viewer sebagai proxy
+    // Supabase Storage kirim X-Frame-Options: DENY → tidak bisa iframe langsung
+    <iframe
+      src={`https://docs.google.com/viewer?url=${encodeURIComponent(
+        surat.file_url
+      )}&embedded=true`}
+      className="w-full h-96 bg-slate-950"
+      title={surat.perihal}
+      onError={() => setPreviewError(true)}
+    />
+  ) : (
+    <img
+      src={surat.file_url}
+      alt={surat.perihal}
+      className="w-full max-h-96 object-contain bg-slate-950"
+      onError={() => setPreviewError(true)}
+    />
+  )
+) : (
                 <div className="text-center py-12">
                   <FileText size={32} className="mx-auto text-slate-600 mb-2" />
                   <p className="text-xs text-slate-500">
