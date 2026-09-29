@@ -7,7 +7,8 @@ import { ToastContainer } from '@/components/Toast';
 import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/lib/supabase';
 import type { PageKey } from '@/config/navigation';
-
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 // ✅ Route publik — import langsung (bukan lazy) karena dipakai tanpa login & jarang diakses
 import VerifikasiSuratPage from '@/pages/VerifikasiSuratPage';
 import VerifikasiNotulensiPage from '@/pages/VerifikasiNotulensiPage';
