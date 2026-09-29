@@ -13,7 +13,7 @@ import { supabase } from './supabase';
 // - 'gemini-2.5-flash'  → stabil, retiring Okt 2026
 // - 'gemini-3.5-flash'  → stabil, recommended
 // - 'gemini-3.6-flash'  → terbaru, stabil
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.8-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
