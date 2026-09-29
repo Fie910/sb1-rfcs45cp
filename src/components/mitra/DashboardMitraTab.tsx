@@ -170,6 +170,22 @@ export function DashboardMitraTab() {
       .slice(0, 10);
   }, [mouList]);
 
+  const [checkingReminders, setCheckingReminders] = useState(false);
+
+const handleCheckReminders = async () => {
+  setCheckingReminders(true);
+  try {
+    const result = await checkAndSendMouReminders();
+    if (result.sent > 0) {
+      showToast('success', `${result.sent} reminder terkirim`);
+    } else {
+      showToast('info', 'Tidak ada MoU yang perlu reminder');
+    }
+  } finally {
+    setCheckingReminders(false);
+  }
+};
+
   // Aktivitas terbaru
   const aktivitasTerbaru = useMemo(
     () => aktivitasList.slice(0, 8),
