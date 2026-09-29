@@ -235,6 +235,7 @@ function AppContent() {
           <Route path="/hris" element={<ProtectedRoute accessKey="hris"><HrisPage /></ProtectedRoute>} />
           <Route path="/rapat" element={<ProtectedRoute accessKey="rapat"><RapatPage /></ProtectedRoute>} />
           <Route path="/arsip" element={<ProtectedRoute accessKey="arsip"><ArsipPage /></ProtectedRoute>} />
+          <Route path="/mitra" element={<ProtectedRoute accessKey="mitra"><MitraPage /></ProtectedRoute>} />
 
           {/* Rute Modul Kesiswaan */}
           <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
