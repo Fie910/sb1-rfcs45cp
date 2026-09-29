@@ -3,6 +3,7 @@ import { LayoutDashboard, Mail, Lock, User, Loader2, CreditCard } from 'lucide-r
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { Link } from 'react-router-dom';
 
 type Mode = 'signin' | 'signup';
 
@@ -168,6 +169,15 @@ export function LoginPage() {
                   required
                 />
               </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold transition"
+              >
+                Lupa Password?
+              </Link>
             </div>
 
             {error && (
