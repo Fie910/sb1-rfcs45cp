@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import {
   X, FileText, Calendar, User, Paperclip, ExternalLink, Sparkles,
-  Download, Image as ImageIcon, Hash, Building2,
+  Download, Image as ImageIcon, Hash, Building2, AlertTriangle,
 } from 'lucide-react';
 import { RingkasanAiSurat } from './RingkasanAiSurat';
 import type { RingkasanSuratAI } from '@/types/database';
