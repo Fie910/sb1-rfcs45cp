@@ -182,20 +182,7 @@ export function ModalDetailSurat({ surat, onClose, onSaved }: Props) {
                 </div>
               </div>
 
-              {/* Warning surat rahasia */}
-{sifat === 'Rahasia' && fileIsPdf && (
-  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2.5 mb-3">
-    <AlertTriangle size={13} className="text-amber-400 shrink-0 mt-0.5" />
-    <div className="text-xs">
-      <p className="font-bold text-amber-300">Surat Rahasia</p>
-      <p className="text-slate-400 mt-0.5 leading-relaxed">
-        Pratinjau PDF menggunakan Google Docs Viewer (pihak ketiga).
-        Untuk surat rahasia, gunakan tombol <strong>Unduh</strong> untuk membuka secara lokal.
-      </p>
-    </div>
-  </div>
-)}
-
+            
               {canPreview && !previewError ? (
   fileIsPdf ? (
     // ✅ Batch 12C: render PDF client-side via pdfjs
