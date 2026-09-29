@@ -1,7 +1,7 @@
 // src/pages/MitraPage.tsx
 // Halaman utama Modul Mitra DUDI & MoU dengan 4 tab.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Building2, FileSignature, History, BarChart3, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isMitraManager } from '@/components/mitra/shared';
