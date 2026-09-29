@@ -5,7 +5,7 @@ import { supabase } from './supabase';
 import { compressImageToWebP } from '@/components/arsip/shared';
 import { compressPdfIfNeeded } from './compressPdf';
 
-const BUCKET = 'surat-berkas'; // ← GANTI sesuai nama bucket Anda
+const BUCKET = 'dokumen-surat'; // ← GANTI sesuai nama bucket Anda
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 // =============================================================================
