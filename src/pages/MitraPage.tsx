@@ -29,7 +29,22 @@ const ALL_TABS: TabDef[] = [
 export function MitraPage() {
   const { guru } = useAuth();
   const isManager = isMitraManager(guru?.role);
+  
+  // ✅ Auto-cek reminder MoU (throttle 30 menit)
+  useEffect(() => {
+    if (!isManager) return;
+    let mounted = true;
 
+    (async () => {
+      const sent = await checkMouRemindersThrottled();
+      if (mounted && sent > 0) {
+        showToast('info', `${sent} reminder MoU terkirim`);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [isManager]);
+  
   const visibleTabs = useMemo(
     () => ALL_TABS.filter((t) => !t.managerOnly || isManager),
     [isManager]
