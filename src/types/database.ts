@@ -1804,3 +1804,53 @@ export const JENIS_AKTIVITAS_OPTIONS: JenisAktivitasMitra[] = [
   'PKL', 'UKK', 'Rekrutmen', 'Pelatihan Guru', 'Pelatihan Siswa',
   'CSR', 'Kunjungan Industri', 'Guest Teacher', 'Lainnya',
 ];
+
+// =============================================================================
+// KALENDER AKADEMIK — TIPE UNIFIED
+// =============================================================================
+
+export type KalenderEventSource = 'rencana' | 'rapat' | 'libur';
+
+export type KalenderKategori =
+  | 'ujian'
+  | 'rapat'
+  | 'libur'
+  | 'pelatihan'
+  | 'lomba'
+  | 'siswa'
+  | 'default';
+
+export type KalenderWarna =
+  | 'rose'
+  | 'blue'
+  | 'slate'
+  | 'purple'
+  | 'amber'
+  | 'teal'
+  | 'cyan'
+  | 'indigo'
+  | 'emerald';
+
+export type KalenderEvent = {
+  id: string;                    // prefix source + id asli (mis. 'rencana-123')
+  source: KalenderEventSource;
+  source_id: string;             // id asli dari tabel asal
+  
+  judul: string;
+  deskripsi: string | null;
+  tanggal_mulai: string;         // YYYY-MM-DD
+  tanggal_selesai: string;       // YYYY-MM-DD (sama dengan mulai kalau 1 hari)
+  
+  // Info spesifik (kalau ada)
+  waktu_mulai?: string | null;
+  waktu_selesai?: string | null;
+  lokasi?: string | null;
+  penanggung_jawab?: string | null;
+  peserta?: string | null;
+  status?: string | null;
+  
+  // Kategori & warna auto
+  kategori: KalenderKategori;
+  warna: KalenderWarna;
+  kategori_label: string;
+};
