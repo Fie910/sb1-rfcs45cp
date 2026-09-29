@@ -109,7 +109,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/verifikasi-notulensi', 
   '/verifikasi-arsip', 
   '/forgot-password', 
-  '/reset-password'
+  '/reset-password',
 ];
 
 function isPublicPath(pathname: string): boolean {
