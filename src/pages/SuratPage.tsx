@@ -1349,7 +1349,7 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
                 </label>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
                   onChange={handleFileChange}
                   className="w-full text-xs text-slate-400 border border-white/10 rounded-xl p-2 bg-slate-950 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white cursor-pointer"
                 />
