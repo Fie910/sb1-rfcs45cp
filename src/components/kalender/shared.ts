@@ -98,8 +98,7 @@ export function mapRencanaToEvent(k: RencanaKegiatan): KalenderEvent {
 }
 
 export function mapRapatToEvent(r: RapatWithRelations): KalenderEvent {
-  const { kategori, warna, label } = detectKategori(r.judul);
-  // Rapat selalu 1 hari, tapi tetap support kalau ada tanggal_selesai
+  // ✅ Fixed: rapat selalu warna biru, tidak perlu comparison dengan 'default'
   return {
     id: `rapat-${r.id}`,
     source: 'rapat',
@@ -115,8 +114,8 @@ export function mapRapatToEvent(r: RapatWithRelations): KalenderEvent {
     peserta: r.total_peserta ? `${r.total_peserta} peserta` : null,
     status: r.status,
     kategori: 'rapat',
-    warna: warna === 'default' ? 'blue' : warna,
-    kategori_label: label === 'Agenda' ? 'Rapat' : label,
+    warna: 'blue',
+    kategori_label: 'Rapat',
   };
 }
 
@@ -189,7 +188,6 @@ export function getEventsForDate(dateStr: string, events: KalenderEvent[]): Kale
   return events.filter((e) => isDateInEvent(dateStr, e));
 }
 
-/** Format tanggal panjang Indonesia: "Senin, 12 September 2026" */
 export function formatTanggalPanjang(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00+07:00`);
   return date.toLocaleDateString('id-ID', {
@@ -201,7 +199,6 @@ export function formatTanggalPanjang(dateStr: string): string {
   });
 }
 
-/** Format tanggal pendek: "12 Sep 2026" */
 export function formatTanggalPendek(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00+07:00`);
   return date.toLocaleDateString('id-ID', {
@@ -212,7 +209,6 @@ export function formatTanggalPendek(dateStr: string): string {
   });
 }
 
-/** Format tanggal super-pendek: "12 Sep" */
 export function formatTanggalMini(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00+07:00`);
   return date.toLocaleDateString('id-ID', {
@@ -222,9 +218,6 @@ export function formatTanggalMini(dateStr: string): string {
   });
 }
 
-/**
- * Relative time: "Besok", "Hari ini", "3 hari lagi", "5 hari lalu"
- */
 export function relativeDay(dateStr: string, todayStr: string): string {
   const a = new Date(`${dateStr}T12:00:00+07:00`).getTime();
   const b = new Date(`${todayStr}T12:00:00+07:00`).getTime();
@@ -238,12 +231,10 @@ export function relativeDay(dateStr: string, todayStr: string): string {
   return `${Math.abs(diff)} hari lalu`;
 }
 
-/** Cek apakah multi-hari */
 export function isMultiDay(e: KalenderEvent): boolean {
   return e.tanggal_mulai !== e.tanggal_selesai;
 }
 
-/** Format range tanggal untuk event (compact) */
 export function formatEventRange(e: KalenderEvent): string {
   if (!isMultiDay(e)) return formatTanggalMini(e.tanggal_mulai);
   return `${formatTanggalMini(e.tanggal_mulai)} — ${formatTanggalMini(e.tanggal_selesai)}`;
