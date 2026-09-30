@@ -61,7 +61,10 @@ export function RekapNilaiPage() {
       } else {
         let filtered = data as NilaiWithRelations[];
         if (filterKelas) {
-          filtered = filtered.filter((n) => n.siswas?.kelas?.id === filterKelas);
+          // ✅ Fixed: cast id ke string untuk comparison dengan filterKelas (string)
+          filtered = filtered.filter(
+            (n) => String(n.siswas?.kelas?.id ?? '') === filterKelas
+          );
         }
         setList(filtered);
       }
@@ -85,7 +88,10 @@ export function RekapNilaiPage() {
 
     let filtered = (data as NilaiWithRelations[]) ?? [];
     if (filterKelas) {
-      filtered = filtered.filter((n) => n.siswas?.kelas?.id === filterKelas);
+      // ✅ Fixed: cast id ke string
+      filtered = filtered.filter(
+        (n) => String(n.siswas?.kelas?.id ?? '') === filterKelas
+      );
     }
     setList(filtered);
     setLoading(false);
