@@ -468,7 +468,7 @@ export function PresensiPage() {
                 label: k.nama_kelas,
               }))}
               value={selectedKelas}
-              onChange={setSelectedKelas}
+              onChange={(v) => setSelectedKelas(v ? Number(v) : '')}
               placeholder="Pilih kelas..."
               searchPlaceholder="Cari kelas..."
               emptyMessage="Kelas tidak ditemukan"
