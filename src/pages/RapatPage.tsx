@@ -89,7 +89,7 @@ export function RapatPage() {
       <div className="min-h-[400px]">
         {effectiveTab === 'jadwal' && <JadwalRapatTab />}
         {effectiveTab === 'notulensi' && <NotulensiSayaTab />}
-        {effectiveTab === 'manajemen' && isManager && <ManajemenRapatTab />}
+        {effectiveTab === 'manajemen' && <ManajemenRapatTab />}
       </div>
     </div>
   );
