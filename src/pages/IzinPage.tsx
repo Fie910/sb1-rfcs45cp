@@ -49,7 +49,7 @@ export function IzinPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [form, setForm] = useState({
     tanggal_izin: getTodayDateWib(),
@@ -57,8 +57,8 @@ export function IzinPage() {
     keterangan_izin: '',
     titipan_tugas: '',
     url_file: '',
-    kelas_id: '',
-    mapel_id: '',
+    kelas_id: '' as string | number,
+    mapel_id: '' as string | number,
   });
 
   const [deleteTarget, setDeleteTarget] = useState<IzinGuruPiketWithRelations | null>(null);
@@ -143,8 +143,8 @@ export function IzinPage() {
       keterangan_izin: izin.keterangan_izin ?? (izin as any).alasan_izin ?? '',
       titipan_tugas: izin.titipan_tugas || '',
       url_file: (izin as any).url_file || (izin as any).link_tugas || (izin as any).file_url || '',
-      kelas_id: izin.kelas_id || '',
-      mapel_id: izin.mapel_id || guru?.mapel_id || '',
+      kelas_id: izin.kelas_id ?? '',
+      mapel_id: izin.mapel_id ?? (guru?.mapel_id ?? ''),
     });
     setModalOpen(true);
   };
@@ -165,8 +165,8 @@ export function IzinPage() {
       keterangan_izin: form.keterangan_izin,
       titipan_tugas: form.titipan_tugas,
       url_file: form.url_file,
-      kelas_id: form.kelas_id,
-      mapel_id: form.mapel_id,
+      kelas_id: Number(form.kelas_id),
+      mapel_id: form.mapel_id ? Number(form.mapel_id) : null,
     };
 
     let error;
@@ -289,7 +289,7 @@ const kepalaIds = kepalaArrays.flat();
       await logActivity({
         aksi: 'DELETE',
         modul: AUDIT_MODUL.IZIN,
-        targetId: infoIzin.id,
+        targetId: String(infoIzin.id),
         deskripsi: `Hapus pengajuan izin ${infoIzin.kategori} tanggal ${infoIzin.tanggal} — "${infoIzin.keterangan}"`,
       });
 

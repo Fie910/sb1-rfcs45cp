@@ -9,7 +9,7 @@ export type StatusKehadiranGuru =
   | 'alpa';
 
 export interface JadwalKBMJP {
-  id: string;
+  id: number;
   hari: string;
   jam_ke: number;
   jam_mulai: string;

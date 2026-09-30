@@ -66,7 +66,7 @@ type LogParams = {
   aksi: AuditAction;
   modul: string;
   deskripsi: string;
-  targetId?: string | null;
+  targetId?: string | number | null;
   metadata?: Record<string, unknown> | null;
 };
 

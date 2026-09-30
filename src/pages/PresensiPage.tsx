@@ -88,7 +88,7 @@ const STATUS_CONFIG: Record<
 export function PresensiPage() {
   const { guru } = useAuth();
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
-  const [selectedKelas, setSelectedKelas] = useState('');
+  const [selectedKelas, setSelectedKelas] = useState<number | ''>('');
   const [tanggal, setTanggal] = useState(() => getTodayDateWib());
 
   // State Hari Libur
@@ -96,7 +96,7 @@ export function PresensiPage() {
 
   // Jadwal KBM Filter & State
   const [availableJadwal, setAvailableJadwal] = useState<JadwalKbmWithRelations[]>([]);
-  const [selectedJadwalId, setSelectedJadwalId] = useState('');
+  const [selectedJadwalId, setSelectedJadwalId] = useState<number | ''>('');
   const [activeJadwal, setActiveJadwal] = useState<JadwalKbmWithRelations | null>(null);
 
   const [siswaList, setSiswaList] = useState<Siswa[]>([]);
@@ -168,7 +168,7 @@ export function PresensiPage() {
 
   // 3. Load Jadwal KBM Sesuai Filter Kelas & Tanggal
   const fetchJadwalOptions = useCallback(async () => {
-    if (!selectedKelas || !tanggal || hariLibur) {
+    if (selectedKelas === '' || !tanggal || hariLibur) {
       setAvailableJadwal([]);
       setSelectedJadwalId('');
       return;
@@ -239,8 +239,8 @@ export function PresensiPage() {
 
         if (existing.length > 0) {
           setHasExisting(true);
-          const att: Record<string, Status | null> = {};
-          const ket: Record<string, string> = {};
+          const att: Record<number, Status | null> = {};
+          const ket: Record<number, string> = {};
           existing.forEach((p) => {
             att[p.siswa_id] = (p.status as Status) ?? null;
             if (p.keterangan) ket[p.siswa_id] = p.keterangan;
@@ -249,8 +249,8 @@ export function PresensiPage() {
           setKeterangan(ket);
         } else {
           setHasExisting(false);
-          const att: Record<string, Status | null> = {};
-          siswas.forEach((s) => (att[s.id] = null));
+          const att: Record<number, Status | null> = {};
+          siswas.forEach((s) => (att[s.id as number] = null));
           setAttendance(att);
           setKeterangan({});
         }
@@ -258,21 +258,21 @@ export function PresensiPage() {
     })();
   }, [selectedKelas, selectedJadwalId, tanggal, hariLibur]);
 
-  const setStatus = (siswaId: string, status: Status) => {
+  const setStatus = (siswaId: number, status: Status) => {
     if (hariLibur) return;
     setAttendance((prev) => ({ ...prev, [siswaId]: status }));
   };
 
-  const setKet = (siswaId: string, value: string) => {
+  const setKet = (siswaId: number, value: string) => {
     if (hariLibur) return;
-    setKeterangan((prev) => ({ ...prev, [siswaId]: value }));
+    setKeterangan((prev) => ({ ...(prev ?? {}), [siswaId]: value }));
   };
 
   const handleMarkAllHadir = () => {
     if (hariLibur || siswaList.length === 0) return;
-    const updatedAtt: Record<string, Status | null> = {};
+    const updatedAtt: Record<number, Status | null> = {};
     siswaList.forEach((s) => {
-      updatedAtt[s.id] = 'Hadir';
+      updatedAtt[s.id as number] = 'Hadir';
     });
     setAttendance(updatedAtt);
     showToast('info', 'Semua siswa ditandai Hadir');

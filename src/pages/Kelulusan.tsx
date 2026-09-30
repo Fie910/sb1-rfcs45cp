@@ -12,7 +12,7 @@ export const Kelulusan: React.FC = () => {
   const [kelasId, setKelasId] = useState<string>('');
 
   const [daftarSiswa, setDaftarSiswa] = useState<Siswa[]>([]);
-  const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
+  const [selectedSiswaIds, setSelectedSiswaIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -67,7 +67,7 @@ export const Kelulusan: React.FC = () => {
     }
   };
 
-  const handleToggleSiswa = (siswaId: string) => {
+  const handleToggleSiswa = (siswaId: number) => {
     setSelectedSiswaIds((prev) =>
       prev.includes(siswaId) ? prev.filter((id) => id !== siswaId) : [...prev, siswaId]
     );
@@ -89,7 +89,7 @@ export const Kelulusan: React.FC = () => {
     setMessage(null);
 
     try {
-      await akademikService.prosesKelulusan(tahunAjaran.id, selectedSiswaIds, kelasId);
+      await akademikService.prosesKelulusan(tahunAjaran.id, selectedSiswaIds, Number(kelasId));
       setMessage(`Berhasil meluluskan ${selectedSiswaIds.length} siswa menjadi Alumni!`);
       showToast('success', `${selectedSiswaIds.length} siswa berhasil diluluskan`);
       setKelasId('');

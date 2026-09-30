@@ -5,17 +5,17 @@ import { Siswa } from '../types/database';
 import { Search, X, ChevronDown, UserCheck } from 'lucide-react';
 
 interface RiwayatItem {
-  id: string;
+  id: number;
   status_akhir: string;
   catatan: string | null;
   created_at: string;
-  kelas: { id: string; nama_kelas: string } | null;
+  kelas: { id: number; nama_kelas: string } | null;
   tahun_ajaran: { tahun: string; semester: string } | null;
 }
 
 export const RiwayatSiswa: React.FC = () => {
   const [daftarSiswa, setDaftarSiswa] = useState<Siswa[]>([]);
-  const [selectedSiswaId, setSelectedSiswaId] = useState<string>('');
+  const [selectedSiswaId, setSelectedSiswaId] = useState<number | ''>('');
   const [selectedSiswa, setSelectedSiswa] = useState<Siswa | null>(null);
   const [riwayat, setRiwayat] = useState<RiwayatItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ export const RiwayatSiswa: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedSiswaId) {
+    if (selectedSiswaId !== '') {
       const siswa = daftarSiswa.find((s) => s.id === selectedSiswaId) || null;
       setSelectedSiswa(siswa);
       loadRiwayat(selectedSiswaId);
@@ -60,7 +60,7 @@ export const RiwayatSiswa: React.FC = () => {
     if (data) setDaftarSiswa(data);
   };
 
-  const loadRiwayat = async (siswaId: string) => {
+  const loadRiwayat = async (siswaId: number) => {
     setLoading(true);
     try {
       const data = await akademikService.getRiwayatSiswa(siswaId);
@@ -82,7 +82,7 @@ export const RiwayatSiswa: React.FC = () => {
   });
 
   const handleSelectSiswa = (siswa: Siswa) => {
-    setSelectedSiswaId(siswa.id);
+    setSelectedSiswaId(siswa.id as number);
     setSearchQuery(`${siswa.nama_lengkap} (${siswa.nisn || '-'})`);
     setIsDropdownOpen(false);
   };
@@ -93,7 +93,7 @@ export const RiwayatSiswa: React.FC = () => {
     setSelectedSiswa(null);
     setRiwayat([]);
     setIsDropdownOpen(true);
-  };
+  }; // selectedSiswaId reset to '' (empty string sentinel)
 
   const getBadgeStyle = (status: string) => {
     switch (status) {

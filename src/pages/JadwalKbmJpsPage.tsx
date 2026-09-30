@@ -259,8 +259,8 @@ export function JadwalKbmJpsPage() {
           waktu_mulai: string;
           waktu_selesai: string;
           guru_id: string;
-          kelas_id: string;
-          mapel_id: string | null;
+          kelas_id: number;
+          mapel_id: number | null;
         }> = [];
 
         let skipped = 0;

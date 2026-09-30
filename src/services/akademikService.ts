@@ -2,8 +2,8 @@ import { supabase } from '@/lib/supabase';
 import type { StatusAkhirRiwayat, StatusSiswa } from '@/types/database';
 
 export interface SiswaProsesKenaikan {
-  siswa_id: string;
-  kelas_tujuan_id: string; // ID kelas baru (atau kelas yang sama jika tinggal kelas)
+  siswa_id: number;
+  kelas_tujuan_id: number; // ID kelas baru (atau kelas yang sama jika tinggal kelas)
   status_akhir: StatusAkhirRiwayat; // 'NAIK_KELAS' atau 'TINGGAL_KELAS'
   catatan?: string;
 }
@@ -23,7 +23,7 @@ export const akademikService = {
 
   // 2. Proses Kolektif Kenaikan / Tinggal Kelas
   async prosesKenaikanKelas(
-    tahunAjaranId: string,
+    tahunAjaranId: number,
     daftarSiswa: SiswaProsesKenaikan[]
   ) {
     // A. Update kelas_id di tabel siswas untuk tiap siswa
@@ -55,9 +55,9 @@ export const akademikService = {
 
   // 3. Proses Kelulusan Massal (Ubah Siswa Menjadi Alumni)
   async prosesKelulusan(
-    tahunAjaranId: string,
-    siswaIds: string[],
-    kelasAsalId: string
+    tahunAjaranId: number,
+    siswaIds: number[],
+    kelasAsalId: number
   ) {
     // A. Update status siswa menjadi ALUMNI dan kosongkan kelas_id
     const { error: updateError } = await supabase
@@ -89,9 +89,9 @@ export const akademikService = {
 
   // 4. Proses Siswa Keluar / Mutasi / Drop Out
   async prosesSiswaKeluar(
-    siswaId: string,
-    kelasTerakhirId: string,
-    tahunAjaranId: string,
+    siswaId: number,
+    kelasTerakhirId: number,
+    tahunAjaranId: number,
     statusBaru: 'MUTASI_KELUAR' | 'DROP_OUT',
     alasan: string
   ) {
@@ -122,7 +122,7 @@ export const akademikService = {
   },
 
   // 5. Ambil Timeline / Rekam Jejak Historis Siswa
-  async getRiwayatSiswa(siswaId: string) {
+  async getRiwayatSiswa(siswaId: number) {
     const { data, error } = await supabase
       .from('riwayat_kelas_siswas')
       .select(`

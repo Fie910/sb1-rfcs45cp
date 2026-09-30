@@ -290,7 +290,7 @@ export function AgendaPage() {
     (j) => j.hari?.trim().toLowerCase() !== todayHari.trim().toLowerCase()
   );
 
-  const getAgendaForJadwal = (jadwalId: string): AgendaGuruWithRelations | null => {
+  const getAgendaForJadwal = (jadwalId: number): AgendaGuruWithRelations | null => {
     return (agendaList || []).find((a) => a.jadwal_kbm_id === jadwalId) ?? null;
   };
 

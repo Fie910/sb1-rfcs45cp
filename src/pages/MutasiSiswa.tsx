@@ -10,7 +10,7 @@ export const MutasiSiswa: React.FC = () => {
   const confirm = useConfirm();
   const [tahunAjaran, setTahunAjaran] = useState<TahunAjaran | null>(null);
   const [daftarSiswa, setDaftarSiswa] = useState<Siswa[]>([]);
-  const [selectedSiswaId, setSelectedSiswaId] = useState<string>('');
+  const [selectedSiswaId, setSelectedSiswaId] = useState<number | ''>('');
   const [statusBaru, setStatusBaru] = useState<'MUTASI_KELUAR' | 'DROP_OUT'>('MUTASI_KELUAR');
   const [alasan, setAlasan] = useState('');
 
@@ -61,7 +61,7 @@ export const MutasiSiswa: React.FC = () => {
   });
 
   const handleSelectSiswa = (siswa: Siswa) => {
-    setSelectedSiswaId(siswa.id);
+    setSelectedSiswaId(siswa.id as number);
     setSearchQuery(`${siswa.nama_lengkap} (${siswa.nisn || '-'})`);
     setIsDropdownOpen(false);
   };
@@ -92,8 +92,8 @@ export const MutasiSiswa: React.FC = () => {
 
     try {
       await akademikService.prosesSiswaKeluar(
-        siswaTerpilih.id,
-        siswaTerpilih.kelas_id || '',
+        siswaTerpilih.id as number,
+        siswaTerpilih.kelas_id ?? 0,
         tahunAjaran.id,
         statusBaru,
         alasan

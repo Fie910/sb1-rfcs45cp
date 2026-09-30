@@ -15,16 +15,16 @@ export function NilaiPage() {
   const { guru } = useAuth();
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
   const [mapelList, setMapelList] = useState<MataPelajaran[]>([]);
-  const [selectedKelas, setSelectedKelas] = useState('');
+  const [selectedKelas, setSelectedKelas] = useState<number | ''>('');
   const [siswaList, setSiswaList] = useState<Siswa[]>([]);
-  const [selectedSiswa, setSelectedSiswa] = useState('');
+  const [selectedSiswa, setSelectedSiswa] = useState<number | ''>('');
   const [nilaiList, setNilaiList] = useState<NilaiWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
 
   const [form, setForm] = useState({
-    mapel_id: '',
+    mapel_id: '' as number | '',
     jenis_penilaian: 'Tugas',
     nilai: '',
     semester: 'Ganjil',
@@ -47,7 +47,7 @@ export function NilaiPage() {
 
   useEffect(() => {
     if (guru && guru.mapel_id && !form.mapel_id) {
-      setForm((f) => ({ ...f, mapel_id: guru.mapel_id! }));
+      setForm((f) => ({ ...f, mapel_id: guru.mapel_id as number }));
     }
   }, [guru]);
 
@@ -214,7 +214,7 @@ export function NilaiPage() {
                   hint: s.nisn ? `NISN: ${s.nisn}` : undefined,
                 }))}
                 value={selectedSiswa}
-                onChange={setSelectedSiswa}
+                onChange={(v) => setSelectedSiswa(v ? Number(v) : '')}
                 placeholder="Pilih siswa..."
                 searchPlaceholder="Cari nama atau NISN..."
                 emptyMessage="Siswa tidak ditemukan"
@@ -246,7 +246,7 @@ export function NilaiPage() {
                     label: m.nama_mapel,
                   }))}
                   value={form.mapel_id}
-                  onChange={(v) => setForm({ ...form, mapel_id: v })}
+                  onChange={(v) => setForm({ ...form, mapel_id: v ? Number(v) : '' })}
                   placeholder="Pilih mata pelajaran..."
                   searchPlaceholder="Cari mata pelajaran..."
                   emptyMessage="Mapel tidak ditemukan"

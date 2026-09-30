@@ -1,7 +1,9 @@
+export * from './surat';
+
 export type GuruRole = string;
 
 export type MataPelajaran = {
-  id: string;
+  id: number;
   nama_mapel: string;
   created_at: string;
 };
@@ -20,7 +22,7 @@ export type Guru = {
   divisi_id: string | null;
   divisis?: Divisi | null;
   mata_pelajaran?: string | null;
-  mapel_id?: string | null;
+  mapel_id?: number | null;
   jabatan?: string | null;
   // HRIS fields (dari SQL migration HRIS)
   tanggal_bergabung?: string | null;
@@ -34,7 +36,7 @@ export type GuruWithMapel = Guru & {
 };
 
 export type Kelas = {
-  id: string;
+  id: number;
   nama_kelas: string;
   wali_kelas_id: string | null;
   created_at: string;
@@ -45,17 +47,17 @@ export type StatusSiswa = 'AKTIF' | 'ALUMNI' | 'MUTASI_KELUAR' | 'DROP_OUT';
 export type StatusAkhirRiwayat = 'AKTIF' | 'NAIK_KELAS' | 'TINGGAL_KELAS' | 'LULUS' | 'MUTASI' | 'DROP_OUT';
 
 export type Siswa = {
-  id: string;
+  id: number;
   nisn: string;
   nama_lengkap: string;
   jenis_kelamin: 'L' | 'P';
-  kelas_id: string | null;
+  kelas_id: number | null;
   status: StatusSiswa;
   created_at: string;
 };
 
 export type TahunAjaran = {
-  id: string;
+  id: number;
   tahun: string; // Contoh: '2025/2026'
   semester: 'Ganjil' | 'Genap';
   is_aktif: boolean;
@@ -63,21 +65,21 @@ export type TahunAjaran = {
 };
 
 export type RiwayatKelasSiswa = {
-  id: string;
-  siswa_id: string;
-  kelas_id: string;
-  tahun_ajaran_id: string;
+  id: number;
+  siswa_id: number;
+  kelas_id: number;
+  tahun_ajaran_id: number;
   status_akhir: StatusAkhirRiwayat;
   catatan: string | null;
   created_at: string;
 };
 
 export type Nilai = {
-  id: string;
-  siswa_id: string;
+  id: number;
+  siswa_id: number;
   guru_id: string;
   mata_pelajaran: string;
-  mapel_id: string | null;
+  mapel_id: number | null;
   jenis_penilaian: string;
   nilai: number;
   semester: string;
@@ -86,9 +88,10 @@ export type Nilai = {
 };
 
 export type Presensi = {
-  id: string;
-  siswa_id: string;
+  id: number;
+  siswa_id: number;
   guru_id: string | null;
+  jadwal_kbm_id?: number | null;
   tanggal: string;
   status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpa';
   keterangan: string | null;
@@ -127,13 +130,13 @@ export type RiwayatKelasSiswaWithRelations = RiwayatKelasSiswa & {
 export type HariMinggu = 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu';
 
 export type JadwalKbm = {
-  id: string;
+  id: number;
   guru_id: string;
   hari: HariMinggu;
   jam_ke: number;
-  kelas_id: string;
+  kelas_id: number;
   mata_pelajaran: string;
-  mapel_id: string | null;
+  mapel_id: number | null;
   waktu_mulai: string | null;
   waktu_selesai: string | null;
   created_at: string;
@@ -148,7 +151,7 @@ export type JadwalKbmWithRelations = JadwalKbm & {
 export type AgendaGuru = {
   id: string;
   guru_id: string;
-  jadwal_kbm_id: string | null;
+  jadwal_kbm_id: number | null;
   tanggal: string;
   status_kehadiran: 'Hadir' | 'Tidak Hadir' | 'Hadir Mengajar' | 'Terlambat';
   catatan_materi: string | null;
@@ -169,7 +172,7 @@ export type AgendaGuruWithRelations = AgendaGuru & {
 };
 
 export type JadwalPiket = {
-  id: string;
+  id: number;
   guru_id: string;
   hari_piket: HariMinggu;
   created_at: string;
@@ -182,16 +185,16 @@ export type JadwalPiketWithRelations = JadwalPiket & {
 export type KategoriIzin = 'Sakit' | 'Izin';
 
 export type IzinGuruPiket = {
-  id: string;
+  id: number;
   guru_izin_id: string;
   tanggal_izin: string;
   alasan_izin: string;
   kategori_izin: KategoriIzin | null;
   keterangan_izin: string | null;
   titipan_tugas: string;
-  kelas_id: string;
+  kelas_id: number;
   mata_pelajaran: string;
-  mapel_id: string | null;
+  mapel_id: number | null;
   status_penanganan: 'Menunggu' | 'Ditangani';
   guru_piket_id: string | null;
   status_penyampaian: 'Belum Disampaikan' | 'Sudah Disampaikan';
@@ -265,7 +268,7 @@ export interface RencanaKegiatan {
 }
 
 export type JadwalPiketPenyambutan = {
-  id: string;
+  id: number;
   guru_id: string;
   hari: string;
   created_at?: string;
@@ -273,7 +276,7 @@ export type JadwalPiketPenyambutan = {
 };
 
 export type KehadiranPiketPenyambutan = {
-  id: string;
+  id: number;
   guru_id: string;
   tanggal: string;
   status: 'Hadir' | 'Izin' | 'Sakit' | string;
@@ -287,6 +290,37 @@ export type KehadiranPiketPenyambutan = {
   catatan?: string | null;
   created_at: string;
   gurus?: Pick<Guru, 'id' | 'nama_lengkap' | 'nip'> | null;
+};
+
+export type KehadiranPiket = {
+  id: number;
+  jadwal_piket_id?: number | null;
+  guru_id: string;
+  tanggal: string;
+  status: 'Hadir' | 'Terlambat' | 'Izin' | 'Sakit' | 'Alpa' | null;
+  catatan: string | null;
+  created_at?: string;
+};
+
+export type PresensiGuruPiket = {
+  id: number;
+  guru_id: string;
+  tanggal: string;
+  status: string;
+  catatan: string | null;
+  jadwal_kbmjp_id?: number | null;
+  created_at?: string;
+};
+
+export type PresensiSiswaKesiswaan = {
+  id: number;
+  siswa_id: number;
+  kelas_id: number;
+  tanggal: string;
+  status_kehadiran: 'Hadir' | 'Sakit' | 'Izin' | 'Alpa';
+  keterangan: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 // --- BUKU TAMU & NOTIFIKASI ---

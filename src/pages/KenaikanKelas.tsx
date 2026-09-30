@@ -6,11 +6,11 @@ import { Kelas, Siswa, TahunAjaran } from '../types/database';
 export const KenaikanKelas: React.FC = () => {
   const [tahunAjaran, setTahunAjaran] = useState<TahunAjaran | null>(null);
   const [daftarKelas, setDaftarKelas] = useState<Kelas[]>([]);
-  const [kelasAsalId, setKelasAsalId] = useState<string>('');
-  const [kelasTujuanId, setKelasTujuanId] = useState<string>('');
+  const [kelasAsalId, setKelasAsalId] = useState<number | ''>('');
+  const [kelasTujuanId, setKelasTujuanId] = useState<number | ''>('');
   
   const [daftarSiswa, setDaftarSiswa] = useState<Siswa[]>([]);
-  const [statusMap, setStatusMap] = useState<Record<string, { status: 'NAIK_KELAS' | 'TINGGAL_KELAS'; targetKelasId: string }>>({});
+  const [statusMap, setStatusMap] = useState<Record<number, { status: 'NAIK_KELAS' | 'TINGGAL_KELAS'; targetKelasId: number | '' }>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -19,7 +19,7 @@ export const KenaikanKelas: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (kelasAsalId) {
+    if (kelasAsalId !== '') {
       loadSiswaByKelas(kelasAsalId);
     } else {
       setDaftarSiswa([]);
@@ -38,7 +38,7 @@ export const KenaikanKelas: React.FC = () => {
     }
   };
 
-  const loadSiswaByKelas = async (kelasId: string) => {
+  const loadSiswaByKelas = async (kelasId: number) => {
     const { data } = await supabase
       .from('siswas')
       .select('*')
@@ -48,11 +48,11 @@ export const KenaikanKelas: React.FC = () => {
 
     if (data) {
       setDaftarSiswa(data);
-      const initialMap: Record<string, { status: 'NAIK_KELAS' | 'TINGGAL_KELAS'; targetKelasId: string }> = {};
+      const initialMap: Record<number, { status: 'NAIK_KELAS' | 'TINGGAL_KELAS'; targetKelasId: number | '' }> = {};
       data.forEach((s) => {
-        initialMap[s.id] = {
+        initialMap[s.id as number] = {
           status: 'NAIK_KELAS',
-          targetKelasId: kelasTujuanId || '',
+          targetKelasId: kelasTujuanId !== '' ? kelasTujuanId : '',
         };
       });
       setStatusMap(initialMap);
@@ -60,19 +60,21 @@ export const KenaikanKelas: React.FC = () => {
   };
 
   const handleKelasTujuanChange = (targetId: string) => {
-    setKelasTujuanId(targetId);
+    const numId = targetId ? Number(targetId) : '' as const;
+    setKelasTujuanId(numId as number | '');
     setStatusMap((prev) => {
       const updated = { ...prev };
       Object.keys(updated).forEach((id) => {
-        if (updated[id].status === 'NAIK_KELAS') {
-          updated[id].targetKelasId = targetId;
+        const key = Number(id);
+        if (updated[key].status === 'NAIK_KELAS') {
+          updated[key].targetKelasId = numId as number | '';
         }
       });
       return updated;
     });
   };
 
-  const handleToggleStatus = (siswaId: string, status: 'NAIK_KELAS' | 'TINGGAL_KELAS') => {
+  const handleToggleStatus = (siswaId: number, status: 'NAIK_KELAS' | 'TINGGAL_KELAS') => {
     setStatusMap((prev) => ({
       ...prev,
       [siswaId]: {
@@ -91,10 +93,10 @@ export const KenaikanKelas: React.FC = () => {
 
     try {
       const payload: SiswaProsesKenaikan[] = daftarSiswa.map((siswa) => ({
-        siswa_id: siswa.id,
-        kelas_tujuan_id: statusMap[siswa.id]?.targetKelasId || kelasAsalId,
-        status_akhir: statusMap[siswa.id]?.status || 'NAIK_KELAS',
-        catatan: statusMap[siswa.id]?.status === 'TINGGAL_KELAS' ? 'Tinggal di kelas asal' : 'Naik kelas',
+        siswa_id: siswa.id as number,
+        kelas_tujuan_id: (statusMap[siswa.id as number]?.targetKelasId || kelasAsalId || 0) as number,
+        status_akhir: statusMap[siswa.id as number]?.status || 'NAIK_KELAS',
+        catatan: statusMap[siswa.id as number]?.status === 'TINGGAL_KELAS' ? 'Tinggal di kelas asal' : 'Naik kelas',
       }));
 
       await akademikService.prosesKenaikanKelas(tahunAjaran.id, payload);
@@ -137,7 +139,7 @@ export const KenaikanKelas: React.FC = () => {
             <label className="block text-sm font-medium text-slate-300 mb-2">Pilih Kelas Asal</label>
             <select
               value={kelasAsalId}
-              onChange={(e) => setKelasAsalId(e.target.value)}
+              onChange={(e) => setKelasAsalId(e.target.value ? Number(e.target.value) : '')}
               className="w-full bg-slate-800/50 border border-slate-700/80 rounded-xl p-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all outline-none backdrop-blur-md"
               required
             >

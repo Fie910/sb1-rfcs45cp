@@ -40,8 +40,8 @@ const HARI_ORDER: Record<HariMinggu, number> = {
 const emptyForm = {
   guru_id: '',
   hari: 'Senin' as HariMinggu,
-  kelas_id: '',
-  mapel_id: '',
+  kelas_id: '' as string | number,
+  mapel_id: '' as string | number,
   waktu_mulai: '07:00',
   waktu_selesai: '07:40',
 };
@@ -59,7 +59,7 @@ export function JadwalKbmPage() {
 
   // Modal States
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<JadwalKbmWithRelations | null>(null);
@@ -156,8 +156,8 @@ export function JadwalKbmPage() {
     const payload = {
       guru_id: form.guru_id,
       hari: form.hari,
-      kelas_id: form.kelas_id,
-      mapel_id: form.mapel_id,
+      kelas_id: Number(form.kelas_id),
+      mapel_id: form.mapel_id ? Number(form.mapel_id) : null,
       waktu_mulai: form.waktu_mulai,
       waktu_selesai: form.waktu_selesai,
     };

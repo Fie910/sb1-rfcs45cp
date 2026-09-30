@@ -9,7 +9,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, Search, X, Check } from 'lucide-react';
 
 export type SelectOption = {
-  value: string;
+  value: string | number;
   label: string;
   hint?: string;
   disabled?: boolean;
@@ -17,7 +17,7 @@ export type SelectOption = {
 
 type SearchableSelectProps = {
   options: SelectOption[];
-  value: string;
+  value: string | number;
   onChange: (value: string) => void;
   placeholder?: string;
   searchPlaceholder?: string;
@@ -51,7 +51,7 @@ export function SearchableSelect({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selected = useMemo(
-    () => options.find((o) => o.value === value),
+    () => options.find((o) => String(o.value) === String(value)),
     [options, value]
   );
 
@@ -151,7 +151,7 @@ export function SearchableSelect({
 
   const handleSelect = (opt: SelectOption) => {
     if (opt.disabled) return;
-    onChange(opt.value);
+    onChange(String(opt.value));
     setOpen(false);
   };
 
@@ -216,7 +216,7 @@ export function SearchableSelect({
                 </div>
               ) : (
                 filtered.map((opt, idx) => {
-                  const isSelected = opt.value === value;
+                  const isSelected = String(opt.value) === String(value);
                   const isHighlighted = idx === highlightIndex;
 
                   return (
