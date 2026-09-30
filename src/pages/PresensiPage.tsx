@@ -484,7 +484,7 @@ export function PresensiPage() {
             </label>
             <select
               value={selectedJadwalId}
-              onChange={(e) => setSelectedJadwalId(e.target.value)}
+              onChange={(e) => setSelectedJadwalId(e.target.value ? Number(e.target.value) : '')}
               disabled={!selectedKelas || loadingJadwal || !!hariLibur}
               className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-medium focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
