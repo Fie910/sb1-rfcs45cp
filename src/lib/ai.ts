@@ -1,30 +1,23 @@
 // src/lib/ai.ts
 // AI client untuk Gemini API — dipakai untuk auto-resume notulensi.
-//
-// Docs: https://ai.google.dev/gemini-api/docs/models
-// Free tier: 15 RPM, 1.500 RPD (Gemini Flash)
+// ✅ Robust: auto-retry (503/429) + multi-model fallback.
 
 import { supabase } from './supabase';
 
 // =============================================================================
 // CONFIG
 // =============================================================================
-// Ganti sesuai ketersediaan model di project Google AI Studio Anda:
-// - 'gemini-2.5-flash'  → stabil, retiring Okt 2026
-// - 'gemini-3.5-flash'  → stabil, recommended
-// - 'gemini-3.6-flash'  → terbaru, stabil
-// Model list — dicoba berurutan saat model utama gagal (503/429)
 const GEMINI_MODELS = [
   'gemini-3.8-flash',
   'gemini-3.5-flash',
   'gemini-3.5-flash-lite',
 ];
 
-function getApiUrl(model: string): string {
-  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-}
-
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+
+const MAX_RETRY_PER_MODEL = 2;
+const RETRY_DELAY_MS = 2500;
+const RETRYABLE_STATUS = [429, 500, 502, 503, 504];
 
 // =============================================================================
 // TYPES
@@ -46,21 +39,85 @@ export type PolishOptions = {
 };
 
 // =============================================================================
+// HELPER — CORE REQUEST dengan fallback
+// =============================================================================
+async function callGeminiWithFallback(payload: any): Promise<any> {
+  if (!API_KEY) {
+    throw new Error('Gemini API key belum diset. Hubungi administrator.');
+  }
+
+  let lastError: Error | null = null;
+  const attempted: string[] = [];
+
+  for (const model of GEMINI_MODELS) {
+    attempted.push(model);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+
+    for (let attempt = 1; attempt <= MAX_RETRY_PER_MODEL + 1; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          return await res.json();
+        }
+
+        const isRetryable = RETRYABLE_STATUS.includes(res.status);
+        let serverMsg = '';
+        try {
+          const errBody = await res.text();
+          const errJson = JSON.parse(errBody);
+          serverMsg = errJson?.error?.message ?? '';
+        } catch { /* ignore */ }
+
+        lastError = new Error(
+          serverMsg ? `[${model}] ${serverMsg}` : `[${model}] HTTP ${res.status}`
+        );
+
+        if (!isRetryable) break;
+
+        if (attempt <= MAX_RETRY_PER_MODEL) {
+          console.warn(`[ai] ${model} gagal (${res.status}), retry ${attempt}/${MAX_RETRY_PER_MODEL}...`);
+          await sleep(RETRY_DELAY_MS);
+        }
+      } catch (err: any) {
+        lastError = err;
+        if (attempt <= MAX_RETRY_PER_MODEL) await sleep(RETRY_DELAY_MS);
+      }
+    }
+
+    console.warn(`[ai] Model ${model} gagal, coba model berikutnya...`);
+  }
+
+  const errMsg = lastError?.message ?? 'Semua model AI gagal.';
+  if (errMsg.includes('UNAVAILABLE') || errMsg.includes('503')) {
+    throw new Error(
+      'Server AI sedang sibuk (high demand). Coba lagi dalam 1-2 menit.'
+    );
+  }
+  throw new Error(
+    `AI gagal merespons setelah mencoba: ${attempted.join(', ')}. Coba lagi nanti.`
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// =============================================================================
 // HEALTH CHECK
 // =============================================================================
-/** Cek apakah API key tersedia & model bisa diakses */
 export async function checkAiAvailable(): Promise<boolean> {
   if (!API_KEY) return false;
   try {
-    const res = await fetch(`${GEMINI_API_URL}?key=${API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Ping' }] }],
-        generationConfig: { maxOutputTokens: 5 },
-      }),
+    const data = await callGeminiWithFallback({
+      contents: [{ parts: [{ text: 'Ping' }] }],
+      generationConfig: { maxOutputTokens: 5 },
     });
-    return res.ok;
+    return Boolean(data);
   } catch {
     return false;
   }
@@ -69,10 +126,6 @@ export async function checkAiAvailable(): Promise<boolean> {
 // =============================================================================
 // MAIN — GENERATE RESUME NOTULENSI
 // =============================================================================
-/**
- * Generate resume/notulensi rapat dengan AI berdasarkan input mentah dari notulis.
- * Return structured data (JSON parsed).
- */
 export async function generateResumeNotulensi(
   input: {
     judul_rapat: string;
@@ -83,10 +136,6 @@ export async function generateResumeNotulensi(
     peserta_list?: string[];
   }
 ): Promise<ResumeNotulensiResult> {
-  if (!API_KEY) {
-    throw new Error('Gemini API key belum diset. Hubungi administrator.');
-  }
-
   const pesertaSection = input.peserta_list?.length
     ? `\n\nDaftar peserta: ${input.peserta_list.join(', ')}`
     : '';
@@ -108,7 +157,7 @@ Kembalikan HANYA JSON valid (tanpa markdown code fence) dengan struktur berikut:
 
 {
   "ringkasan_eksekutif": "1-2 paragraf ringkasan inti rapat (100-200 kata)",
-  "pembahasan": "Poin-poin pembahasan terstruktur. Gunakan format:\\n- Poin 1\\n- Poin 2\\n- dst. Kalau ada sub-poin, gunakan indentasi 2 spasi.",
+  "pembahasan": "Poin-poin pembahasan terstruktur. Gunakan format:\\n- Poin 1\\n- Poin 2\\n- dst.",
   "keputusan": "Keputusan-keputusan yang diambil. Gunakan format:\\n1. Keputusan pertama\\n2. Keputusan kedua\\n- dst.",
   "action_items": [
     {
@@ -129,32 +178,18 @@ ATURAN PENTING:
 6. Output HARUS valid JSON. Jangan tambahkan penjelasan apapun di luar JSON.`;
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 4096,
-          responseMimeType: 'application/json',
-        },
-      }),
+    const data = await callGeminiWithFallback({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json',
+      },
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API error ${response.status}: ${errText.slice(0, 200)}`);
-    }
-
-    const data = await response.json();
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('AI tidak mengembalikan respons. Coba lagi.');
 
-    if (!rawText) {
-      throw new Error('AI tidak mengembalikan respons. Coba lagi.');
-    }
-
-    // Bersihkan markdown code fence kalau ada
     const cleaned = rawText
       .replace(/^```json\s*/i, '')
       .replace(/^```\s*/i, '')
@@ -163,7 +198,6 @@ ATURAN PENTING:
 
     const parsed = JSON.parse(cleaned) as ResumeNotulensiResult;
 
-    // Normalize action_items
     if (!Array.isArray(parsed.action_items)) {
       parsed.action_items = [];
     }
@@ -190,8 +224,6 @@ export async function polishText(
   text: string,
   mode: PolishOptions['mode'] = 'formal'
 ): Promise<string> {
-  if (!API_KEY) throw new Error('Gemini API key belum diset.');
-
   const modeInstruction = {
     formal: 'Ubah menjadi bahasa Indonesia formal & profesional, sesuai standar administrasi sekolah.',
     ringkas: 'Ringkas menjadi 2-3 kalimat padat tanpa kehilangan informasi penting.',
@@ -205,17 +237,11 @@ ${text}
 
 Output: Hanya teks hasil, tanpa penjelasan tambahan.`;
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
-    }),
+  const data = await callGeminiWithFallback({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
   });
 
-  if (!response.ok) throw new Error(`Gemini API error ${response.status}`);
-  const data = await response.json();
   const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!result) throw new Error('AI tidak mengembalikan respons.');
   return result.trim();
@@ -225,23 +251,17 @@ Output: Hanya teks hasil, tanpa penjelasan tambahan.`;
 // AUTO-TITLE
 // =============================================================================
 export async function generateJudulRapat(pembahasan: string): Promise<string> {
-  if (!API_KEY) throw new Error('Gemini API key belum diset.');
-
   const prompt = `Berdasarkan catatan rapat berikut, buat judul rapat yang singkat (maks 60 karakter), formal, dan menggambarkan inti rapat. Output: HANYA judul, tanpa tanda kutip atau penjelasan.
 
 Catatan:
 ${pembahasan.slice(0, 1500)}`;
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.5, maxOutputTokens: 100 },
-    }),
+  const data = await callGeminiWithFallback({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.5, maxOutputTokens: 100 },
   });
 
-  if (!response.ok) throw new Error(`Gemini API error ${response.status}`);
-  const data = await response.json();
-  return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim().replace(/^["']|["']$/g, '');
+  return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
+    .trim()
+    .replace(/^["']|["']$/g, '');
 }
