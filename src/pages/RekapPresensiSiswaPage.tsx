@@ -27,8 +27,9 @@ const SUMMARY_HEADERS = [
 ];
 const LOG_HEADERS = ['Tanggal', 'NISN', 'Nama Siswa', 'Kelas', 'Status', 'Keterangan'];
 
+// ✅ Fixed: siswaId ubah jadi number (sesuai tipe siswa_id dari DB)
 interface StudentSummary {
-  siswaId: string;
+  siswaId: number;
   nisn: string;
   nama: string;
   kelas: string;
@@ -145,11 +146,13 @@ export function RekapPresensiSiswaPage() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, filterKelas, filterJadwal, guru, isAdmin]);
 
   // 3. Kalkulasi Ringkasan Akumulasi Per Siswa
   const studentSummaries: StudentSummary[] = useMemo(() => {
-    const summaryMap = new Map<string, StudentSummary>();
+    // ✅ Fixed: Map<number, ...> karena siswa_id adalah number
+    const summaryMap = new Map<number, StudentSummary>();
 
     list.forEach((p) => {
       const siswaId = p.siswa_id;
