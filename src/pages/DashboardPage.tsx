@@ -89,7 +89,7 @@ export function DashboardPage() {
       const { data, error } = await supabase
         .from('v_pengumuman_aktif')
         .select('*')
-        .limit(3);
+        .order('tanggal_mulai', { ascending: false });
 
       if (error) {
         console.warn('[dashboard] pengumuman error:', error);
