@@ -1,5 +1,6 @@
 export type StatusKehadiranGuru = 
   | 'hadir'
+  | 'asisten'
   | 'sakit_tugas'
   | 'sakit_tanpa_tugas'
   | 'dinas_tugas'
