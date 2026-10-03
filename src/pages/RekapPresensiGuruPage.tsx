@@ -211,7 +211,7 @@ ${statsLines.join('\n')}
 🎯 *Persentase Kehadiran: ${stats.persentase}%*
 ━━━━━━━━━━━━━━━━━━━━
 
-${emoji} *ANALISA (${tier}):*
+${emoji} *(${tier}):*
 ${analisa}
 
 ━━━━━━━━━━━━━━━━━━━━
