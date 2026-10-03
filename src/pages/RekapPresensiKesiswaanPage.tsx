@@ -574,20 +574,20 @@ export function RekapPresensiKesiswaanPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800/80 bg-slate-950/60 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    <th className="py-4 px-5">Tanggal (WIB)</th>
-                    <th className="py-4 px-5">NISN</th>
-                    <th className="py-4 px-5">Nama Siswa</th>
-                    <th className="py-4 px-5">Kelas</th>
-                    <th className="py-4 px-5">L/P</th>
-                    <th className="py-4 px-5">Status</th>
-                    <th className="py-4 px-5">Keterangan</th>
-                    <th className="py-4 px-5 text-right">Aksi</th>
-                  </tr>
-                </thead>
+            <div className="max-h-[600px] overflow-auto relative">
+  <table className="w-full text-left border-collapse min-w-[1000px]">
+    <thead className="bg-slate-950">
+      <tr className="border-b border-slate-800/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Tanggal (WIB)</th>
+        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">NISN</th>
+        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
+        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Kelas</th>
+        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">L/P</th>
+        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Status</th>
+        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Keterangan</th>
+        <th className="py-4 px-5 text-right sticky top-0 z-20 bg-slate-950">Aksi</th>
+      </tr>
+    </thead>
                 <tbody className="divide-y divide-slate-800/50 text-xs text-slate-300">
                   {filteredRiwayatList.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
