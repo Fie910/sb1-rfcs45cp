@@ -337,7 +337,7 @@ export function RekapPresensiSiswaPage() {
         </div>
 
         {/* TABEL CONTENT */}
-        <div className="overflow-x-auto">
+        <div className="max-h-[600px] overflow-auto relative">
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="animate-spin text-indigo-400" size={36} />
