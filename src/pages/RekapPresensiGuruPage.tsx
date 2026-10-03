@@ -121,7 +121,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n✨ Luar biasa! Kehadiran Anda *nyaris sempurna*. Ini bukti dedikasi tinggi terhadap amanah mendidik.`,
       motivasi: `Setiap kali Anda masuk kelas dengan niat ibadah, Allah mencatatnya sebagai amal jariyah yang mengalir pahalanya sampai hari kiamat. Rasulullah ﷺ bersabda:\n\n_"Barangsiapa menempuh suatu jalan untuk mencari ilmu, maka Allah akan memudahkan jalannya menuju surga."_ (HR. Muslim)\n\nTeruslah istiqamah, Ustadz/Ustadzah!`,
       emoji: '🌟',
-      tier: 'Luar Biasa',
+      tier: '_LUAR BIASA_',
     };
   }
 
@@ -130,7 +130,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n🌟 Sangat baik! Kehadiran Anda *di atas standar harapan*. Konsistensi ini langka dan berharga.`,
       motivasi: `Menjadi guru bukan sekadar profesi, tapi *jalan dakwah* yang mulia. Setiap ilmu yang tersampaikan, setiap akhlak yang diteladankan, adalah investasi akherat. Jazaakallahu khairan atas kesungguhan Anda!`,
       emoji: '💎',
-      tier: 'Sangat Baik',
+      tier: '_SANGAT BAIK_',
     };
   }
 
@@ -139,7 +139,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n✅ Baik sekali! Kehadiran Anda di posisi yang sehat. Pertahankan ritme positif ini.`,
       motivasi: `Konsistensi adalah kunci keberkahan. Rasulullah ﷺ mencintai amal yang *kecil namun istiqamah*. Setiap kehadiran Anda adalah bukti cinta pada ilmu dan siswa. Barakallahu fiik!`,
       emoji: '🎯',
-      tier: 'Baik Sekali',
+      tier: '_BAIK SEKALI_',
     };
   }
 
@@ -148,7 +148,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n👍 Baik. Ada beberapa sesi yang perlu ditingkatkan. Anda punya fondasi kuat untuk naik ke level berikutnya.`,
       motivasi: `Setiap guru punya tantangan tersendiri. Yang penting bukan sempurna, tapi *selalu memperbaiki diri*. Niatkan setiap langkah ke kelas sebagai ibadah, dan rasakan keberkahan ilmunya.`,
       emoji: '📚',
-      tier: 'Baik',
+      tier: '_BAIK_',
     };
   }
 
@@ -157,7 +157,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n⚠️ Cukup baik, namun ada beberapa sesi yang alpa/tanpa tugas. Mari kita tingkatkan bersama.`,
       motivasi: `Setiap kelas yang tidak kita hadiri adalah *kesempatan pahala yang hilang*, dan siswa yang menunggu ilmu kita. Yuk, buat target pribadi: hadir 100% bulan depan. Kami siap membantu!`,
       emoji: '🌱',
-      tier: 'Cukup',
+      tier: '_CUKUP_',
     };
   }
 
@@ -165,7 +165,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
     analisa: `${deltaTxt}\n\n⚠️ Perlu perhatian khusus. Ada beberapa sesi alpa/tanpa keterangan yang signifikan.`,
     motivasi: `Bukan tentang menghakimi, tapi mengingatkan: *amanah mendidik adalah ibadah besar*. Setiap jam pelajaran yang dijalani dengan niat baik, insyaallah bernilai di sisi Allah. Kami percaya Anda bisa lebih baik!`,
     emoji: '🤝',
-    tier: 'Perlu Perhatian',
+    tier: '_PERLU PERHATIAN_',
   };
 }
 
