@@ -182,9 +182,7 @@ ${statsLines.join('\n')}
 🎯 *Persentase Kehadiran: ${stats.persentase}%*
 ━━━━━━━━━━━━━━━━━━━━
 
-🔍 *ANALISA PERSONAL${usedAi ? ' (AI)' : ''}:*
-
-_${analisa.ringkasan_karakter}_
+🔍 ${usedAi ? '' : ''} _${analisa.ringkasan_karakter}_
 
 ✨ *Kekuatan:*
 ${analisa.kekuatan}
@@ -194,8 +192,7 @@ ${analisa.area_perbaikan}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-💡 *MOTIVASI:*
-${analisa.motivasi_personal}
+💡 ${analisa.motivasi_personal}
 
 ━━━━━━━━━━━━━━━━━━━━
 
