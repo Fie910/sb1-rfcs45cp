@@ -1,4 +1,4 @@
-//home/project/src/pages/RekapAgendaPage.tsx
+//src/pages/RekapAgendaPage.tsx
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Loader2,
