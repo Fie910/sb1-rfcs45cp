@@ -252,8 +252,24 @@ export function RekapPresensiGuruPage() {
       }
     });
 
-    const results = Array.from(map.values()).map((row) => {
-      row.persentase = row.total > 0 ? Math.round((row.hadir / row.total) * 100) : 0;
+        const results = Array.from(map.values()).map((row) => {
+      // ✅ Bobot nilai kehadiran (berbasis kontribusi):
+      //   Hadir                   → 1
+      //   Sakit (+Tugas)          → 0.25
+      //   Izin (+Tugas)           → 0.25
+      //   Dinas (-Tugas)          → 0.5
+      //   Dinas (+Tugas)          → 1
+      //   Sakit/Izin (-Tugas)     → 0
+      //   Alpa/Tanpa Keterangan   → 0
+      const nilaiKehadiran =
+        row.hadir * 1 +
+        row.sakitTugas * 0.25 +
+        row.izinTugas * 0.25 +
+        row.dinasTanpaTugas * 0.5 +
+        row.dinasTugas * 1;
+
+      row.persentase =
+        row.total > 0 ? Math.round((nilaiKehadiran / row.total) * 100) : 0;
       return row;
     });
 
