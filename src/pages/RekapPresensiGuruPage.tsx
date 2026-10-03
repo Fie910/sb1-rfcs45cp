@@ -81,8 +81,8 @@ const DETAIL_HEADERS = [
 const DOA_ARAB = 'جَزَاكُمُ اللهُ خَيْرًا كَثِيْرًا';
 const DOA_LATIN = 'Jazaakumullahu khayran katsiran';
 const DOA_ARTI = '"Semoga Allah membalas kalian dengan kebaikan yang banyak"';
-const SALAM_PEMBUKA = 'Bismillaahi Ar-Rahmaani Ar-Rahiimi';
-const SALAM_PENUTUP = 'Barakallahu fiikum';
+const SALAM_PEMBUKA = '_Bismillaahi Ar-Rahmaani Ar-Rahiimi_';
+const SALAM_PENUTUP = '_Barakallahu fiikum_';
 
 // =============================================================================
 // HELPER — Normalisasi Nomor HP & Build WA Link
