@@ -408,24 +408,24 @@ export function RekapPresensiGuruPage() {
             />
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
-                  {DETAIL_HEADERS.map((h, idx) => (
-                    <th
-                      key={h}
-                      className={`p-4 whitespace-nowrap ${
-                        idx === 0
-                          ? 'sticky left-0 z-20 bg-slate-950 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]'
-                          : ''
-                      }`}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+          <div className="max-h-[600px] overflow-auto relative">
+  <table className="w-full text-left border-collapse min-w-[1000px]">
+    <thead>
+      <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
+        {DETAIL_HEADERS.map((h, idx) => (
+          <th
+            key={h}
+            className={`p-4 whitespace-nowrap sticky top-0 bg-slate-950 ${
+              idx === 0
+                ? 'left-0 z-30 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]'
+                : 'z-20'
+            }`}
+          >
+            {h}
+          </th>
+        ))}
+      </tr>
+    </thead>
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
                   <tr>
