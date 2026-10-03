@@ -344,19 +344,19 @@ export function RekapPresensiSiswaPage() {
             </div>
           ) : viewMode === 'summary' ? (
             <table className="w-full text-sm text-left">
-              <thead className="bg-slate-950/60 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">
-                <tr>
-                  <th className="px-5 py-4">NISN</th>
-                  <th className="px-5 py-4">Nama Siswa</th>
-                  <th className="px-5 py-4">Kelas</th>
-                  <th className="text-center px-3 py-4 text-emerald-400 bg-emerald-500/5">Hadir</th>
-                  <th className="text-center px-3 py-4 text-amber-400 bg-amber-500/5">Sakit</th>
-                  <th className="text-center px-3 py-4 text-blue-400 bg-blue-500/5">Izin</th>
-                  <th className="text-center px-3 py-4 text-rose-400 bg-rose-500/5">Alpa</th>
-                  <th className="text-center px-3 py-4">Total KBM</th>
-                  <th className="text-center px-5 py-4">% Kehadiran</th>
-                </tr>
-              </thead>
+              <thead className="bg-slate-950 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">
+  <tr>
+    <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">NISN</th>
+    <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
+    <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">Kelas</th>
+    <th className="text-center px-3 py-4 text-emerald-400 sticky top-0 z-20 bg-slate-950">Hadir</th>
+    <th className="text-center px-3 py-4 text-amber-400 sticky top-0 z-20 bg-slate-950">Sakit</th>
+    <th className="text-center px-3 py-4 text-blue-400 sticky top-0 z-20 bg-slate-950">Izin</th>
+    <th className="text-center px-3 py-4 text-rose-400 sticky top-0 z-20 bg-slate-950">Alpa</th>
+    <th className="text-center px-3 py-4 sticky top-0 z-20 bg-slate-950">Total KBM</th>
+    <th className="text-center px-5 py-4 sticky top-0 z-20 bg-slate-950">% Kehadiran</th>
+  </tr>
+</thead>
               <tbody className="divide-y divide-slate-800/60">
                 {studentSummaries.length === 0 ? (
                   <tr>
