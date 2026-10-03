@@ -1,24 +1,19 @@
 //src/pages/RekapPresensiGuruPage.tsx
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
-  Loader2,
-  UserCheck,
-  Calendar,
-  Filter,
-  FileText,
-  BarChart3,
-  Users,
-  BookOpen,
-  MessageCircle,
-  Copy,
-  Sparkles,
-  TrendingUp,
-  Award,
+  Loader2, UserCheck, Calendar, Filter, FileText, BarChart3, Users, BookOpen,
+  MessageCircle, Copy, Sparkles, TrendingUp, UserCog,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import {
+  generateAnalisaKehadiran,
+  isAiAvailable,
+  type AnalisaKehadiranAi,
+  type RecordForAi,
+} from '@/lib/analisaKehadiranAi';
 import type { Guru } from '@/types/database';
 
 // =============================================================================
@@ -30,21 +25,12 @@ interface PresensiGuruPiketRekap {
   guru_id: string;
   status: string;
   catatan: string | null;
-  gurus?: {
-    id: string;
-    nama_lengkap: string;
-  };
+  gurus?: { id: string; nama_lengkap: string };
   jadwal_kbmjps?: {
     id: number;
     jam_ke: number;
-    kelas?: {
-      id: number;
-      nama_kelas: string;
-    };
-    mata_pelajarans?: {
-      id: number;
-      nama_mapel: string;
-    };
+    kelas?: { id: number; nama_kelas: string };
+    mata_pelajarans?: { id: number; nama_mapel: string };
   };
 }
 
@@ -55,6 +41,7 @@ interface RekapSummaryRow {
   mapelNama?: string;
   total: number;
   hadir: number;
+  asisten: number;
   sakitTugas: number;
   sakitTanpaTugas: number;
   izinTugas: number;
@@ -66,35 +53,25 @@ interface RekapSummaryRow {
 }
 
 const DETAIL_HEADERS = [
-  'Nama Guru',
-  'Tanggal',
-  'Mata Pelajaran',
-  'Jam Ke',
-  'Kelas',
-  'Status Kehadiran',
-  'Catatan',
+  'Nama Guru', 'Tanggal', 'Mata Pelajaran', 'Jam Ke', 'Kelas',
+  'Status Kehadiran', 'Catatan',
 ];
 
 // =============================================================================
-// KONSTANTA DOA & MOTIVASI
+// KONSTANTA DOA
 // =============================================================================
 const DOA_ARAB = 'جَزَاكُمُ اللهُ خَيْرًا كَثِيْرًا';
-const DOA_LATIN = 'Jazaakumullahu khayran katsiran';
-const DOA_ARTI = '"Semoga Allah membalas kalian dengan kebaikan yang banyak"';
 const SALAM_PEMBUKA = 'Bismillaahi Ar-Rahmaani Ar-Rahiimi';
 const SALAM_PENUTUP = 'Barakallahu fiikum';
 
 // =============================================================================
-// HELPER — Normalisasi Nomor HP & Build WA Link
+// HELPER — Phone & WA
 // =============================================================================
 function normalizePhone(input: string | null | undefined): string {
   if (!input) return '';
   let digits = input.replace(/\D/g, '');
-  if (digits.startsWith('0')) {
-    digits = '62' + digits.slice(1);
-  } else if (digits.startsWith('8')) {
-    digits = '62' + digits;
-  }
+  if (digits.startsWith('0')) digits = '62' + digits.slice(1);
+  else if (digits.startsWith('8')) digits = '62' + digits;
   return digits;
 }
 
@@ -105,67 +82,62 @@ function buildWaLink(phone: string | null | undefined, message: string): string 
 }
 
 // =============================================================================
-// HELPER — Analisa & Motivasi Berbasis Persentase
+// HELPER — Analisa Fallback (threshold)
 // =============================================================================
-function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
+function getAnalisaFallback(persentase: number, avgSekolah: number): AnalisaKehadiranAi {
   const delta = persentase - avgSekolah;
   const deltaTxt =
     delta > 3
-      ? `📈 *${delta.toFixed(1)}% di atas rata-rata sekolah* (${avgSekolah}%)`
+      ? `📈 ${delta.toFixed(1)}% di atas rata-rata sekolah (${avgSekolah}%)`
       : delta < -3
-      ? `📉 *${Math.abs(delta).toFixed(1)}% di bawah rata-rata sekolah* (${avgSekolah}%)`
-      : `➖ *Setara dengan rata-rata sekolah* (${avgSekolah}%)`;
+      ? `📉 ${Math.abs(delta).toFixed(1)}% di bawah rata-rata sekolah (${avgSekolah}%)`
+      : `➖ Setara dengan rata-rata sekolah (${avgSekolah}%)`;
 
   if (persentase >= 95) {
     return {
-      analisa: `${deltaTxt}\n\n✨ Luar biasa! Kehadiran Anda *nyaris sempurna*. Ini bukti dedikasi tinggi terhadap amanah mendidik.`,
-      motivasi: `Setiap kali Anda masuk kelas dengan niat ibadah, Allah mencatatnya sebagai amal jariyah yang mengalir pahalanya sampai hari kiamat. Rasulullah ﷺ bersabda:\n\n_"Barangsiapa menempuh suatu jalan untuk mencari ilmu, maka Allah akan memudahkan jalannya menuju surga."_ (HR. Muslim)\n\nTeruslah istiqamah, Ustadz/Ustadzah!`,
-      emoji: '🌟',
-      tier: 'LUAR BIASA',
+      ringkasan_karakter: `Kehadiran nyaris sempurna. ${deltaTxt}`,
+      kekuatan: 'Dedikasi tinggi terhadap amanah mendidik, konsisten sepanjang periode.',
+      area_perbaikan: 'Pertahankan ritme positif ini. Jadikan teladan bagi rekan sejawat.',
+      motivasi_personal: 'Setiap langkah ke kelas dengan niat ibadah adalah amal jariyah yang mengalir pahalanya. Rasulullah ﷺ bersabda: "Barangsiapa menempuh jalan mencari ilmu, Allah mudahkan jalannya ke surga." (HR. Muslim)',
     };
   }
-
   if (persentase >= 90) {
     return {
-      analisa: `${deltaTxt}\n\n🌟 Sangat baik! Kehadiran Anda *di atas standar harapan*. Konsistensi ini langka dan berharga.`,
-      motivasi: `Menjadi guru bukan sekadar profesi, tapi *jalan dakwah* yang mulia. Setiap ilmu yang tersampaikan, setiap akhlak yang diteladankan, adalah investasi akherat. Jazaakallahu khairan atas kesungguhan Anda!`,
-      emoji: '💎',
-      tier: 'SANGAT BAIK',
+      ringkasan_karakter: `Kehadiran sangat baik. ${deltaTxt}`,
+      kekuatan: 'Konsistensi tinggi yang langka dan berharga.',
+      area_perbaikan: 'Kurangi sesi tanpa tugas saat berhalangan untuk hasil optimal.',
+      motivasi_personal: 'Menjadi guru bukan sekadar profesi, tapi jalan dakwah yang mulia. Setiap ilmu yang tersampaikan adalah investasi akherat.',
     };
   }
-
   if (persentase >= 85) {
     return {
-      analisa: `${deltaTxt}\n\n✅ Baik sekali! Kehadiran Anda di posisi yang sehat. Pertahankan ritme positif ini.`,
-      motivasi: `Konsistensi adalah kunci keberkahan. Rasulullah ﷺ mencintai amal yang *kecil namun istiqamah*. Setiap kehadiran Anda adalah bukti cinta pada ilmu dan siswa. Barakallahu fiik!`,
-      emoji: '🎯',
-      tier: 'BAIK SEKALI',
+      ringkasan_karakter: `Kehadiran di posisi sehat. ${deltaTxt}`,
+      kekuatan: 'Ritme kehadiran stabil, menunjukkan kedisiplinan.',
+      area_perbaikan: 'Tingkatkan kehadiran fisik atau titipan tugas saat berhalangan.',
+      motivasi_personal: 'Rasulullah ﷺ mencintai amal yang kecil namun istiqamah. Setiap kehadiran Anda adalah bukti cinta pada ilmu dan siswa.',
     };
   }
-
   if (persentase >= 75) {
     return {
-      analisa: `${deltaTxt}\n\n👍 Baik. Ada beberapa sesi yang perlu ditingkatkan. Anda punya fondasi kuat untuk naik ke level berikutnya.`,
-      motivasi: `Setiap guru punya tantangan tersendiri. Yang penting bukan sempurna, tapi *selalu memperbaiki diri*. Niatkan setiap langkah ke kelas sebagai ibadah, dan rasakan keberkahan ilmunya.`,
-      emoji: '📚',
-      tier: 'BAIK',
+      ringkasan_karakter: `Kehadiran baik dengan beberapa catatan. ${deltaTxt}`,
+      kekuatan: 'Punya fondasi kuat untuk naik ke level berikutnya.',
+      area_perbaikan: 'Identifikasi penyebab sesi yang tidak dihadiri, dan atasi secara sistematis.',
+      motivasi_personal: 'Setiap guru punya tantangan tersendiri. Yang penting bukan sempurna, tapi selalu memperbaiki diri.',
     };
   }
-
   if (persentase >= 60) {
     return {
-      analisa: `${deltaTxt}\n\n⚠️ Cukup baik, namun ada beberapa sesi yang alpa/tanpa tugas. Mari kita tingkatkan bersama.`,
-      motivasi: `Setiap kelas yang tidak kita hadiri adalah *kesempatan pahala yang hilang*, dan siswa yang menunggu ilmu kita. Yuk, buat target pribadi: hadir 100% bulan depan. Kami siap membantu!`,
-      emoji: '🌱',
-      tier: 'CUKUP',
+      ringkasan_karakter: `Kehadiran cukup, perlu peningkatan. ${deltaTxt}`,
+      kekuatan: 'Kemauan untuk terus melangkah sudah terlihat dari sebagian besar sesi terpenuhi.',
+      area_perbaikan: 'Buat target pribadi: hadir 100% bulan depan, atau selalu titipkan tugas saat berhalangan.',
+      motivasi_personal: 'Setiap kelas yang tidak kita hadiri adalah kesempatan pahala yang hilang, dan siswa yang menunggu ilmu kita. Kami siap membantu!',
     };
   }
-
   return {
-    analisa: `${deltaTxt}\n\n⚠️ Perlu perhatian khusus. Ada beberapa sesi alpa/tanpa keterangan yang signifikan.`,
-    motivasi: `Bukan tentang menghakimi, tapi mengingatkan: *amanah mendidik adalah ibadah besar*. Setiap jam pelajaran yang dijalani dengan niat baik, insyaallah bernilai di sisi Allah. Kami percaya Anda bisa lebih baik!`,
-    emoji: '🤝',
-    tier: 'PERLU PERHATIAN',
+    ringkasan_karakter: `Kehadiran perlu perhatian khusus. ${deltaTxt}`,
+    kekuatan: 'Kesempatan besar untuk transformasi positif sudah terbuka.',
+    area_perbaikan: 'Konsultasi dengan pimpinan/kepala divisi tentang kendala yang dihadapi. Buat rencana perbaikan konkret.',
+    motivasi_personal: 'Amanah mendidik adalah ibadah besar. Setiap jam pelajaran yang dijalani dengan niat baik, insyaallah bernilai di sisi Allah. Kami percaya Anda bisa lebih baik!',
   };
 }
 
@@ -176,17 +148,14 @@ function buildWaMessage(
   guruNama: string,
   periodeLabel: string,
   stats: RekapSummaryRow,
-  avgSekolah: number,
+  analisa: AnalisaKehadiranAi,
+  usedAi: boolean,
   namaSekolah: string
 ): string {
-  const { analisa, motivasi, emoji, tier } = getAnalisaDanMotivasi(
-    stats.persentase,
-    avgSekolah
-  );
-
   const statsLines: string[] = [];
   statsLines.push(`• Total JP: *${stats.total}*`);
   statsLines.push(`• Hadir: *${stats.hadir}* JP`);
+  if (stats.asisten > 0) statsLines.push(`• Asisten Guru: ${stats.asisten} JP`);
   if (stats.sakitTugas > 0) statsLines.push(`• Sakit (+Tugas): ${stats.sakitTugas} JP`);
   if (stats.sakitTanpaTugas > 0) statsLines.push(`• Sakit (-Tugas): ${stats.sakitTanpaTugas} JP`);
   if (stats.izinTugas > 0) statsLines.push(`• Izin (+Tugas): ${stats.izinTugas} JP`);
@@ -199,7 +168,9 @@ function buildWaMessage(
     ? `\n📚 *Mata Pelajaran:* ${stats.mapelNama}\n`
     : '';
 
-  return `*📊 REKAP KEHADIRAN MENGAJAR*
+  const aiBadge = usedAi ? ' ✨' : '';
+
+  return `*📊 REKAP KEHADIRAN MENGAJAR*${aiBadge}
 _${periodeLabel}_
 ${mapelLine}
 _${SALAM_PEMBUKA}_
@@ -211,12 +182,20 @@ ${statsLines.join('\n')}
 🎯 *Persentase Kehadiran: ${stats.persentase}%*
 ━━━━━━━━━━━━━━━━━━━━
 
-${emoji} *${tier}:*
-${analisa}
+🔍 *ANALISA PERSONAL${usedAi ? ' (AI)' : ''}:*
+
+_${analisa.ringkasan_karakter}_
+
+✨ *Kekuatan:*
+${analisa.kekuatan}
+
+🎯 *Area Perbaikan:*
+${analisa.area_perbaikan}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-💡 ${motivasi}
+💡 *MOTIVASI:*
+${analisa.motivasi_personal}
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -246,22 +225,30 @@ export function RekapPresensiGuruPage() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
+  // Loading state untuk AI (per baris)
+  const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
+
+  // Cache analisa AI per guru+periode — hindari panggil ulang
+  const aiCacheRef = useRef<Map<string, AnalisaKehadiranAi>>(new Map());
+
+  // Reset cache kalau periode berubah
+  useEffect(() => {
+    aiCacheRef.current.clear();
+  }, [startDate, endDate, rekapGroupBy]);
+
   // ==========================================================================
-  // FETCH INITIAL — guru + profil (no HP) + pengaturan sekolah
+  // FETCH INITIAL
   // ==========================================================================
   useEffect(() => {
     (async () => {
       const [guruRes, profilRes, sekolahRes] = await Promise.all([
         supabase.from('gurus').select('*').order('nama_lengkap', { ascending: true }),
-        supabase
-          .from('hris_profil_pegawai')
-          .select('id, no_hp, no_hp_darurat'),
+        supabase.from('hris_profil_pegawai').select('id, no_hp, no_hp_darurat'),
         supabase.from('pengaturan_sekolahs').select('nama_sekolah').limit(1).maybeSingle(),
       ]);
 
       setGurus((guruRes.data as Guru[]) || []);
 
-      // Map guru_id → nomor HP (prioritas no_hp, fallback no_hp_darurat)
       const map = new Map<string, string | null>();
       (profilRes.data || []).forEach((p: any) => {
         map.set(p.id, p.no_hp || p.no_hp_darurat || null);
@@ -285,15 +272,10 @@ export function RekapPresensiGuruPage() {
     let query = supabase
       .from('presensi_guru_piket')
       .select(`
-        id,
-        tanggal,
-        status,
-        catatan,
-        guru_id,
+        id, tanggal, status, catatan, guru_id,
         gurus:guru_id (id, nama_lengkap),
         jadwal_kbmjps:jadwal_kbmjp_id (
-          id,
-          jam_ke,
+          id, jam_ke,
           kelas:kelas_id (id, nama_kelas),
           mata_pelajarans:mapel_id (id, nama_mapel)
         )
@@ -302,9 +284,7 @@ export function RekapPresensiGuruPage() {
       .lte('tanggal', endDate)
       .order('tanggal', { ascending: false });
 
-    if (filterGuru) {
-      query = query.eq('guru_id', filterGuru);
-    }
+    if (filterGuru) query = query.eq('guru_id', filterGuru);
 
     const { data, error } = await query;
     if (error) {
@@ -322,7 +302,7 @@ export function RekapPresensiGuruPage() {
   }, [filterGuru, startDate, endDate]);
 
   // ==========================================================================
-  // HELPER LOKAL
+  // HELPERS
   // ==========================================================================
   const guruMap = useMemo(() => new Map(gurus.map((g) => [g.id, g.nama_lengkap])), [gurus]);
 
@@ -338,6 +318,7 @@ export function RekapPresensiGuruPage() {
   const getStatusBadge = (statusStr: string) => {
     const status = (statusStr || '').toLowerCase();
     if (status === 'hadir') return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+    if (status === 'asisten') return 'bg-teal-500/15 text-teal-400 border-teal-500/30';
     if (status.startsWith('sakit')) return 'bg-blue-500/15 text-blue-400 border-blue-500/30';
     if (status.startsWith('izin')) return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
     if (status.startsWith('dinas')) return 'bg-purple-500/15 text-purple-400 border-purple-500/30';
@@ -347,7 +328,7 @@ export function RekapPresensiGuruPage() {
   };
 
   // ==========================================================================
-  // DETAIL ROWS (untuk export)
+  // DETAIL ROWS (export)
   // ==========================================================================
   const detailRows = list.map((a) => [
     a.gurus?.nama_lengkap ?? guruMap.get(a.guru_id) ?? '-',
@@ -381,6 +362,7 @@ export function RekapPresensiGuruPage() {
           mapelNama: rekapGroupBy === 'guru_mapel' ? mapelNama : undefined,
           total: 0,
           hadir: 0,
+          asisten: 0,
           sakitTugas: 0,
           sakitTanpaTugas: 0,
           izinTugas: 0,
@@ -402,6 +384,8 @@ export function RekapPresensiGuruPage() {
 
       switch (st) {
         case 'hadir': row.hadir += 1; break;
+        case 'asisten':
+        case 'asisten_guru': row.asisten += 1; break;
         case 'sakit_tugas': row.sakitTugas += 1; break;
         case 'sakit_tanpa_tugas': row.sakitTanpaTugas += 1; break;
         case 'izin_tugas': row.izinTugas += 1; break;
@@ -425,8 +409,10 @@ export function RekapPresensiGuruPage() {
     });
 
     const results = Array.from(map.values()).map((row) => {
+      // ✅ Formula baru dengan Asisten (0.85)
       const nilaiKehadiran =
         row.hadir * 1 +
+        row.asisten * 0.85 +
         row.sakitTugas * 0.25 +
         row.izinTugas * 0.25 +
         row.dinasTanpaTugas * 0.5 +
@@ -441,7 +427,7 @@ export function RekapPresensiGuruPage() {
   }, [list, rekapGroupBy, guruMap]);
 
   // ==========================================================================
-  // RATA-RATA SEKOLAH (untuk analisa komparatif)
+  // RATA-RATA SEKOLAH
   // ==========================================================================
   const avgSekolah = useMemo(() => {
     if (rekapSummary.length === 0) return 0;
@@ -450,7 +436,7 @@ export function RekapPresensiGuruPage() {
   }, [rekapSummary]);
 
   // ==========================================================================
-  // HEADER LABEL PERIODE (untuk pesan WA)
+  // PERIODE LABEL
   // ==========================================================================
   const periodeLabel = useMemo(() => {
     const fmt = (d: string) => {
@@ -466,20 +452,79 @@ export function RekapPresensiGuruPage() {
   }, [startDate, endDate]);
 
   // ==========================================================================
-  // HANDLER — Kirim WA per Guru
+  // HANDLER — KIRIM WA DENGAN AI ANALISA
   // ==========================================================================
   const handleSendWa = useCallback(
-    (row: RekapSummaryRow) => {
+    async (row: RekapSummaryRow) => {
       const phone = guruPhoneMap.get(row.guruId);
       if (!phone) {
         showToast(
           'error',
-          `Nomor HP ${row.guruNama} tidak ditemukan. Lengkapi di menu HRIS → Profil Pegawai.`
+          `Nomor HP ${row.guruNama} tidak ditemukan. Lengkapi di HRIS → Profil Pegawai.`
         );
         return;
       }
 
-      const message = buildWaMessage(row.guruNama, periodeLabel, row, avgSekolah, namaSekolah);
+      // Siapkan records untuk AI
+      const guruRecords = list.filter((r) => r.guru_id === row.guruId);
+      const recordsForAi: RecordForAi[] = guruRecords.map((r) => ({
+        tanggal: r.tanggal,
+        mapel: r.jadwal_kbmjps?.mata_pelajarans?.nama_mapel ?? '-',
+        kelas: r.jadwal_kbmjps?.kelas?.nama_kelas ?? '-',
+        status: r.status,
+        catatan: r.catatan,
+      }));
+
+      const cacheKey = `${row.guruId}_${startDate}_${endDate}_${rekapGroupBy}`;
+      let analisa: AnalisaKehadiranAi;
+      let usedAi = false;
+
+      // Cek cache
+      const cached = aiCacheRef.current.get(cacheKey);
+      if (cached) {
+        analisa = cached;
+        usedAi = true;
+      } else if (isAiAvailable() && recordsForAi.length > 0) {
+        // Panggil AI
+        setAiLoadingKey(row.key);
+        try {
+          analisa = await generateAnalisaKehadiran(
+            row.guruNama,
+            periodeLabel,
+            recordsForAi,
+            {
+              total: row.total,
+              hadir: row.hadir,
+              asisten: row.asisten,
+              sakitTugas: row.sakitTugas,
+              izinTugas: row.izinTugas,
+              dinasTugas: row.dinasTugas,
+              persentase: row.persentase,
+            },
+            avgSekolah
+          );
+          aiCacheRef.current.set(cacheKey, analisa);
+          usedAi = true;
+        } catch (err: any) {
+          console.warn('[RekapPresensiGuru] AI gagal, fallback:', err);
+          showToast('info', 'AI tidak tersedia saat ini, memakai analisa standar');
+          analisa = getAnalisaFallback(row.persentase, avgSekolah);
+        } finally {
+          setAiLoadingKey(null);
+        }
+      } else {
+        // AI tidak tersedia
+        analisa = getAnalisaFallback(row.persentase, avgSekolah);
+      }
+
+      const message = buildWaMessage(
+        row.guruNama,
+        periodeLabel,
+        row,
+        analisa,
+        usedAi,
+        namaSekolah
+      );
       const link = buildWaLink(phone, message);
       if (!link) {
         showToast('error', 'Nomor HP tidak valid');
@@ -487,37 +532,50 @@ export function RekapPresensiGuruPage() {
       }
       window.open(link, '_blank', 'noopener,noreferrer');
     },
-    [guruPhoneMap, periodeLabel, avgSekolah, namaSekolah]
+    [guruPhoneMap, list, periodeLabel, avgSekolah, namaSekolah, startDate, endDate, rekapGroupBy]
   );
 
   // ==========================================================================
-  // HANDLER — Copy Pesan (kalau nomor HP tidak ada)
+  // HANDLER — COPY PESAN
   // ==========================================================================
   const handleCopyMessage = useCallback(
     async (row: RekapSummaryRow) => {
-      const message = buildWaMessage(row.guruNama, periodeLabel, row, avgSekolah, namaSekolah);
+      const cacheKey = `${row.guruId}_${startDate}_${endDate}_${rekapGroupBy}`;
+      const cached = aiCacheRef.current.get(cacheKey);
+      const analisa = cached ?? getAnalisaFallback(row.persentase, avgSekolah);
+      const usedAi = Boolean(cached);
+
+      const message = buildWaMessage(
+        row.guruNama,
+        periodeLabel,
+        row,
+        analisa,
+        usedAi,
+        namaSekolah
+      );
+
       try {
         await navigator.clipboard.writeText(message);
-        showToast('success', `Pesan untuk ${row.guruNama} disalin ke clipboard`);
+        showToast('success', `Pesan untuk ${row.guruNama} disalin`);
       } catch {
         showToast('error', 'Gagal menyalin pesan');
       }
     },
-    [periodeLabel, avgSekolah, namaSekolah]
+    [periodeLabel, avgSekolah, namaSekolah, startDate, endDate, rekapGroupBy]
   );
 
   // ==========================================================================
-  // EXPORT ROWS — Tambah kolom Aksi di akhir (tidak diexport, tapi ok)
+  // EXPORT HEADERS
   // ==========================================================================
   const rekapHeaders =
     rekapGroupBy === 'guru_mapel'
       ? [
-          'Nama Guru', 'Mata Pelajaran', 'Total JP', 'Hadir',
+          'Nama Guru', 'Mata Pelajaran', 'Total JP', 'Hadir', 'Asisten',
           'Sakit (+Tugas)', 'Sakit (-Tugas)', 'Izin (+Tugas)', 'Izin (-Tugas)',
           'Dinas (+Tugas)', 'Dinas (-Tugas)', 'Alpa', '% Kehadiran (Berbobot)',
         ]
       : [
-          'Nama Guru', 'Total JP', 'Hadir',
+          'Nama Guru', 'Total JP', 'Hadir', 'Asisten',
           'Sakit (+Tugas)', 'Sakit (-Tugas)', 'Izin (+Tugas)', 'Izin (-Tugas)',
           'Dinas (+Tugas)', 'Dinas (-Tugas)', 'Alpa', '% Kehadiran (Berbobot)',
         ];
@@ -527,6 +585,7 @@ export function RekapPresensiGuruPage() {
     ...(rekapGroupBy === 'guru_mapel' ? [r.mapelNama ?? '-'] : []),
     r.total,
     r.hadir,
+    r.asisten,
     r.sakitTugas,
     r.sakitTanpaTugas,
     r.izinTugas,
@@ -553,7 +612,7 @@ export function RekapPresensiGuruPage() {
         </p>
       </div>
 
-      {/* Filter Card */}
+      {/* Filter */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-[200px]">
@@ -573,7 +632,6 @@ export function RekapPresensiGuruPage() {
               emptyMessage="Guru tidak ditemukan"
             />
           </div>
-
           <div className="flex-1 min-w-[160px]">
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Calendar size={14} className="text-indigo-400" /> Dari Tanggal
@@ -585,7 +643,6 @@ export function RekapPresensiGuruPage() {
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm outline-none focus:border-indigo-500 transition-all font-medium cursor-pointer"
             />
           </div>
-
           <div className="flex-1 min-w-[160px]">
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Calendar size={14} className="text-indigo-400" /> Sampai Tanggal
@@ -600,7 +657,7 @@ export function RekapPresensiGuruPage() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-1">
         <button
           onClick={() => setActiveTab('detail')}
@@ -626,7 +683,7 @@ export function RekapPresensiGuruPage() {
         </button>
       </div>
 
-      {/* Tab 1: Detail Record */}
+      {/* Tab Detail */}
       {activeTab === 'detail' && (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           <div className="flex items-center justify-between p-5 border-b border-slate-800 flex-wrap gap-4 bg-slate-950/40">
@@ -666,15 +723,14 @@ export function RekapPresensiGuruPage() {
                   <tr>
                     <td colSpan={DETAIL_HEADERS.length} className="text-center py-16">
                       <Loader2 className="animate-spin text-indigo-400 mx-auto mb-2" size={28} />
-                      <span className="text-xs text-slate-400">Memuat data rekap presensi...</span>
                     </td>
                   </tr>
                 ) : list.length === 0 ? (
                   <tr>
                     <td colSpan={DETAIL_HEADERS.length} className="text-center py-16 text-slate-500">
-                      <UserCheck size={40} className="mx-auto mb-2 opacity-40 text-slate-600" />
+                      <UserCheck size={40} className="mx-auto mb-2 opacity-40" />
                       <p className="font-semibold text-slate-400">
-                        Tidak ada data presensi guru piket ditemukan.
+                        Tidak ada data presensi guru piket.
                       </p>
                     </td>
                   </tr>
@@ -692,7 +748,7 @@ export function RekapPresensiGuruPage() {
                         key={a.id}
                         className="group hover:bg-slate-800/30 transition-colors text-slate-200"
                       >
-                        <td className="p-4 whitespace-nowrap font-bold text-slate-100 sticky left-0 z-10 bg-slate-900 group-hover:bg-slate-800/90 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)] transition-colors">
+                        <td className="p-4 whitespace-nowrap font-bold text-slate-100 sticky left-0 z-10 bg-slate-900 group-hover:bg-slate-800/90 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                           {guruNama}
                         </td>
                         <td className="p-4 whitespace-nowrap font-medium text-slate-300">
@@ -725,9 +781,9 @@ export function RekapPresensiGuruPage() {
         </div>
       )}
 
-      {/* Tab 2: Rekapitulasi Persentase */}
+      {/* Tab Rekap */}
       {activeTab === 'rekap' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-0">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           <div className="flex items-center justify-between p-5 border-b border-slate-800 flex-wrap gap-4 bg-slate-950/40">
             <div className="flex items-center gap-4 flex-wrap">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
@@ -760,11 +816,17 @@ export function RekapPresensiGuruPage() {
                 </button>
               </div>
 
-              {/* ✅ Info rata-rata sekolah */}
               {avgSekolah > 0 && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
                   <TrendingUp size={13} />
                   Rata-rata Sekolah: {avgSekolah}%
+                </div>
+              )}
+
+              {isAiAvailable() && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold">
+                  <Sparkles size={13} />
+                  AI Aktif
                 </div>
               )}
             </div>
@@ -778,18 +840,20 @@ export function RekapPresensiGuruPage() {
             />
           </div>
 
-          {/* ✅ Legenda Bobot */}
+          {/* Legenda */}
           <div className="px-5 py-3 border-b border-slate-800 bg-slate-950/40">
             <details className="text-xs group">
               <summary className="cursor-pointer text-slate-400 hover:text-slate-200 font-semibold flex items-center gap-1.5 select-none">
-                <span className="text-indigo-400 group-open:rotate-90 transition-transform inline-block">▶</span>
-                ℹ️ Cara perhitungan persentase kehadiran (berbobot) & fitur WhatsApp
+                <span className="text-indigo-400 group-open:rotate-90 transition-transform inline-block">
+                  ▶
+                </span>
+                ℹ️ Cara perhitungan persentase berbobot & fitur AI + WhatsApp
               </summary>
               <div className="mt-3 ml-5 text-slate-500 leading-relaxed space-y-2">
                 <p className="text-slate-400">
-                  Sistem memberi bobot lebih tinggi kepada guru yang tetap berkontribusi meski tidak hadir fisik (memberi tugas):
+                  Sistem memberi bobot lebih tinggi kepada guru yang tetap berkontribusi:
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                   <div className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-1.5">
                     <span className="text-emerald-400 font-extrabold text-sm">1</span>
                     <span className="text-[11px] text-slate-300">Hadir</span>
@@ -797,6 +861,10 @@ export function RekapPresensiGuruPage() {
                   <div className="flex items-center gap-2 bg-purple-500/5 border border-purple-500/20 rounded-lg px-3 py-1.5">
                     <span className="text-purple-400 font-extrabold text-sm">1</span>
                     <span className="text-[11px] text-slate-300">Dinas (+Tugas)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-teal-500/5 border border-teal-500/20 rounded-lg px-3 py-1.5">
+                    <span className="text-teal-400 font-extrabold text-sm">0.85</span>
+                    <span className="text-[11px] text-slate-300">Asisten Guru</span>
                   </div>
                   <div className="flex items-center gap-2 bg-purple-500/5 border border-purple-500/20 rounded-lg px-3 py-1.5">
                     <span className="text-purple-300 font-extrabold text-sm">0.5</span>
@@ -818,16 +886,24 @@ export function RekapPresensiGuruPage() {
                 <p className="text-[11px] text-slate-500 italic mt-2">
                   Persentase = (Σ Nilai Berbobot ÷ Total Record) × 100%
                 </p>
-                <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-2">
-                  <MessageCircle size={12} />
-                  Tombol <strong>WA</strong> di kolom Aksi untuk mengirim rekap + analisa + motivasi + doa ke guru.
-                </p>
+                <div className="mt-3 bg-purple-500/5 border border-purple-500/20 rounded-lg p-3">
+                  <p className="text-[11px] text-purple-300 flex items-start gap-1.5 font-bold">
+                    <Sparkles size={12} className="mt-0.5 shrink-0" />
+                    Fitur AI Personal
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Saat klik <strong>WA</strong>, sistem akan meminta AI Gemini menganalisa
+                    seluruh riwayat kehadiran personal guru (tanggal, mapel, kelas, catatan) dan
+                    menghasilkan feedback yang <em>personal & kontekstual</em>, bukan template.
+                    Hasil di-cache per guru+periode untuk hemat quota.
+                  </p>
+                </div>
               </div>
             </details>
           </div>
 
           <div className="max-h-[600px] overflow-auto relative">
-            <table className="w-full text-left border-collapse min-w-[1300px]">
+            <table className="w-full text-left border-collapse min-w-[1400px]">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
                   <th className="p-4 whitespace-nowrap sticky top-0 left-0 z-30 bg-slate-950 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
@@ -843,6 +919,9 @@ export function RekapPresensiGuruPage() {
                   </th>
                   <th className="p-4 whitespace-nowrap text-center text-emerald-400 sticky top-0 z-20 bg-slate-950">
                     Hadir
+                  </th>
+                  <th className="p-4 whitespace-nowrap text-center text-teal-400 sticky top-0 z-20 bg-slate-950">
+                    Asisten
                   </th>
                   <th className="p-4 whitespace-nowrap text-center text-blue-400 sticky top-0 z-20 bg-slate-950">
                     Sakit (+Tugas)
@@ -878,9 +957,6 @@ export function RekapPresensiGuruPage() {
                   <tr>
                     <td colSpan={rekapHeaders.length + 1} className="text-center py-16">
                       <Loader2 className="animate-spin text-indigo-400 mx-auto mb-2" size={28} />
-                      <span className="text-xs text-slate-400">
-                        Mengalkulasi statistik kehadiran...
-                      </span>
                     </td>
                   </tr>
                 ) : rekapSummary.length === 0 ? (
@@ -889,21 +965,20 @@ export function RekapPresensiGuruPage() {
                       colSpan={rekapHeaders.length + 1}
                       className="text-center py-16 text-slate-500"
                     >
-                      <BarChart3 size={40} className="mx-auto mb-2 opacity-40 text-slate-600" />
-                      <p className="font-semibold text-slate-400">
-                        Tidak ada rekapitulasi data tersedia.
-                      </p>
+                      <BarChart3 size={40} className="mx-auto mb-2 opacity-40" />
+                      <p className="font-semibold text-slate-400">Tidak ada data rekapitulasi.</p>
                     </td>
                   </tr>
                 ) : (
                   rekapSummary.map((r) => {
                     const hasPhone = Boolean(guruPhoneMap.get(r.guruId));
+                    const isAiLoading = aiLoadingKey === r.key;
                     return (
                       <tr
                         key={r.key}
                         className="group hover:bg-slate-800/30 transition-colors text-slate-200"
                       >
-                        <td className="p-4 whitespace-nowrap font-bold text-slate-100 sticky left-0 z-10 bg-slate-900 group-hover:bg-slate-800/90 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)] transition-colors">
+                        <td className="p-4 whitespace-nowrap font-bold text-slate-100 sticky left-0 z-10 bg-slate-900 group-hover:bg-slate-800/90 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                           {r.guruNama}
                         </td>
                         {rekapGroupBy === 'guru_mapel' && (
@@ -916,6 +991,9 @@ export function RekapPresensiGuruPage() {
                         </td>
                         <td className="p-4 whitespace-nowrap text-center font-bold text-emerald-400">
                           {r.hadir}
+                        </td>
+                        <td className="p-4 whitespace-nowrap text-center font-semibold text-teal-400">
+                          {r.asisten}
                         </td>
                         <td className="p-4 whitespace-nowrap text-center text-blue-400 font-semibold">
                           {r.sakitTugas}
@@ -966,30 +1044,44 @@ export function RekapPresensiGuruPage() {
                           </div>
                         </td>
 
-                        {/* ✅ Kolom Aksi: WA + Copy */}
+                        {/* Kolom Aksi */}
                         <td className="p-4 whitespace-nowrap text-center">
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               onClick={() => handleSendWa(r)}
-                              disabled={!hasPhone}
+                              disabled={!hasPhone || isAiLoading}
                               className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
-                                hasPhone
-                                  ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                                  : 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-60'
+                                !hasPhone
+                                  ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-60'
+                                  : isAiLoading
+                                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/30 cursor-wait'
+                                  : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                               }`}
                               title={
-                                hasPhone
-                                  ? 'Kirim rekap via WhatsApp'
-                                  : 'Nomor HP tidak tersedia di profil HRIS'
+                                !hasPhone
+                                  ? 'Nomor HP tidak tersedia'
+                                  : isAiLoading
+                                  ? 'AI sedang menganalisa...'
+                                  : 'Kirim WA dengan analisa AI personal'
                               }
                             >
-                              <MessageCircle size={12} />
-                              WA
+                              {isAiLoading ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" />
+                                  AI...
+                                </>
+                              ) : (
+                                <>
+                                  <MessageCircle size={12} />
+                                  WA
+                                </>
+                              )}
                             </button>
                             <button
                               onClick={() => handleCopyMessage(r)}
-                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold transition cursor-pointer"
-                              title="Copy pesan ke clipboard"
+                              disabled={isAiLoading}
+                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
+                              title="Copy pesan"
                             >
                               <Copy size={11} />
                             </button>
