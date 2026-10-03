@@ -290,7 +290,7 @@ export function RekapPresensiGuruPage() {
           'Dinas (+Tugas)',
           'Dinas (-Tugas)',
           'Alpa',
-          '% Kehadiran',
+          '% Kehadiran (Berbobot)',
         ]
       : [
           'Nama Guru',
@@ -303,7 +303,7 @@ export function RekapPresensiGuruPage() {
           'Dinas (+Tugas)',
           'Dinas (-Tugas)',
           'Alpa',
-          '% Kehadiran',
+          '% Kehadiran (Berbobot)',
         ];
 
   const rekapRows = rekapSummary.map((r) => [
