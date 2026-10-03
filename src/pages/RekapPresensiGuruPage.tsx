@@ -211,22 +211,16 @@ ${statsLines.join('\n')}
 🎯 *Persentase Kehadiran: ${stats.persentase}%*
 ━━━━━━━━━━━━━━━━━━━━
 
-${emoji} *(${tier}):*
+${emoji} *${tier}:*
 ${analisa}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-💡 *MOTIVASI:*
-${motivasi}
+💡 ${motivasi}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🤲 *TERIMA KASIH & DOA*
-
-${DOA_ARAB}
-
-_${DOA_LATIN}_
-${DOA_ARTI}
+🤲 ${DOA_ARAB}
 
 ${SALAM_PENUTUP},
 *${namaSekolah}*`;
