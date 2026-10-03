@@ -343,7 +343,7 @@ export function RekapPresensiSiswaPage() {
               <Loader2 className="animate-spin text-indigo-400" size={36} />
             </div>
           ) : viewMode === 'summary' ? (
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left min-w-[1000px]">
               <thead className="bg-slate-950 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">
   <tr>
     <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">NISN</th>
