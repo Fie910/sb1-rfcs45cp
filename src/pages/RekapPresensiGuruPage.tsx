@@ -551,6 +551,50 @@ export function RekapPresensiGuruPage() {
             />
           </div>
 
+          {/* ✅ Legenda Bobot Persentase */}
+          <div className="px-5 py-3 border-b border-slate-800 bg-slate-950/40">
+            <details className="text-xs group">
+              <summary className="cursor-pointer text-slate-400 hover:text-slate-200 font-semibold flex items-center gap-1.5 select-none">
+                <span className="text-indigo-400 group-open:rotate-90 transition-transform inline-block">▶</span>
+                ℹ️ Cara perhitungan persentase kehadiran (berbobot)
+              </summary>
+              <div className="mt-3 ml-5 text-slate-500 leading-relaxed space-y-2">
+                <p className="text-slate-400">
+                  Sistem memberi bobot lebih tinggi kepada guru yang tetap berkontribusi meski tidak hadir fisik (memberi tugas):
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                  <div className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-1.5">
+                    <span className="text-emerald-400 font-extrabold text-sm">1</span>
+                    <span className="text-[11px] text-slate-300">Hadir</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-purple-500/5 border border-purple-500/20 rounded-lg px-3 py-1.5">
+                    <span className="text-purple-400 font-extrabold text-sm">1</span>
+                    <span className="text-[11px] text-slate-300">Dinas (+Tugas)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-purple-500/5 border border-purple-500/20 rounded-lg px-3 py-1.5">
+                    <span className="text-purple-300 font-extrabold text-sm">0.5</span>
+                    <span className="text-[11px] text-slate-300">Dinas (-Tugas)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-1.5">
+                    <span className="text-blue-400 font-extrabold text-sm">0.25</span>
+                    <span className="text-[11px] text-slate-300">Sakit (+Tugas)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-1.5">
+                    <span className="text-amber-400 font-extrabold text-sm">0.25</span>
+                    <span className="text-[11px] text-slate-300">Izin (+Tugas)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-rose-500/5 border border-rose-500/20 rounded-lg px-3 py-1.5">
+                    <span className="text-rose-400 font-extrabold text-sm">0</span>
+                    <span className="text-[11px] text-slate-300">Sakit/Izin (-Tugas), Alpa</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 italic mt-2">
+                  Persentase = (Σ Nilai Berbobot ÷ Total Record) × 100%
+                </p>
+              </div>
+            </details>
+          </div>
+
           <div className="max-h-[600px] overflow-auto relative">
   <table className="w-full text-left border-collapse min-w-[1200px]">
     <thead>
