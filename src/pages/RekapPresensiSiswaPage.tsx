@@ -405,16 +405,16 @@ export function RekapPresensiSiswaPage() {
               </tbody>
             </table>
           ) : (
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-950/60 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">
-                <tr>
-                  {LOG_HEADERS.map((h) => (
-                    <th key={h} className="px-5 py-4">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+            <table className="w-full text-sm text-left min-w-[1000px]">
+              <thead className="bg-slate-950 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">
+  <tr>
+    {LOG_HEADERS.map((h) => (
+      <th key={h} className="px-5 py-4 sticky top-0 z-20 bg-slate-950">
+        {h}
+      </th>
+    ))}
+  </tr>
+</thead>
               <tbody className="divide-y divide-slate-800/60">
                 {list.length === 0 ? (
                   <tr>
