@@ -535,28 +535,28 @@ export function RekapPresensiGuruPage() {
             />
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
-                  <th className="p-4 whitespace-nowrap sticky left-0 z-20 bg-slate-950 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
-                    Nama Guru
-                  </th>
-                  {rekapGroupBy === 'guru_mapel' && (
-                    <th className="p-4 whitespace-nowrap">Mata Pelajaran</th>
-                  )}
-                  <th className="p-4 whitespace-nowrap text-center">Total JP</th>
-                  <th className="p-4 whitespace-nowrap text-center text-emerald-400">Hadir</th>
-                  <th className="p-4 whitespace-nowrap text-center text-blue-400">Sakit (+Tugas)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-sky-400">Sakit (-Tugas)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-amber-400">Izin (+Tugas)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-amber-300">Izin (-Tugas)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-purple-400">Dinas (+Tugas)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-purple-300">Dinas (-Tugas)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-rose-400">Alpa</th>
-                  <th className="p-4 whitespace-nowrap text-center">% Kehadiran</th>
-                </tr>
-              </thead>
+          <div className="max-h-[600px] overflow-auto relative">
+  <table className="w-full text-left border-collapse min-w-[1200px]">
+    <thead>
+      <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
+        <th className="p-4 whitespace-nowrap sticky top-0 left-0 z-30 bg-slate-950 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
+          Nama Guru
+        </th>
+        {rekapGroupBy === 'guru_mapel' && (
+          <th className="p-4 whitespace-nowrap sticky top-0 z-20 bg-slate-950">Mata Pelajaran</th>
+        )}
+        <th className="p-4 whitespace-nowrap text-center sticky top-0 z-20 bg-slate-950">Total JP</th>
+        <th className="p-4 whitespace-nowrap text-center text-emerald-400 sticky top-0 z-20 bg-slate-950">Hadir</th>
+        <th className="p-4 whitespace-nowrap text-center text-blue-400 sticky top-0 z-20 bg-slate-950">Sakit (+Tugas)</th>
+        <th className="p-4 whitespace-nowrap text-center text-sky-400 sticky top-0 z-20 bg-slate-950">Sakit (-Tugas)</th>
+        <th className="p-4 whitespace-nowrap text-center text-amber-400 sticky top-0 z-20 bg-slate-950">Izin (+Tugas)</th>
+        <th className="p-4 whitespace-nowrap text-center text-amber-300 sticky top-0 z-20 bg-slate-950">Izin (-Tugas)</th>
+        <th className="p-4 whitespace-nowrap text-center text-purple-400 sticky top-0 z-20 bg-slate-950">Dinas (+Tugas)</th>
+        <th className="p-4 whitespace-nowrap text-center text-purple-300 sticky top-0 z-20 bg-slate-950">Dinas (-Tugas)</th>
+        <th className="p-4 whitespace-nowrap text-center text-rose-400 sticky top-0 z-20 bg-slate-950">Alpa</th>
+        <th className="p-4 whitespace-nowrap text-center sticky top-0 z-20 bg-slate-950">% Kehadiran</th>
+      </tr>
+    </thead>
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
                   <tr>
