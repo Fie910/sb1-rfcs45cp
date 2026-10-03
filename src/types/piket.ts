@@ -1,3 +1,4 @@
+//src/types/piket.ts
 export type StatusKehadiranGuru = 
   | 'hadir'
   | 'asisten'
