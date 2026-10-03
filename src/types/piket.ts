@@ -29,6 +29,7 @@ export interface OptionStatus {
 
 export const STATUS_OPTIONS: OptionStatus[] = [
   { value: 'hadir', label: 'Hadir', badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
+  { value: 'asisten', label: 'Asisten Guru', badgeClass: 'bg-teal-500/15 text-teal-400 border-teal-500/30' },
   { value: 'sakit_tugas', label: 'Sakit (Ada Tugas)', badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
   { value: 'sakit_tanpa_tugas', label: 'Sakit (Tanpa Tugas)', badgeClass: 'bg-amber-600/10 text-amber-500 border-amber-600/30' },
   { value: 'dinas_tugas', label: 'Dinas (Ada Tugas)', badgeClass: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
