@@ -1021,6 +1021,7 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
 
           {/* DESKTOP */}
           <div className="hidden sm:block bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-950/50 border-b border-white/10 text-slate-400 text-xs uppercase font-mono tracking-wider">
                 <tr>
@@ -1134,6 +1135,7 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}
