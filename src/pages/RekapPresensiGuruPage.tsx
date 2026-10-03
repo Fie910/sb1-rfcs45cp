@@ -81,8 +81,8 @@ const DETAIL_HEADERS = [
 const DOA_ARAB = 'جَزَاكُمُ اللهُ خَيْرًا كَثِيْرًا';
 const DOA_LATIN = 'Jazaakumullahu khayran katsiran';
 const DOA_ARTI = '"Semoga Allah membalas kalian dengan kebaikan yang banyak"';
-const SALAM_PEMBUKA = '_Bismillaahi Ar-Rahmaani Ar-Rahiimi_';
-const SALAM_PENUTUP = '_Barakallahu fiikum_';
+const SALAM_PEMBUKA = 'Bismillaahi Ar-Rahmaani Ar-Rahiimi';
+const SALAM_PENUTUP = 'Barakallahu fiikum';
 
 // =============================================================================
 // HELPER — Normalisasi Nomor HP & Build WA Link
@@ -121,7 +121,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n✨ Luar biasa! Kehadiran Anda *nyaris sempurna*. Ini bukti dedikasi tinggi terhadap amanah mendidik.`,
       motivasi: `Setiap kali Anda masuk kelas dengan niat ibadah, Allah mencatatnya sebagai amal jariyah yang mengalir pahalanya sampai hari kiamat. Rasulullah ﷺ bersabda:\n\n_"Barangsiapa menempuh suatu jalan untuk mencari ilmu, maka Allah akan memudahkan jalannya menuju surga."_ (HR. Muslim)\n\nTeruslah istiqamah, Ustadz/Ustadzah!`,
       emoji: '🌟',
-      tier: '_LUAR BIASA_',
+      tier: 'LUAR BIASA',
     };
   }
 
@@ -130,7 +130,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n🌟 Sangat baik! Kehadiran Anda *di atas standar harapan*. Konsistensi ini langka dan berharga.`,
       motivasi: `Menjadi guru bukan sekadar profesi, tapi *jalan dakwah* yang mulia. Setiap ilmu yang tersampaikan, setiap akhlak yang diteladankan, adalah investasi akherat. Jazaakallahu khairan atas kesungguhan Anda!`,
       emoji: '💎',
-      tier: '_SANGAT BAIK_',
+      tier: 'SANGAT BAIK',
     };
   }
 
@@ -139,7 +139,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n✅ Baik sekali! Kehadiran Anda di posisi yang sehat. Pertahankan ritme positif ini.`,
       motivasi: `Konsistensi adalah kunci keberkahan. Rasulullah ﷺ mencintai amal yang *kecil namun istiqamah*. Setiap kehadiran Anda adalah bukti cinta pada ilmu dan siswa. Barakallahu fiik!`,
       emoji: '🎯',
-      tier: '_BAIK SEKALI_',
+      tier: 'BAIK SEKALI',
     };
   }
 
@@ -148,7 +148,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n👍 Baik. Ada beberapa sesi yang perlu ditingkatkan. Anda punya fondasi kuat untuk naik ke level berikutnya.`,
       motivasi: `Setiap guru punya tantangan tersendiri. Yang penting bukan sempurna, tapi *selalu memperbaiki diri*. Niatkan setiap langkah ke kelas sebagai ibadah, dan rasakan keberkahan ilmunya.`,
       emoji: '📚',
-      tier: '_BAIK_',
+      tier: 'BAIK',
     };
   }
 
@@ -157,7 +157,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
       analisa: `${deltaTxt}\n\n⚠️ Cukup baik, namun ada beberapa sesi yang alpa/tanpa tugas. Mari kita tingkatkan bersama.`,
       motivasi: `Setiap kelas yang tidak kita hadiri adalah *kesempatan pahala yang hilang*, dan siswa yang menunggu ilmu kita. Yuk, buat target pribadi: hadir 100% bulan depan. Kami siap membantu!`,
       emoji: '🌱',
-      tier: '_CUKUP_',
+      tier: 'CUKUP',
     };
   }
 
@@ -165,7 +165,7 @@ function getAnalisaDanMotivasi(persentase: number, avgSekolah: number) {
     analisa: `${deltaTxt}\n\n⚠️ Perlu perhatian khusus. Ada beberapa sesi alpa/tanpa keterangan yang signifikan.`,
     motivasi: `Bukan tentang menghakimi, tapi mengingatkan: *amanah mendidik adalah ibadah besar*. Setiap jam pelajaran yang dijalani dengan niat baik, insyaallah bernilai di sisi Allah. Kami percaya Anda bisa lebih baik!`,
     emoji: '🤝',
-    tier: '_PERLU PERHATIAN_',
+    tier: 'PERLU PERHATIAN',
   };
 }
 
@@ -202,7 +202,7 @@ function buildWaMessage(
   return `*📊 REKAP KEHADIRAN MENGAJAR*
 _${periodeLabel}_
 ${mapelLine}
-${SALAM_PEMBUKA}
+_${SALAM_PEMBUKA}_
 Ustadz/Ustadzah *${guruNama}*
 
 ${statsLines.join('\n')}
@@ -216,13 +216,14 @@ ${analisa}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-💡 ${motivasi}
+💡 _${motivasi}_
 
 ━━━━━━━━━━━━━━━━━━━━
 
 🤲 ${DOA_ARAB}
 
-${SALAM_PENUTUP},
+_${SALAM_PENUTUP},_
+
 *${namaSekolah}*`;
 }
 
