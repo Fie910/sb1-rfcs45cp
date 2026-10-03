@@ -560,29 +560,29 @@ export function RekapAgendaPage() {
             />
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
-                  <th className="p-4 whitespace-nowrap sticky left-0 z-20 bg-slate-950 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
-                    Nama Guru
-                  </th>
-                  {rekapGroupBy === 'guru_mapel' && (
-                    <th className="p-4 whitespace-nowrap">Mata Pelajaran</th>
-                  )}
-                  <th className="p-4 whitespace-nowrap text-center">Total JP</th>
-                  <th className="p-4 whitespace-nowrap text-center text-emerald-400">
-                    Hadir (JP)
-                  </th>
-                  <th className="p-4 whitespace-nowrap text-center text-amber-400">Izin (JP)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-blue-400">Sakit (JP)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-rose-400">Alpa (JP)</th>
-                  <th className="p-4 whitespace-nowrap text-center text-orange-400">
-                    Terlambat (JP)
-                  </th>
-                  <th className="p-4 whitespace-nowrap text-center">% Kehadiran</th>
-                </tr>
-              </thead>
+          <div className="max-h-[600px] overflow-auto relative">
+  <table className="w-full text-left border-collapse min-w-[1000px]">
+    <thead>
+      <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
+        <th className="p-4 whitespace-nowrap sticky top-0 left-0 z-30 bg-slate-950 border-r border-slate-800/80 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
+          Nama Guru
+        </th>
+        {rekapGroupBy === 'guru_mapel' && (
+          <th className="p-4 whitespace-nowrap sticky top-0 z-20 bg-slate-950">Mata Pelajaran</th>
+        )}
+        <th className="p-4 whitespace-nowrap text-center sticky top-0 z-20 bg-slate-950">Total JP</th>
+        <th className="p-4 whitespace-nowrap text-center text-emerald-400 sticky top-0 z-20 bg-slate-950">
+          Hadir (JP)
+        </th>
+        <th className="p-4 whitespace-nowrap text-center text-amber-400 sticky top-0 z-20 bg-slate-950">Izin (JP)</th>
+        <th className="p-4 whitespace-nowrap text-center text-blue-400 sticky top-0 z-20 bg-slate-950">Sakit (JP)</th>
+        <th className="p-4 whitespace-nowrap text-center text-rose-400 sticky top-0 z-20 bg-slate-950">Alpa (JP)</th>
+        <th className="p-4 whitespace-nowrap text-center text-orange-400 sticky top-0 z-20 bg-slate-950">
+          Terlambat (JP)
+        </th>
+        <th className="p-4 whitespace-nowrap text-center sticky top-0 z-20 bg-slate-950">% Kehadiran</th>
+      </tr>
+    </thead>
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
                   <tr>
