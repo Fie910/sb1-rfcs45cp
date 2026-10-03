@@ -79,10 +79,10 @@ const DETAIL_HEADERS = [
 // KONSTANTA DOA & MOTIVASI
 // =============================================================================
 const DOA_ARAB = 'جَزَاكُمُ اللهُ خَيْرًا كَثِيْرًا';
-const DOA_LATIN = 'Jazaakumullahu khairan katsiran';
+const DOA_LATIN = 'Jazaakumullahu khayran katsiran';
 const DOA_ARTI = '"Semoga Allah membalas kalian dengan kebaikan yang banyak"';
-const SALAM_PEMBUKA = 'Assalamu\'alaikum warahmatullahi wabarakatuh';
-const SALAM_PENUTUP = 'Barakallahu fiikum warahmatullah';
+const SALAM_PEMBUKA = 'Bismillaahi Ar-Rahmaani Ar-Rahiimi';
+const SALAM_PENUTUP = 'Barakallahu fiikum';
 
 // =============================================================================
 // HELPER — Normalisasi Nomor HP & Build WA Link
