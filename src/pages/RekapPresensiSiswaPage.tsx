@@ -330,17 +330,24 @@ export function RekapPresensiSiswaPage() {
             </button>
           </div>
 
-          <ExportImportButtons
-            filename={viewMode === 'summary' ? 'rekap_akumulasi_siswa' : 'jurnal_presensi_siswa'}
-            title={
-              viewMode === 'summary'
-                ? 'Rekap Akumulasi Presensi Siswa'
-                : 'Jurnal Log Presensi Siswa'
-            }
-            headers={viewMode === 'summary' ? SUMMARY_HEADERS : LOG_HEADERS}
-            rows={viewMode === 'summary' ? exportRowsSummary : exportRowsLog}
-            showImport={false}
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                // Export Excel existing — kalau Anda punya fungsinya, panggil di sini.
+                // Kalau belum, biarkan hanya PDF.
+                showToast('info', 'Export Excel belum diaktifkan di halaman ini');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer"
+            >
+              <FileSpreadsheet size={14} /> Ekspor Excel
+            </button>
+            <button
+              onClick={handleExportPdf}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-600/20 transition cursor-pointer"
+            >
+              <FileText size={14} /> Ekspor PDF
+            </button>
+          </div>
         </div>
 
         {/* TABEL CONTENT */}
