@@ -344,99 +344,313 @@ export function RekapPresensiKesiswaanPage() {
     showToast('success', 'File Excel berhasil diunduh');
   };
 
-  // Fungsi Ekspor PDF (.pdf)
-  const exportToPDF = () => {
-    const doc = new jsPDF('p', 'mm', 'a4');
+  // ============================================================================
+// EXPORT PDF BERWARNA
+// ============================================================================
+const exportToPDF = () => {
+  const isRiwayat = activeTab === 'riwayat';
 
-    if (activeTab === 'riwayat') {
-      if (filteredRiwayatList.length === 0) {
-        showToast('error', 'Tidak ada data riwayat untuk diekspor.');
-        return;
-      }
+  // Validasi data
+  if (isRiwayat && filteredRiwayatList.length === 0) {
+    showToast('error', 'Tidak ada data riwayat untuk diekspor.');
+    return;
+  }
+  if (!isRiwayat && rekapPerSiswa.length === 0) {
+    showToast('error', 'Tidak ada data rekap persentase untuk diekspor.');
+    return;
+  }
 
-      doc.setFontSize(14);
-      doc.text('Laporan Riwayat Presensi Siswa', 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Periode: ${tanggalMulai} s.d. ${tanggalSelesai}`, 14, 22);
+  // Landscape A4 (297 x 210 mm)
+  const doc = new jsPDF('l', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 14;
+  const contentWidth = pageWidth - marginX * 2;
 
-      const tableColumn = [
-        'Tanggal',
-        'NISN',
-        'Nama Siswa',
-        'Kelas',
-        'L/P',
-        'Status',
-        'Keterangan',
-      ];
-      const tableRows = filteredRiwayatList.map((item) => [
-        item.tanggal,
-        item.siswas?.nisn || '-',
-        item.siswas?.nama_lengkap || '-',
-        item.siswas?.kelas?.nama_kelas || '-',
-        item.siswas?.jenis_kelamin || '-',
-        item.status_kehadiran,
-        item.keterangan || '-',
-      ]);
+  // ══════════════════════════════════════════════
+  // 1. KOP SURAT
+  // ══════════════════════════════════════════════
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(PDF_COLORS.slate900[0], PDF_COLORS.slate900[1], PDF_COLORS.slate900[2]);
+  doc.text('SMK KH. A. WAHAB MUHSIN SUKAHIDENG', pageWidth / 2, 14, { align: 'center' });
 
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 28,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [79, 70, 229] },
-      });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(PDF_COLORS.slate500[0], PDF_COLORS.slate500[1], PDF_COLORS.slate500[2]);
+  doc.text(
+    'Sukahideng, Kab. Tasikmalaya, Jawa Barat',
+    pageWidth / 2,
+    19,
+    { align: 'center' }
+  );
 
-      doc.save(`Rekap_Riwayat_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`);
-    } else {
-      if (rekapPerSiswa.length === 0) {
-        showToast('error', 'Tidak ada data rekap persentase untuk diekspor.');
-        return;
-      }
+  // Garis pemisah
+  doc.setDrawColor(
+    PDF_COLORS.indigo[0],
+    PDF_COLORS.indigo[1],
+    PDF_COLORS.indigo[2]
+  );
+  doc.setLineWidth(0.8);
+  doc.line(marginX, 22, pageWidth - marginX, 22);
 
-      doc.setFontSize(14);
-      doc.text('Laporan Rekap Persentase Kehadiran Siswa', 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Periode: ${tanggalMulai} s.d. ${tanggalSelesai}`, 14, 22);
+  // ══════════════════════════════════════════════
+  // 2. JUDUL LAPORAN
+  // ══════════════════════════════════════════════
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(PDF_COLORS.slate900[0], PDF_COLORS.slate900[1], PDF_COLORS.slate900[2]);
+  const judul = isRiwayat
+    ? 'LAPORAN RIWAYAT PRESENSI SISWA'
+    : 'LAPORAN REKAP PERSENTASE KEHADIRAN SISWA';
+  doc.text(judul, pageWidth / 2, 30, { align: 'center' });
 
-      const tableColumn = [
-        'No',
-        'NISN',
-        'Nama Siswa',
-        'Kelas',
-        'L/P',
-        'Hadir',
-        'Sakit',
-        'Izin',
-        'Alpa',
-        'Total',
-        '% Hadir',
-      ];
-      const tableRows = rekapPerSiswa.map((s, idx) => [
-        idx + 1,
-        s.nisn,
-        s.nama_lengkap,
-        s.kelas,
-        s.jenis_kelamin,
-        s.hadir,
-        s.sakit,
-        s.izin,
-        s.alpa,
-        s.total,
-        `${s.persentaseHadir}%`,
-      ]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(PDF_COLORS.slate500[0], PDF_COLORS.slate500[1], PDF_COLORS.slate500[2]);
+  const periodeText = `Periode: ${formatTanggalPdf(tanggalMulai)} — ${formatTanggalPdf(tanggalSelesai)}`;
+  doc.text(periodeText, pageWidth / 2, 35, { align: 'center' });
 
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 28,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [79, 70, 229] },
-      });
+  // ══════════════════════════════════════════════
+  // 3. SUMMARY BOXES (KPI) — hanya untuk tab persentase
+  // ══════════════════════════════════════════════
+  let tableStartY = 41;
 
-      doc.save(`Rekap_Persentase_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`);
-    }
-    showToast('success', 'File PDF berhasil diunduh');
-  };
+  if (!isRiwayat) {
+    const summaries: { label: string; value: string; color: RGB }[] = [
+      { label: 'Total Hadir', value: String(totalHadir), color: PDF_COLORS.emerald },
+      { label: 'Total Sakit', value: String(totalSakit), color: PDF_COLORS.amber },
+      { label: 'Total Izin', value: String(totalIzin), color: PDF_COLORS.blue },
+      { label: 'Total Alpa', value: String(totalAlpa), color: PDF_COLORS.rose },
+      { label: 'Rata-Rata Hadir', value: `${rataRataHadir}%`, color: PDF_COLORS.indigo },
+    ];
+
+    const gap = 4;
+    const boxW = (contentWidth - gap * (summaries.length - 1)) / summaries.length;
+    const boxH = 17;
+    const boxY = tableStartY;
+
+    summaries.forEach((s, i) => {
+      const x = marginX + i * (boxW + gap);
+      drawStatBox(doc, x, boxY, boxW, boxH, s.label, s.value, s.color);
+    });
+
+    tableStartY = boxY + boxH + 5;
+  }
+
+  // ══════════════════════════════════════════════
+  // 4. TABEL
+  // ══════════════════════════════════════════════
+  if (isRiwayat) {
+    // ---------- TABEL RIWAYAT ----------
+    const tableColumn = [
+      { content: 'Tanggal', styles: { halign: 'left' as const } },
+      { content: 'NISN', styles: { halign: 'left' as const } },
+      { content: 'Nama Siswa', styles: { halign: 'left' as const } },
+      { content: 'Kelas', styles: { halign: 'left' as const } },
+      { content: 'L/P', styles: { halign: 'center' as const } },
+      { content: 'Status', styles: { halign: 'center' as const } },
+      { content: 'Keterangan', styles: { halign: 'left' as const } },
+    ];
+
+    const tableRows = filteredRiwayatList.map((item) => [
+      item.tanggal,
+      item.siswas?.nisn || '-',
+      item.siswas?.nama_lengkap || '-',
+      item.siswas?.kelas?.nama_kelas || '-',
+      item.siswas?.jenis_kelamin || '-',
+      item.status_kehadiran,
+      item.keterangan || '-',
+    ]);
+
+    autoTable(doc, {
+      startY: tableStartY,
+      head: [tableColumn.map((c) => c.content)],
+      body: tableRows,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2.5,
+        lineColor: PDF_COLORS.slate300,
+        lineWidth: 0.1,
+        valign: 'middle',
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fillColor: PDF_COLORS.indigo,
+        textColor: PDF_COLORS.white,
+        fontStyle: 'bold',
+        halign: 'center',
+        fontSize: 8.5,
+      },
+      alternateRowStyles: {
+        fillColor: PDF_COLORS.slate100,
+      },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 22 },
+        2: { cellWidth: 60 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 12, halign: 'center' },
+        5: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+        6: { cellWidth: 'auto' },
+      },
+      didParseCell: (data) => {
+        // Warna kolom Status berdasarkan nilai
+        if (data.section === 'body' && data.column.index === 5) {
+          const status = String(data.cell.raw);
+          if (status === 'Hadir') {
+            data.cell.styles.textColor = PDF_COLORS.emeraldDark;
+            data.cell.styles.fillColor = PDF_COLORS.emeraldLight;
+          } else if (status === 'Sakit') {
+            data.cell.styles.textColor = PDF_COLORS.amberDark;
+            data.cell.styles.fillColor = PDF_COLORS.amberLight;
+          } else if (status === 'Izin') {
+            data.cell.styles.textColor = PDF_COLORS.blueDark;
+            data.cell.styles.fillColor = PDF_COLORS.blueLight;
+          } else if (status === 'Alpa') {
+            data.cell.styles.textColor = PDF_COLORS.roseDark;
+            data.cell.styles.fillColor = PDF_COLORS.roseLight;
+          }
+        }
+      },
+    });
+  } else {
+    // ---------- TABEL REKAP PERSENTASE ----------
+    const tableColumn = [
+      'No',
+      'NISN',
+      'Nama Siswa',
+      'Kelas',
+      'L/P',
+      'Hadir',
+      'Sakit',
+      'Izin',
+      'Alpa',
+      'Total',
+      '% Kehadiran',
+    ];
+
+    const tableRows = rekapPerSiswa.map((s, idx) => [
+      idx + 1,
+      s.nisn,
+      s.nama_lengkap,
+      s.kelas,
+      s.jenis_kelamin,
+      s.hadir,
+      s.sakit,
+      s.izin,
+      s.alpa,
+      s.total,
+      `${s.persentaseHadir}%`,
+    ]);
+
+    autoTable(doc, {
+      startY: tableStartY,
+      head: [tableColumn],
+      body: tableRows,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2.5,
+        lineColor: PDF_COLORS.slate300,
+        lineWidth: 0.1,
+        valign: 'middle',
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fillColor: PDF_COLORS.indigo,
+        textColor: PDF_COLORS.white,
+        fontStyle: 'bold',
+        halign: 'center',
+        fontSize: 8.5,
+      },
+      alternateRowStyles: {
+        fillColor: PDF_COLORS.slate100,
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 60 },
+        3: { cellWidth: 22, halign: 'center' },
+        4: { cellWidth: 12, halign: 'center' },
+        5: {
+          cellWidth: 18,
+          halign: 'center',
+          fontStyle: 'bold',
+          textColor: PDF_COLORS.emerald,
+        },
+        6: {
+          cellWidth: 18,
+          halign: 'center',
+          fontStyle: 'bold',
+          textColor: PDF_COLORS.amber,
+        },
+        7: {
+          cellWidth: 18,
+          halign: 'center',
+          fontStyle: 'bold',
+          textColor: PDF_COLORS.blue,
+        },
+        8: {
+          cellWidth: 18,
+          halign: 'center',
+          fontStyle: 'bold',
+          textColor: PDF_COLORS.rose,
+        },
+        9: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+        10: {
+          cellWidth: 'auto',
+          halign: 'center',
+          fontStyle: 'bold',
+        },
+      },
+      didParseCell: (data) => {
+        // Badge berwarna untuk kolom Persentase
+        if (data.section === 'body' && data.column.index === 10) {
+          const value = parseInt(String(data.cell.raw).replace('%', ''), 10);
+          if (!isNaN(value)) {
+            const { bg, text } = getPersenWarna(value);
+            data.cell.styles.fillColor = bg;
+            data.cell.styles.textColor = text;
+          }
+        }
+      },
+    });
+  }
+
+  // ══════════════════════════════════════════════
+  // 5. FOOTER DI SETIAP HALAMAN
+  // ══════════════════════════════════════════════
+  const pageCount = doc.getNumberOfPages();
+  const cetakTanggal = new Date().toLocaleDateString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.slate500[0], PDF_COLORS.slate500[1], PDF_COLORS.slate500[2]);
+    doc.text(
+      `Dicetak: ${cetakTanggal} — Halaman ${i} dari ${pageCount}`,
+      pageWidth / 2,
+      pageHeight - 6,
+      { align: 'center' }
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  // 6. SAVE
+  // ══════════════════════════════════════════════
+  const filename = isRiwayat
+    ? `Rekap_Riwayat_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`
+    : `Rekap_Persentase_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`;
+
+  doc.save(filename);
+  showToast('success', 'File PDF berwarna berhasil diunduh');
+};
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 min-h-screen text-slate-100">
