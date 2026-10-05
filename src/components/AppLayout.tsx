@@ -166,6 +166,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
 
       {/* Command Palette */}
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+      {/* Install PWA Banner (muncul otomatis di bottom-right) */}
       <InstallPWA />
     </div>
   );
