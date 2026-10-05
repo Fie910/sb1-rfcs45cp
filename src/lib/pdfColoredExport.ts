@@ -269,7 +269,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     title,
     subtitle,
     schoolName = 'SMK KH. A. WAHAB MUHSIN SUKAHIDENG',
-    schoolAddress = 'Sukahideng, Kab. Tasikmalaya, Jawa Barat',
+    schoolAddress = 'Jl. Pahlawan KHZ Musthafa Sukarapih Sukarame Tasikmalaya Jawa Barat',
     stats,
     columns,
     rows,
