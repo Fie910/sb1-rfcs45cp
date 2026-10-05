@@ -266,6 +266,15 @@ export function RekapPresensiSiswaPage() {
         rows,
         orientation: 'l',
         footerNote: 'Rekap Presensi Siswa',
+        signature: kepalaSekolah
+    ? {
+        nama: kepalaSekolah.nama,
+        nip: kepalaSekolah.nip,
+        kota: 'Tasikmalaya',  // default sudah Sukahideng
+        // jabatan: 'Kepala Sekolah',  // default
+        // tanggal: undefined,  // default = hari ini
+      }
+    : undefined,
       });
     } else {
       // ============ TAB DETAIL LOG ============
