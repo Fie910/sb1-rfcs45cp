@@ -84,6 +84,10 @@ export function RekapPresensiKesiswaanPage() {
   const [list, setList] = useState<PresensiJoined[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<PresensiJoined | null>(null);
+  const [kepalaSekolah, setKepalaSekolah] = useState<{
+  nama: string;
+  nip: string | null;
+} | null>(null);
 
   useEffect(() => {
     const fetchKelas = async () => {
