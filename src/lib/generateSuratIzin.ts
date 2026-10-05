@@ -1,9 +1,18 @@
 // src/lib/generateSuratIzin.ts
-// Utility generate PDF Surat Izin/Cuti dengan QR code anti-forgery.
+// Generate PDF Surat Izin/Cuti dengan QR anti-forgery.
 
 import jsPDF from 'jspdf';
-import QRCode from 'qrcode';
 import { supabase } from './supabase';
+import {
+  A4_LAYOUT,
+  buildVerifyUrl,
+  drawFooter,
+  drawKopSurat,
+  drawQrVerifikasi,
+  fetchPengaturan,
+  formatTanggalPanjang,
+  tanggalHariIni,
+} from './pdfShared';
 
 // =============================================================================
 // TYPES
@@ -27,175 +36,22 @@ export type SuratIzinData = {
   content_hash: string | null;
 };
 
-type PengaturanSekolah = {
-  nama_sekolah: string;
-  alamat: string | null;
-  telepon: string | null;
-  email: string | null;
-  website: string | null;
-  logo_url: string | null;
-  nama_kepsek: string | null;
-  nip_kepsek: string | null;
-};
-
 // =============================================================================
-// HELPER — Format tanggal panjang Bahasa Indonesia
-// =============================================================================
-function formatTanggalPanjang(dateStr: string): string {
-  if (!dateStr) return '-';
-  const d = new Date(`${dateStr.split('T')[0]}T00:00:00+07:00`);
-  return d.toLocaleDateString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-function formatTanggalPendek(dateStr: string): string {
-  if (!dateStr) return '-';
-  const d = new Date(`${dateStr.split('T')[0]}T00:00:00+07:00`);
-  return d.toLocaleDateString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-// =============================================================================
-// HELPER — Ambil data pengaturan sekolah & kepsek
-// =============================================================================
-async function fetchPengaturan(): Promise<PengaturanSekolah> {
-  const { data } = await supabase
-    .from('pengaturan_sekolahs')
-    .select('*')
-    .limit(1)
-    .maybeSingle();
-
-  // Ambil kepsek dari gurus (kalau nama_kepsek di pengaturan kosong)
-  let namaKepsek = data?.nama_kepsek ?? null;
-  let nipKepsek = data?.nip_kepsek ?? null;
-
-  if (!namaKepsek) {
-    const { data: kepsek } = await supabase
-      .from('gurus')
-      .select('nama_lengkap, nip')
-      .eq('role', 'kepala')
-      .maybeSingle();
-    namaKepsek = kepsek?.nama_lengkap ?? '.......................';
-    nipKepsek = kepsek?.nip ?? null;
-  }
-
-  return {
-    nama_sekolah: data?.nama_sekolah ?? 'SMK KH. A. Wahab Muhsin Sukahideng',
-    alamat: data?.alamat ?? null,
-    telepon: data?.telepon ?? null,
-    email: data?.email ?? null,
-    website: data?.website ?? null,
-    logo_url: data?.logo_url ?? null,
-    nama_kepsek: namaKepsek,
-    nip_kepsek: nipKepsek,
-  };
-}
-
-// =============================================================================
-// HELPER — Load gambar (logo) → data URL
-// =============================================================================
-async function loadImageAsDataUrl(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
-
-// =============================================================================
-// HELPER — Generate QR code → data URL
-// =============================================================================
-async function generateQrDataUrl(text: string): Promise<string> {
-  return QRCode.toDataURL(text, {
-    width: 300,
-    margin: 1,
-    color: { dark: '#000000', light: '#ffffff' },
-    errorCorrectionLevel: 'H', // High — tahan kerusakan
-  });
-}
-
-// =============================================================================
-// MAIN — Generate PDF
+// MAIN
 // =============================================================================
 export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
 
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const marginX = 20;
-  const contentWidth = pageWidth - marginX * 2;
-
-  const pengaturan = await fetchPengaturan();
+  const pengaturan = await fetchPengaturan(true); // include kepsek
 
   // ==========================================================================
   // 1. KOP SURAT
   // ==========================================================================
-  let y = 15;
-
-  // Logo (kalau ada) — siap untuk future
-  if (pengaturan.logo_url) {
-    const logoData = await loadImageAsDataUrl(pengaturan.logo_url);
-    if (logoData) {
-      try {
-        doc.addImage(logoData, 'PNG', marginX, y, 22, 22);
-      } catch {
-        // ignore if logo invalid
-      }
-    }
-  }
-
-  // Teks kop di tengah
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(pengaturan.nama_sekolah.toUpperCase(), pageWidth / 2, y + 6, { align: 'center' });
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  if (pengaturan.alamat) {
-    const alamatLines = doc.splitTextToSize(pengaturan.alamat, contentWidth - 40);
-    doc.text(alamatLines, pageWidth / 2, y + 12, { align: 'center' });
-    y += alamatLines.length * 4;
-  }
-
-  // Kontak
-  const kontakParts: string[] = [];
-  if (pengaturan.telepon) kontakParts.push(`Telp: ${pengaturan.telepon}`);
-  if (pengaturan.email) kontakParts.push(`Email: ${pengaturan.email}`);
-  if (pengaturan.website) kontakParts.push(pengaturan.website);
-
-  if (kontakParts.length > 0) {
-    doc.setFontSize(8);
-    doc.text(kontakParts.join(' · '), pageWidth / 2, y + 14, { align: 'center' });
-  }
-
-  // Garis horizontal tebal
-  y = 38;
-  doc.setLineWidth(1);
-  doc.line(marginX, y, pageWidth - marginX, y);
-  doc.setLineWidth(0.3);
-  doc.line(marginX, y + 1.2, pageWidth - marginX, y + 1.2);
+  let y = await drawKopSurat(doc, pengaturan);
 
   // ==========================================================================
-  // 2. JUDUL SURAT
+  // 2. JUDUL
   // ==========================================================================
   y += 12;
   doc.setFont('helvetica', 'bold');
@@ -234,7 +90,7 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
   doc.setFontSize(10);
   dataPegawai.forEach(([label, value]) => {
     doc.setFont('helvetica', 'normal');
-    doc.text(`${label}`, marginX + 5, y);
+    doc.text(label, marginX + 5, y);
     doc.text(':', marginX + labelWidth, y);
     doc.setFont('helvetica', 'bold');
     doc.text(value, marginX + labelWidth + 4, y);
@@ -278,7 +134,7 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
   doc.setFontSize(10);
   detailCuti.forEach(([label, value]) => {
     doc.setFont('helvetica', 'normal');
-    doc.text(`${label}`, marginX + 5, y);
+    doc.text(label, marginX + 5, y);
     doc.text(':', marginX + labelWidth, y);
     doc.setFont('helvetica', 'bold');
 
@@ -302,29 +158,19 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
   // ==========================================================================
   // 8. TANDA TANGAN + QR CODE
   // ==========================================================================
-  const tanggalSurat = new Date().toLocaleDateString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-
-  // Kalau y terlalu dekat dengan bawah, pindah ke halaman baru
   if (y > pageHeight - 90) {
     doc.addPage();
     y = 20;
   }
 
-  // Kolom kanan — Kepsek
   const rightX = pageWidth - marginX - 60;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Sukahideng, ${tanggalSurat}`, rightX, y);
+  doc.text(`Sukahideng, ${tanggalHariIni()}`, rightX, y);
   y += 5;
   doc.text('Kepala Sekolah,', rightX, y);
-  y += 20; // Ruang untuk tanda tangan basah
+  y += 20;
 
-  // Nama Kepsek
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.text(pengaturan.nama_kepsek ?? '-', rightX, y);
@@ -335,44 +181,23 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
     doc.text(`NIP. ${pengaturan.nip_kepsek}`, rightX, y);
   }
 
-  // QR Code di kiri bawah (untuk anti-forgery)
+  // QR Code di kiri bawah
   const qrSize = 30;
-  const qrX = marginX;
-  const qrY = y - 38; // Sejajar dengan area tanda tangan
-
-  const baseUrl = typeof window !== 'undefined'
-    ? window.location.origin
-    : 'https://app-anda.com';
-  const hashShort = data.content_hash ? data.content_hash.slice(0, 16) : '';
-  const verifyUrl = `${baseUrl}/verifikasi-surat/${data.verification_token}${hashShort ? `?h=${hashShort}` : ''}`;
-
-  try {
-    const qrDataUrl = await generateQrDataUrl(verifyUrl);
-    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-  } catch {
-    // fallback: gambar kotak placeholder
-    doc.setDrawColor(200);
-    doc.rect(qrX, qrY, qrSize, qrSize);
-  }
-
-  // Keterangan QR
-  doc.setFontSize(7);
-  doc.setTextColor(100);
-  doc.text('Scan QR untuk', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-  doc.text('verifikasi keaslian', qrX + qrSize / 2, qrY + qrSize + 6, { align: 'center' });
-  doc.text('surat ini', qrX + qrSize / 2, qrY + qrSize + 9, { align: 'center' });
-  doc.setTextColor(0);
+  const verifyUrl = buildVerifyUrl('surat', data.verification_token, data.content_hash);
+  await drawQrVerifikasi(doc, verifyUrl, marginX, y - 38, qrSize, [
+    'Scan QR untuk',
+    'verifikasi keaslian',
+    'surat ini',
+  ]);
 
   // ==========================================================================
   // 9. FOOTER
   // ==========================================================================
-  doc.setFontSize(7);
-  doc.setTextColor(150);
-  doc.text(
-    `Dokumen ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}. Keaslian dapat diverifikasi dengan scan QR code.`,
-    pageWidth / 2,
-    pageHeight - 10,
-    { align: 'center', maxWidth: contentWidth }
+  drawFooter(
+    doc,
+    pengaturan,
+    A4_LAYOUT,
+    `Dokumen ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}. Keaslian dapat diverifikasi dengan scan QR code.`
   );
 
   // ==========================================================================
@@ -382,10 +207,12 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
   doc.save(fileName);
 
   // ==========================================================================
-  // 11. UPDATE surat_generated_at di DB (first time only)
+  // 11. UPDATE surat_generated_at
   // ==========================================================================
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (session?.user) {
       await supabase
         .from('hris_cuti')
@@ -394,11 +221,6 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
         .is('surat_generated_at', null);
     }
   } catch {
-    // silent fail
+    /* silent */
   }
 }
-
-// =============================================================================
-// HELPER — Format tanggal (re-export untuk dipakai UI)
-// =============================================================================
-export { formatTanggalPanjang, formatTanggalPendek };
