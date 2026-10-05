@@ -89,6 +89,21 @@ export function RekapPresensiKesiswaanPage() {
   nip: string | null;
 } | null>(null);
 
+    useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ks = await fetchKepalaSekolahData();
+        if (mounted) setKepalaSekolah(ks);
+      } catch (err) {
+        console.warn('Gagal fetch kepala sekolah:', err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     const fetchKelas = async () => {
       const { data } = await supabase.from('kelas').select('id, nama_kelas').order('nama_kelas');
@@ -96,13 +111,6 @@ export function RekapPresensiKesiswaanPage() {
     };
     fetchKelas();
   }, []);
-
-  try {
-  const ks = await fetchKepalaSekolahData();
-  setKepalaSekolah(ks);
-} catch (err) {
-  console.warn('Gagal fetch kepala sekolah:', err);
-}
 
   const fetchData = useCallback(async () => {
     setLoading(true);
