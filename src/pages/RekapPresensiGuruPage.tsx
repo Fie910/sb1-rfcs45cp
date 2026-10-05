@@ -80,6 +80,11 @@ const DETAIL_HEADERS = [
   'Catatan',
 ];
 
+const [kepalaSekolah, setKepalaSekolah] = useState<{
+  nama: string;
+  nip: string | null;
+} | null>(null);
+
 // =============================================================================
 // KONSTANTA
 // =============================================================================
