@@ -338,6 +338,15 @@ const exportToPDF = () => {
       rows,
       orientation: 'l',
       footerNote: 'Rekap Presensi Kesiswaan',
+      signature: kepalaSekolah
+    ? {
+        nama: kepalaSekolah.nama,
+        nip: kepalaSekolah.nip,
+        // kota: 'Sukahideng',  // default sudah Sukahideng
+        // jabatan: 'Kepala Sekolah',  // default
+        // tanggal: undefined,  // default = hari ini
+      }
+    : undefined,
     });
   } else {
     // ============================================================
