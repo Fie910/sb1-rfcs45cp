@@ -731,6 +731,15 @@ export function RekapPresensiGuruPage() {
       rows,
       orientation: 'l',
       footerNote: 'Rekap Presensi Guru (Piket)',
+      signature: kepalaSekolah
+    ? {
+        nama: kepalaSekolah.nama,
+        nip: kepalaSekolah.nip,
+        // kota: 'Sukahideng',  // default sudah Sukahideng
+        // jabatan: 'Kepala Sekolah',  // default
+        // tanggal: undefined,  // default = hari ini
+      }
+    : undefined,
     });
 
     showToast('success', 'File PDF berwarna berhasil diunduh');
