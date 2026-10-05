@@ -470,3 +470,107 @@ export function RekapPresensiSiswaPage() {
     </div>
   );
 }
+
+const handleExportPdf = () => {
+  const isSummary = viewMode === 'summary';
+
+  if (isSummary && studentSummaries.length === 0) {
+    showToast('error', 'Tidak ada data ringkasan untuk diekspor.');
+    return;
+  }
+  if (!isSummary && list.length === 0) {
+    showToast('error', 'Tidak ada log presensi untuk diekspor.');
+    return;
+  }
+
+  const periodeText = `Periode: ${formatTanggalPdf(startDate)} — ${formatTanggalPdf(endDate)}`;
+
+  if (isSummary) {
+    const columns: PdfColumn[] = [
+      { header: 'NISN', halign: 'left', width: 25 },
+      { header: 'Nama Siswa', halign: 'left', width: 70 },
+      { header: 'Kelas', halign: 'center', width: 25 },
+      { header: 'Hadir', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.emerald },
+      { header: 'Sakit', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.amber },
+      { header: 'Izin', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.blue },
+      { header: 'Alpa', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.rose },
+      { header: 'Total KBM', halign: 'center', width: 22, bold: true },
+      {
+        header: '% Kehadiran',
+        halign: 'center',
+        width: 'auto',
+        bold: true,
+        colorize: (v) => {
+          const pct = parseInt(String(v).replace('%', ''), 10);
+          if (isNaN(pct)) return null;
+          return getPersenWarna(pct);
+        },
+      },
+    ];
+
+    const rows = studentSummaries.map((s) => ({
+      NISN: s.nisn,
+      'Nama Siswa': s.nama,
+      Kelas: s.kelas,
+      Hadir: s.hadir,
+      Sakit: s.sakit,
+      Izin: s.izin,
+      Alpa: s.alpa,
+      'Total KBM': s.total,
+      '% Kehadiran': `${s.persentase}%`,
+    }));
+
+    exportColoredPdf({
+      filename: `Rekap_Akumulasi_Presensi_${startDate}_sd_${endDate}.pdf`,
+      title: 'LAPORAN REKAP AKUMULASI PRESENSI SISWA',
+      subtitle: periodeText,
+      columns,
+      rows,
+      orientation: 'l',
+      footerNote: 'Rekap Presensi Siswa',
+    });
+  } else {
+    const columns: PdfColumn[] = [
+      { header: 'Tanggal', halign: 'left', width: 25, format: (v) => formatTanggalPdf(v) },
+      { header: 'NISN', halign: 'left', width: 25 },
+      { header: 'Nama Siswa', halign: 'left', width: 70 },
+      { header: 'Kelas', halign: 'center', width: 25 },
+      {
+        header: 'Status',
+        halign: 'center',
+        width: 25,
+        bold: true,
+        colorize: (v) => {
+          const status = String(v);
+          if (status === 'Hadir') return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
+          if (status === 'Sakit') return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
+          if (status === 'Izin') return { bg: PDF_COLORS.blueLight, text: PDF_COLORS.blueDark };
+          if (status === 'Alpa') return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
+          return null;
+        },
+      },
+      { header: 'Keterangan', halign: 'left', width: 'auto', format: (v) => v || '-' },
+    ];
+
+    const rows = list.map((p) => ({
+      Tanggal: p.tanggal,
+      NISN: p.siswas?.nisn ?? '-',
+      'Nama Siswa': p.siswas?.nama_lengkap ?? '-',
+      Kelas: p.siswas?.kelas?.nama_kelas ?? '-',
+      Status: p.status,
+      Keterangan: p.keterangan ?? '-',
+    }));
+
+    exportColoredPdf({
+      filename: `Jurnal_Presensi_Siswa_${startDate}_sd_${endDate}.pdf`,
+      title: 'LAPORAN JURNAL PRESENSI SISWA',
+      subtitle: periodeText,
+      columns,
+      rows,
+      orientation: 'l',
+      footerNote: 'Rekap Presensi Siswa',
+    });
+  }
+
+  showToast('success', 'File PDF berwarna berhasil diunduh');
+};
