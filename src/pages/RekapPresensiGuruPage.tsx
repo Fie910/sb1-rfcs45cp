@@ -30,6 +30,7 @@ import {
   getPersenWarna,
   formatTanggalPdf,
   PDF_COLORS,
+  fetchKepalaSekolahData,
   type PdfColumn,
 } from '@/lib/pdfColoredExport';
 
