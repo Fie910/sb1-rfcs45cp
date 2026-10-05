@@ -7,6 +7,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { CommandPalette } from '@/components/CommandPalette';
 import type { PageKey } from '@/config/navigation';
 import VerifikasiArsipPage from '@/pages/VerifikasiArsipPage';
+import { InstallPWA } from '@/components/InstallPWA';
 
 type LayoutProps = {
   current: PageKey;
