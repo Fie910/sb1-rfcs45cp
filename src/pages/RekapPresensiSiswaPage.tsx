@@ -19,6 +19,7 @@ import {
   getPersenWarna,
   formatTanggalPdf,
   PDF_COLORS,
+  fetchKepalaSekolahData,
   type PdfColumn,
 } from '@/lib/pdfColoredExport';
 
@@ -65,6 +66,11 @@ export function RekapPresensiSiswaPage() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
+  const [kepalaSekolah, setKepalaSekolah] = useState<{
+  nama: string;
+  nip: string | null;
+} | null>(null);
+
   // ==========================================================================
   // 1. Fetch Option Filters (Kelas & Jadwal KBM)
   // ==========================================================================
@@ -102,6 +108,13 @@ export function RekapPresensiSiswaPage() {
 
     fetchFilters();
   }, [guru, isAdmin]);
+
+  try {
+  const ks = await fetchKepalaSekolahData();
+  setKepalaSekolah(ks);
+} catch (err) {
+  console.warn('Gagal fetch kepala sekolah:', err);
+}
 
   // ==========================================================================
   // 2. Fetch Data Presensi
