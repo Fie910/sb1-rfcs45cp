@@ -569,6 +569,76 @@ export function RekapPresensiGuruPage() {
   );
 
   // ==========================================================================
+  // HANDLER — COPY PESAN
+  // ==========================================================================
+   
+  const handleExportPdf = () => {
+  if (rekapSummary.length === 0) {
+    showToast('error', 'Tidak ada data rekapitulasi untuk diekspor.');
+    return;
+  }
+
+  const periodeText = `Periode: ${formatTanggalPdf(startDate)} — ${formatTanggalPdf(endDate)}`;
+
+  // Kolom dinamis — kalau groupBy guru_mapel, tambah kolom "Mata Pelajaran"
+  const columns: PdfColumn[] = [
+    { header: 'Nama Guru', halign: 'left', width: 50, bold: true },
+    ...(rekapGroupBy === 'guru_mapel'
+      ? [{ header: 'Mata Pelajaran', halign: 'left' as const, width: 35 }]
+      : []),
+    { header: 'Total JP', halign: 'center', width: 16 },
+    { header: 'Hadir', halign: 'center', width: 15, bold: true, textColor: PDF_COLORS.emerald },
+    { header: 'Asisten', halign: 'center', width: 16, bold: true, textColor: PDF_COLORS.teal },
+    { header: 'Sakit (+Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.blue },
+    { header: 'Sakit (-Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.slate500 },
+    { header: 'Izin (+Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.amber },
+    { header: 'Izin (-Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.slate500 },
+    { header: 'Dinas (+Tugas)', halign: 'center', width: 22, textColor: PDF_COLORS.purple },
+    { header: 'Dinas (-Tugas)', halign: 'center', width: 22, textColor: PDF_COLORS.slate500 },
+    { header: 'Alpa', halign: 'center', width: 14, bold: true, textColor: PDF_COLORS.rose },
+    {
+      header: '% Kehadiran',
+      halign: 'center',
+      width: 'auto',
+      bold: true,
+      colorize: (v) => {
+        const pct = parseInt(String(v).replace('%', ''), 10);
+        if (isNaN(pct)) return null;
+        return getPersenWarna(pct);
+      },
+    },
+  ];
+
+  const rows = rekapSummary.map((r) => ({
+    'Nama Guru': r.guruNama,
+    ...(rekapGroupBy === 'guru_mapel' ? { 'Mata Pelajaran': r.mapelNama ?? '-' } : {}),
+    'Total JP': r.total,
+    Hadir: r.hadir,
+    Asisten: r.asisten,
+    'Sakit (+Tugas)': r.sakitTugas,
+    'Sakit (-Tugas)': r.sakitTanpaTugas,
+    'Izin (+Tugas)': r.izinTugas,
+    'Izin (-Tugas)': r.izinTanpaTugas,
+    'Dinas (+Tugas)': r.dinasTugas,
+    'Dinas (-Tugas)': r.dinasTanpaTugas,
+    Alpa: r.alpa,
+    '% Kehadiran': `${r.persentase}%`,
+  }));
+
+  exportColoredPdf({
+    filename: `Rekap_Kehadiran_Guru_${rekapGroupBy}_${startDate}_sd_${endDate}.pdf`,
+    title: 'LAPORAN REKAPITULASI KEHADIRAN GURU',
+    subtitle: `${periodeText}${avgSekolah > 0 ? ` · Rata-rata Sekolah: ${avgSekolah}%` : ''}`,
+    columns,
+    rows,
+    orientation: 'l',
+    footerNote: 'Rekap Presensi Guru (Piket)',
+  });
+
+  showToast('success', 'File PDF berwarna berhasil diunduh');
+};
+
+  // ==========================================================================
   // EXPORT HEADERS
   // ==========================================================================
   const rekapHeaders =
