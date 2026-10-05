@@ -7,10 +7,11 @@ import {
   ListFilter,
   Calendar,
   FileSpreadsheet,
+  FileText,           // ✅ TAMBAH
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { ExportImportButtons } from '@/components/ExportImportButtons';
+import { showToast } from '@/components/Toast';       // ✅ TAMBAH
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { PresensiWithSiswa, Kelas } from '@/types/database';
 import {
@@ -21,20 +22,12 @@ import {
   type PdfColumn,
 } from '@/lib/pdfColoredExport';
 
-const SUMMARY_HEADERS = [
-  'NISN',
-  'Nama Siswa',
-  'Kelas',
-  'Hadir',
-  'Sakit',
-  'Izin',
-  'Alpa',
-  'Total Pertemuan',
-  '% Kehadiran',
-];
-const LOG_HEADERS = ['Tanggal', 'NISN', 'Nama Siswa', 'Kelas', 'Status', 'Keterangan'];
+// ✅ Note: ExportImportButtons DIHAPUS dari import karena sudah tidak dipakai
+// (diganti dengan tombol custom Ekspor Excel + Ekspor PDF)
 
-// ✅ Fixed: siswaId ubah jadi number (sesuai tipe siswa_id dari DB)
+// =============================================================================
+// TYPES
+// =============================================================================
 interface StudentSummary {
   siswaId: number;
   nisn: string;
@@ -48,6 +41,9 @@ interface StudentSummary {
   persentase: number;
 }
 
+// =============================================================================
+// KOMPONEN
+// =============================================================================
 export function RekapPresensiSiswaPage() {
   const { guru, isAdmin } = useAuth();
 
@@ -57,7 +53,7 @@ export function RekapPresensiSiswaPage() {
   const [jadwalList, setJadwalList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Tab & View Mode ('summary' | 'detail')
+  // View Mode
   const [viewMode, setViewMode] = useState<'summary' | 'detail'>('summary');
 
   // Filter States
@@ -69,7 +65,9 @@ export function RekapPresensiSiswaPage() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
+  // ==========================================================================
   // 1. Fetch Option Filters (Kelas & Jadwal KBM)
+  // ==========================================================================
   useEffect(() => {
     const fetchFilters = async () => {
       const { data: dataKelas, error: errKelas } = await supabase
@@ -105,7 +103,9 @@ export function RekapPresensiSiswaPage() {
     fetchFilters();
   }, [guru, isAdmin]);
 
-  // 2. Fetch Data Presensi Berdasarkan Filter
+  // ==========================================================================
+  // 2. Fetch Data Presensi
+  // ==========================================================================
   const fetchData = async () => {
     setLoading(true);
 
@@ -156,9 +156,10 @@ export function RekapPresensiSiswaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, filterKelas, filterJadwal, guru, isAdmin]);
 
+  // ==========================================================================
   // 3. Kalkulasi Ringkasan Akumulasi Per Siswa
+  // ==========================================================================
   const studentSummaries: StudentSummary[] = useMemo(() => {
-    // ✅ Fixed: Map<number, ...> karena siswa_id adalah number
     const summaryMap = new Map<number, StudentSummary>();
 
     list.forEach((p) => {
@@ -191,28 +192,122 @@ export function RekapPresensiSiswaPage() {
     return Array.from(summaryMap.values()).sort((a, b) => a.nama.localeCompare(b.nama));
   }, [list]);
 
-  // 4. Data Rows untuk Export
-  const exportRowsSummary = studentSummaries.map((s) => [
-    s.nisn,
-    s.nama,
-    s.kelas,
-    s.hadir,
-    s.sakit,
-    s.izin,
-    s.alpa,
-    s.total,
-    `${s.persentase}%`,
-  ]);
+  // ==========================================================================
+  // ✅ 4. HANDLER EXPORT PDF — DI DALAM KOMPONEN (fixed)
+  // ==========================================================================
+  const handleExportPdf = () => {
+    const isSummary = viewMode === 'summary';
 
-  const exportRowsLog = list.map((p) => [
-    p.tanggal,
-    p.siswas?.nisn ?? '-',
-    p.siswas?.nama_lengkap ?? '-',
-    p.siswas?.kelas?.nama_kelas ?? '-',
-    p.status,
-    p.keterangan ?? '-',
-  ]);
+    if (isSummary && studentSummaries.length === 0) {
+      showToast('error', 'Tidak ada data ringkasan untuk diekspor.');
+      return;
+    }
+    if (!isSummary && list.length === 0) {
+      showToast('error', 'Tidak ada log presensi untuk diekspor.');
+      return;
+    }
 
+    const periodeText = `Periode: ${formatTanggalPdf(startDate)} — ${formatTanggalPdf(endDate)}`;
+
+    if (isSummary) {
+      // ============ TAB SUMMARY ============
+      const columns: PdfColumn[] = [
+        { header: 'NISN', halign: 'left', width: 25 },
+        { header: 'Nama Siswa', halign: 'left', width: 70 },
+        { header: 'Kelas', halign: 'center', width: 25 },
+        { header: 'Hadir', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.emerald },
+        { header: 'Sakit', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.amber },
+        { header: 'Izin', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.blue },
+        { header: 'Alpa', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.rose },
+        { header: 'Total KBM', halign: 'center', width: 22, bold: true },
+        {
+          header: '% Kehadiran',
+          halign: 'center',
+          width: 'auto',
+          bold: true,
+          colorize: (v) => {
+            const pct = parseInt(String(v).replace('%', ''), 10);
+            if (isNaN(pct)) return null;
+            return getPersenWarna(pct);
+          },
+        },
+      ];
+
+      const rows = studentSummaries.map((s) => ({
+        NISN: s.nisn,
+        'Nama Siswa': s.nama,
+        Kelas: s.kelas,
+        Hadir: s.hadir,
+        Sakit: s.sakit,
+        Izin: s.izin,
+        Alpa: s.alpa,
+        'Total KBM': s.total,
+        '% Kehadiran': `${s.persentase}%`,
+      }));
+
+      exportColoredPdf({
+        filename: `Rekap_Akumulasi_Presensi_${startDate}_sd_${endDate}.pdf`,
+        title: 'LAPORAN REKAP AKUMULASI PRESENSI SISWA',
+        subtitle: periodeText,
+        columns,
+        rows,
+        orientation: 'l',
+        footerNote: 'Rekap Presensi Siswa',
+      });
+    } else {
+      // ============ TAB DETAIL LOG ============
+      const columns: PdfColumn[] = [
+        { header: 'Tanggal', halign: 'left', width: 25, format: (v) => formatTanggalPdf(v) },
+        { header: 'NISN', halign: 'left', width: 25 },
+        { header: 'Nama Siswa', halign: 'left', width: 70 },
+        { header: 'Kelas', halign: 'center', width: 25 },
+        {
+          header: 'Status',
+          halign: 'center',
+          width: 25,
+          bold: true,
+          colorize: (v) => {
+            const status = String(v);
+            if (status === 'Hadir')
+              return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
+            if (status === 'Sakit')
+              return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
+            if (status === 'Izin')
+              return { bg: PDF_COLORS.blueLight, text: PDF_COLORS.blueDark };
+            if (status === 'Alpa')
+              return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
+            return null;
+          },
+        },
+        { header: 'Keterangan', halign: 'left', width: 'auto', format: (v) => v || '-' },
+      ];
+
+      const rows = list.map((p) => ({
+        Tanggal: p.tanggal,
+        NISN: p.siswas?.nisn ?? '-',
+        'Nama Siswa': p.siswas?.nama_lengkap ?? '-',
+        Kelas: p.siswas?.kelas?.nama_kelas ?? '-',
+        Status: p.status,
+        Keterangan: p.keterangan ?? '-',
+      }));
+
+      exportColoredPdf({
+        filename: `Jurnal_Presensi_Siswa_${startDate}_sd_${endDate}.pdf`,
+        title: 'LAPORAN JURNAL PRESENSI SISWA',
+        subtitle: periodeText,
+        columns,
+        rows,
+        orientation: 'l',
+        footerNote: 'Rekap Presensi Siswa',
+      });
+    }
+
+    showToast('success', 'File PDF berwarna berhasil diunduh');
+  };
+
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
       {/* HEADER PAGE */}
@@ -333,8 +428,6 @@ export function RekapPresensiSiswaPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                // Export Excel existing — kalau Anda punya fungsinya, panggil di sini.
-                // Kalau belum, biarkan hanya PDF.
                 showToast('info', 'Export Excel belum diaktifkan di halaman ini');
               }}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition cursor-pointer"
@@ -359,18 +452,18 @@ export function RekapPresensiSiswaPage() {
           ) : viewMode === 'summary' ? (
             <table className="w-full text-sm text-left min-w-[1000px]">
               <thead className="bg-slate-950 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">
-  <tr>
-    <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">NISN</th>
-    <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
-    <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">Kelas</th>
-    <th className="text-center px-3 py-4 text-emerald-400 sticky top-0 z-20 bg-slate-950">Hadir</th>
-    <th className="text-center px-3 py-4 text-amber-400 sticky top-0 z-20 bg-slate-950">Sakit</th>
-    <th className="text-center px-3 py-4 text-blue-400 sticky top-0 z-20 bg-slate-950">Izin</th>
-    <th className="text-center px-3 py-4 text-rose-400 sticky top-0 z-20 bg-slate-950">Alpa</th>
-    <th className="text-center px-3 py-4 sticky top-0 z-20 bg-slate-950">Total KBM</th>
-    <th className="text-center px-5 py-4 sticky top-0 z-20 bg-slate-950">% Kehadiran</th>
-  </tr>
-</thead>
+                <tr>
+                  <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">NISN</th>
+                  <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
+                  <th className="px-5 py-4 sticky top-0 z-20 bg-slate-950">Kelas</th>
+                  <th className="text-center px-3 py-4 text-emerald-400 sticky top-0 z-20 bg-slate-950">Hadir</th>
+                  <th className="text-center px-3 py-4 text-amber-400 sticky top-0 z-20 bg-slate-950">Sakit</th>
+                  <th className="text-center px-3 py-4 text-blue-400 sticky top-0 z-20 bg-slate-950">Izin</th>
+                  <th className="text-center px-3 py-4 text-rose-400 sticky top-0 z-20 bg-slate-950">Alpa</th>
+                  <th className="text-center px-3 py-4 sticky top-0 z-20 bg-slate-950">Total KBM</th>
+                  <th className="text-center px-5 py-4 sticky top-0 z-20 bg-slate-950">% Kehadiran</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {studentSummaries.length === 0 ? (
                   <tr>
@@ -421,18 +514,18 @@ export function RekapPresensiSiswaPage() {
           ) : (
             <table className="w-full text-sm text-left min-w-[1000px]">
               <thead className="bg-slate-950 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">
-  <tr>
-    {LOG_HEADERS.map((h) => (
-      <th key={h} className="px-5 py-4 sticky top-0 z-20 bg-slate-950">
-        {h}
-      </th>
-    ))}
-  </tr>
-</thead>
+                <tr>
+                  {['Tanggal', 'NISN', 'Nama Siswa', 'Kelas', 'Status', 'Keterangan'].map((h) => (
+                    <th key={h} className="px-5 py-4 sticky top-0 z-20 bg-slate-950">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {list.length === 0 ? (
                   <tr>
-                    <td colSpan={LOG_HEADERS.length} className="text-center py-16 text-slate-500">
+                    <td colSpan={6} className="text-center py-16 text-slate-500">
                       <CalendarCheck size={40} className="mx-auto mb-3 opacity-40 text-slate-400" />
                       <p className="text-base font-medium">Tidak ada log presensi.</p>
                     </td>
@@ -477,107 +570,3 @@ export function RekapPresensiSiswaPage() {
     </div>
   );
 }
-
-const handleExportPdf = () => {
-  const isSummary = viewMode === 'summary';
-
-  if (isSummary && studentSummaries.length === 0) {
-    showToast('error', 'Tidak ada data ringkasan untuk diekspor.');
-    return;
-  }
-  if (!isSummary && list.length === 0) {
-    showToast('error', 'Tidak ada log presensi untuk diekspor.');
-    return;
-  }
-
-  const periodeText = `Periode: ${formatTanggalPdf(startDate)} — ${formatTanggalPdf(endDate)}`;
-
-  if (isSummary) {
-    const columns: PdfColumn[] = [
-      { header: 'NISN', halign: 'left', width: 25 },
-      { header: 'Nama Siswa', halign: 'left', width: 70 },
-      { header: 'Kelas', halign: 'center', width: 25 },
-      { header: 'Hadir', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.emerald },
-      { header: 'Sakit', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.amber },
-      { header: 'Izin', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.blue },
-      { header: 'Alpa', halign: 'center', width: 20, bold: true, textColor: PDF_COLORS.rose },
-      { header: 'Total KBM', halign: 'center', width: 22, bold: true },
-      {
-        header: '% Kehadiran',
-        halign: 'center',
-        width: 'auto',
-        bold: true,
-        colorize: (v) => {
-          const pct = parseInt(String(v).replace('%', ''), 10);
-          if (isNaN(pct)) return null;
-          return getPersenWarna(pct);
-        },
-      },
-    ];
-
-    const rows = studentSummaries.map((s) => ({
-      NISN: s.nisn,
-      'Nama Siswa': s.nama,
-      Kelas: s.kelas,
-      Hadir: s.hadir,
-      Sakit: s.sakit,
-      Izin: s.izin,
-      Alpa: s.alpa,
-      'Total KBM': s.total,
-      '% Kehadiran': `${s.persentase}%`,
-    }));
-
-    exportColoredPdf({
-      filename: `Rekap_Akumulasi_Presensi_${startDate}_sd_${endDate}.pdf`,
-      title: 'LAPORAN REKAP AKUMULASI PRESENSI SISWA',
-      subtitle: periodeText,
-      columns,
-      rows,
-      orientation: 'l',
-      footerNote: 'Rekap Presensi Siswa',
-    });
-  } else {
-    const columns: PdfColumn[] = [
-      { header: 'Tanggal', halign: 'left', width: 25, format: (v) => formatTanggalPdf(v) },
-      { header: 'NISN', halign: 'left', width: 25 },
-      { header: 'Nama Siswa', halign: 'left', width: 70 },
-      { header: 'Kelas', halign: 'center', width: 25 },
-      {
-        header: 'Status',
-        halign: 'center',
-        width: 25,
-        bold: true,
-        colorize: (v) => {
-          const status = String(v);
-          if (status === 'Hadir') return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
-          if (status === 'Sakit') return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
-          if (status === 'Izin') return { bg: PDF_COLORS.blueLight, text: PDF_COLORS.blueDark };
-          if (status === 'Alpa') return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
-          return null;
-        },
-      },
-      { header: 'Keterangan', halign: 'left', width: 'auto', format: (v) => v || '-' },
-    ];
-
-    const rows = list.map((p) => ({
-      Tanggal: p.tanggal,
-      NISN: p.siswas?.nisn ?? '-',
-      'Nama Siswa': p.siswas?.nama_lengkap ?? '-',
-      Kelas: p.siswas?.kelas?.nama_kelas ?? '-',
-      Status: p.status,
-      Keterangan: p.keterangan ?? '-',
-    }));
-
-    exportColoredPdf({
-      filename: `Jurnal_Presensi_Siswa_${startDate}_sd_${endDate}.pdf`,
-      title: 'LAPORAN JURNAL PRESENSI SISWA',
-      subtitle: periodeText,
-      columns,
-      rows,
-      orientation: 'l',
-      footerNote: 'Rekap Presensi Siswa',
-    });
-  }
-
-  showToast('success', 'File PDF berwarna berhasil diunduh');
-};
