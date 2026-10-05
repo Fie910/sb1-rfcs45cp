@@ -97,6 +97,13 @@ export function RekapPresensiKesiswaanPage() {
     fetchKelas();
   }, []);
 
+  try {
+  const ks = await fetchKepalaSekolahData();
+  setKepalaSekolah(ks);
+} catch (err) {
+  console.warn('Gagal fetch kepala sekolah:', err);
+}
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     let query = supabase
