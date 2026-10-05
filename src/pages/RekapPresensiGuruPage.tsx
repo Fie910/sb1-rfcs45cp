@@ -905,13 +905,12 @@ export function RekapPresensiGuruPage() {
               )}
             </div>
 
-            <ExportImportButtons
-              filename={`rekap_persentase_kehadiran_${rekapGroupBy}`}
-              title="Rekapitulasi Persentase Kehadiran Guru"
-              headers={rekapHeaders}
-              rows={rekapRows}
-              showImport={false}
-            />
+            <button
+              onClick={handleExportPdf}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-600/20 transition cursor-pointer"
+            >
+              <FileText size={14} /> Ekspor PDF
+            </button>
           </div>
 
           {/* Legenda */}
