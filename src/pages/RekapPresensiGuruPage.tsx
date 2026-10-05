@@ -730,7 +730,7 @@ export function RekapPresensiGuruPage() {
       columns,
       rows,
       orientation: 'l',
-      footerNote: 'Rekap Presensi Guru (Piket)',
+      footerNote: 'Rekap Presensi Guru v2',
       signature: kepalaSekolah
     ? {
         nama: kepalaSekolah.nama,
