@@ -302,6 +302,13 @@ export function RekapPresensiGuruPage() {
         setNamaSekolah(sekolahRes.data.nama_sekolah);
       }
 
+      try {
+  const ks = await fetchKepalaSekolahData();
+  setKepalaSekolah(ks);
+} catch (err) {
+  console.warn('Gagal fetch kepala sekolah:', err);
+}
+
       fetchData();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
