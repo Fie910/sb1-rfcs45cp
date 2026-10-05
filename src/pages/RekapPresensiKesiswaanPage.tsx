@@ -357,6 +357,24 @@ const exportToPDF = () => {
     : undefined,
     });
   } else {
+      exportColoredPdf({
+    filename: `Rekap_Persentase_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`,
+    title: 'LAPORAN REKAP PERSENTASE KEHADIRAN SISWA',
+    subtitle: periodeText,
+    stats,
+    columns,
+    rows,
+    orientation: 'l',
+    footerNote: 'Rekap Presensi Kesiswaan',
+    // ✅ TAMBAHKAN INI
+    signature: kepalaSekolah
+      ? {
+          nama: kepalaSekolah.nama,
+          nip: kepalaSekolah.nip,
+          kota: 'Tasikmalaya',
+        }
+      : undefined,
+  });
     // ============================================================
     // TAB REKAP PERSENTASE
     // ============================================================
