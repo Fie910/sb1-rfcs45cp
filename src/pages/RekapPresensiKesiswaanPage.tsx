@@ -342,7 +342,7 @@ const exportToPDF = () => {
     ? {
         nama: kepalaSekolah.nama,
         nip: kepalaSekolah.nip,
-        // kota: 'Sukahideng',  // default sudah Sukahideng
+        kota: 'Tasikmalaya',  // default sudah Sukahideng
         // jabatan: 'Kepala Sekolah',  // default
         // tanggal: undefined,  // default = hari ini
       }
