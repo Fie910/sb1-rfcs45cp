@@ -80,11 +80,6 @@ const DETAIL_HEADERS = [
   'Catatan',
 ];
 
-const [kepalaSekolah, setKepalaSekolah] = useState<{
-  nama: string;
-  nip: string | null;
-} | null>(null);
-
 // =============================================================================
 // KONSTANTA
 // =============================================================================
@@ -267,6 +262,12 @@ export function RekapPresensiGuruPage() {
     () => new Date().toISOString().split('T')[0]
   );
 
+  // ✅ State kepala sekolah — HARUS di dalam komponen
+  const [kepalaSekolah, setKepalaSekolah] = useState<{
+    nama: string;
+    nip: string | null;
+  } | null>(null);
+
   const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
   const aiCacheRef = useRef<Map<string, AnalisaKehadiranAi>>(new Map());
 
@@ -284,7 +285,7 @@ export function RekapPresensiGuruPage() {
         supabase.from('gurus').select('*').order('nama_lengkap', { ascending: true }),
         supabase.from('hris_profil_pegawai').select('id, no_hp, no_hp_darurat'),
         supabase
-          .from('pengaturan_sekolahs')
+          .from('pengaturan_sekahah')
           .select('nama_sekolah')
           .limit(1)
           .maybeSingle(),
@@ -302,12 +303,13 @@ export function RekapPresensiGuruPage() {
         setNamaSekolah(sekolahRes.data.nama_sekolah);
       }
 
+      // ✅ Fetch kepala sekolah dengan aman
       try {
-  const ks = await fetchKepalaSekolahData();
-  setKepalaSekolah(ks);
-} catch (err) {
-  console.warn('Gagal fetch kepala sekolah:', err);
-}
+        const ks = await fetchKepalaSekolahData();
+        setKepalaSekolah(ks);
+      } catch (err) {
+        console.warn('Gagal fetch kepala sekolah:', err);
+      }
 
       fetchData();
     })();
@@ -690,7 +692,6 @@ export function RekapPresensiGuruPage() {
       },
     ];
 
-    // Kalau groupBy = guru_mapel, sisipkan kolom "Mata Pelajaran" setelah "Nama Guru"
     const columns: PdfColumn[] =
       rekapGroupBy === 'guru_mapel'
         ? [
@@ -732,14 +733,12 @@ export function RekapPresensiGuruPage() {
       orientation: 'l',
       footerNote: 'Rekap Presensi Guru v2',
       signature: kepalaSekolah
-    ? {
-        nama: kepalaSekolah.nama,
-        nip: kepalaSekolah.nip,
-        kota: 'Tasikmalaya',  // default sudah Sukahideng
-        // jabatan: 'Kepala Sekolah',  // default
-        // tanggal: undefined,  // default = hari ini
-      }
-    : undefined,
+        ? {
+            nama: kepalaSekolah.nama,
+            nip: kepalaSekolah.nip,
+            kota: 'Tasikmalaya',
+          }
+        : undefined,
     });
 
     showToast('success', 'File PDF berwarna berhasil diunduh');
