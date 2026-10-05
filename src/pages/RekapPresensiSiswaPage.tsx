@@ -109,13 +109,20 @@ export function RekapPresensiSiswaPage() {
     fetchFilters();
   }, [guru, isAdmin]);
 
-  try {
-  const ks = await fetchKepalaSekolahData();
-  setKepalaSekolah(ks);
-} catch (err) {
-  console.warn('Gagal fetch kepala sekolah:', err);
-}
-
+useEffect(() => {
+  let mounted = true;
+  (async () => {
+    try {
+      const ks = await fetchKepalaSekolahData();
+      if (mounted) setKepalaSekolah(ks);
+    } catch (err) {
+      console.warn('Gagal fetch kepala sekolah:', err);
+    }
+  })();
+  return () => {
+    mounted = false;
+  };
+}, []);
   // ==========================================================================
   // 2. Fetch Data Presensi
   // ==========================================================================
