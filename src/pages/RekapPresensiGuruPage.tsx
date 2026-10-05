@@ -1,8 +1,18 @@
 //src/pages/RekapPresensiGuruPage.tsx
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
-  Loader2, UserCheck, Calendar, Filter, FileText, BarChart3, Users, BookOpen,
-  MessageCircle, Copy, Sparkles, TrendingUp, UserCog,
+  Loader2,
+  UserCheck,
+  Calendar,
+  Filter,
+  FileText,
+  BarChart3,
+  Users,
+  BookOpen,
+  MessageCircle,
+  Copy,
+  Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -60,12 +70,17 @@ interface RekapSummaryRow {
 }
 
 const DETAIL_HEADERS = [
-  'Nama Guru', 'Tanggal', 'Mata Pelajaran', 'Jam Ke', 'Kelas',
-  'Status Kehadiran', 'Catatan',
+  'Nama Guru',
+  'Tanggal',
+  'Mata Pelajaran',
+  'Jam Ke',
+  'Kelas',
+  'Status Kehadiran',
+  'Catatan',
 ];
 
 // =============================================================================
-// KONSTANTA DOA
+// KONSTANTA
 // =============================================================================
 const DOA_ARAB = 'جَزَاكُمُ اللهُ خَيْرًا كَثِيْرًا';
 const SALAM_PEMBUKA = 'Bismillaahi Ar-Rahmaani Ar-Rahiimi';
@@ -105,7 +120,8 @@ function getAnalisaFallback(persentase: number, avgSekolah: number): AnalisaKeha
       ringkasan_karakter: `Kehadiran nyaris sempurna. ${deltaTxt}`,
       kekuatan: 'Dedikasi tinggi terhadap amanah mendidik, konsisten sepanjang periode.',
       area_perbaikan: 'Pertahankan ritme positif ini. Jadikan teladan bagi rekan sejawat.',
-      motivasi_personal: 'Setiap langkah ke kelas dengan niat ibadah adalah amal jariyah yang mengalir pahalanya. Rasulullah ﷺ bersabda: "Barangsiapa menempuh jalan mencari ilmu, Allah mudahkan jalannya ke surga." (HR. Muslim)',
+      motivasi_personal:
+        'Setiap langkah ke kelas dengan niat ibadah adalah amal jariyah yang mengalir pahalanya. Rasulullah ﷺ bersabda: "Barangsiapa menempuh jalan mencari ilmu, Allah mudahkan jalannya ke surga." (HR. Muslim)',
     };
   }
   if (persentase >= 90) {
@@ -113,7 +129,8 @@ function getAnalisaFallback(persentase: number, avgSekolah: number): AnalisaKeha
       ringkasan_karakter: `Kehadiran sangat baik. ${deltaTxt}`,
       kekuatan: 'Konsistensi tinggi yang langka dan berharga.',
       area_perbaikan: 'Kurangi sesi tanpa tugas saat berhalangan untuk hasil optimal.',
-      motivasi_personal: 'Menjadi guru bukan sekadar profesi, tapi jalan dakwah yang mulia. Setiap ilmu yang tersampaikan adalah investasi akherat.',
+      motivasi_personal:
+        'Menjadi guru bukan sekadar profesi, tapi jalan dakwah yang mulia. Setiap ilmu yang tersampaikan adalah investasi akherat.',
     };
   }
   if (persentase >= 85) {
@@ -121,30 +138,38 @@ function getAnalisaFallback(persentase: number, avgSekolah: number): AnalisaKeha
       ringkasan_karakter: `Kehadiran di posisi sehat. ${deltaTxt}`,
       kekuatan: 'Ritme kehadiran stabil, menunjukkan kedisiplinan.',
       area_perbaikan: 'Tingkatkan kehadiran fisik atau titipan tugas saat berhalangan.',
-      motivasi_personal: 'Rasulullah ﷺ mencintai amal yang kecil namun istiqamah. Setiap kehadiran Anda adalah bukti cinta pada ilmu dan siswa.',
+      motivasi_personal:
+        'Rasulullah ﷺ mencintai amal yang kecil namun istiqamah. Setiap kehadiran Anda adalah bukti cinta pada ilmu dan siswa.',
     };
   }
   if (persentase >= 75) {
     return {
       ringkasan_karakter: `Kehadiran baik dengan beberapa catatan. ${deltaTxt}`,
       kekuatan: 'Punya fondasi kuat untuk naik ke level berikutnya.',
-      area_perbaikan: 'Identifikasi penyebab sesi yang tidak dihadiri, dan atasi secara sistematis.',
-      motivasi_personal: 'Setiap guru punya tantangan tersendiri. Yang penting bukan sempurna, tapi selalu memperbaiki diri.',
+      area_perbaikan:
+        'Identifikasi penyebab sesi yang tidak dihadiri, dan atasi secara sistematis.',
+      motivasi_personal:
+        'Setiap guru punya tantangan tersendiri. Yang penting bukan sempurna, tapi selalu memperbaiki diri.',
     };
   }
   if (persentase >= 60) {
     return {
       ringkasan_karakter: `Kehadiran cukup, perlu peningkatan. ${deltaTxt}`,
-      kekuatan: 'Kemauan untuk terus melangkah sudah terlihat dari sebagian besar sesi terpenuhi.',
-      area_perbaikan: 'Buat target pribadi: hadir 100% bulan depan, atau selalu titipkan tugas saat berhalangan.',
-      motivasi_personal: 'Setiap kelas yang tidak kita hadiri adalah kesempatan pahala yang hilang, dan siswa yang menunggu ilmu kita. Kami siap membantu!',
+      kekuatan:
+        'Kemauan untuk terus melangkah sudah terlihat dari sebagian besar sesi terpenuhi.',
+      area_perbaikan:
+        'Buat target pribadi: hadir 100% bulan depan, atau selalu titipkan tugas saat berhalangan.',
+      motivasi_personal:
+        'Setiap kelas yang tidak kita hadiri adalah kesempatan pahala yang hilang, dan siswa yang menunggu ilmu kita. Kami siap membantu!',
     };
   }
   return {
     ringkasan_karakter: `Kehadiran perlu perhatian khusus. ${deltaTxt}`,
     kekuatan: 'Kesempatan besar untuk transformasi positif sudah terbuka.',
-    area_perbaikan: 'Konsultasi dengan pimpinan/kepala divisi tentang kendala yang dihadapi. Buat rencana perbaikan konkret.',
-    motivasi_personal: 'Amanah mendidik adalah ibadah besar. Setiap jam pelajaran yang dijalani dengan niat baik, insyaallah bernilai di sisi Allah. Kami percaya Anda bisa lebih baik!',
+    area_perbaikan:
+      'Konsultasi dengan pimpinan/kepala divisi tentang kendala yang dihadapi. Buat rencana perbaikan konkret.',
+    motivasi_personal:
+      'Amanah mendidik adalah ibadah besar. Setiap jam pelajaran yang dijalani dengan niat baik, insyaallah bernilai di sisi Allah. Kami percaya Anda bisa lebih baik!',
   };
 }
 
@@ -164,11 +189,14 @@ function buildWaMessage(
   statsLines.push(`• Hadir: *${stats.hadir}* JP`);
   if (stats.asisten > 0) statsLines.push(`• Asisten Guru: ${stats.asisten} JP`);
   if (stats.sakitTugas > 0) statsLines.push(`• Sakit (+Tugas): ${stats.sakitTugas} JP`);
-  if (stats.sakitTanpaTugas > 0) statsLines.push(`• Sakit (-Tugas): ${stats.sakitTanpaTugas} JP`);
+  if (stats.sakitTanpaTugas > 0)
+    statsLines.push(`• Sakit (-Tugas): ${stats.sakitTanpaTugas} JP`);
   if (stats.izinTugas > 0) statsLines.push(`• Izin (+Tugas): ${stats.izinTugas} JP`);
-  if (stats.izinTanpaTugas > 0) statsLines.push(`• Izin (-Tugas): ${stats.izinTanpaTugas} JP`);
+  if (stats.izinTanpaTugas > 0)
+    statsLines.push(`• Izin (-Tugas): ${stats.izinTanpaTugas} JP`);
   if (stats.dinasTugas > 0) statsLines.push(`• Dinas (+Tugas): ${stats.dinasTugas} JP`);
-  if (stats.dinasTanpaTugas > 0) statsLines.push(`• Dinas (-Tugas): ${stats.dinasTanpaTugas} JP`);
+  if (stats.dinasTanpaTugas > 0)
+    statsLines.push(`• Dinas (-Tugas): ${stats.dinasTanpaTugas} JP`);
   if (stats.alpa > 0) statsLines.push(`• Alpa: ${stats.alpa} JP`);
 
   const mapelLine = stats.mapelNama
@@ -189,7 +217,7 @@ ${statsLines.join('\n')}
 🎯 *Persentase Kehadiran: ${stats.persentase}%*
 ━━━━━━━━━━━━━━━━━━━━
 
-🔍 ${usedAi ? '' : ''} _${analisa.ringkasan_karakter}_
+🔍 _${analisa.ringkasan_karakter}_
 
 ✨ *Kekuatan:*
 ${analisa.kekuatan}
@@ -220,19 +248,20 @@ export function RekapPresensiGuruPage() {
   const [list, setList] = useState<PresensiGuruPiketRekap[]>([]);
   const [gurus, setGurus] = useState<Guru[]>([]);
   const [guruPhoneMap, setGuruPhoneMap] = useState<Map<string, string | null>>(new Map());
-  const [namaSekolah, setNamaSekolah] = useState<string>('SMK KH. A. Wahab Muhsin Sukahideng');
+  const [namaSekolah, setNamaSekolah] = useState<string>(
+    'SMK KH. A. Wahab Muhsin Sukahideng'
+  );
   const [loading, setLoading] = useState(true);
   const [filterGuru, setFilterGuru] = useState('');
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   });
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(
+    () => new Date().toISOString().split('T')[0]
+  );
 
-  // Loading state untuk AI (per baris)
   const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
-
-  // Cache analisa AI per guru+periode — hindari panggil ulang
   const aiCacheRef = useRef<Map<string, AnalisaKehadiranAi>>(new Map());
 
   // Reset cache kalau periode berubah
@@ -248,7 +277,11 @@ export function RekapPresensiGuruPage() {
       const [guruRes, profilRes, sekolahRes] = await Promise.all([
         supabase.from('gurus').select('*').order('nama_lengkap', { ascending: true }),
         supabase.from('hris_profil_pegawai').select('id, no_hp, no_hp_darurat'),
-        supabase.from('pengaturan_sekolahs').select('nama_sekolah').limit(1).maybeSingle(),
+        supabase
+          .from('pengaturan_sekolahs')
+          .select('nama_sekolah')
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       setGurus((guruRes.data as Guru[]) || []);
@@ -269,7 +302,7 @@ export function RekapPresensiGuruPage() {
   }, []);
 
   // ==========================================================================
-  // FETCH DATA REKAP
+  // FETCH DATA
   // ==========================================================================
   const fetchData = async () => {
     setLoading(true);
@@ -308,7 +341,10 @@ export function RekapPresensiGuruPage() {
   // ==========================================================================
   // HELPERS
   // ==========================================================================
-  const guruMap = useMemo(() => new Map(gurus.map((g) => [g.id, g.nama_lengkap])), [gurus]);
+  const guruMap = useMemo(
+    () => new Map(gurus.map((g) => [g.id, g.nama_lengkap])),
+    [gurus]
+  );
 
   const formatStatus = (statusStr: string) => {
     if (!statusStr) return '-';
@@ -321,18 +357,23 @@ export function RekapPresensiGuruPage() {
 
   const getStatusBadge = (statusStr: string) => {
     const status = (statusStr || '').toLowerCase();
-    if (status === 'hadir') return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
-    if (status === 'asisten') return 'bg-teal-500/15 text-teal-400 border-teal-500/30';
-    if (status.startsWith('sakit')) return 'bg-blue-500/15 text-blue-400 border-blue-500/30';
-    if (status.startsWith('izin')) return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
-    if (status.startsWith('dinas')) return 'bg-purple-500/15 text-purple-400 border-purple-500/30';
+    if (status === 'hadir')
+      return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+    if (status === 'asisten')
+      return 'bg-teal-500/15 text-teal-400 border-teal-500/30';
+    if (status.startsWith('sakit'))
+      return 'bg-blue-500/15 text-blue-400 border-blue-500/30';
+    if (status.startsWith('izin'))
+      return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+    if (status.startsWith('dinas'))
+      return 'bg-purple-500/15 text-purple-400 border-purple-500/30';
     if (status === 'alpa' || status === 'tanpa_keterangan')
       return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
     return 'bg-slate-800 text-slate-300 border-slate-700';
   };
 
   // ==========================================================================
-  // DETAIL ROWS (export)
+  // DETAIL ROWS
   // ==========================================================================
   const detailRows = list.map((a) => [
     a.gurus?.nama_lengkap ?? guruMap.get(a.guru_id) ?? '-',
@@ -352,11 +393,15 @@ export function RekapPresensiGuruPage() {
 
     list.forEach((item) => {
       const guruNama =
-        item.gurus?.nama_lengkap ?? guruMap.get(item.guru_id) ?? 'Guru Tanpa Nama';
+        item.gurus?.nama_lengkap ??
+        guruMap.get(item.guru_id) ??
+        'Guru Tanpa Nama';
       const mapelNama =
-        item.jadwal_kbmjps?.mata_pelajarans?.nama_mapel ?? 'Mata Pelajaran Tidak Ada';
+        item.jadwal_kbmjps?.mata_pelajarans?.nama_mapel ??
+        'Mata Pelajaran Tidak Ada';
 
-      const key = rekapGroupBy === 'guru' ? item.guru_id : `${item.guru_id}_${mapelNama}`;
+      const key =
+        rekapGroupBy === 'guru' ? item.guru_id : `${item.guru_id}_${mapelNama}`;
 
       if (!map.has(key)) {
         map.set(key, {
@@ -384,36 +429,59 @@ export function RekapPresensiGuruPage() {
       const st = (item.status || '').toLowerCase();
       const cat = (item.catatan || '').toLowerCase();
       const hasTugas =
-        cat.includes('tugas') && !cat.includes('tanpa tugas') && !cat.includes('tidak ada tugas');
+        cat.includes('tugas') &&
+        !cat.includes('tanpa tugas') &&
+        !cat.includes('tidak ada tugas');
 
       switch (st) {
-        case 'hadir': row.hadir += 1; break;
+        case 'hadir':
+          row.hadir += 1;
+          break;
         case 'asisten':
-        case 'asisten_guru': row.asisten += 1; break;
-        case 'sakit_tugas': row.sakitTugas += 1; break;
-        case 'sakit_tanpa_tugas': row.sakitTanpaTugas += 1; break;
-        case 'izin_tugas': row.izinTugas += 1; break;
-        case 'izin_tanpa_tugas': row.izinTanpaTugas += 1; break;
-        case 'dinas_tugas': row.dinasTugas += 1; break;
-        case 'dinas_tanpa_tugas': row.dinasTanpaTugas += 1; break;
+        case 'asisten_guru':
+          row.asisten += 1;
+          break;
+        case 'sakit_tugas':
+          row.sakitTugas += 1;
+          break;
+        case 'sakit_tanpa_tugas':
+          row.sakitTanpaTugas += 1;
+          break;
+        case 'izin_tugas':
+          row.izinTugas += 1;
+          break;
+        case 'izin_tanpa_tugas':
+          row.izinTanpaTugas += 1;
+          break;
+        case 'dinas_tugas':
+          row.dinasTugas += 1;
+          break;
+        case 'dinas_tanpa_tugas':
+          row.dinasTanpaTugas += 1;
+          break;
         case 'alpa':
-        case 'tanpa_keterangan': row.alpa += 1; break;
+        case 'tanpa_keterangan':
+          row.alpa += 1;
+          break;
         case 'sakit':
-          if (hasTugas) row.sakitTugas += 1; else row.sakitTanpaTugas += 1;
+          if (hasTugas) row.sakitTugas += 1;
+          else row.sakitTanpaTugas += 1;
           break;
         case 'izin':
-          if (hasTugas) row.izinTugas += 1; else row.izinTanpaTugas += 1;
+          if (hasTugas) row.izinTugas += 1;
+          else row.izinTanpaTugas += 1;
           break;
         case 'dinas':
         case 'dinas_luar':
-          if (hasTugas) row.dinasTugas += 1; else row.dinasTanpaTugas += 1;
+          if (hasTugas) row.dinasTugas += 1;
+          else row.dinasTanpaTugas += 1;
           break;
-        default: break;
+        default:
+          break;
       }
     });
 
     const results = Array.from(map.values()).map((row) => {
-      // ✅ Formula baru dengan Asisten (0.85)
       const nilaiKehadiran =
         row.hadir * 1 +
         row.asisten * 0.85 +
@@ -456,7 +524,7 @@ export function RekapPresensiGuruPage() {
   }, [startDate, endDate]);
 
   // ==========================================================================
-  // HANDLER — KIRIM WA DENGAN AI ANALISA
+  // HANDLER — SEND WA
   // ==========================================================================
   const handleSendWa = useCallback(
     async (row: RekapSummaryRow) => {
@@ -469,7 +537,6 @@ export function RekapPresensiGuruPage() {
         return;
       }
 
-      // Siapkan records untuk AI
       const guruRecords = list.filter((r) => r.guru_id === row.guruId);
       const recordsForAi: RecordForAi[] = guruRecords.map((r) => ({
         tanggal: r.tanggal,
@@ -483,13 +550,11 @@ export function RekapPresensiGuruPage() {
       let analisa: AnalisaKehadiranAi;
       let usedAi = false;
 
-      // Cek cache
       const cached = aiCacheRef.current.get(cacheKey);
       if (cached) {
         analisa = cached;
         usedAi = true;
       } else if (isAiAvailable() && recordsForAi.length > 0) {
-        // Panggil AI
         setAiLoadingKey(row.key);
         try {
           analisa = await generateAnalisaKehadiran(
@@ -517,7 +582,6 @@ export function RekapPresensiGuruPage() {
           setAiLoadingKey(null);
         }
       } else {
-        // AI tidak tersedia
         analisa = getAnalisaFallback(row.persentase, avgSekolah);
       }
 
@@ -536,11 +600,20 @@ export function RekapPresensiGuruPage() {
       }
       window.open(link, '_blank', 'noopener,noreferrer');
     },
-    [guruPhoneMap, list, periodeLabel, avgSekolah, namaSekolah, startDate, endDate, rekapGroupBy]
+    [
+      guruPhoneMap,
+      list,
+      periodeLabel,
+      avgSekolah,
+      namaSekolah,
+      startDate,
+      endDate,
+      rekapGroupBy,
+    ]
   );
 
   // ==========================================================================
-  // HANDLER — COPY PESAN
+  // HANDLER — COPY MESSAGE
   // ==========================================================================
   const handleCopyMessage = useCallback(
     async (row: RekapSummaryRow) => {
@@ -569,89 +642,120 @@ export function RekapPresensiGuruPage() {
   );
 
   // ==========================================================================
-  // HANDLER — COPY PESAN
+  // HANDLER — EXPORT PDF
   // ==========================================================================
-   
   const handleExportPdf = () => {
-  if (rekapSummary.length === 0) {
-    showToast('error', 'Tidak ada data rekapitulasi untuk diekspor.');
-    return;
-  }
+    if (rekapSummary.length === 0) {
+      showToast('error', 'Tidak ada data rekapitulasi untuk diekspor.');
+      return;
+    }
 
-  const periodeText = `Periode: ${formatTanggalPdf(startDate)} — ${formatTanggalPdf(endDate)}`;
+    const periodeText = `Periode: ${formatTanggalPdf(startDate)} — ${formatTanggalPdf(endDate)}`;
 
-  // Kolom dinamis — kalau groupBy guru_mapel, tambah kolom "Mata Pelajaran"
-  const columns: PdfColumn[] = [
-    { header: 'Nama Guru', halign: 'left', width: 50, bold: true },
-    ...(rekapGroupBy === 'guru_mapel'
-      ? [{ header: 'Mata Pelajaran', halign: 'left' as const, width: 35 }]
-      : []),
-    { header: 'Total JP', halign: 'center', width: 16 },
-    { header: 'Hadir', halign: 'center', width: 15, bold: true, textColor: PDF_COLORS.emerald },
-    { header: 'Asisten', halign: 'center', width: 16, bold: true, textColor: PDF_COLORS.teal },
-    { header: 'Sakit (+Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.blue },
-    { header: 'Sakit (-Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.slate500 },
-    { header: 'Izin (+Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.amber },
-    { header: 'Izin (-Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.slate500 },
-    { header: 'Dinas (+Tugas)', halign: 'center', width: 22, textColor: PDF_COLORS.purple },
-    { header: 'Dinas (-Tugas)', halign: 'center', width: 22, textColor: PDF_COLORS.slate500 },
-    { header: 'Alpa', halign: 'center', width: 14, bold: true, textColor: PDF_COLORS.rose },
-    {
-      header: '% Kehadiran',
-      halign: 'center',
-      width: 'auto',
-      bold: true,
-      colorize: (v) => {
-        const pct = parseInt(String(v).replace('%', ''), 10);
-        if (isNaN(pct)) return null;
-        return getPersenWarna(pct);
+    const baseColumns: PdfColumn[] = [
+      { header: 'Nama Guru', halign: 'left', width: 50, bold: true },
+      { header: 'Total JP', halign: 'center', width: 16 },
+      { header: 'Hadir', halign: 'center', width: 15, bold: true, textColor: PDF_COLORS.emerald },
+      { header: 'Asisten', halign: 'center', width: 16, bold: true, textColor: PDF_COLORS.teal },
+      { header: 'Sakit (+Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.blue },
+      { header: 'Sakit (-Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.slate500 },
+      { header: 'Izin (+Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.amber },
+      { header: 'Izin (-Tugas)', halign: 'center', width: 20, textColor: PDF_COLORS.slate500 },
+      { header: 'Dinas (+Tugas)', halign: 'center', width: 22, textColor: PDF_COLORS.purple },
+      { header: 'Dinas (-Tugas)', halign: 'center', width: 22, textColor: PDF_COLORS.slate500 },
+      { header: 'Alpa', halign: 'center', width: 14, bold: true, textColor: PDF_COLORS.rose },
+      {
+        header: '% Kehadiran',
+        halign: 'center',
+        width: 'auto',
+        bold: true,
+        colorize: (v) => {
+          const pct = parseInt(String(v).replace('%', ''), 10);
+          if (isNaN(pct)) return null;
+          return getPersenWarna(pct);
+        },
       },
-    },
-  ];
+    ];
 
-  const rows = rekapSummary.map((r) => ({
-    'Nama Guru': r.guruNama,
-    ...(rekapGroupBy === 'guru_mapel' ? { 'Mata Pelajaran': r.mapelNama ?? '-' } : {}),
-    'Total JP': r.total,
-    Hadir: r.hadir,
-    Asisten: r.asisten,
-    'Sakit (+Tugas)': r.sakitTugas,
-    'Sakit (-Tugas)': r.sakitTanpaTugas,
-    'Izin (+Tugas)': r.izinTugas,
-    'Izin (-Tugas)': r.izinTanpaTugas,
-    'Dinas (+Tugas)': r.dinasTugas,
-    'Dinas (-Tugas)': r.dinasTanpaTugas,
-    Alpa: r.alpa,
-    '% Kehadiran': `${r.persentase}%`,
-  }));
+    // Kalau groupBy = guru_mapel, sisipkan kolom "Mata Pelajaran" setelah "Nama Guru"
+    const columns: PdfColumn[] =
+      rekapGroupBy === 'guru_mapel'
+        ? [
+            baseColumns[0],
+            { header: 'Mata Pelajaran', halign: 'left', width: 35 },
+            ...baseColumns.slice(1),
+          ]
+        : baseColumns;
 
-  exportColoredPdf({
-    filename: `Rekap_Kehadiran_Guru_${rekapGroupBy}_${startDate}_sd_${endDate}.pdf`,
-    title: 'LAPORAN REKAPITULASI KEHADIRAN GURU',
-    subtitle: `${periodeText}${avgSekolah > 0 ? ` · Rata-rata Sekolah: ${avgSekolah}%` : ''}`,
-    columns,
-    rows,
-    orientation: 'l',
-    footerNote: 'Rekap Presensi Guru (Piket)',
-  });
+    const rows = rekapSummary.map((r) => {
+      const base: Record<string, any> = {
+        'Nama Guru': r.guruNama,
+        'Total JP': r.total,
+        Hadir: r.hadir,
+        Asisten: r.asisten,
+        'Sakit (+Tugas)': r.sakitTugas,
+        'Sakit (-Tugas)': r.sakitTanpaTugas,
+        'Izin (+Tugas)': r.izinTugas,
+        'Izin (-Tugas)': r.izinTanpaTugas,
+        'Dinas (+Tugas)': r.dinasTugas,
+        'Dinas (-Tugas)': r.dinasTanpaTugas,
+        Alpa: r.alpa,
+        '% Kehadiran': `${r.persentase}%`,
+      };
 
-  showToast('success', 'File PDF berwarna berhasil diunduh');
-};
+      if (rekapGroupBy === 'guru_mapel') {
+        base['Mata Pelajaran'] = r.mapelNama ?? '-';
+      }
+
+      return base;
+    });
+
+    exportColoredPdf({
+      filename: `Rekap_Kehadiran_Guru_${rekapGroupBy}_${startDate}_sd_${endDate}.pdf`,
+      title: 'LAPORAN REKAPITULASI KEHADIRAN GURU',
+      subtitle: `${periodeText}${avgSekolah > 0 ? ` · Rata-rata Sekolah: ${avgSekolah}%` : ''}`,
+      columns,
+      rows,
+      orientation: 'l',
+      footerNote: 'Rekap Presensi Guru (Piket)',
+    });
+
+    showToast('success', 'File PDF berwarna berhasil diunduh');
+  };
 
   // ==========================================================================
-  // EXPORT HEADERS
+  // EXPORT HEADERS (untuk Excel)
   // ==========================================================================
   const rekapHeaders =
     rekapGroupBy === 'guru_mapel'
       ? [
-          'Nama Guru', 'Mata Pelajaran', 'Total JP', 'Hadir', 'Asisten',
-          'Sakit (+Tugas)', 'Sakit (-Tugas)', 'Izin (+Tugas)', 'Izin (-Tugas)',
-          'Dinas (+Tugas)', 'Dinas (-Tugas)', 'Alpa', '% Kehadiran (Berbobot)',
+          'Nama Guru',
+          'Mata Pelajaran',
+          'Total JP',
+          'Hadir',
+          'Asisten',
+          'Sakit (+Tugas)',
+          'Sakit (-Tugas)',
+          'Izin (+Tugas)',
+          'Izin (-Tugas)',
+          'Dinas (+Tugas)',
+          'Dinas (-Tugas)',
+          'Alpa',
+          '% Kehadiran (Berbobot)',
         ]
       : [
-          'Nama Guru', 'Total JP', 'Hadir', 'Asisten',
-          'Sakit (+Tugas)', 'Sakit (-Tugas)', 'Izin (+Tugas)', 'Izin (-Tugas)',
-          'Dinas (+Tugas)', 'Dinas (-Tugas)', 'Alpa', '% Kehadiran (Berbobot)',
+          'Nama Guru',
+          'Total JP',
+          'Hadir',
+          'Asisten',
+          'Sakit (+Tugas)',
+          'Sakit (-Tugas)',
+          'Izin (+Tugas)',
+          'Izin (-Tugas)',
+          'Dinas (+Tugas)',
+          'Dinas (-Tugas)',
+          'Alpa',
+          '% Kehadiran (Berbobot)',
         ];
 
   const rekapRows = rekapSummary.map((r) => [
@@ -795,13 +899,22 @@ export function RekapPresensiGuruPage() {
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
                   <tr>
-                    <td colSpan={DETAIL_HEADERS.length} className="text-center py-16">
-                      <Loader2 className="animate-spin text-indigo-400 mx-auto mb-2" size={28} />
+                    <td
+                      colSpan={DETAIL_HEADERS.length}
+                      className="text-center py-16"
+                    >
+                      <Loader2
+                        className="animate-spin text-indigo-400 mx-auto mb-2"
+                        size={28}
+                      />
                     </td>
                   </tr>
                 ) : list.length === 0 ? (
                   <tr>
-                    <td colSpan={DETAIL_HEADERS.length} className="text-center py-16 text-slate-500">
+                    <td
+                      colSpan={DETAIL_HEADERS.length}
+                      className="text-center py-16 text-slate-500"
+                    >
                       <UserCheck size={40} className="mx-auto mb-2 opacity-40" />
                       <p className="font-semibold text-slate-400">
                         Tidak ada data presensi guru piket.
@@ -810,12 +923,15 @@ export function RekapPresensiGuruPage() {
                   </tr>
                 ) : (
                   list.map((a) => {
-                    const guruNama = a.gurus?.nama_lengkap ?? guruMap.get(a.guru_id) ?? '-';
-                    const mapelNama = a.jadwal_kbmjps?.mata_pelajarans?.nama_mapel ?? '-';
+                    const guruNama =
+                      a.gurus?.nama_lengkap ?? guruMap.get(a.guru_id) ?? '-';
+                    const mapelNama =
+                      a.jadwal_kbmjps?.mata_pelajarans?.nama_mapel ?? '-';
                     const jamKe = a.jadwal_kbmjps?.jam_ke
                       ? `Jam Ke-${a.jadwal_kbmjps.jam_ke}`
                       : '-';
-                    const kelasNama = a.jadwal_kbmjps?.kelas?.nama_kelas ?? '-';
+                    const kelasNama =
+                      a.jadwal_kbmjps?.kelas?.nama_kelas ?? '-';
 
                     return (
                       <tr
@@ -831,8 +947,12 @@ export function RekapPresensiGuruPage() {
                         <td className="p-4 whitespace-nowrap text-indigo-300 font-semibold">
                           {mapelNama}
                         </td>
-                        <td className="p-4 whitespace-nowrap text-slate-400">{jamKe}</td>
-                        <td className="p-4 whitespace-nowrap text-slate-300">{kelasNama}</td>
+                        <td className="p-4 whitespace-nowrap text-slate-400">
+                          {jamKe}
+                        </td>
+                        <td className="p-4 whitespace-nowrap text-slate-300">
+                          {kelasNama}
+                        </td>
                         <td className="p-4 whitespace-nowrap">
                           <span
                             className={`text-xs font-extrabold px-3 py-1 rounded-full border ${getStatusBadge(
@@ -953,7 +1073,9 @@ export function RekapPresensiGuruPage() {
                   </div>
                   <div className="flex items-center gap-2 bg-rose-500/5 border border-rose-500/20 rounded-lg px-3 py-1.5">
                     <span className="text-rose-400 font-extrabold text-sm">0</span>
-                    <span className="text-[11px] text-slate-300">Sakit/Izin (-Tugas), Alpa</span>
+                    <span className="text-[11px] text-slate-300">
+                      Sakit/Izin (-Tugas), Alpa
+                    </span>
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-500 italic mt-2">
@@ -965,10 +1087,11 @@ export function RekapPresensiGuruPage() {
                     Fitur AI Personal
                   </p>
                   <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    Saat klik <strong>WA</strong>, sistem akan meminta AI Gemini menganalisa
-                    seluruh riwayat kehadiran personal guru (tanggal, mapel, kelas, catatan) dan
-                    menghasilkan feedback yang <em>personal & kontekstual</em>, bukan template.
-                    Hasil di-cache per guru+periode untuk hemat quota.
+                    Saat klik <strong>WA</strong>, sistem akan meminta AI Gemini
+                    menganalisa seluruh riwayat kehadiran personal guru (tanggal, mapel,
+                    kelas, catatan) dan menghasilkan feedback yang{' '}
+                    <em>personal & kontekstual</em>, bukan template. Hasil di-cache per
+                    guru+periode untuk hemat quota.
                   </p>
                 </div>
               </div>
@@ -1028,8 +1151,14 @@ export function RekapPresensiGuruPage() {
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
                   <tr>
-                    <td colSpan={rekapHeaders.length + 1} className="text-center py-16">
-                      <Loader2 className="animate-spin text-indigo-400 mx-auto mb-2" size={28} />
+                    <td
+                      colSpan={rekapHeaders.length + 1}
+                      className="text-center py-16"
+                    >
+                      <Loader2
+                        className="animate-spin text-indigo-400 mx-auto mb-2"
+                        size={28}
+                      />
                     </td>
                   </tr>
                 ) : rekapSummary.length === 0 ? (
@@ -1039,7 +1168,9 @@ export function RekapPresensiGuruPage() {
                       className="text-center py-16 text-slate-500"
                     >
                       <BarChart3 size={40} className="mx-auto mb-2 opacity-40" />
-                      <p className="font-semibold text-slate-400">Tidak ada data rekapitulasi.</p>
+                      <p className="font-semibold text-slate-400">
+                        Tidak ada data rekapitulasi.
+                      </p>
                     </td>
                   </tr>
                 ) : (
