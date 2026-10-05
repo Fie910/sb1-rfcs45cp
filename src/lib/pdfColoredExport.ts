@@ -1,9 +1,10 @@
 // src/lib/pdfColoredExport.ts
 // Helper terpusat untuk export PDF berwarna — mirror tampilan aplikasi.
-// Dipakai oleh semua halaman Rekap (Kesiswaan, Siswa, Guru, dst).
+// ✅ Sekarang support tanda tangan kepala sekolah + titimangsa otomatis.
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { supabase } from './supabase';
 
 // =============================================================================
 // TYPES
@@ -11,22 +12,12 @@ import autoTable from 'jspdf-autotable';
 export type RGB = [number, number, number];
 
 export type PdfColumn = {
-  /** Label header kolom */
   header: string;
-  /** Alignment body cell */
   halign?: 'left' | 'center' | 'right';
-  /** Lebar kolom (mm atau 'auto') */
   width?: number | 'auto';
-  /** Warna teks body (default: slate-900) */
   textColor?: RGB;
-  /** Bold body cell */
   bold?: boolean;
-  /** Custom formatter — return string yang akan ditampilkan */
   format?: (value: any, row: any) => string;
-  /**
-   * Callback untuk conditional coloring per cell.
-   * Return { bg, text } untuk mengoverride warna, atau null untuk pakai default.
-   */
   colorize?: (value: any, row: any) => { bg?: RGB; text?: RGB } | null;
 };
 
@@ -36,27 +27,32 @@ export type PdfStatBox = {
   color: RGB;
 };
 
+export type PdfSignature = {
+  /** Nama lengkap kepala sekolah (wajib) */
+  nama: string;
+  /** NIP kepala sekolah (opsional) */
+  nip?: string | null;
+  /** Jabatan — default: 'Kepala Sekolah' */
+  jabatan?: string;
+  /** Kota titimangsa — default: 'Sukahideng' */
+  kota?: string;
+  /** Tanggal titimangsa (YYYY-MM-DD) — default: hari ini */
+  tanggal?: string;
+};
+
 export type PdfExportOptions = {
-  /** Nama file (dengan/tanpa .pdf) */
   filename: string;
-  /** Judul laporan */
   title: string;
-  /** Subjudul (mis. periode) */
   subtitle?: string;
-  /** Nama sekolah — kalau kosong pakai default */
   schoolName?: string;
-  /** Alamat sekolah */
   schoolAddress?: string;
-  /** Kotak KPI di atas tabel (opsional) */
   stats?: PdfStatBox[];
-  /** Definisi kolom */
   columns: PdfColumn[];
-  /** Data baris */
   rows: any[];
-  /** Orientasi halaman — default 'l' (landscape) */
   orientation?: 'p' | 'l';
-  /** Teks footer tambahan (opsional) */
   footerNote?: string;
+  /** ✅ Tanda tangan kepala sekolah */
+  signature?: PdfSignature;
 };
 
 // =============================================================================
@@ -96,20 +92,15 @@ export const PDF_COLORS: Record<string, RGB> = {
 // =============================================================================
 // HELPER — Warna Badge Persentase
 // =============================================================================
-/**
- * Return warna bg + text untuk badge persentase.
- * - ≥85% → hijau
- * - 75-84% → kuning
- * - <75%  → merah
- */
 export function getPersenWarna(pct: number): { bg: RGB; text: RGB } {
-  if (pct >= 85) return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
+  if (pct >= 85)
+    return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
   if (pct >= 75) return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
   return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
 }
 
 // =============================================================================
-// HELPER — Format Tanggal ke PDF
+// HELPER — Format Tanggal
 // =============================================================================
 export function formatTanggalPdf(d: string): string {
   const date = new Date(`${d}T12:00:00+07:00`);
@@ -121,8 +112,65 @@ export function formatTanggalPdf(d: string): string {
   });
 }
 
+export function formatTanggalPanjangPdf(d: string): string {
+  const date = new Date(`${d}T12:00:00+07:00`);
+  return date.toLocaleDateString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 // =============================================================================
-// INTERNAL — Kotak Statistik
+// ✅ HELPER — Fetch Kepala Sekolah
+// =============================================================================
+/**
+ * Ambil data kepala sekolah dari DB.
+ * Prioritas: pengaturan_sekolahs.nama_kepsek → gurus WHERE role='kepala'.
+ */
+export async function fetchKepalaSekolahData(): Promise<{
+  nama: string;
+  nip: string | null;
+} | null> {
+  try {
+    // 1. Coba dari pengaturan_sekolahs
+    const { data: setting } = await supabase
+      .from('pengaturan_sekolahs')
+      .select('nama_kepsek, nip_kepsek')
+      .limit(1)
+      .maybeSingle();
+
+    if (setting?.nama_kepsek) {
+      return {
+        nama: setting.nama_kepsek,
+        nip: setting.nip_kepsek ?? null,
+      };
+    }
+
+    // 2. Fallback: dari tabel gurus
+    const { data: guru } = await supabase
+      .from('gurus')
+      .select('nama_lengkap, nip')
+      .eq('role', 'kepala')
+      .maybeSingle();
+
+    if (guru?.nama_lengkap) {
+      return {
+        nama: guru.nama_lengkap,
+        nip: guru.nip ?? null,
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('[pdfColoredExport] Gagal fetch kepala sekolah:', err);
+    return null;
+  }
+}
+
+// =============================================================================
+// INTERNAL — Draw Kotak Statistik
 // =============================================================================
 function drawStatBox(
   doc: jsPDF,
@@ -134,7 +182,6 @@ function drawStatBox(
   value: string,
   color: RGB
 ) {
-  // Background soft (12% color + 88% white)
   const lightBg: RGB = [
     Math.round(color[0] * 0.12 + 255 * 0.88),
     Math.round(color[1] * 0.12 + 255 * 0.88),
@@ -162,6 +209,58 @@ function drawStatBox(
 }
 
 // =============================================================================
+// ✅ INTERNAL — Draw Blok Tanda Tangan
+// =============================================================================
+function drawSignatureBlock(
+  doc: jsPDF,
+  pageWidth: number,
+  pageHeight: number,
+  signature: PdfSignature
+): void {
+  const marginX = 12;
+  const rightX = pageWidth - marginX;
+
+  const jabatan = signature.jabatan ?? 'Kepala Sekolah';
+  const kota = signature.kota ?? 'Sukahideng';
+  const tanggal = signature.tanggal ?? new Date().toISOString().slice(0, 10);
+
+  // Posisi baseline (dari bawah)
+  const nipY = pageHeight - 20;
+  const namaY = pageHeight - 25;
+  const jabatanY = pageHeight - 50;
+  const titimangsaY = pageHeight - 55;
+
+  // 1. Titimangsa
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(
+    PDF_COLORS.slate900[0],
+    PDF_COLORS.slate900[1],
+    PDF_COLORS.slate900[2]
+  );
+  doc.text(`${kota}, ${formatTanggalPanjangPdf(tanggal)}`, rightX, titimangsaY, {
+    align: 'right',
+  });
+
+  // 2. Jabatan
+  doc.text(`${jabatan},`, rightX, jabatanY, { align: 'right' });
+
+  // 3. Ruang kosong untuk tanda tangan (25mm) — tidak digambar, hanya spacing
+
+  // 4. Nama Kepala Sekolah (bold)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(signature.nama, rightX, namaY, { align: 'right' });
+
+  // 5. NIP (kalau ada)
+  if (signature.nip) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`NIP. ${signature.nip}`, rightX, nipY, { align: 'right' });
+  }
+}
+
+// =============================================================================
 // MAIN — EXPORT COLORED PDF
 // =============================================================================
 export function exportColoredPdf(options: PdfExportOptions): void {
@@ -170,12 +269,13 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     title,
     subtitle,
     schoolName = 'SMK KH. A. WAHAB MUHSIN SUKAHIDENG',
-    schoolAddress = 'Jl. Pahlawan KHZ Musthafa Sukarapih Sukarame Tasikmalaya Jawa Barat 46461',
+    schoolAddress = 'Sukahideng, Kab. Tasikmalaya, Jawa Barat',
     stats,
     columns,
     rows,
     orientation = 'l',
     footerNote,
+    signature,
   } = options;
 
   const doc = new jsPDF(orientation, 'mm', 'a4');
@@ -207,7 +307,6 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     doc.text(schoolAddress, pageWidth / 2, 18, { align: 'center' });
   }
 
-  // Garis pemisah indigo
   doc.setDrawColor(
     PDF_COLORS.indigo[0],
     PDF_COLORS.indigo[1],
@@ -217,7 +316,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   doc.line(marginX, 21, pageWidth - marginX, 21);
 
   // ══════════════════════════════════════════════
-  // 2. JUDUL + SUBJUDUL
+  // 2. JUDUL
   // ══════════════════════════════════════════════
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
@@ -243,7 +342,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   }
 
   // ══════════════════════════════════════════════
-  // 3. KPI BOXES (opsional)
+  // 3. KPI BOXES
   // ══════════════════════════════════════════════
   let tableStartY = cursorY + 4;
 
@@ -265,7 +364,6 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   // 4. TABEL
   // ══════════════════════════════════════════════
   const headers = columns.map((c) => c.header);
-
   const body = rows.map((row) =>
     columns.map((col) => {
       const rawValue = (row as any)[col.header];
@@ -317,22 +415,35 @@ export function exportColoredPdf(options: PdfExportOptions): void {
       if (!col?.colorize) return;
 
       const row = rows[data.row.index];
-      // value yang ditampilkan (post-format)
       const value = data.cell.raw;
       const override = col.colorize(value, row);
       if (!override) return;
 
-      if (override.bg) {
-        data.cell.styles.fillColor = override.bg;
-      }
-      if (override.text) {
-        data.cell.styles.textColor = override.text;
-      }
+      if (override.bg) data.cell.styles.fillColor = override.bg;
+      if (override.text) data.cell.styles.textColor = override.text;
     },
   });
 
   // ══════════════════════════════════════════════
-  // 5. FOOTER DI SETIAP HALAMAN
+  // 5. ✅ TANDA TANGAN KEPALA SEKOLAH
+  // ══════════════════════════════════════════════
+  if (signature) {
+    const lastTableY = (doc as any).lastAutoTable?.finalY ?? 0;
+    // Blok tanda tangan butuh space ~60mm dari bawah
+    const needY = pageHeight - 65;
+
+    // Kalau tabel terlalu panjang, pindah halaman baru
+    if (lastTableY > needY) {
+      doc.addPage();
+    }
+
+    // Gambar di halaman aktif (last page)
+    const currentPageHeight = doc.internal.pageSize.getHeight();
+    drawSignatureBlock(doc, pageWidth, currentPageHeight, signature);
+  }
+
+  // ══════════════════════════════════════════════
+  // 6. FOOTER DI SETIAP HALAMAN
   // ══════════════════════════════════════════════
   const pageCount = doc.getNumberOfPages();
   const cetakTanggal = new Date().toLocaleDateString('id-ID', {
@@ -357,16 +468,13 @@ export function exportColoredPdf(options: PdfExportOptions): void {
       : `Dicetak: ${cetakTanggal}`;
     doc.text(leftText, marginX, pageHeight - 6);
 
-    doc.text(
-      `Halaman ${i} dari ${pageCount}`,
-      pageWidth - marginX,
-      pageHeight - 6,
-      { align: 'right' }
-    );
+    doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - marginX, pageHeight - 6, {
+      align: 'right',
+    });
   }
 
   // ══════════════════════════════════════════════
-  // 6. SAVE
+  // 7. SAVE
   // ══════════════════════════════════════════════
   const finalName = filename.toLowerCase().endsWith('.pdf')
     ? filename
