@@ -1,45 +1,48 @@
 // src/pages/PerpustakaanPage.tsx
-// Container halaman Perpustakaan dengan tab navigation.
+// Container halaman Perpustakaan dengan lazy-loaded tabs.
+// Setiap tab di-load hanya saat dibuka (optimasi bundle).
 
-import { useState, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import {
-  Library, Book, Users, Send, Newspaper, BarChart3, Search,
-  Shield, ClipboardCheck,
+  Library, Book, Users, Send, Newspaper, BarChart3, Search, ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isPustakawan } from '@/components/perpustakaan/shared';
-import { BukuTab } from '@/components/perpustakaan/BukuTab';
-import { AnggotaTab } from '@/components/perpustakaan/AnggotaTab';
-import { PeminjamanTab } from '@/components/perpustakaan/PeminjamanTab';
-import { SerialTab } from '@/components/perpustakaan/SerialTab';
-import { OPACTab } from '@/components/perpustakaan/OPACTab';
-import { DashboardPerpusTab } from '@/components/perpustakaan/DashboardPerpusTab';
-import { InventarisasiTab } from '@/components/perpustakaan/InventarisasiTab';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
+import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 
-function PlaceholderTab({
-  title, description, icon: Icon,
-}: {
-  title: string;
-  description: string;
-  icon: typeof Book;
-}) {
-  return (
-    <div className="text-center py-20 px-6 bg-slate-900 border border-slate-800 rounded-3xl">
-      <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center mx-auto mb-4">
-        <Icon size={28} />
-      </div>
-      <h3 className="text-lg font-bold text-slate-100 mb-1.5">{title}</h3>
-      <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-        {description}
-      </p>
-      <div className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold">
-        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
-        Sedang dalam pengembangan
-      </div>
-    </div>
-  );
-}
+// =============================================================================
+// LAZY TAB COMPONENTS
+// =============================================================================
+const BukuTab = lazy(() =>
+  import('@/components/perpustakaan/BukuTab').then((m) => ({ default: m.BukuTab }))
+);
+const AnggotaTab = lazy(() =>
+  import('@/components/perpustakaan/AnggotaTab').then((m) => ({ default: m.AnggotaTab }))
+);
+const PeminjamanTab = lazy(() =>
+  import('@/components/perpustakaan/PeminjamanTab').then((m) => ({ default: m.PeminjamanTab }))
+);
+const SerialTab = lazy(() =>
+  import('@/components/perpustakaan/SerialTab').then((m) => ({ default: m.SerialTab }))
+);
+const OPACTab = lazy(() =>
+  import('@/components/perpustakaan/OPACTab').then((m) => ({ default: m.OPACTab }))
+);
+const DashboardPerpusTab = lazy(() =>
+  import('@/components/perpustakaan/DashboardPerpusTab').then((m) => ({
+    default: m.DashboardPerpusTab,
+  }))
+);
+const InventarisasiTab = lazy(() =>
+  import('@/components/perpustakaan/InventarisasiTab').then((m) => ({
+    default: m.InventarisasiTab,
+  }))
+);
 
+// =============================================================================
+// TAB DEFINITION
+// =============================================================================
 type TabKey = 'buku' | 'anggota' | 'peminjaman' | 'serial' | 'inventarisasi' | 'opac' | 'dashboard';
 
 type TabDef = {
@@ -59,6 +62,20 @@ const ALL_TABS: TabDef[] = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3, managerOnly: true },
 ];
 
+// Prefetch map — dipakai usePrefetchTabs untuk background load
+const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
+  buku: () => import('@/components/perpustakaan/BukuTab'),
+  anggota: () => import('@/components/perpustakaan/AnggotaTab'),
+  peminjaman: () => import('@/components/perpustakaan/PeminjamanTab'),
+  serial: () => import('@/components/perpustakaan/SerialTab'),
+  opac: () => import('@/components/perpustakaan/OPACTab'),
+  dashboard: () => import('@/components/perpustakaan/DashboardPerpusTab'),
+  inventarisasi: () => import('@/components/perpustakaan/InventarisasiTab'),
+};
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 export function PerpustakaanPage() {
   const { guru } = useAuth();
   const isManager = isPustakawan(guru?.role);
@@ -76,6 +93,9 @@ export function PerpustakaanPage() {
       setActiveTab('buku');
     }
   }, [isManager, activeTab]);
+
+  // Prefetch tab lain saat browser idle
+  usePrefetchTabs(TAB_IMPORTERS, activeTab);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -116,15 +136,24 @@ export function PerpustakaanPage() {
         })}
       </div>
 
-      {/* TAB CONTENT */}
+      {/* TAB CONTENT — LAZY LOADED */}
       <div className="min-h-[400px]">
-        {activeTab === 'buku' && <BukuTab />}
-        {activeTab === 'anggota' && <AnggotaTab />}
-        {activeTab === 'peminjaman' && <PeminjamanTab />}
-        {activeTab === 'serial' && <SerialTab />}
-        {activeTab === 'opac' && <OPACTab />}
-        {activeTab === 'dashboard' && <DashboardPerpusTab />}
-        {activeTab === 'inventarisasi' && <InventarisasiTab />}
+        <Suspense
+          fallback={
+            <TabLoadingFallback
+              label={`Memuat ${visibleTabs.find((t) => t.key === activeTab)?.label ?? ''}...`}
+              minHeight="500px"
+            />
+          }
+        >
+          {activeTab === 'buku' && <BukuTab />}
+          {activeTab === 'anggota' && <AnggotaTab />}
+          {activeTab === 'peminjaman' && <PeminjamanTab />}
+          {activeTab === 'serial' && <SerialTab />}
+          {activeTab === 'opac' && <OPACTab />}
+          {activeTab === 'dashboard' && <DashboardPerpusTab />}
+          {activeTab === 'inventarisasi' && <InventarisasiTab />}
+        </Suspense>
       </div>
     </div>
   );
