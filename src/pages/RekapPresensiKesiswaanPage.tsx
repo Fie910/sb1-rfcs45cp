@@ -85,11 +85,14 @@ export function RekapPresensiKesiswaanPage() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<PresensiJoined | null>(null);
   const [kepalaSekolah, setKepalaSekolah] = useState<{
-  nama: string;
-  nip: string | null;
-} | null>(null);
+    nama: string;
+    nip: string | null;
+  } | null>(null);
 
-    useEffect(() => {
+  // ==========================================================================
+  // Fetch Kepala Sekolah (untuk tanda tangan PDF)
+  // ==========================================================================
+  useEffect(() => {
     let mounted = true;
     (async () => {
       try {
@@ -104,6 +107,9 @@ export function RekapPresensiKesiswaanPage() {
     };
   }, []);
 
+  // ==========================================================================
+  // Fetch Daftar Kelas
+  // ==========================================================================
   useEffect(() => {
     const fetchKelas = async () => {
       const { data } = await supabase.from('kelas').select('id, nama_kelas').order('nama_kelas');
@@ -112,6 +118,9 @@ export function RekapPresensiKesiswaanPage() {
     fetchKelas();
   }, []);
 
+  // ==========================================================================
+  // Fetch Data Presensi
+  // ==========================================================================
   const fetchData = useCallback(async () => {
     setLoading(true);
     let query = supabase
@@ -230,7 +239,20 @@ export function RekapPresensiKesiswaanPage() {
     );
   }, [list, searchQuery]);
 
-  // Fungsi Ekspor Excel (.xlsx)
+  // ==========================================================================
+  // Signature helper — dipakai di kedua cabang PDF
+  // ==========================================================================
+  const signatureConfig = kepalaSekolah
+    ? {
+        nama: kepalaSekolah.nama,
+        nip: kepalaSekolah.nip,
+        kota: 'Tasikmalaya',
+      }
+    : undefined;
+
+  // ==========================================================================
+  // Export Excel (.xlsx)
+  // ==========================================================================
   const exportToExcel = () => {
     if (activeTab === 'riwayat') {
       if (filteredRiwayatList.length === 0) {
@@ -284,160 +306,135 @@ export function RekapPresensiKesiswaanPage() {
     showToast('success', 'File Excel berhasil diunduh');
   };
 
-// ============================================================================
-// EXPORT PDF BERWARNA
-// ============================================================================
-const exportToPDF = () => {
-  const isRiwayat = activeTab === 'riwayat';
+  // ==========================================================================
+  // EXPORT PDF BERWARNA
+  // ==========================================================================
+  const exportToPDF = () => {
+    const isRiwayat = activeTab === 'riwayat';
 
-  if (isRiwayat && filteredRiwayatList.length === 0) {
-    showToast('error', 'Tidak ada data riwayat untuk diekspor.');
-    return;
-  }
-  if (!isRiwayat && rekapPerSiswa.length === 0) {
-    showToast('error', 'Tidak ada data rekap persentase untuk diekspor.');
-    return;
-  }
+    if (isRiwayat && filteredRiwayatList.length === 0) {
+      showToast('error', 'Tidak ada data riwayat untuk diekspor.');
+      return;
+    }
+    if (!isRiwayat && rekapPerSiswa.length === 0) {
+      showToast('error', 'Tidak ada data rekap persentase untuk diekspor.');
+      return;
+    }
 
-  const periodeText = `Periode: ${formatTanggalPdf(tanggalMulai)} — ${formatTanggalPdf(tanggalSelesai)}`;
+    const periodeText = `Periode: ${formatTanggalPdf(tanggalMulai)} — ${formatTanggalPdf(tanggalSelesai)}`;
 
-  if (isRiwayat) {
-    // ============================================================
-    // TAB RIWAYAT
-    // ============================================================
-    const columns: PdfColumn[] = [
-      { header: 'Tanggal', halign: 'left', width: 22, format: (v) => formatTanggalPdf(v) },
-      { header: 'NISN', halign: 'left', width: 22 },
-      { header: 'Nama Siswa', halign: 'left', width: 60 },
-      { header: 'Kelas', halign: 'left', width: 20 },
-      { header: 'L/P', halign: 'center', width: 12 },
-      {
-        header: 'Status',
-        halign: 'center',
-        width: 22,
-        bold: true,
-        colorize: (v) => {
-          const status = String(v);
-          if (status === 'Hadir') return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
-          if (status === 'Sakit') return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
-          if (status === 'Izin') return { bg: PDF_COLORS.blueLight, text: PDF_COLORS.blueDark };
-          if (status === 'Alpa') return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
-          return null;
+    if (isRiwayat) {
+      // ============================================================
+      // TAB RIWAYAT
+      // ============================================================
+      const columns: PdfColumn[] = [
+        { header: 'Tanggal', halign: 'left', width: 22, format: (v) => formatTanggalPdf(v) },
+        { header: 'NISN', halign: 'left', width: 22 },
+        { header: 'Nama Siswa', halign: 'left', width: 60 },
+        { header: 'Kelas', halign: 'left', width: 20 },
+        { header: 'L/P', halign: 'center', width: 12 },
+        {
+          header: 'Status',
+          halign: 'center',
+          width: 22,
+          bold: true,
+          colorize: (v) => {
+            const status = String(v);
+            if (status === 'Hadir') return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
+            if (status === 'Sakit') return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
+            if (status === 'Izin') return { bg: PDF_COLORS.blueLight, text: PDF_COLORS.blueDark };
+            if (status === 'Alpa') return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
+            return null;
+          },
         },
-      },
-      { header: 'Keterangan', halign: 'left', width: 'auto', format: (v) => v || '-' },
-    ];
+        { header: 'Keterangan', halign: 'left', width: 'auto', format: (v) => v || '-' },
+      ];
 
-    const rows = filteredRiwayatList.map((item) => ({
-      Tanggal: item.tanggal,
-      NISN: item.siswas?.nisn || '-',
-      'Nama Siswa': item.siswas?.nama_lengkap || '-',
-      Kelas: item.siswas?.kelas?.nama_kelas || '-',
-      'L/P': item.siswas?.jenis_kelamin || '-',
-      Status: item.status_kehadiran,
-      Keterangan: item.keterangan || '-',
-    }));
+      const rows = filteredRiwayatList.map((item) => ({
+        Tanggal: item.tanggal,
+        NISN: item.siswas?.nisn || '-',
+        'Nama Siswa': item.siswas?.nama_lengkap || '-',
+        Kelas: item.siswas?.kelas?.nama_kelas || '-',
+        'L/P': item.siswas?.jenis_kelamin || '-',
+        Status: item.status_kehadiran,
+        Keterangan: item.keterangan || '-',
+      }));
 
-    exportColoredPdf({
-      filename: `Rekap_Riwayat_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`,
-      title: 'LAPORAN RIWAYAT PRESENSI SISWA',
-      subtitle: periodeText,
-      columns,
-      rows,
-      orientation: 'l',
-      footerNote: 'Rekap Presensi Kesiswaan',
-      signature: kepalaSekolah
-    ? {
-        nama: kepalaSekolah.nama,
-        nip: kepalaSekolah.nip,
-        kota: 'Tasikmalaya',  // default sudah Sukahideng
-        // jabatan: 'Kepala Sekolah',  // default
-        // tanggal: undefined,  // default = hari ini
-      }
-    : undefined,
-    });
-  } else {
       exportColoredPdf({
-    filename: `Rekap_Persentase_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`,
-    title: 'LAPORAN REKAP PERSENTASE KEHADIRAN SISWA',
-    subtitle: periodeText,
-    stats,
-    columns,
-    rows,
-    orientation: 'l',
-    footerNote: 'Rekap Presensi Kesiswaan',
-    // ✅ TAMBAHKAN INI
-    signature: kepalaSekolah
-      ? {
-          nama: kepalaSekolah.nama,
-          nip: kepalaSekolah.nip,
-          kota: 'Tasikmalaya',
-        }
-      : undefined,
-  });
-    // ============================================================
-    // TAB REKAP PERSENTASE
-    // ============================================================
-    const stats: PdfStatBox[] = [
-      { label: 'Total Hadir', value: totalHadir, color: PDF_COLORS.emerald },
-      { label: 'Total Sakit', value: totalSakit, color: PDF_COLORS.amber },
-      { label: 'Total Izin', value: totalIzin, color: PDF_COLORS.blue },
-      { label: 'Total Alpa', value: totalAlpa, color: PDF_COLORS.rose },
-      { label: 'Rata-Rata Hadir', value: `${rataRataHadir}%`, color: PDF_COLORS.indigo },
-    ];
+        filename: `Rekap_Riwayat_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`,
+        title: 'LAPORAN RIWAYAT PRESENSI SISWA',
+        subtitle: periodeText,
+        columns,
+        rows,
+        orientation: 'l',
+        footerNote: 'Rekap Presensi Kesiswaan',
+        signature: signatureConfig, // ✅ signature ditambahkan
+      });
+    } else {
+      // ============================================================
+      // TAB REKAP PERSENTASE
+      // ============================================================
+      const stats: PdfStatBox[] = [
+        { label: 'Total Hadir', value: totalHadir, color: PDF_COLORS.emerald },
+        { label: 'Total Sakit', value: totalSakit, color: PDF_COLORS.amber },
+        { label: 'Total Izin', value: totalIzin, color: PDF_COLORS.blue },
+        { label: 'Total Alpa', value: totalAlpa, color: PDF_COLORS.rose },
+        { label: 'Rata-Rata Hadir', value: `${rataRataHadir}%`, color: PDF_COLORS.indigo },
+      ];
 
-    const columns: PdfColumn[] = [
-      { header: 'No', halign: 'center', width: 10 },
-      { header: 'NISN', halign: 'left', width: 25 },
-      { header: 'Nama Siswa', halign: 'left', width: 60 },
-      { header: 'Kelas', halign: 'center', width: 22 },
-      { header: 'L/P', halign: 'center', width: 12 },
-      { header: 'Hadir', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.emerald },
-      { header: 'Sakit', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.amber },
-      { header: 'Izin', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.blue },
-      { header: 'Alpa', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.rose },
-      { header: 'Total', halign: 'center', width: 18, bold: true },
-      {
-        header: '% Kehadiran',
-        halign: 'center',
-        width: 'auto',
-        bold: true,
-        colorize: (v) => {
-          const pct = parseInt(String(v).replace('%', ''), 10);
-          if (isNaN(pct)) return null;
-          return getPersenWarna(pct);
+      const columns: PdfColumn[] = [
+        { header: 'No', halign: 'center', width: 10 },
+        { header: 'NISN', halign: 'left', width: 25 },
+        { header: 'Nama Siswa', halign: 'left', width: 60 },
+        { header: 'Kelas', halign: 'center', width: 22 },
+        { header: 'L/P', halign: 'center', width: 12 },
+        { header: 'Hadir', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.emerald },
+        { header: 'Sakit', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.amber },
+        { header: 'Izin', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.blue },
+        { header: 'Alpa', halign: 'center', width: 18, bold: true, textColor: PDF_COLORS.rose },
+        { header: 'Total', halign: 'center', width: 18, bold: true },
+        {
+          header: '% Kehadiran',
+          halign: 'center',
+          width: 'auto',
+          bold: true,
+          colorize: (v) => {
+            const pct = parseInt(String(v).replace('%', ''), 10);
+            if (isNaN(pct)) return null;
+            return getPersenWarna(pct);
+          },
         },
-      },
-    ];
+      ];
 
-    const rows = rekapPerSiswa.map((s, idx) => ({
-      No: idx + 1,
-      NISN: s.nisn,
-      'Nama Siswa': s.nama_lengkap,
-      Kelas: s.kelas,
-      'L/P': s.jenis_kelamin,
-      Hadir: s.hadir,
-      Sakit: s.sakit,
-      Izin: s.izin,
-      Alpa: s.alpa,
-      Total: s.total,
-      '% Kehadiran': `${s.persentaseHadir}%`,
-    }));
+      const rows = rekapPerSiswa.map((s, idx) => ({
+        No: idx + 1,
+        NISN: s.nisn,
+        'Nama Siswa': s.nama_lengkap,
+        Kelas: s.kelas,
+        'L/P': s.jenis_kelamin,
+        Hadir: s.hadir,
+        Sakit: s.sakit,
+        Izin: s.izin,
+        Alpa: s.alpa,
+        Total: s.total,
+        '% Kehadiran': `${s.persentaseHadir}%`,
+      }));
 
-    exportColoredPdf({
-      filename: `Rekap_Persentase_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`,
-      title: 'LAPORAN REKAP PERSENTASE KEHADIRAN SISWA',
-      subtitle: periodeText,
-      stats,
-      columns,
-      rows,
-      orientation: 'l',
-      footerNote: 'Rekap Presensi Kesiswaan',
-    });
-  }
+      exportColoredPdf({
+        filename: `Rekap_Persentase_Presensi_${tanggalMulai}_sd_${tanggalSelesai}.pdf`,
+        title: 'LAPORAN REKAP PERSENTASE KEHADIRAN SISWA',
+        subtitle: periodeText,
+        stats,
+        columns,
+        rows,
+        orientation: 'l',
+        footerNote: 'Rekap Presensi Kesiswaan',
+        signature: signatureConfig, // ✅ signature ditambahkan
+      });
+    }
 
-  showToast('success', 'File PDF berwarna berhasil diunduh');
-};
+    showToast('success', 'File PDF berwarna berhasil diunduh');
+  };
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 min-h-screen text-slate-100">
@@ -662,19 +659,19 @@ const exportToPDF = () => {
             </div>
           ) : (
             <div className="max-h-[600px] overflow-auto relative">
-  <table className="w-full text-left border-collapse min-w-[1000px]">
-    <thead className="bg-slate-950">
-      <tr className="border-b border-slate-800/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Tanggal (WIB)</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">NISN</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Kelas</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">L/P</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Status</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Keterangan</th>
-        <th className="py-4 px-5 text-right sticky top-0 z-20 bg-slate-950">Aksi</th>
-      </tr>
-    </thead>
+              <table className="w-full text-left border-collapse min-w-[1000px]">
+                <thead className="bg-slate-950">
+                  <tr className="border-b border-slate-800/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Tanggal (WIB)</th>
+                    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">NISN</th>
+                    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
+                    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Kelas</th>
+                    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">L/P</th>
+                    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Status</th>
+                    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Keterangan</th>
+                    <th className="py-4 px-5 text-right sticky top-0 z-20 bg-slate-950">Aksi</th>
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-slate-800/50 text-xs text-slate-300">
                   {filteredRiwayatList.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
@@ -730,22 +727,22 @@ const exportToPDF = () => {
           </div>
         ) : (
           <div className="max-h-[600px] overflow-auto relative">
-  <table className="w-full text-left border-collapse min-w-[1000px]">
-    <thead className="bg-slate-950">
-      <tr className="border-b border-slate-800/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">No</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">NISN</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Kelas</th>
-        <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">L/P</th>
-        <th className="py-4 px-5 text-center text-emerald-400 sticky top-0 z-20 bg-slate-950">Hadir</th>
-        <th className="py-4 px-5 text-center text-amber-400 sticky top-0 z-20 bg-slate-950">Sakit</th>
-        <th className="py-4 px-5 text-center text-blue-400 sticky top-0 z-20 bg-slate-950">Izin</th>
-        <th className="py-4 px-5 text-center text-rose-400 sticky top-0 z-20 bg-slate-950">Alpa</th>
-        <th className="py-4 px-5 text-center sticky top-0 z-20 bg-slate-950">Total Hari</th>
-        <th className="py-4 px-5 text-right sticky top-0 z-20 bg-slate-950">% Kehadiran</th>
-      </tr>
-    </thead>
+            <table className="w-full text-left border-collapse min-w-[1000px]">
+              <thead className="bg-slate-950">
+                <tr className="border-b border-slate-800/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">No</th>
+                  <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">NISN</th>
+                  <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Nama Siswa</th>
+                  <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">Kelas</th>
+                  <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950">L/P</th>
+                  <th className="py-4 px-5 text-center text-emerald-400 sticky top-0 z-20 bg-slate-950">Hadir</th>
+                  <th className="py-4 px-5 text-center text-amber-400 sticky top-0 z-20 bg-slate-950">Sakit</th>
+                  <th className="py-4 px-5 text-center text-blue-400 sticky top-0 z-20 bg-slate-950">Izin</th>
+                  <th className="py-4 px-5 text-center text-rose-400 sticky top-0 z-20 bg-slate-950">Alpa</th>
+                  <th className="py-4 px-5 text-center sticky top-0 z-20 bg-slate-950">Total Hari</th>
+                  <th className="py-4 px-5 text-right sticky top-0 z-20 bg-slate-950">% Kehadiran</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-slate-800/50 text-xs text-slate-300">
                 {rekapPerSiswa.map((s, idx) => {
                   const pct = s.persentaseHadir;
