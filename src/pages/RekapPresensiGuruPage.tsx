@@ -15,6 +15,13 @@ import {
   type RecordForAi,
 } from '@/lib/analisaKehadiranAi';
 import type { Guru } from '@/types/database';
+import {
+  exportColoredPdf,
+  getPersenWarna,
+  formatTanggalPdf,
+  PDF_COLORS,
+  type PdfColumn,
+} from '@/lib/pdfColoredExport';
 
 // =============================================================================
 // TYPES
