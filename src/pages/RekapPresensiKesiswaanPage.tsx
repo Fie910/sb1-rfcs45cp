@@ -65,6 +65,92 @@ interface RekapSiswa {
   persentaseHadir: number;
 }
 
+// =============================================================================
+// HELPER PDF — Warna & Format
+// =============================================================================
+type RGB = [number, number, number];
+
+const PDF_COLORS = {
+  indigo: [79, 70, 229] as RGB,
+  indigoLight: [238, 242, 255] as RGB,
+  emerald: [16, 185, 129] as RGB,
+  emeraldLight: [209, 250, 229] as RGB,
+  emeraldDark: [6, 95, 70] as RGB,
+  amber: [245, 158, 11] as RGB,
+  amberLight: [254, 243, 199] as RGB,
+  amberDark: [120, 53, 15] as RGB,
+  blue: [59, 130, 246] as RGB,
+  blueLight: [219, 234, 254] as RGB,
+  blueDark: [30, 64, 175] as RGB,
+  rose: [239, 68, 68] as RGB,
+  roseLight: [254, 226, 226] as RGB,
+  roseDark: [153, 27, 27] as RGB,
+  slate900: [15, 23, 42] as RGB,
+  slate700: [51, 65, 85] as RGB,
+  slate500: [100, 116, 139] as RGB,
+  slate300: [203, 213, 225] as RGB,
+  slate100: [241, 245, 249] as RGB,
+  white: [255, 255, 255] as RGB,
+};
+
+/** Format tanggal panjang ke "01 Sep 2026" */
+function formatTanggalPdf(d: string): string {
+  const date = new Date(`${d}T12:00:00+07:00`);
+  return date.toLocaleDateString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/** Warna badge persentase berdasarkan nilai */
+function getPersenWarna(pct: number): {
+  bg: RGB;
+  text: RGB;
+} {
+  if (pct >= 85) return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
+  if (pct >= 75) return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
+  return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
+}
+
+/** Menggambar kotak statistik kecil (KPI) */
+function drawStatBox(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  label: string,
+  value: string,
+  color: RGB
+) {
+  // Background gradient effect (soft)
+  const lightBg: RGB = [
+    Math.round(color[0] * 0.12 + 255 * 0.88),
+    Math.round(color[1] * 0.12 + 255 * 0.88),
+    Math.round(color[2] * 0.12 + 255 * 0.88),
+  ];
+
+  // Box + border
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(x, y, w, h, 2.5, 2.5, 'FD');
+
+  // Nilai
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(color[0], color[1], color[2]);
+  doc.text(value, x + w / 2, y + h / 2 + 1, { align: 'center' });
+
+  // Label
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(PDF_COLORS.slate500[0], PDF_COLORS.slate500[1], PDF_COLORS.slate500[2]);
+  doc.text(label, x + w / 2, y + h - 2.5, { align: 'center' });
+}
+
 export function RekapPresensiKesiswaanPage() {
   const [activeTab, setActiveTab] = useState<'riwayat' | 'persentase'>('riwayat');
   const [tanggalMulai, setTanggalMulai] = useState<string>(getFirstDayOfMonthWib());
