@@ -13,6 +13,13 @@ import { useAuth } from '@/context/AuthContext';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { PresensiWithSiswa, Kelas } from '@/types/database';
+import {
+  exportColoredPdf,
+  getPersenWarna,
+  formatTanggalPdf,
+  PDF_COLORS,
+  type PdfColumn,
+} from '@/lib/pdfColoredExport';
 
 const SUMMARY_HEADERS = [
   'NISN',
