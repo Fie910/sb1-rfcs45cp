@@ -149,7 +149,7 @@ export function buildWaLink(nomorHp: string | null | undefined, pesan: string): 
 // =============================================================================
 // AKSES
 // =============================================================================
-export const MITRA_MANAGER_ROLES = [
+const MITRA_MANAGER_ROLES = [
   'admin', 'kepala', 'wakil_kepala', 'takola', 'staf_takola',
 ];
 
