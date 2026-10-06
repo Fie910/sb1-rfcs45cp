@@ -99,13 +99,13 @@ export const DOKUMEN_WAJIB: KategoriDokumen[] = [
 ];
 
 /** Dokumen wajib untuk pegawai dengan status tertentu */
-export const DOKUMEN_WAJIB_BERDASARKAN_STATUS: Record<string, KategoriDokumen[]> = {
-  Tetap: ['Sertifikat Pendidik', 'NPWP', 'BPJS Kesehatan', 'Buku Rekening'],
-  Kontrak: ['Kontrak Kerja', 'BPJS Kesehatan', 'Buku Rekening'],
-  Honorer: ['Buku Rekening'],
-  'GTT/PTT': ['Buku Rekening'],
-  Magang: [],
-};
+//export const DOKUMEN_WAJIB_BERDASARKAN_STATUS: Record<string, KategoriDokumen[]> = {
+  //Tetap: ['Sertifikat Pendidik', 'NPWP', 'BPJS Kesehatan', 'Buku Rekening'],
+  //Kontrak: ['Kontrak Kerja', 'BPJS Kesehatan', 'Buku Rekening'],
+  //Honorer: ['Buku Rekening'],
+  //'GTT/PTT': ['Buku Rekening'],
+  //Magang: [],
+//};
 
 // =============================================================================
 // BADGE STYLES
@@ -258,17 +258,6 @@ export function formatDateShort(dateStr: string | null | undefined): string {
     timeZone: 'Asia/Jakarta',
     day: '2-digit',
     month: 'short',
-    year: 'numeric',
-  });
-}
-
-export function formatDateLong(dateStr: string | null | undefined): string {
-  if (!dateStr) return '-';
-  const date = new Date(`${dateStr.split('T')[0]}T00:00:00+07:00`);
-  return date.toLocaleDateString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    day: 'numeric',
-    month: 'long',
     year: 'numeric',
   });
 }
@@ -447,13 +436,6 @@ export const STATUS_CUTI_AKTIF: StatusCuti[] = [
   'Disetujui Atasan',
   'Disetujui HR',
   'Disetujui Kepsek',
-] as const;
-
-/** Status cuti yang sudah final */
-export const STATUS_CUTI_SELESAI = [
-  'Disetujui',
-  'Ditolak',
-  'Dibatalkan',
 ] as const;
 
 /** Role yang bertindak sebagai approver di level tertentu */
