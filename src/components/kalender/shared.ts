@@ -243,11 +243,6 @@ export function formatEventRange(e: KalenderEvent): string {
 // =============================================================================
 // STYLE CONSTANTS
 // =============================================================================
-export const INPUT_CLASS =
-  'w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500';
-
-export const LABEL_CLASS =
-  'block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2';
 
 export const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
