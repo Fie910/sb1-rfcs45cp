@@ -29,8 +29,10 @@ import type {
 // =============================================================================
 // AKSES
 // =============================================================================
-export const HR_MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala', 'takola', 'staf_takola'];
+// ✅ Internal — tidak perlu di-export
+const HR_MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala', 'takola', 'staf_takola'];
 
+// ✅ Tetap export
 export function isHrManager(role: string | null | undefined): boolean {
   if (!role) return false;
   return HR_MANAGER_ROLES.includes(role.toLowerCase());
