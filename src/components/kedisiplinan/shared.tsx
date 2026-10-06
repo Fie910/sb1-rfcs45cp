@@ -23,7 +23,7 @@ import type {
 // AKSES
 // =============================================================================
 
-export const KEDISIPLINAN_MANAGER_ROLES = [
+const KEDISIPLINAN_MANAGER_ROLES = [
   'admin',
   'kepala',
   'wakil_kepala',
