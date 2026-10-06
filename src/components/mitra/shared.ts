@@ -138,15 +138,6 @@ export function daysToExpiry(tanggalSelesai: string | null | undefined): number 
 }
 
 // =============================================================================
-// HELPER URL
-// =============================================================================
-export function buildWaLink(nomorHp: string | null | undefined, pesan: string): string {
-  if (!nomorHp) return '#';
-  const clean = nomorHp.replace(/\D/g, '').replace(/^0/, '62').replace(/^8/, '628');
-  return `https://wa.me/${clean}?text=${encodeURIComponent(pesan)}`;
-}
-
-// =============================================================================
 // AKSES
 // =============================================================================
 const MITRA_MANAGER_ROLES = [
