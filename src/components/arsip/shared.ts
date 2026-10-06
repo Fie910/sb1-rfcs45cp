@@ -136,41 +136,6 @@ export function isSiapDimusnahkan(tanggalRetensi: string | null | undefined): bo
 }
 
 // =============================================================================
-// FILE HELPERS
-// =============================================================================
-/** Ambil icon berdasarkan MIME type */
-export function getFileIcon(mimeType: string | null | undefined): string {
-  if (!mimeType) return 'File';
-  if (mimeType === 'application/pdf') return 'FileText';
-  if (mimeType.startsWith('image/')) return 'Image';
-  if (mimeType.includes('word') || mimeType.includes('document')) return 'FileText';
-  if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'Sheet';
-  return 'File';
-}
-
-/** Cek apakah file bisa di-preview di browser */
-export function isPreviewable(mimeType: string | null | undefined): boolean {
-  if (!mimeType) return false;
-  return (
-    mimeType === 'application/pdf' ||
-    mimeType === 'image/jpeg' ||
-    mimeType === 'image/png' ||
-    mimeType === 'image/webp'
-  );
-}
-
-/** Cek apakah file gambar */
-export function isImageFile(mimeType: string | null | undefined): boolean {
-  if (!mimeType) return false;
-  return mimeType.startsWith('image/');
-}
-
-/** Cek apakah file PDF */
-export function isPdfFile(mimeType: string | null | undefined): boolean {
-  return mimeType === 'application/pdf';
-}
-
-// =============================================================================
 // COMPRESSION HELPERS
 // =============================================================================
 /** Kompres gambar → WebP (mirip pola DokumenSection) */
