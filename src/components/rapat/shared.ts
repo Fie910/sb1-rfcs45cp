@@ -94,7 +94,7 @@ export function formatTanggalPendek(dateStr: string | null | undefined): string 
   });
 }
 
-export function formatJam(time: string | null | undefined): string {
+function formatJam(time: string | null | undefined): string {
   if (!time) return '-';
   return time.slice(0, 5); // 'HH:MM'
 }
@@ -154,9 +154,10 @@ export const LABEL_CLASS =
 // =============================================================================
 // AKSES
 // =============================================================================
-export const RAPAT_MANAGER_ROLES = [
+const RAPAT_MANAGER_ROLES = [
   'admin', 'kepala', 'wakil_kepala', 'takola', 'staf_takola',
   'akademik', 'kesiswaan', 'sarpras', 'keuangan',
+  'staf_akademik', 'staf_kesiswaan', 'staf_sarpras', 'staf_keuangan',
 ];
 
 export function isRapatManager(role: string | null | undefined): boolean {
