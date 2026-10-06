@@ -171,7 +171,7 @@ export function isRapatManager(role: string | null | undefined): boolean {
 export {
   JENIS_RAPAT_OPTIONS,
   STATUS_RAPAT_OPTIONS,
-  JABATAN_RAPAT_OPTIONS,
+//  JABATAN_RAPAT_OPTIONS, (nonaktif)
   KEHADIRAN_RAPAT_OPTIONS,
 } from '@/types/database';
 
