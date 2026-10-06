@@ -20,7 +20,7 @@ import type {
 // AKSES
 // =============================================================================
 
-export const BK_MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala', 'bk'];
+const BK_MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala', 'bk'];
 
 export function isBkManager(role: string | null | undefined): boolean {
   if (!role) return false;
