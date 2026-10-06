@@ -199,16 +199,6 @@ export function formatTanggalPanjang(dateStr: string): string {
   });
 }
 
-//export function formatTanggalPendek(dateStr: string): string {
-  //const date = new Date(`${dateStr}T12:00:00+07:00`);
-  //return date.toLocaleDateString('id-ID', {
-    //timeZone: 'Asia/Jakarta',
-    //day: 'numeric',
-    //month: 'short',
-    //year: 'numeric',
-  //});
-//}
-
 export function formatTanggalMini(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00+07:00`);
   return date.toLocaleDateString('id-ID', {
