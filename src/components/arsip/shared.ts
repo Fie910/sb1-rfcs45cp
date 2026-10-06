@@ -212,14 +212,16 @@ export async function compressImageToWebP(
 // =============================================================================
 // AKSES
 // =============================================================================
-export const ARSIP_MANAGER_ROLES = [
-  'admin', 'kepala', 'wakil_kepala', 'takola', 'staf_takola',
-];
-
-export const ARSIP_KATEGORI_MANAGER_ROLES = [
+// ✅ Internal — tidak perlu di-export (hanya dipakai di file ini)
+const ARSIP_MANAGER_ROLES = [
   'admin', 'kepala', 'wakil_kepala',
 ];
 
+const ARSIP_KATEGORI_MANAGER_ROLES = [
+  'admin', 'kepala', 'wakil_kepala', 'takola',
+];
+
+// ✅ Tetap export — dipakai di ArsipPage, DaftarArsipTab, ModalDetailArsip
 export function isArsipManager(role: string | null | undefined): boolean {
   if (!role) return false;
   return ARSIP_MANAGER_ROLES.includes(role.toLowerCase());
