@@ -57,17 +57,6 @@ export function getKehadiranBadge(status: string | null | undefined): string {
   }
 }
 
-//export function getNotulensiBadge(status: string | null | undefined): string {
-  //switch (status) {
-    //case 'Final':
-      //return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
-    //case 'Draft':
-      //return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
-    //default:
-      //return 'bg-slate-800 text-slate-400 border-slate-700';
-  //}
-//}
-
 // =============================================================================
 // FORMATTERS
 // =============================================================================
@@ -171,7 +160,7 @@ export function isRapatManager(role: string | null | undefined): boolean {
 export {
   JENIS_RAPAT_OPTIONS,
   STATUS_RAPAT_OPTIONS,
-//  JABATAN_RAPAT_OPTIONS, (nonaktif)
+
   KEHADIRAN_RAPAT_OPTIONS,
 } from '@/types/database';
 
