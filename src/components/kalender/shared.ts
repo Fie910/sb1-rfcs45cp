@@ -199,15 +199,15 @@ export function formatTanggalPanjang(dateStr: string): string {
   });
 }
 
-export function formatTanggalPendek(dateStr: string): string {
-  const date = new Date(`${dateStr}T12:00:00+07:00`);
-  return date.toLocaleDateString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
+//export function formatTanggalPendek(dateStr: string): string {
+  //const date = new Date(`${dateStr}T12:00:00+07:00`);
+  //return date.toLocaleDateString('id-ID', {
+    //timeZone: 'Asia/Jakarta',
+    //day: 'numeric',
+    //month: 'short',
+    //year: 'numeric',
+  //});
+//}
 
 export function formatTanggalMini(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00+07:00`);
@@ -231,7 +231,7 @@ export function relativeDay(dateStr: string, todayStr: string): string {
   return `${Math.abs(diff)} hari lalu`;
 }
 
-export function isMultiDay(e: KalenderEvent): boolean {
+function isMultiDay(e: KalenderEvent): boolean {
   return e.tanggal_mulai !== e.tanggal_selesai;
 }
 
