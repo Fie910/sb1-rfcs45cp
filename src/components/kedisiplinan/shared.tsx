@@ -40,7 +40,7 @@ export function isKedisiplinanManager(role: string | null | undefined): boolean 
 // KONSTANTA — THRESHOLD SP
 // =============================================================================
 
-export const THRESHOLD_SP: Record<LevelSP, number> = {
+const THRESHOLD_SP: Record<LevelSP, number> = {
   SP1: 25,
   SP2: 50,
   SP3: 75,
