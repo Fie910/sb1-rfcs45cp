@@ -230,12 +230,12 @@ export function DashboardPage({
       </div>
 
       {/* ==================== SHORTCUT ==================== */}
-      <ShortcutGrid
-        shortcuts={shortcuts}
-        loading={loadingShortcuts}
-        onEdit={() => setEditModalOpen(true)}
-        badgeCounts={badgeCounts}
-      />
+<ShortcutGrid
+  shortcuts={shortcuts}
+  loading={loadingShortcuts}
+  onEdit={() => setEditModalOpen(true)}
+  badgeCounts={badgeCounts}
+/>
 
       {/* ==================== MODAL DETAIL PENGUMUMAN ==================== */}
       <ModalDetailPengumuman
