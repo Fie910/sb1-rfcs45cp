@@ -52,30 +52,6 @@ export function formatTanggalPanjang(dateStr: string): string {
   });
 }
 
-/** Format "2026-10-05" → "5 Oktober 2026" */
-export function formatTanggalPendek(dateStr: string): string {
-  if (!dateStr) return '-';
-  const d = new Date(`${dateStr.split('T')[0]}T00:00:00+07:00`);
-  return d.toLocaleDateString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-/** Format "2026-10-05" → "5 Okt 2026" */
-export function formatTanggalSuperPendek(dateStr: string): string {
-  if (!dateStr) return '-';
-  const d = new Date(`${dateStr.split('T')[0]}T00:00:00+07:00`);
-  return d.toLocaleDateString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 /** Format jam "07:30:00" → "07:30" */
 export function formatJam(t: string | null | undefined): string {
   if (!t) return '-';
