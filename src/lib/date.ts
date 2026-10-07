@@ -104,9 +104,6 @@ export function getHariFromDateString(dateStr: string): HariMinggu {
  * @deprecated Gunakan `getTodayHariWib()` sebagai gantinya.
  * Dipertahankan untuk backward compatibility.
  */
-export function getHariIniLokal(): string {
-  return getTodayHariWib();
-}
 
 // =============================================================================
 // WAKTU — Format HH:mm
