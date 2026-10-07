@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, LogOut, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { NAVIGATION_CONFIG, type PageKey } from '@/config/navigation';
+import { canAccessTahfidz } from '@/components/tahfidz/shared';
 
 // =============================================================================
 // KONSTANTA
