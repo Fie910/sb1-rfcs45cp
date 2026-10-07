@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase';
 // TIPE
 // =============================================================================
 
-type AuditAction =
+export type AuditAction =
   | 'CREATE'
   | 'UPDATE'
   | 'DELETE'
