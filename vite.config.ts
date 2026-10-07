@@ -11,20 +11,26 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor utama — jarang berubah, di-cache lama
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
-
-          // Berat & jarang dipakai — dipisah agar tidak masuk initial load
           'vendor-charts': ['recharts'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'pdf-lib', 'pdfjs-dist'],
           'vendor-xlsx': ['xlsx'],
           'vendor-qr': ['qrcode', 'qrcode.react', 'html5-qrcode'],
           'vendor-icons': ['lucide-react'],
+
+          // =====================================================================
+          // PDF — dipisah jadi 2 group
+          // =====================================================================
+
+          // Generator PDF — dipakai untuk bikin surat/notulensi/label
+          'vendor-pdf-gen': ['jspdf', 'jspdf-autotable', 'pdf-lib'],
+
+          // Reader PDF — ~1 MB, dipakai hanya untuk preview PDF
+          'vendor-pdf-read': ['pdfjs-dist'],
         },
       },
     },
