@@ -29,6 +29,7 @@ const TIPE_TO_PAGE: Record<string, PageKey> = {
   rapat_baru: 'rapat',
   rapat_update: 'rapat',
   rapat_cancel: 'rapat',
+  notulensi_final: 'rapat',
 };
 
 export function useBadgeCounts(guruId: string | null, guruNama: string | null) {
