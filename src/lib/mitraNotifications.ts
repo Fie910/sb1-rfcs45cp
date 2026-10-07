@@ -7,7 +7,7 @@ import { sendNotification, getGuruIdsByRole } from './notification';
 // =============================================================================
 // TYPES
 // =============================================================================
-export type MouReminderData = {
+type MouReminderData = {
   id: string;
   nomor_mou: string | null;
   judul: string;
