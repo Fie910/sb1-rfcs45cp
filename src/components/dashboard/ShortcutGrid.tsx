@@ -501,7 +501,7 @@ type Props = {
 // =============================================================================
 // KOMPONEN
 // =============================================================================
-export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
+export function ShortcutGrid({ shortcuts, loading, onEdit, badgeCounts }: Props) {
   const { hasAccess } = useAuth();
 
   const valid = shortcuts
