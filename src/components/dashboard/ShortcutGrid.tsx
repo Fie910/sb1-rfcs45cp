@@ -495,6 +495,7 @@ type Props = {
   shortcuts: ShortcutItem[];
   loading?: boolean;
   onEdit: () => void;
+  badgeCounts?: Partial<Record<PageKey, number>>;
 };
 
 // =============================================================================
