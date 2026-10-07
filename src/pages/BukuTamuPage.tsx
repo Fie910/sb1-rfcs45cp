@@ -469,7 +469,7 @@ export function BukuTamuPage() {
   value={form.siswa_id}
   onChange={(v) => setForm({ ...form, siswa_id: v })}
   placeholder="Pilih Nama Siswa"
-  searchPlaceholder="Cari nama siswa atau kelas..."
+  searchPlaceholder="Cari nama siswa / NISN / kelas..."
   emptyMessage="Siswa tidak ditemukan"
 />
             </div>
