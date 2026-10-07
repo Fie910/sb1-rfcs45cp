@@ -168,7 +168,7 @@ export function formatWaktuRange(
 // KONSTANTA OPSI
 // =============================================================================
 
-export const BIDANG_OPTIONS: BidangBK[] = ['Pribadi', 'Sosial', 'Belajar', 'Karier'];
+//export const BIDANG_OPTIONS: BidangBK[] = ['Pribadi', 'Sosial', 'Belajar', 'Karier'];
 export const TIPE_KONSELING_OPTIONS: TipeKonseling[] = [
   'Individual',
   'Kelompok',
