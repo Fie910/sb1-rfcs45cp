@@ -112,7 +112,7 @@ export async function fetchPengaturan(includeKepsek = false): Promise<Pengaturan
 // =============================================================================
 
 /** Fetch gambar dari URL → data URL (base64). Berguna untuk jsPDF.addImage(). */
-async function loadImageAsDataUrl(url: string): Promise<string | null> {
+export async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url);
     const blob = await res.blob();
