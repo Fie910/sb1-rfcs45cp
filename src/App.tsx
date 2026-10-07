@@ -123,6 +123,9 @@ const PUBLIC_PATH_PREFIXES = [
 ];
 
 function isPublicPath(pathname: string): boolean {
+  // ✅ Exclude sub-path yang harus protected
+  if (pathname.startsWith('/buku_tamu/kelola')) return false;
+
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
