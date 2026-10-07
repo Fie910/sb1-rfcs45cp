@@ -16,27 +16,38 @@ export type GuruRoleFields = {
 const MANAGER_ROLES = ['admin', 'kepala', 'wakil_kepala'];
 
 /**
- * Cek apakah user boleh kelola modul Tahfidz.
- * - Manager (admin/kepala/wakil) → selalu bisa
- * - Guru dengan role2 atau role3 = 'tahfidz' → bisa
+ * Cek apakah user boleh AKSES modul Tahfidz (minimal lihat).
+ * - Manager (admin/kepala/wakil) → boleh
+ * - Guru dengan role3 = 'tahfidz' → boleh
+ * - Guru dengan role2 = 'tahfidz' → boleh (backward-compat)
+ */
+export function canAccessTahfidz(guru: GuruRoleFields | null | undefined): boolean {
+  if (!guru) return false;
+  const roles = [guru.role, guru.role2, guru.role3]
+    .map((r) => (r ?? '').toLowerCase())
+    .filter(Boolean);
+  if (roles.some((r) => MANAGER_ROLES.includes(r))) return true;
+  return roles.includes('tahfidz');
+}
+
+/**
+ * Cek apakah user adalah MANAGER modul (akses penuh termasuk tab manager-only).
+ * Manager = admin / kepala / wakil_kepala. Guru tahfidz BUKAN manager.
  */
 export function isTahfidzManager(guru: GuruRoleFields | null | undefined): boolean {
   if (!guru) return false;
   const roles = [guru.role, guru.role2, guru.role3]
     .map((r) => (r ?? '').toLowerCase())
     .filter(Boolean);
-  return roles.some((r) => MANAGER_ROLES.includes(r) || r === 'tahfidz');
+  return roles.some((r) => MANAGER_ROLES.includes(r));
 }
 
 /**
- * Cek apakah user adalah guru tahfidz (khusus, bukan admin).
+ * Cek apakah user adalah guru tahfidz (role3='tahfidz'), bukan manager.
  */
 export function isGuruTahfidz(guru: GuruRoleFields | null | undefined): boolean {
   if (!guru) return false;
-  const roles = [guru.role, guru.role2, guru.role3]
-    .map((r) => (r ?? '').toLowerCase())
-    .filter(Boolean);
-  return roles.includes('tahfidz');
+  return (guru.role3 ?? '').toLowerCase() === 'tahfidz';
 }
 
 // =============================================================================
