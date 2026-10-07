@@ -19,6 +19,8 @@ export type Guru = {
   nama_lengkap: string;
   email: string;
   role: GuruRole;
+  role2: string | null;
+  role3: string | null;
   divisi_id: string | null;
   divisis?: Divisi | null;
   mata_pelajaran?: string | null;
