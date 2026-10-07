@@ -227,8 +227,8 @@ function AppContent() {
     <AppLayout current={currentPath} badgeCounts={badgeCounts}>
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/" element={<DashboardPage badgeCounts={badgeCounts} />} />
+          <Route path="/dashboard" element={<DashboardPage badgeCounts={badgeCounts} />} />
           <Route path="/dashboard_kepsek" element={<ProtectedRoute accessKey="dashboard_kepsek"><DashboardKepsekPage /></ProtectedRoute>} />
           <Route path="/monev_divisi" element={<ProtectedRoute accessKey="monev_divisi"><MonevDivisiPage /></ProtectedRoute>} />
           <Route path="/kalender_akademik" element={<ProtectedRoute accessKey="kalender_akademik"><KalenderAkademikPage /></ProtectedRoute>} />
