@@ -11,7 +11,7 @@
 //   });
 //
 // Push notification akan otomatis dikirim oleh webhook Supabase → Edge Function
-// `send-push`, 
+// `send-push`.
 
 import { supabase } from '@/lib/supabase';
 
