@@ -215,7 +215,7 @@ export function ModalSetoran({
 
         await logActivity({
           aksi: 'UPDATE',
-          modul: AUDIT_MODUL.KESISWAAN ?? 'Tahfidz',
+          modul: AUDIT_MODUL.TAHFIDZ,
           targetId: editTarget.id,
           deskripsi: `Update setoran tahfidz: ${selectedSiswa?.nama_lengkap}`,
         });
@@ -226,7 +226,7 @@ export function ModalSetoran({
 
         await logActivity({
           aksi: 'CREATE',
-          modul: AUDIT_MODUL.KESISWAAN ?? 'Tahfidz',
+          modul: AUDIT_MODUL.TAHFIDZ,
           deskripsi: `Tambah setoran tahfidz: ${selectedSiswa?.nama_lengkap}`,
         });
         showToast('success', 'Setoran ditambahkan');
