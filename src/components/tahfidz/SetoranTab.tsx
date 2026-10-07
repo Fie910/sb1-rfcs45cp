@@ -153,7 +153,7 @@ export function SetoranTab({ surahMap, isManager }: Props) {
 
       await logActivity({
         aksi: 'DELETE',
-        modul: AUDIT_MODUL.KESISWAAN ?? 'Tahfidz',
+        modul: AUDIT_MODUL.TAHFIDZ,
         targetId: item.id,
         deskripsi: `Hapus setoran tahfidz: ${item.siswa?.nama_lengkap}`,
       });
