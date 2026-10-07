@@ -37,6 +37,7 @@ import {
   Library,
   FolderArchive,
   Building2,
+  BookOpen,
 } from 'lucide-react';
 
 export type PageKey =
