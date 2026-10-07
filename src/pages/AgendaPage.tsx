@@ -68,6 +68,53 @@ const HARI_ORDER: Record<string, number> = {
 };
 
 // ============================================================================
+// HELPER — Group jadwal (untuk kelas gabungan)
+// ============================================================================
+
+export type JadwalGroup = {
+  key: string;
+  waktu_mulai: string;
+  waktu_selesai: string;
+  mapel_nama: string;
+  jadwalList: JadwalKbmWithRelations[];
+  kelas_list: string[];
+  is_multi_kelas: boolean;
+};
+
+/**
+ * Group jadwal berdasarkan waktu_mulai + waktu_selesai.
+ * Kalau > 1 jadwal di slot yang sama → dianggap kelas gabungan.
+ */
+function groupJadwalByWaktu(jadwalList: JadwalKbmWithRelations[]): JadwalGroup[] {
+  const groups = new Map<string, JadwalGroup>();
+
+  jadwalList.forEach((j) => {
+    const key = `${j.waktu_mulai ?? ''}|${j.waktu_selesai ?? ''}`;
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.jadwalList.push(j);
+      if (j.kelas?.nama_kelas) existing.kelas_list.push(j.kelas.nama_kelas);
+      existing.is_multi_kelas = existing.jadwalList.length > 1;
+    } else {
+      groups.set(key, {
+        key,
+        waktu_mulai: j.waktu_mulai ?? '',
+        waktu_selesai: j.waktu_selesai ?? '',
+        mapel_nama: j.mata_pelajarans?.nama_mapel ?? '-',
+        jadwalList: [j],
+        kelas_list: j.kelas?.nama_kelas ? [j.kelas.nama_kelas] : [],
+        is_multi_kelas: false,
+      });
+    }
+  });
+
+  return Array.from(groups.values()).sort((a, b) =>
+    a.waktu_mulai.localeCompare(b.waktu_mulai)
+  );
+}
+
+// ============================================================================
 // HELPER LOKAL — Business logic spesifik AgendaPage
 // ============================================================================
 
