@@ -1456,78 +1456,106 @@ const handleSaveJournalGroup = async (e: React.FormEvent) => {
       )}
 
       {/* MODAL JURNAL */}
-      <Modal
-        open={journalModal}
-        onClose={() => setJournalModal(false)}
-        title="Isi Jurnal / Agenda Materi"
-        size="lg"
-      >
-        {activeJadwal && (
-          <form onSubmit={handleSaveJournal} className="space-y-5">
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Waktu
-                  </p>
-                  <p className="font-mono font-semibold text-slate-200 mt-0.5">
-                    {activeJadwal.waktu_mulai?.slice(0, 5)} -{' '}
-                    {activeJadwal.waktu_selesai?.slice(0, 5)} WIB
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Mata Pelajaran
-                  </p>
-                  <p className="font-semibold text-slate-200 mt-0.5">
-                    {getMapelName(activeJadwal)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Kelas
-                  </p>
-                  <p className="font-semibold text-indigo-400 mt-0.5">
-                    {activeJadwal.kelas?.nama_kelas ?? '-'}
-                  </p>
-                </div>
+<Modal
+  open={journalModal}
+  onClose={() => {
+    setJournalModal(false);
+    setActiveJadwalGroup(null);
+  }}
+  title="Isi Jurnal / Agenda Materi"
+  size="lg"
+>
+  {activeJadwalGroup && (
+    <form onSubmit={handleSaveJournalGroup} className="space-y-5">
+      <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Waktu
+            </p>
+            <p className="font-mono font-semibold text-slate-200 mt-0.5">
+              {activeJadwalGroup.waktu_mulai?.slice(0, 5)} -{' '}
+              {activeJadwalGroup.waktu_selesai?.slice(0, 5)} WIB
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Mata Pelajaran
+            </p>
+            <p className="font-semibold text-slate-200 mt-0.5">
+              {activeJadwalGroup.mapel_nama}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Kelas
+            </p>
+            {activeJadwalGroup.is_multi_kelas ? (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {activeJadwalGroup.kelas_list.map((k, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300"
+                  >
+                    {k}
+                  </span>
+                ))}
               </div>
-            </div>
+            ) : (
+              <p className="font-semibold text-indigo-400 mt-0.5">
+                {activeJadwalGroup.kelas_list[0] ?? '-'}
+              </p>
+            )}
+          </div>
+        </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Catatan Materi / Jurnal Mengajar
-              </label>
-              <textarea
-                value={journalText}
-                onChange={(e) => setJournalText(e.target.value)}
-                rows={7}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none text-sm leading-relaxed"
-                placeholder="Tuliskan materi yang diajarkan, kegiatan kelas, dan catatan penting..."
-                required
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setJournalModal(false)}
-                className="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 font-semibold text-xs transition-colors cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={saving || gps.status !== 'success' || isLibur}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                Simpan Jurnal
-              </button>
-            </div>
-          </form>
+        {activeJadwalGroup.is_multi_kelas && (
+          <div className="mt-3 pt-3 border-t border-slate-800/60 text-[11px] text-purple-300 flex items-center gap-1.5">
+            <span>📚</span>
+            <span>
+              Jurnal ini akan disimpan untuk <strong>{activeJadwalGroup.jadwalList.length} kelas</strong> sekaligus.
+            </span>
+          </div>
         )}
-      </Modal>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+          Catatan Materi / Jurnal Mengajar
+        </label>
+        <textarea
+          value={journalText}
+          onChange={(e) => setJournalText(e.target.value)}
+          rows={7}
+          className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none text-sm leading-relaxed"
+          placeholder="Tuliskan materi yang diajarkan, kegiatan kelas, dan catatan penting..."
+          required
+        />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setJournalModal(false);
+            setActiveJadwalGroup(null);
+          }}
+          className="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 font-semibold text-xs transition-colors cursor-pointer"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          disabled={saving || gps.status !== 'success' || isLibur}
+          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          Simpan Jurnal
+        </button>
+      </div>
+    </form>
+  )}
+</Modal>
     </div>
   );
 }
