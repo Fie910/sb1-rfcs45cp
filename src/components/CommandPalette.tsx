@@ -10,6 +10,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { NAVIGATION_CONFIG, type PageKey } from '@/config/navigation';
 import type { LucideIcon } from 'lucide-react';
+import { canAccessTahfidz } from '@/components/tahfidz/shared';
 
 // =============================================================================
 // KONSTANTA
