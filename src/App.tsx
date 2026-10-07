@@ -51,6 +51,7 @@ const RekapIzinPage = lazy(() => import('@/pages/RekapIzinPage').then((m) => ({ 
 const ProfilPage = lazy(() => import('@/pages/ProfilPage').then((m) => ({ default: m.ProfilPage })));
 const HakAksesPage = lazy(() => import('@/pages/HakAksesPage').then((m) => ({ default: m.HakAksesPage })));
 const BukuTamuPage = lazy(() => import('@/pages/BukuTamuPage').then((m) => ({ default: m.BukuTamuPage })));
+const BukuTamuKelolaPage = lazy(() => import('@/pages/BukuTamuKelolaPage').then((m) => ({ default: m.BukuTamuKelolaPage })));
 const SuratPage = lazy(() => import('@/pages/SuratPage').then((m) => ({ default: m.SuratPage })));
 const TugasDisposisiPage = lazy(() => import('@/pages/TugasDisposisiPage').then((m) => ({ default: m.TugasDisposisiPage })));
 
@@ -194,6 +195,7 @@ function AppContent() {
           <Route path="/" element={<DashboardPage badgeCounts={badgeCounts} />} />
           <Route path="/dashboard" element={<DashboardPage badgeCounts={badgeCounts} />} />
           <Route path="/dashboard_kepsek" element={<ProtectedRoute accessKey="dashboard_kepsek"><DashboardKepsekPage /></ProtectedRoute>} />
+          <Route path="/buku_tamu/kelola" element={<ProtectedRoute accessKey="buku_tamu"><BukuTamuKelolaPage /></ProtectedRoute>} />
           <Route path="/monev_divisi" element={<ProtectedRoute accessKey="monev_divisi"><MonevDivisiPage /></ProtectedRoute>} />
           <Route path="/kalender_akademik" element={<ProtectedRoute accessKey="kalender_akademik"><KalenderAkademikPage /></ProtectedRoute>} />
           <Route path="/saran_pengaduan" element={<ProtectedRoute accessKey="saran_pengaduan"><SaranPengaduanPage /></ProtectedRoute>} />

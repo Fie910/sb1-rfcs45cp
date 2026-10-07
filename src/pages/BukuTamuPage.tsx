@@ -60,15 +60,11 @@ export function BukuTamuPage() {
   useEffect(() => {
     (async () => {
       setLoadingMaster(true);
-      const [guruRes, divisiRes, siswaRes] = await Promise.all([
-        supabase.from('gurus').select('*').order('nama_lengkap', { ascending: true }),
-        supabase.from('divisis').select('*').order('nama_divisi', { ascending: true }),
-        supabase
-          .from('siswas')
-          .select('*')
-          .order('nama_lengkap', { ascending: true })
-          .limit(500),
-      ]);
+        const [guruRes, divisiRes, siswaRes] = await Promise.all([
+          supabase.rpc('get_gurus_public'),
+          supabase.rpc('get_divisis_public'),
+          supabase.rpc('get_siswas_public'),
+        ]);
 
       setGurus((guruRes.data as Guru[]) ?? []);
       setDivisis((divisiRes.data as Divisi[]) ?? []);

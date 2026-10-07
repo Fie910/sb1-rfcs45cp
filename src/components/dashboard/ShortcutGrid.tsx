@@ -351,7 +351,7 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     label: 'Buku Tamu',
     shortLabel: 'Buku Tamu',
     icon: UserPlus,
-    path: '/buku_tamu',
+    path: '/buku_tamu/kelola',
     color: 'teal',
   },
 

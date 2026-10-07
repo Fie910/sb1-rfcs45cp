@@ -112,7 +112,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
       { key: 'profil', label: 'Profil Saya', icon: User, path: '/profil' },
       { key: 'kalender_akademik', label: 'Kalender Akademik', icon: CalendarRange, path: '/kalender_akademik' },
-      { key: 'buku_tamu', label: 'Buku Tamu', icon: NotebookPen, path: '/buku_tamu' },
+      { key: 'buku_tamu', label: 'Buku Tamu', icon: NotebookPen, path: '/buku_tamu/kelola' },
       { key: 'saran_pengaduan', label: 'Saran & Pengaduan', icon: MessageSquareWarning, path: '/saran_pengaduan' },
       { key: 'pengumuman', label: 'Kelola Pengumuman', icon: Megaphone, path: '/pengumuman' },
     ],
