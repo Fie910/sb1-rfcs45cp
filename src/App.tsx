@@ -132,7 +132,7 @@ function isPublicPath(pathname: string): boolean {
 function AppContent() {
   const { session, loading, guru } = useAuth();
   const location = useLocation();
-  const [badgeCounts, setBadgeCounts] = useState<Partial<Record<PageKey, number>>>({});
+  const badgeCounts = useBadgeCounts(guru?.id ?? null, guru?.nama_lengkap ?? null);
 
   // Real-time listener Supabase berdasar nama_lengkap pada tabel disposisi_surat
   useEffect(() => {
