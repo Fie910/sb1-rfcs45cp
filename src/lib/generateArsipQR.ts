@@ -58,16 +58,6 @@ export async function downloadArsipQR(
 }
 
 // =============================================================================
-// OPEN PREVIEW
-// =============================================================================
-export async function openArsipQRPreview(
-  verificationToken: string,
-  contentHash?: string | null
-): Promise<string> {
-  return generateArsipQRDataUrl(verificationToken, contentHash, 600);
-}
-
-// =============================================================================
 // PRINT — Buka di tab baru siap print
 // =============================================================================
 export async function printArsipQR(
