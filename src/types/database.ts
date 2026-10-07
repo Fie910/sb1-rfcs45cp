@@ -164,6 +164,11 @@ export type AgendaGuru = {
   menit_terlambat: number;
   alpa_jam_pelajaran: number;
   created_at: string;
+    // Snapshot ↓
+  mapel_nama_snapshot: string | null;
+  kelas_nama_snapshot: string | null;
+  waktu_mulai_snapshot: string | null;
+  waktu_selesai_snapshot: string | null;
 };
 
 export type AgendaGuruWithRelations = AgendaGuru & {
