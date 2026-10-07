@@ -134,45 +134,6 @@ function AppContent() {
   const location = useLocation();
   const badgeCounts = useBadgeCounts(guru?.id ?? null, guru?.nama_lengkap ?? null);
 
-  // Real-time listener Supabase berdasar nama_lengkap pada tabel disposisi_surat
-  useEffect(() => {
-    if (!guru?.nama_lengkap) return;
-
-    const fetchPendingCount = async () => {
-      const { count, error } = await supabase
-        .from('disposisi_surat')
-        .select('*', { count: 'exact', head: true })
-        .eq('penerima_disposisi', guru.nama_lengkap)
-        .neq('status', 'SELESAI');
-
-      if (!error && count !== null) {
-        setBadgeCounts((prev) => ({ ...prev, tugas_disposisi: count }));
-      }
-    };
-
-    fetchPendingCount();
-
-    const channel = supabase
-      .channel('disposisi-badge-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'disposisi_surat',
-          filter: `penerima_disposisi=eq.${guru.nama_lengkap}`,
-        },
-        () => {
-          fetchPendingCount();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [guru?.nama_lengkap]);
-
   // -------------------------------------------------------------------------
   // LOADING
   // -------------------------------------------------------------------------
