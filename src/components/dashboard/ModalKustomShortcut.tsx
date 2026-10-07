@@ -13,6 +13,7 @@ import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/lib/audit';
 import { PAGE_CONFIG, COLOR_MAP, type ShortcutConfig } from './ShortcutGrid';
+import { canAccessTahfidz } from '@/components/tahfidz/shared';
 import type { PageKey } from '@/config/navigation';
 
 // =============================================================================
