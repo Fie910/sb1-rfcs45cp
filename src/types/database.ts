@@ -1933,6 +1933,30 @@ export type TahfidzProgress = {
   terakhir_setoran: string | null;
 };
 
+// Tambah di bagian TAHFIDZ
+export type TahfidzMilestone = {
+  id: string;
+  nama: string;
+  deskripsi: string | null;
+  threshold_halaman: number;
+  poin_prestasi: number;
+  badge_color: string;
+  urutan: number;
+  is_aktif: boolean;
+  created_at: string;
+};
+
+export type TahfidzMilestoneTercapai = {
+  id: string;
+  siswa_id: number;
+  milestone_id: string;
+  tanggal_tercapai: string;
+  prestasi_id: string | null;
+  catatan: string | null;
+  created_at: string;
+  created_by: string | null;
+};
+
 // Constants
 export const JENIS_SETORAN_OPTIONS: JenisSetoran[] = ['Tahfidz', 'Murojaah'];
 export const KUALITAS_HAFALAN_OPTIONS: KualitasHafalan[] = ['Lancar', 'Cukup', 'Perlu Ulang'];
