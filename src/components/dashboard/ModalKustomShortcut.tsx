@@ -50,7 +50,7 @@ type Props = {
 export function ModalKustomShortcut({
   open, onClose, onSaved, currentShortcuts, guruId,
 }: Props) {
-  const { hasAccess } = useAuth();
+  const { guru, hasAccess } = useAuth();
 
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
