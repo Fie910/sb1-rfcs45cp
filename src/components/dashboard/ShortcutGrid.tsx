@@ -330,6 +330,13 @@ const PAGE_CONFIG: Record<string, ShortcutConfig> = {
     path: '/perpustakaan',
     color: 'purple',
   },
+  tahfidz: {
+  label: 'Tahfidz Quran',
+  shortLabel: 'Tahfidz',
+  icon: BookMarked,   // sudah ada di import
+  path: '/tahfidz',
+  color: 'emerald',
+},
 
   // ─────────────────────────────────────────────────────────────────
   // KOMUNIKASI & DOKUMEN
