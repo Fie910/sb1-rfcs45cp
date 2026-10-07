@@ -112,7 +112,7 @@ export function formatTanggalPdf(d: string): string {
   });
 }
 
-export function formatTanggalPanjangPdf(d: string): string {
+function formatTanggalPanjangPdf(d: string): string {
   const date = new Date(`${d}T12:00:00+07:00`);
   return date.toLocaleDateString('id-ID', {
     timeZone: 'Asia/Jakarta',
