@@ -79,6 +79,8 @@ const PerpustakaanPage = lazy(() => import('@/pages/PerpustakaanPage').then((m) 
 const HariLiburPage = lazy(() => import('@/pages/HariLiburPage').then((m) => ({ default: m.HariLiburPage })));
 const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 
+const TahfidzPage = lazy(() => import('@/pages/TahfidzPage').then((m) => ({ default: m.TahfidzPage })));
+
 // =============================================================================
 // SUB-COMPONENT
 // =============================================================================
