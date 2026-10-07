@@ -187,6 +187,7 @@ export function TahfidzPage() {
             {activeTab === 'progress' && <ProgressSiswaTab {...tabProps} />}
             {activeTab === 'target' && <TargetTab {...tabProps} />}
             {activeTab === 'rekap' && <RekapTab {...tabProps} />}
+            {activeTab === 'sertifikat' && <SertifikatTab {...tabProps} />}
           </Suspense>
         )}
       </div>
