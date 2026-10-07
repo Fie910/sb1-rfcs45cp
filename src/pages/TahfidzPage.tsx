@@ -40,7 +40,7 @@ const SertifikatTab = lazy(() =>
 // =============================================================================
 // TAB DEFINITION
 // =============================================================================
-type TabKey = 'setoran' | 'dashboard' | 'progress' | 'target' | 'rekap';
+type TabKey = 'setoran' | 'dashboard' | 'progress' | 'target' | 'rekap' | 'sertifikat';
 
 type TabDef = {
   key: TabKey;
@@ -55,6 +55,7 @@ const ALL_TABS: TabDef[] = [
   { key: 'target', label: 'Target', icon: Target, managerOnly: true },
   { key: 'rekap', label: 'Rekap', icon: BarChart3, managerOnly: true },
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3, managerOnly: true },
+  { key: 'sertifikat', label: 'Sertifikat', icon: Award, managerOnly: true },
 ];
 
 const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
@@ -63,6 +64,7 @@ const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
   progress: () => import('@/components/tahfidz/ProgressSiswaTab'),
   target: () => import('@/components/tahfidz/TargetTab'),
   rekap: () => import('@/components/tahfidz/RekapTab'),
+  sertifikat: () => import('@/components/tahfidz/SertifikatTab'),
 };
 
 // =============================================================================
