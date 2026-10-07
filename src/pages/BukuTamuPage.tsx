@@ -66,9 +66,9 @@ export function BukuTamuPage() {
           supabase.rpc('get_siswas_public'),
         ]);
 
-      setGurus((guruRes.data as Guru[]) ?? []);
-      setDivisis((divisiRes.data as Divisi[]) ?? []);
-      setSiswas((siswaRes.data as Siswa[]) ?? []);
+      setGurus((guruRes.data as any[]) ?? []);
+      setDivisis((divisiRes.data as any[]) ?? []);
+      setSiswas((siswaRes.data as any[]) ?? []);
       setLoadingMaster(false);
     })();
   }, []);
