@@ -101,14 +101,24 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
   // ==========================================================================
   // Visible groups (filter akses)
   // ==========================================================================
-  const visibleGroups = useMemo(() => {
-    return NAVIGATION_CONFIG
-      .map((group) => ({
-        ...group,
-        items: group.items.filter((item) => hasAccess(item.key)),
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [hasAccess]);
+const visibleGroups = useMemo(() => {
+  return NAVIGATION_CONFIG
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        // 1. Cek hak akses (existing)
+        if (!hasAccess(item.key)) return false;
+
+        // 2. Cek customAccess — tahfidz hanya untuk guru tahfidz
+        if (item.customAccess === 'tahfidz' && !canAccessTahfidz(guru)) {
+          return false;
+        }
+
+        return true;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+}, [hasAccess, guru]);   // ← tambah `guru` ke deps
 
   // ==========================================================================
   // HANDLERS
