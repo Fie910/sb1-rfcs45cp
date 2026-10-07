@@ -15,7 +15,7 @@ const PATH_TO_NOTIF_TIPE: Record<string, string[]> = {
   '/buku_tamu': ['buku_tamu'],
   '/saran_pengaduan': ['saran_pengaduan'],
   '/todo': ['tugas'],
-  '/rapat': ['rapat_baru', 'rapat_update', 'rapat_cancel'],
+  '/rapat': ['rapat_baru', 'rapat_update', 'rapat_cancel', 'notulensi_final'],
   // disposisi_surat tidak pakai tabel notifikasi — auto-clear di halaman
 };
 
