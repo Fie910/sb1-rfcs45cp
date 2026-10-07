@@ -81,6 +81,10 @@ export function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Di interface DashboardPage (kalau ada) atau langsung di signature:
+export function DashboardPage({ badgeCounts }: { badgeCounts?: Partial<Record<PageKey, number>> }) {
+  // ...
+
   // ==========================================================================
   // FETCH PENGUMUMAN
   // ==========================================================================
