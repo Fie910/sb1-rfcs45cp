@@ -220,18 +220,3 @@ ATURAN PENTING:
 // =============================================================================
 // AUTO-TITLE
 // =============================================================================
-export async function generateJudulRapat(pembahasan: string): Promise<string> {
-  const prompt = `Berdasarkan catatan rapat berikut, buat judul rapat yang singkat (maks 60 karakter), formal, dan menggambarkan inti rapat. Output: HANYA judul, tanpa tanda kutip atau penjelasan.
-
-Catatan:
-${pembahasan.slice(0, 1500)}`;
-
-  const data = await callGeminiWithFallback({
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.5, maxOutputTokens: 100 },
-  });
-
-  return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
-    .trim()
-    .replace(/^["']|["']$/g, '');
-}
