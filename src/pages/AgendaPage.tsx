@@ -524,114 +524,219 @@ export function AgendaPage() {
     setSaving(false);
   };
 
-  const openJournal = async (jadwal: JadwalKbmWithRelations) => {
-    if (isLibur) {
-      showToast('error', `Hari ini libur (${ketLibur}). Pengisian agenda dinonaktifkan.`);
-      return;
-    }
+  // ============================================================================
+// PRESENSI GRUP (KELAS GABUNGAN)
+// ============================================================================
+const handleAbsenGroup = async (group: JadwalGroup) => {
+  if (isLibur) {
+    showToast('error', `Hari ini libur (${ketLibur}). Pengisian agenda dinonaktifkan.`);
+    return;
+  }
+  if (!guru) {
+    showToast('error', 'Sesi pengguna tidak ditemukan');
+    return;
+  }
 
-    if (!isScheduleActive(jadwal, todayHari)) {
-      showToast('error', 'Jurnal hanya bisa diisi saat jam pelajaran berlangsung');
-      return;
-    }
-    const gpsResult = await checkGpsLocation();
-    if (gpsResult.status !== 'success') {
-      showToast('error', gpsResult.message);
-      return;
-    }
-    setActiveJadwal(jadwal);
-    const existing = getAgendaForJadwal(jadwal.id);
-    setJournalText(existing?.catatan_materi ?? '');
-    setJournalModal(true);
-  };
+  const firstJadwal = group.jadwalList[0];
+  if (!isScheduleActive(firstJadwal, todayHari)) {
+    showToast('error', 'Pengisian presensi hanya bisa dilakukan saat jam pelajaran berlangsung');
+    return;
+  }
 
-  const handleSaveJournal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLibur) {
-      showToast('error', `Hari ini libur (${ketLibur}). Pengisian agenda dinonaktifkan.`);
-      setJournalModal(false);
-      return;
-    }
+  // Cek: apakah semua jadwal di group sudah ada agenda?
+  const agendas = group.jadwalList.map((j) => getAgendaForJadwal(j.id));
+  const allFilled = agendas.every(
+    (a) =>
+      a?.status_kehadiran === 'Hadir Mengajar' || a?.status_kehadiran === 'Terlambat'
+  );
+  if (allFilled) {
+    showToast('info', 'Semua kelas di jam ini sudah diisi presensinya');
+    return;
+  }
 
-    if (!activeJadwal || !guru) return;
-    if (!journalText.trim()) {
-      showToast('error', 'Catatan materi jurnal tidak boleh kosong');
-      return;
-    }
-    if (!isScheduleActive(activeJadwal, todayHari)) {
-      showToast('error', 'Jam pelajaran telah berakhir, tidak dapat mengubah jurnal');
-      setJournalModal(false);
-      return;
-    }
-    const gpsResult = await checkGpsLocation();
-    if (gpsResult.status !== 'success') {
-      showToast('error', gpsResult.message);
-      return;
-    }
-    setSaving(true);
-    const existing = getAgendaForJadwal(activeJadwal.id);
+  // GPS check SEKALI
+  const gpsResult = await checkGpsLocation();
+  if (gpsResult.status !== 'success') {
+    showToast('error', gpsResult.message);
+    return;
+  }
 
-    const isAlreadyFilled =
-      existing?.menit_terlambat !== null && existing?.menit_terlambat !== undefined;
+  setSaving(true);
 
-    if (existing) {
-      const updatePayload: Record<string, any> = {
-        catatan_materi: journalText.trim(),
-        latitude_guru: gpsResult.latitude,
-        longitude_guru: gpsResult.longitude,
-        jarak_dari_sekolah: gpsResult.distance,
-      };
+  const menitTerlambat = calculateLateMinutes(firstJadwal.waktu_mulai);
+  const alpaJp = calculateAlpaJamPelajaran(menitTerlambat);
+  const statusKehadiran = menitTerlambat > 0 ? 'Terlambat' : 'Hadir Mengajar';
 
-      if (!isAlreadyFilled) {
-        const menitTerlambat = calculateLateMinutes(activeJadwal.waktu_mulai);
-        const alpaJp = calculateAlpaJamPelajaran(menitTerlambat);
-        const statusKehadiran = menitTerlambat > 0 ? 'Terlambat' : 'Hadir Mengajar';
+  try {
+    // Loop setiap jadwal di group — insert/update satu per satu
+    for (const jadwal of group.jadwalList) {
+      const existing = getAgendaForJadwal(jadwal.id);
+      const isAlreadyFilled =
+        existing?.menit_terlambat !== null && existing?.menit_terlambat !== undefined;
 
-        updatePayload.menit_terlambat = menitTerlambat;
-        updatePayload.alpa_jam_pelajaran = alpaJp;
-        updatePayload.status_kehadiran = statusKehadiran;
-      }
-
-      const { error } = await supabase
-        .from('agenda_gurus')
-        .update(updatePayload)
-        .eq('id', existing.id);
-
-      if (error) {
-        showToast('error', 'Gagal menyimpan jurnal: ' + error.message);
+      if (existing) {
+        const updatePayload: Record<string, any> = {
+          latitude_guru: gpsResult.latitude,
+          longitude_guru: gpsResult.longitude,
+          jarak_dari_sekolah: gpsResult.distance,
+        };
+        if (!isAlreadyFilled) {
+          updatePayload.menit_terlambat = menitTerlambat;
+          updatePayload.alpa_jam_pelajaran = alpaJp;
+          updatePayload.status_kehadiran = statusKehadiran;
+        }
+        const { error } = await supabase
+          .from('agenda_gurus')
+          .update(updatePayload)
+          .eq('id', existing.id);
+        if (error) throw error;
       } else {
-        showToast('success', 'Jurnal berhasil disimpan');
-        setJournalModal(false);
-        fetchData();
-      }
-    } else {
-      const menitTerlambat = calculateLateMinutes(activeJadwal.waktu_mulai);
-      const alpaJp = calculateAlpaJamPelajaran(menitTerlambat);
-      const statusKehadiran = menitTerlambat > 0 ? 'Terlambat' : 'Hadir Mengajar';
-
-      const { error } = await supabase.from('agenda_gurus').insert({
-        guru_id: guru.id,
-        jadwal_kbm_id: activeJadwal.id,
-        tanggal: todayDate,
-        status_kehadiran: statusKehadiran,
-        catatan_materi: journalText.trim(),
-        latitude_guru: gpsResult.latitude,
-        longitude_guru: gpsResult.longitude,
-        jarak_dari_sekolah: gpsResult.distance,
-        menit_terlambat: menitTerlambat,
-        alpa_jam_pelajaran: alpaJp,
-      });
-
-      if (error) {
-        showToast('error', 'Gagal menyimpan jurnal: ' + error.message);
-      } else {
-        showToast('success', 'Jurnal berhasil disimpan');
-        setJournalModal(false);
-        fetchData();
+        const { error } = await supabase.from('agenda_gurus').insert({
+          guru_id: guru.id,
+          jadwal_kbm_id: jadwal.id,
+          tanggal: todayDate,
+          status_kehadiran: statusKehadiran,
+          latitude_guru: gpsResult.latitude,
+          longitude_guru: gpsResult.longitude,
+          jarak_dari_sekolah: gpsResult.distance,
+          menit_terlambat: menitTerlambat,
+          alpa_jam_pelajaran: alpaJp,
+        });
+        if (error) throw error;
       }
     }
+
+    showToast(
+      'success',
+      group.is_multi_kelas
+        ? `Presensi ${group.jadwalList.length} kelas berhasil (${statusKehadiran.toLowerCase()})`
+        : `Presensi berhasil (${statusKehadiran.toLowerCase()})`
+    );
+    fetchData();
+  } catch (err: any) {
+    showToast('error', 'Gagal presensi: ' + err.message);
+  } finally {
     setSaving(false);
-  };
+  }
+};
+
+// ============================================================================
+// JURNAL GRUP (KELAS GABUNGAN)
+// ============================================================================
+const openJournalGroup = async (group: JadwalGroup) => {
+  if (isLibur) {
+    showToast('error', `Hari ini libur (${ketLibur}). Pengisian agenda dinonaktifkan.`);
+    return;
+  }
+
+  const firstJadwal = group.jadwalList[0];
+  if (!isScheduleActive(firstJadwal, todayHari)) {
+    showToast('error', 'Jurnal hanya bisa diisi saat jam pelajaran berlangsung');
+    return;
+  }
+
+  const gpsResult = await checkGpsLocation();
+  if (gpsResult.status !== 'success') {
+    showToast('error', gpsResult.message);
+    return;
+  }
+
+  // Ambil catatan_materi dari jadwal pertama yang sudah ada
+  const existingAgendas = group.jadwalList.map((j) => getAgendaForJadwal(j.id));
+  const existingCatatan = existingAgendas.find((a) => a?.catatan_materi)?.catatan_materi ?? '';
+
+  setActiveJadwalGroup(group);
+  setJournalText(existingCatatan);
+  setJournalModal(true);
+};
+
+const handleSaveJournalGroup = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (isLibur) {
+    showToast('error', `Hari ini libur (${ketLibur}). Pengisian agenda dinonaktifkan.`);
+    setJournalModal(false);
+    return;
+  }
+
+  if (!activeJadwalGroup || !guru) return;
+  if (!journalText.trim()) {
+    showToast('error', 'Catatan materi jurnal tidak boleh kosong');
+    return;
+  }
+
+  const firstJadwal = activeJadwalGroup.jadwalList[0];
+  if (!isScheduleActive(firstJadwal, todayHari)) {
+    showToast('error', 'Jam pelajaran telah berakhir, tidak dapat mengubah jurnal');
+    setJournalModal(false);
+    return;
+  }
+
+  const gpsResult = await checkGpsLocation();
+  if (gpsResult.status !== 'success') {
+    showToast('error', gpsResult.message);
+    return;
+  }
+
+  setSaving(true);
+  const menitTerlambat = calculateLateMinutes(firstJadwal.waktu_mulai);
+  const alpaJp = calculateAlpaJamPelajaran(menitTerlambat);
+  const statusKehadiran = menitTerlambat > 0 ? 'Terlambat' : 'Hadir Mengajar';
+
+  try {
+    for (const jadwal of activeJadwalGroup.jadwalList) {
+      const existing = getAgendaForJadwal(jadwal.id);
+      const isAlreadyFilled =
+        existing?.menit_terlambat !== null && existing?.menit_terlambat !== undefined;
+
+      if (existing) {
+        const updatePayload: Record<string, any> = {
+          catatan_materi: journalText.trim(),
+          latitude_guru: gpsResult.latitude,
+          longitude_guru: gpsResult.longitude,
+          jarak_dari_sekolah: gpsResult.distance,
+        };
+        if (!isAlreadyFilled) {
+          updatePayload.menit_terlambat = menitTerlambat;
+          updatePayload.alpa_jam_pelajaran = alpaJp;
+          updatePayload.status_kehadiran = statusKehadiran;
+        }
+        const { error } = await supabase
+          .from('agenda_gurus')
+          .update(updatePayload)
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('agenda_gurus').insert({
+          guru_id: guru.id,
+          jadwal_kbm_id: jadwal.id,
+          tanggal: todayDate,
+          status_kehadiran: statusKehadiran,
+          catatan_materi: journalText.trim(),
+          latitude_guru: gpsResult.latitude,
+          longitude_guru: gpsResult.longitude,
+          jarak_dari_sekolah: gpsResult.distance,
+          menit_terlambat: menitTerlambat,
+          alpa_jam_pelajaran: alpaJp,
+        });
+        if (error) throw error;
+      }
+    }
+
+    showToast(
+      'success',
+      activeJadwalGroup.is_multi_kelas
+        ? `Jurnal tersimpan untuk ${activeJadwalGroup.jadwalList.length} kelas`
+        : 'Jurnal berhasil disimpan'
+    );
+    setJournalModal(false);
+    setActiveJadwalGroup(null);
+    fetchData();
+  } catch (err: any) {
+    showToast('error', 'Gagal menyimpan jurnal: ' + err.message);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const getMapelName = (j: JadwalKbmWithRelations): string => {
     return j.mata_pelajarans?.nama_mapel ?? '-';
