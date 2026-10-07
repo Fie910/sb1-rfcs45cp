@@ -15,13 +15,6 @@
 
 import { supabase } from '@/lib/supabase';
 
-// Daftar `tipe` notifikasi yang TIDAK perlu dikirim sebagai push notification.
-// Notifikasi ini tetap muncul di lonceng aplikasi, tapi tidak membangunkan HP user.
-const NON_PUSH_TIPE = new Set([
-  'pengumuman', // terlalu sering → berisik
-  'kegiatan', // informatif, tidak urgent
-  'buku_tamu', // guru bisa cek manual di halaman Buku Tamu
-]);
 
 export type SendNotificationPayload = {
   /** Satu UUID atau array UUID guru penerima */
@@ -75,14 +68,6 @@ export async function sendNotification(
   }
 
   return { sent: uniqueIds.length, error: null };
-}
-
-/**
- * Apakah notifikasi tipe ini akan dikirim sebagai push?
- * Berguna untuk UI feedback (mis. tampilkan badge "Push akan dikirim").
- */
-export function willSendPush(tipe: string): boolean {
-  return !NON_PUSH_TIPE.has(tipe);
 }
 
 // =============================================================================
@@ -158,18 +143,3 @@ export async function getGuruIdsPiketHari(hari: string): Promise<string[]> {
   return data?.map((j) => j.guru_id) ?? [];
 }
 
-/**
- * Ambil ID guru piket penyambutan pada hari tertentu (tabel berbeda).
- */
-export async function getGuruIdsPiketPenyambutan(hari: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('jadwal_piket_penyambutans')
-    .select('guru_id')
-    .eq('hari', hari);
-
-  if (error) {
-    console.error('[notification] Gagal ambil guru piket penyambutan:', error.message);
-    return [];
-  }
-  return data?.map((j) => j.guru_id) ?? [];
-}
