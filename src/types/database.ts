@@ -1349,13 +1349,6 @@ export type HrisCutiWithRelations = HrisCuti & {
   approver_nama?: string | null;
 };
 
-export const STATUS_CUTI_AKTIF: StatusCuti[] = [
-  'Diajukan',
-  'Disetujui Atasan',
-  'Disetujui HR',
-  'Disetujui Kepsek',
-];
-
 // =============================================================================
 // MODUL RAPAT & NOTULENSI
 // =============================================================================
