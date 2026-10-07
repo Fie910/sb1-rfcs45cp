@@ -8,9 +8,9 @@ import {
   Clock, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { canAccessTahfidz } from '@/components/tahfidz/shared';
 import { NAVIGATION_CONFIG, type PageKey } from '@/config/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { canAccessTahfidz } from '@/components/tahfidz/shared';
 
 // =============================================================================
 // KONSTANTA
