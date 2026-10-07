@@ -34,10 +34,6 @@ export type ResumeNotulensiResult = {
   }[];
 };
 
-export type PolishOptions = {
-  mode: 'formal' | 'ringkas' | 'detail';
-};
-
 // =============================================================================
 // HELPER — CORE REQUEST dengan fallback
 // =============================================================================
@@ -220,32 +216,6 @@ ATURAN PENTING:
 // =============================================================================
 // POLISH — Rapikan teks
 // =============================================================================
-export async function polishText(
-  text: string,
-  mode: PolishOptions['mode'] = 'formal'
-): Promise<string> {
-  const modeInstruction = {
-    formal: 'Ubah menjadi bahasa Indonesia formal & profesional, sesuai standar administrasi sekolah.',
-    ringkas: 'Ringkas menjadi 2-3 kalimat padat tanpa kehilangan informasi penting.',
-    detail: 'Kembangkan dengan detail, tambahkan konteks bila perlu, tapi jangan mengarang fakta.',
-  }[mode];
-
-  const prompt = `Tugas: ${modeInstruction}
-
-Teks asli:
-${text}
-
-Output: Hanya teks hasil, tanpa penjelasan tambahan.`;
-
-  const data = await callGeminiWithFallback({
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
-  });
-
-  const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!result) throw new Error('AI tidak mengembalikan respons.');
-  return result.trim();
-}
 
 // =============================================================================
 // AUTO-TITLE
