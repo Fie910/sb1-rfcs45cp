@@ -36,7 +36,7 @@ export function isPustakawan(role: string | null | undefined): boolean {
 export const DURASI_PINJAM_HARI = 7;
 
 /** Maksimal perpanjangan */
-//export const MAX_PERPANJANGAN = 1;
+
 
 /** Denda per hari keterlambatan (Rupiah) */
 export const DENDA_PER_HARI = 500;
