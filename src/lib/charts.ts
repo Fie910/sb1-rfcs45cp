@@ -78,22 +78,6 @@ export function formatShortDate(dateStr: string): string {
   });
 }
 
-/**
- * Format tanggal YYYY-MM-DD → "Sen" (nama hari singkat).
- */
-export function formatShortDay(dateStr: string): string {
-  const date = new Date(`${dateStr}T00:00:00+07:00`);
-  return date.toLocaleDateString('id-ID', {
-    weekday: 'short',
-  });
-}
-
-/**
- * Format angka menjadi persentase.
- */
-export function formatPercent(value: number): string {
-  return `${Math.round(value)}%`;
-}
 
 // =============================================================================
 // TEMA KOMPONEN RECHARTS SIAP PAKAI
@@ -104,12 +88,7 @@ export function formatPercent(value: number): string {
  * Pakai spread operator:
  *   <Line {...LINE_DEFAULTS} dataKey="hadir" />
  */
-export const LINE_DEFAULTS = {
-  type: 'monotone' as const,
-  strokeWidth: 2.5,
-  dot: { r: 3, strokeWidth: 2 },
-  activeDot: { r: 5, strokeWidth: 2 },
-};
+
 
 /**
  * Margin default untuk ResponsiveContainer.
