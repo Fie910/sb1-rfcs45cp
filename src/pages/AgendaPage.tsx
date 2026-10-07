@@ -1323,7 +1323,9 @@ const handleSaveJournalGroup = async (e: React.FormEvent) => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {filteredRiwayat.map((item) => {
-                const mapelName = item.jadwal_kbms?.mata_pelajarans?.nama_mapel ?? '-';
+                const mapelName = item.jadwal_kbms?.mata_pelajarans?.nama_mapel 
+                  ?? item.mapel_nama_snapshot 
+                  ?? '-';
                 const kelasName = item.jadwal_kbms?.kelas?.nama_kelas ?? '-';
                 const waktuMulai = item.jadwal_kbms?.waktu_mulai?.slice(0, 5) ?? '';
                 const waktuSelesai = item.jadwal_kbms?.waktu_selesai?.slice(0, 5) ?? '';
