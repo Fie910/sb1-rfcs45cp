@@ -97,11 +97,11 @@ function PageLoadingFallback() {
 }
 
 function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children: JSX.Element }) {
-  const { hasAccess } = useAuth();
+  const { hasAccess, guru } = useAuth();   // ← TAMBAH `guru`
   if (accessKey && !hasAccess(accessKey)) {
     return <Navigate to="/" replace />;
   }
-    // Guard khusus tahfidz — role staf biasa tidak boleh akses meski via URL
+  // Guard khusus tahfidz — role staf biasa tidak boleh akses meski via URL
   if (accessKey === 'tahfidz' && !canAccessTahfidz(guru)) {
     return <Navigate to="/" replace />;
   }
