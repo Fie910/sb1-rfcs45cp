@@ -77,7 +77,7 @@ export function BukuTamuPage() {
 
       setGurus((guruRes.data as any[]) ?? []);
       setDivisis((divisiRes.data as any[]) ?? []);
-      setSiswas((siswaRes.data as any[]) ?? []);
+      setSiswas((siswaRes.data as SiswaPublicRow[]) ?? []);
       setLoadingMaster(false);
     })();
   }, []);
