@@ -1,3 +1,4 @@
+//src/types/database.ts
 export * from './surat';
 
 export type GuruRole = string;
