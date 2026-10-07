@@ -1043,127 +1043,156 @@ const handleSaveJournalGroup = async (e: React.FormEvent) => {
               </div>
             ) : (
               <div className="space-y-4">
-                {todayJadwal.map((j, index) => {
-                  const active = isScheduleActive(j, todayHari);
-                  const timeStatus = getJadwalTimeStatus(j, todayHari);
-                  const agenda = getAgendaForJadwal(j.id);
-                  const sudahAbsen =
-                    agenda?.status_kehadiran === 'Hadir Mengajar' ||
-                    agenda?.status_kehadiran === 'Terlambat';
+{groupedTodayJadwal.map((group, index) => {
+  const firstJadwal = group.jadwalList[0];
+  const active = isScheduleActive(firstJadwal, todayHari);
+  const timeStatus = getJadwalTimeStatus(firstJadwal, todayHari);
 
-                  return (
-                    <div
-                      key={j.id}
-                      className={`bg-slate-900 rounded-3xl border p-5 md:p-6 transition-all duration-200 backdrop-blur-xl ${
-                        active && !isLibur
-                          ? 'border-indigo-500/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/30'
-                          : 'border-slate-800/80 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between flex-wrap gap-4">
-                        <div className="flex items-start gap-4">
-                          <div
-                            className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 border transition-all ${
-                              active && !isLibur
-                                ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/25'
-                                : 'bg-slate-950 border-slate-800 text-slate-400'
-                            }`}
-                          >
-                            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80 leading-none">
-                              Ke-
-                            </span>
-                            <span className="text-xl font-extrabold leading-tight">{index + 1}</span>
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-slate-100 tracking-tight">
-                              {getMapelName(j)}
-                            </h3>
-                            <p className="text-sm font-semibold text-indigo-400 mt-0.5">
-                              Kelas {j.kelas?.nama_kelas ?? '-'}
-                            </p>
-                            {j.waktu_mulai && j.waktu_selesai && (
-                              <p className="text-xs text-slate-400 font-mono mt-1 flex items-center gap-1">
-                                <Clock size={12} className="text-slate-500" />
-                                {j.waktu_mulai.slice(0, 5)} - {j.waktu_selesai.slice(0, 5)} WIB
-                              </p>
-                            )}
+  // Cek status agenda di seluruh jadwal dalam group
+  const agendas = group.jadwalList.map((j) => getAgendaForJadwal(j.id));
+  const allSudahAbsen = agendas.every(
+    (a) =>
+      a?.status_kehadiran === 'Hadir Mengajar' || a?.status_kehadiran === 'Terlambat'
+  );
+  const anySudahAbsen = agendas.some(
+    (a) =>
+      a?.status_kehadiran === 'Hadir Mengajar' || a?.status_kehadiran === 'Terlambat'
+  );
+  const catatanMateri = agendas.find((a) => a?.catatan_materi)?.catatan_materi;
 
-                            {timeStatus === 'active' && !isLibur && (
-                              <span className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-bold text-indigo-400 bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 rounded-full">
-                                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" />
-                                Sedang Berlangsung
-                              </span>
-                            )}
-                            {timeStatus === 'upcoming' && !isLibur && (
-                              <span className="inline-flex items-center gap-1 mt-2.5 text-xs font-medium text-slate-400 bg-slate-950 border border-slate-800 px-3 py-1 rounded-full">
-                                Belum Waktunya
-                              </span>
-                            )}
-                            {(timeStatus === 'ended' || isLibur) && !active && (
-                              <span className="inline-flex items-center gap-1 mt-2.5 text-xs font-medium text-slate-500 bg-slate-950/60 border border-slate-800/60 px-3 py-1 rounded-full">
-                                {isLibur ? 'Libur' : 'Pelajaran Selesai'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+  return (
+    <div
+      key={group.key}
+      className={`bg-slate-900 rounded-3xl border p-5 md:p-6 transition-all duration-200 backdrop-blur-xl ${
+        active && !isLibur
+          ? 'border-indigo-500/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/30'
+          : 'border-slate-800/80 hover:border-slate-700'
+      }`}
+    >
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex items-start gap-4">
+          <div
+            className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 border transition-all ${
+              active && !isLibur
+                ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/25'
+                : 'bg-slate-950 border-slate-800 text-slate-400'
+            }`}
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80 leading-none">
+              Ke-
+            </span>
+            <span className="text-xl font-extrabold leading-tight">{index + 1}</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-bold text-slate-100 tracking-tight">
+                {group.mapel_nama}
+              </h3>
+              {group.is_multi_kelas && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                  📚 Kelas Gabungan ({group.jadwalList.length} kelas)
+                </span>
+              )}
+            </div>
 
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          {sudahAbsen ? (
-                            <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-500/10">
-                              <CheckCircle2 size={16} />
-                              <span>Sudah Mengisi Presensi ({agenda?.status_kehadiran})</span>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleAbsen(j)}
-                              disabled={!active || saving || gps.status === 'checking' || isLibur}
-                              className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-200 border ${
-                                active && !isLibur
-                                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 border-transparent shadow-lg shadow-emerald-500/25 cursor-pointer active:scale-95'
-                                  : 'bg-slate-950/50 text-slate-500 border-slate-800 cursor-not-allowed opacity-60'
-                              }`}
-                            >
-                              {active && !isLibur ? (
-                                <CheckCircle2 size={16} />
-                              ) : (
-                                <Lock size={16} />
-                              )}
-                              Presensi Diri
-                            </button>
-                          )}
+            {/* Kelas — kalau multi, tampilkan semua sebagai chips */}
+            {group.is_multi_kelas ? (
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {group.kelas_list.map((namaKelas, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300"
+                  >
+                    {namaKelas}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm font-semibold text-indigo-400 mt-0.5">
+                Kelas {group.kelas_list[0] ?? '-'}
+              </p>
+            )}
 
-                          <button
-                            onClick={() => openJournal(j)}
-                            disabled={!active || saving || gps.status === 'checking' || isLibur}
-                            className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-200 border ${
-                              active && !isLibur
-                                ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white border-transparent shadow-lg shadow-indigo-500/25 cursor-pointer active:scale-95'
-                                : 'bg-slate-950/50 text-slate-500 border-slate-800 cursor-not-allowed opacity-60'
-                            }`}
-                          >
-                            {active && !isLibur ? (
-                              <NotebookPen size={16} />
-                            ) : (
-                              <Lock size={16} />
-                            )}
-                            {agenda?.catatan_materi ? 'Edit Jurnal' : 'Isi Jurnal'}
-                          </button>
-                        </div>
-                      </div>
+            {group.waktu_mulai && group.waktu_selesai && (
+              <p className="text-xs text-slate-400 font-mono mt-1 flex items-center gap-1">
+                <Clock size={12} className="text-slate-500" />
+                {group.waktu_mulai.slice(0, 5)} - {group.waktu_selesai.slice(0, 5)} WIB
+              </p>
+            )}
 
-                      {agenda?.catatan_materi && (
-                        <div className="mt-4 pt-4 border-t border-slate-800/80">
-                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                            Catatan Materi:
-                          </p>
-                          <p className="text-sm text-slate-200 whitespace-pre-wrap bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 leading-relaxed">
-                            {agenda.catatan_materi}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+            {timeStatus === 'active' && !isLibur && (
+              <span className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-bold text-indigo-400 bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 rounded-full">
+                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" />
+                Sedang Berlangsung
+              </span>
+            )}
+            {timeStatus === 'upcoming' && !isLibur && (
+              <span className="inline-flex items-center gap-1 mt-2.5 text-xs font-medium text-slate-400 bg-slate-950 border border-slate-800 px-3 py-1 rounded-full">
+                Belum Waktunya
+              </span>
+            )}
+            {(timeStatus === 'ended' || isLibur) && !active && (
+              <span className="inline-flex items-center gap-1 mt-2.5 text-xs font-medium text-slate-500 bg-slate-950/60 border border-slate-800/60 px-3 py-1 rounded-full">
+                {isLibur ? 'Libur' : 'Pelajaran Selesai'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {allSudahAbsen ? (
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-500/10">
+              <CheckCircle2 size={16} />
+              <span>
+                Presensi Selesai
+                {group.is_multi_kelas && ` (${group.jadwalList.length} kelas)`}
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleAbsenGroup(group)}
+              disabled={!active || saving || gps.status === 'checking' || isLibur}
+              className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-200 border ${
+                active && !isLibur
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 border-transparent shadow-lg shadow-emerald-500/25 cursor-pointer active:scale-95'
+                  : 'bg-slate-950/50 text-slate-500 border-slate-800 cursor-not-allowed opacity-60'
+              }`}
+            >
+              {active && !isLibur ? <CheckCircle2 size={16} /> : <Lock size={16} />}
+              Presensi Diri
+              {group.is_multi_kelas && ` (${group.jadwalList.length} Kelas)`}
+            </button>
+          )}
+
+          <button
+            onClick={() => openJournalGroup(group)}
+            disabled={!active || saving || gps.status === 'checking' || isLibur}
+            className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-200 border ${
+              active && !isLibur
+                ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white border-transparent shadow-lg shadow-indigo-500/25 cursor-pointer active:scale-95'
+                : 'bg-slate-950/50 text-slate-500 border-slate-800 cursor-not-allowed opacity-60'
+            }`}
+          >
+            {active && !isLibur ? <NotebookPen size={16} /> : <Lock size={16} />}
+            {catatanMateri ? 'Edit Jurnal' : 'Isi Jurnal'}
+            {group.is_multi_kelas && ` (${group.jadwalList.length} Kelas)`}
+          </button>
+        </div>
+      </div>
+
+      {catatanMateri && (
+        <div className="mt-4 pt-4 border-t border-slate-800/80">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            Catatan Materi{group.is_multi_kelas ? ' (sama untuk semua kelas)' : ''}:
+          </p>
+          <p className="text-sm text-slate-200 whitespace-pre-wrap bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 leading-relaxed">
+            {catatanMateri}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+})}
               </div>
             )}
           </div>
