@@ -227,7 +227,7 @@ export function KategoriManagerModal({ open, onClose, kategoriList, onChanged }:
 
       <ConfirmModal
         open={!!deleteTarget}
-        onCancel={() => setDeleteTarget(null)}
+        onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Hapus Kategori"
         message={`Yakin hapus kategori "${deleteTarget?.nama}"? Buku dengan kategori ini akan kehilangan referensi.`}
