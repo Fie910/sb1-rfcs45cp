@@ -65,7 +65,7 @@ interface CommandPaletteProps {
 // KOMPONEN
 // =============================================================================
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const { hasAccess } = useAuth();
+  const { hasAccess, guru } = useAuth();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
