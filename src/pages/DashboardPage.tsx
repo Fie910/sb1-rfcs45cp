@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import type { PageKey } from '@/config/navigation';
 import { supabase } from '@/lib/supabase';
 import { PengumumanEmpty } from '@/components/dashboard/PengumumanCard';
 import { PengumumanCarousel } from '@/components/dashboard/PengumumanCarousel';
