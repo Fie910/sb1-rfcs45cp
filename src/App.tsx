@@ -10,6 +10,7 @@ import type { PageKey } from '@/config/navigation';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import { canAccessTahfidz } from '@/components/tahfidz/shared';
+import { useBadgeCounts } from '@/hooks/useBadgeCounts';
 // ✅ Route publik — import langsung (bukan lazy) karena dipakai tanpa login & jarang diakses
 import VerifikasiSuratPage from '@/pages/VerifikasiSuratPage';
 import VerifikasiNotulensiPage from '@/pages/VerifikasiNotulensiPage';
