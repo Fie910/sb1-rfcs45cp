@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { canAccessTahfidz } from '@/components/tahfidz/shared';
 import type { PageKey } from '@/config/navigation';
 
 // =============================================================================
