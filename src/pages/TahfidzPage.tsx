@@ -2,7 +2,7 @@
 // Container halaman Tahfidz Quran dengan lazy-loaded tabs.
 
 import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
-import { BookOpen, Users, Target, BarChart3, BookMarked } from 'lucide-react';
+import { BookOpen, Users, Target, BarChart3, Award, BookMarked } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { canAccessTahfidz, isTahfidzManager } from '@/components/tahfidz/shared';
 import { TabLoadingFallback } from '@/components/TabLoadingFallback';
