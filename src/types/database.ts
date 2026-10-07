@@ -470,15 +470,6 @@ export type KondisiAset = 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
 export type StatusAset = 'Aktif' | 'Dipinjam' | 'Perbaikan' | 'Hilang' | 'Dihapus';
 export type TipeLokasi = 'Gedung' | 'Lantai' | 'Ruang' | 'Area Luar';
 
-export const KONDISI_ASET: KondisiAset[] = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
-export const STATUS_ASET: StatusAset[] = [
-  'Aktif',
-  'Dipinjam',
-  'Perbaikan',
-  'Hilang',
-  'Dihapus',
-];
-
 export type InventarisLokasi = {
   id: string;
   nama: string;
@@ -615,21 +606,6 @@ export type InventarisPenghapusanWithRelations = InventarisPenghapusan & {
   pengaju: Pick<Guru, 'id' | 'nama_lengkap'> | null;
   approver: Pick<Guru, 'id' | 'nama_lengkap'> | null;
 };
-
-export const JENIS_PEMELIHARAAN: JenisPemeliharaan[] = [
-  'Preventif',
-  'Korektif',
-  'Kalibrasi',
-  'Inspeksi',
-];
-
-export const METODE_PENGHAPUSAN: MetodePenghapusan[] = [
-  'Dimusnahkan',
-  'Dilelang',
-  'Dihibahkan',
-  'Dijual',
-  'Lainnya',
-];
 
 // =============================================================================
 // MODUL BK — Bimbingan & Konseling
@@ -1373,28 +1349,11 @@ export type HrisCutiWithRelations = HrisCuti & {
   approver_nama?: string | null;
 };
 
-export const STATUS_CUTI_OPTIONS: StatusCuti[] = [
-  'Draft',
-  'Diajukan',
-  'Disetujui Atasan',
-  'Disetujui HR',
-  'Disetujui Kepsek',
-  'Disetujui',
-  'Ditolak',
-  'Dibatalkan',
-];
-
 export const STATUS_CUTI_AKTIF: StatusCuti[] = [
   'Diajukan',
   'Disetujui Atasan',
   'Disetujui HR',
   'Disetujui Kepsek',
-];
-
-export const STATUS_CUTI_SELESAI: StatusCuti[] = [
-  'Disetujui',
-  'Ditolak',
-  'Dibatalkan',
 ];
 
 // =============================================================================
@@ -1532,10 +1491,6 @@ export const STATUS_RAPAT_OPTIONS: StatusRapat[] = [
   'Draft', 'Akan Datang', 'Berlangsung', 'Selesai', 'Dibatalkan',
 ];
 
-export const JABATAN_RAPAT_OPTIONS: JabatanDalamRapat[] = [
-  'Pemimpin', 'Notulis', 'Peserta', 'Undangan', 'Narasumber',
-];
-
 export const KEHADIRAN_RAPAT_OPTIONS: StatusKehadiranRapat[] = [
   'Belum Dikonfirmasi', 'Hadir', 'Tidak Hadir', 'Izin', 'Terlambat',
 ];
@@ -1670,26 +1625,6 @@ export type ArsipWithRelations = ArsipDokumen & {
   total_sudah_baca?: number;
   total_acknowledge?: number;
 };
-
-export const AKSES_LEVEL_OPTIONS: AksesLevel[] = ['Public', 'Internal', 'Confidential'];
-export const STATUS_DOKUMEN_ARSIP_OPTIONS: StatusDokumenArsip[] = [
-  'Draft', 'Aktif', 'Obsolete', 'Dicabut', 'Selesai',
-];
-export const STORAGE_PROVIDER_OPTIONS: StorageProvider[] = [
-  'supabase', 'google_drive', 'dropbox', 'external', 'telegram',
-];
-
-/** File diterima untuk upload arsip (TIFF ditolak) */
-export const ARSIP_ACCEPT_MIME = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-];
 
 // =============================================================================
 // MODUL MITRA DUDI & MoU
