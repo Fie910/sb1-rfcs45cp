@@ -5,16 +5,6 @@
 import { buildVerifyUrl, generateQrDataUrl } from './pdfShared';
 
 // =============================================================================
-// TYPES
-// =============================================================================
-export type ArsipQRData = {
-  verification_token: string;
-  content_hash: string | null;
-  nomor_dokumen: string | null;
-  judul: string;
-};
-
-// =============================================================================
 // HELPER — Build verification URL (re-export untuk backward compat)
 // =============================================================================
 export function buildArsipVerifyUrl(
