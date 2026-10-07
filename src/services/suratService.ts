@@ -55,17 +55,6 @@ export const getSuratList = async (jenis?: JenisSurat) => {
   return data as Surat[];
 };
 
-export const getSuratById = async (id: string) => {
-  const { data, error } = await supabase
-    .from('surat')
-    .select('*, kategori_surat(*), siswas(id, nama_lengkap, nisn)')
-    .eq('id', id)
-    .single();
-
-  if (error) throw error;
-  return data as Surat;
-};
-
 export const getNextUrutanSurat = async (jenis: JenisSurat) => {
   const { count, error } = await supabase
     .from('surat')
@@ -76,30 +65,8 @@ export const getNextUrutanSurat = async (jenis: JenisSurat) => {
   return (count || 0) + 1;
 };
 
-export const uploadFileSurat = async (file: File, folder: 'berkas' | 'bukti' = 'berkas') => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${folder}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-  const filePath = `${folder}/${fileName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('dokumen-surat')
-    .upload(filePath, file);
-
-  if (uploadError) throw uploadError;
-
-  const { data } = supabase.storage.from('dokumen-surat').getPublicUrl(filePath);
-
-  return data.publicUrl;
-};
-
 export const createSurat = async (suratData: Omit<Surat, 'id' | 'created_at'>) => {
   const { data, error } = await supabase.from('surat').insert([suratData]).select();
-  if (error) throw error;
-  return data[0] as Surat;
-};
-
-export const updateSurat = async (id: string, updateData: Partial<Surat>) => {
-  const { data, error } = await supabase.from('surat').update(updateData).eq('id', id).select();
   if (error) throw error;
   return data[0] as Surat;
 };
