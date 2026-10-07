@@ -145,7 +145,7 @@ export const LABEL_CLASS =
 // =============================================================================
 const RAPAT_MANAGER_ROLES = [
   'admin', 'kepala', 'wakil_kepala', 'takola', 'staf_takola',
-  'akademik', 'kesiswaan', 'sarpras', 'keuangan',
+  'akademik', 'kesiswaan', 'sarpras', 'keuangan', 'bk', 'pustakawan',
   'staf_akademik', 'staf_kesiswaan', 'staf_sarpras', 'staf_keuangan',
 ];
 
