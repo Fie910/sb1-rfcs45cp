@@ -231,38 +231,39 @@ const { error } = await supabase
     }
 
     // Notifikasi ke guru/divisi tujuan
-    if (createdData) {
-      const originInstansi = form.instansi ? ` dari ${form.instansi}` : '';
-      const pesanNotif = `${form.nama_tamu}${originInstansi} ingin bertemu. Keperluan: ${form.keperluan}`;
+    // Notifikasi (tidak butuh createdData)
+const originInstansi = form.instansi ? ` dari ${form.instansi}` : '';
+const pesanNotif = `${form.nama_tamu}${originInstansi} ingin bertemu. Keperluan: ${form.keperluan}`;
 
-      try {
-        if (form.guru_id) {
-          await sendNotification({
-            guruIds: form.guru_id,
-            judul: 'Tamu Baru Menunggu',
-            pesan: pesanNotif,
-            tipe: 'buku_tamu',
-            tautan: '/buku_tamu/kelola',
-          });
-        } else if (form.divisi_id) {
-          const targetIds = await getGuruIdsByDivisi(form.divisi_id);
-          if (targetIds.length > 0) {
-            const namaDivisi = createdData.divisis?.nama_divisi
-              ? ` ${createdData.divisis.nama_divisi}`
-              : '';
-            await sendNotification({
-              guruIds: targetIds,
-              judul: `Tamu Baru (Divisi${namaDivisi})`,
-              pesan: pesanNotif,
-              tipe: 'buku_tamu',
-              tautan: '/buku_tamu/kelola',
-            });
-          }
-        }
-      } catch (notifErr) {
-        console.error('Gagal kirim notif:', notifErr);
-      }
+try {
+  if (form.guru_id) {
+    await sendNotification({
+      guruIds: form.guru_id,
+      judul: 'Tamu Baru Menunggu',
+      pesan: pesanNotif,
+      tipe: 'buku_tamu',
+      tautan: '/buku_tamu/kelola',
+    });
+  } else if (form.divisi_id) {
+    const targetIds = await getGuruIdsByDivisi(form.divisi_id);
+    if (targetIds.length > 0) {
+      // ✅ Ambil nama divisi dari state lokal, bukan dari createdData
+      const selectedDivisi = divisis.find((d) => d.id === form.divisi_id);
+      const namaDivisi = selectedDivisi?.nama_divisi
+        ? ` ${selectedDivisi.nama_divisi}`
+        : '';
+      await sendNotification({
+        guruIds: targetIds,
+        judul: `Tamu Baru (Divisi${namaDivisi})`,
+        pesan: pesanNotif,
+        tipe: 'buku_tamu',
+        tautan: '/buku_tamu/kelola',
+      });
     }
+  }
+} catch (notifErr) {
+  console.error('Gagal kirim notif:', notifErr);
+}
 
     stopCamera();
 
