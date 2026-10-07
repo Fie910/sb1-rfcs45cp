@@ -1,8 +1,11 @@
 // src/components/tahfidz/ModalSetoran.tsx
 // Form tambah/edit setoran hafalan.
+// Filter kelas default mengikuti jadwal guru dari tabel jadwal_kbmjps.
 
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Save, X, User, BookMarked } from 'lucide-react';
+import {
+  Loader2, Save, X, User, BookMarked, School, Info,
+} from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -20,6 +23,9 @@ import type {
   KualitasHafalan,
 } from '@/types/database';
 
+// =============================================================================
+// TYPES
+// =============================================================================
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -37,6 +43,8 @@ type SiswaOption = {
   kelas?: { nama_kelas: string } | null;
 };
 
+type KelasOption = { id: number; nama_kelas: string };
+
 const EMPTY_FORM = {
   siswa_id: '',
   tanggal: new Date().toISOString().slice(0, 10),
@@ -50,6 +58,9 @@ const EMPTY_FORM = {
   catatan: '',
 };
 
+// =============================================================================
+// COMPONENT
+// =============================================================================
 export function ModalSetoran({
   open,
   onClose,
@@ -66,7 +77,68 @@ export function ModalSetoran({
   const [loadingSiswa, setLoadingSiswa] = useState(false);
   const [searchSiswa, setSearchSiswa] = useState('');
 
-  // Load siswa aktif sekali saat modal dibuka
+  // Kelas list (dari jadwal guru, atau fallback semua)
+  const [kelasList, setKelasList] = useState<KelasOption[]>([]);
+  const [loadingKelas, setLoadingKelas] = useState(false);
+  const [filterKelas, setFilterKelas] = useState<number | ''>('');
+  const [kelasFromJadwal, setKelasFromJadwal] = useState(false);
+
+  // ===========================================================================
+  // LOAD KELAS DARI JADWAL GURU (atau semua kelas sebagai fallback)
+  // ===========================================================================
+  useEffect(() => {
+    if (!open) return;
+    if (kelasList.length > 0) return;
+    if (!currentGuruId) return;
+
+    (async () => {
+      setLoadingKelas(true);
+      try {
+        // 1. Ambil kelas unik dari jadwal guru
+        const { data: jadwalData } = await supabase
+          .from('jadwal_kbmjps')
+          .select(`
+            kelas_id,
+            kelas:kelas_id (id, nama_kelas)
+          `)
+          .eq('guru_id', currentGuruId);
+
+        const uniqueKelas = new Map<number, KelasOption>();
+        (jadwalData ?? []).forEach((j: any) => {
+          if (j.kelas) uniqueKelas.set(j.kelas.id, j.kelas);
+        });
+
+        if (uniqueKelas.size > 0) {
+          const list = Array.from(uniqueKelas.values()).sort((a, b) =>
+            a.nama_kelas.localeCompare(b.nama_kelas)
+          );
+          setKelasList(list);
+          setKelasFromJadwal(true);
+
+          // Auto-select kalau cuma 1 kelas
+          if (list.length === 1 && !editTarget) {
+            setFilterKelas(list[0].id);
+          }
+        } else {
+          // 2. Fallback: semua kelas (untuk admin / guru tanpa jadwal)
+          const { data: allKelas } = await supabase
+            .from('kelas')
+            .select('id, nama_kelas')
+            .order('nama_kelas', { ascending: true });
+          setKelasList((allKelas as KelasOption[]) ?? []);
+          setKelasFromJadwal(false);
+        }
+      } catch (err) {
+        console.warn('[ModalSetoran] Gagal load kelas:', err);
+      } finally {
+        setLoadingKelas(false);
+      }
+    })();
+  }, [open, currentGuruId, kelasList.length, editTarget]);
+
+  // ===========================================================================
+  // LOAD SISWA AKTIF
+  // ===========================================================================
   useEffect(() => {
     if (!open) return;
     if (siswaList.length > 0) return;
@@ -83,7 +155,9 @@ export function ModalSetoran({
     })();
   }, [open, siswaList.length]);
 
-  // Set form dari editTarget saat modal dibuka
+  // ===========================================================================
+  // SET FORM DARI editTarget SAAT MODAL DIBUKA
+  // ===========================================================================
   useEffect(() => {
     if (!open) return;
     if (editTarget) {
@@ -99,17 +173,35 @@ export function ModalSetoran({
         nilai: editTarget.nilai ?? 90,
         catatan: editTarget.catatan ?? '',
       });
+      setSearchSiswa('');
+
+      // Kalau filter kelas aktif dan siswa target BUKAN di kelas itu → reset filter
+      if (filterKelas !== '') {
+        const targetSiswa = siswaList.find(
+          (s) => s.id === editTarget.siswa_id
+        );
+        if (targetSiswa && targetSiswa.kelas_id !== filterKelas) {
+          setFilterKelas('');
+        }
+      }
     } else {
       setForm({ ...EMPTY_FORM, siswa_id: '' });
       setSearchSiswa('');
+      // Reset filter ke default (kalau guru punya 1 kelas, tetap auto-select)
+      if (kelasFromJadwal && kelasList.length === 1) {
+        setFilterKelas(kelasList[0].id);
+      } else {
+        setFilterKelas('');
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editTarget]);
 
-  // Info surah mulai & selesai
+  // ===========================================================================
+  // SURAH INFO
+  // ===========================================================================
   const surahMulai = surahMap.get(form.surah_mulai);
   const surahSelesai = surahMap.get(form.surah_selesai);
-
-  // Validasi ayat
   const maxAyatMulai = surahMulai?.jumlah_ayat ?? 1;
   const maxAyatSelesai = surahSelesai?.jumlah_ayat ?? 1;
 
@@ -143,7 +235,9 @@ export function ModalSetoran({
     });
   }, [form.surah_mulai, form.ayat_mulai]);
 
-  // Hitung preview halaman & ayat
+  // ===========================================================================
+  // PREVIEW HALAMAN & AYAT
+  // ===========================================================================
   const preview = useMemo(() => {
     const dummy: any = {
       surah_mulai: form.surah_mulai,
@@ -157,23 +251,39 @@ export function ModalSetoran({
     };
   }, [form, surahMap]);
 
-  // Siswa filtered
+  // ===========================================================================
+  // SISWA FILTERED (kelas + search)
+  // ===========================================================================
   const filteredSiswa = useMemo(() => {
-    if (!searchSiswa.trim()) return siswaList.slice(0, 50);
-    const q = searchSiswa.toLowerCase();
-    return siswaList
-      .filter(
+    let result = siswaList;
+
+    // Filter kelas
+    if (filterKelas !== '') {
+      result = result.filter((s) => s.kelas_id === filterKelas);
+    }
+
+    // Filter search
+    if (searchSiswa.trim()) {
+      const q = searchSiswa.toLowerCase();
+      result = result.filter(
         (s) =>
           s.nama_lengkap.toLowerCase().includes(q) ||
           s.nisn.toLowerCase().includes(q)
-      )
-      .slice(0, 50);
-  }, [siswaList, searchSiswa]);
+      );
+    }
+
+    return result.slice(0, 50);
+  }, [siswaList, searchSiswa, filterKelas]);
 
   const selectedSiswa = siswaList.find((s) => String(s.id) === form.siswa_id);
 
+  const totalSiswaDiKelas = useMemo(() => {
+    if (filterKelas === '') return siswaList.length;
+    return siswaList.filter((s) => s.kelas_id === filterKelas).length;
+  }, [siswaList, filterKelas]);
+
   // ===========================================================================
-  // HANDLE SAVE
+  // SAVE
   // ===========================================================================
   const handleSave = async () => {
     if (!form.siswa_id) {
@@ -251,12 +361,14 @@ export function ModalSetoran({
       size="lg"
     >
       <div className="space-y-4">
-        {/* SISWA */}
+        {/* ======================== SISWA ======================== */}
         <div>
           <label className={LABEL_CLASS}>
             <User size={12} className="inline mr-1" /> Siswa *
           </label>
+
           {selectedSiswa ? (
+            // Siswa sudah dipilih
             <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-emerald-300 truncate">
@@ -272,27 +384,98 @@ export function ModalSetoran({
                   setSearchSiswa('');
                 }}
                 className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 transition cursor-pointer"
+                title="Ganti siswa"
               >
                 <X size={14} />
               </button>
             </div>
           ) : (
+            // Belum pilih siswa — tampilkan filter + search + list
             <div className="space-y-2">
+              {/* Info jadwal guru */}
+              {kelasFromJadwal && (
+                <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-300">
+                  <Info size={12} className="shrink-0 mt-0.5" />
+                  <span>
+                    Kelas disesuaikan dengan jadwal mengajar Anda
+                    {kelasList.length === 1 && (
+                      <span className="font-bold">
+                        {' '}
+                        · {kelasList[0].nama_kelas}
+                      </span>
+                    )}
+                    {kelasList.length > 1 &&
+                      ` (${kelasList.length} kelas: ${kelasList.map((k) => k.nama_kelas).join(', ')})`}
+                  </span>
+                </div>
+              )}
+
+              {/* Filter kelas */}
+              <div className="flex gap-2">
+                <select
+                  value={filterKelas}
+                  onChange={(e) =>
+                    setFilterKelas(
+                      e.target.value === '' ? '' : Number(e.target.value)
+                    )
+                  }
+                  disabled={loadingKelas}
+                  className={INPUT_CLASS + ' cursor-pointer flex-1 disabled:opacity-50'}
+                >
+                  <option value="">
+                    {kelasFromJadwal ? 'Semua Kelas Saya' : 'Semua Kelas'}
+                  </option>
+                  {kelasList.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.nama_kelas}
+                    </option>
+                  ))}
+                </select>
+                {filterKelas !== '' && (
+                  <button
+                    onClick={() => setFilterKelas('')}
+                    className="px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs transition cursor-pointer"
+                    title="Reset filter kelas"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* Search siswa */}
               <input
                 value={searchSiswa}
                 onChange={(e) => setSearchSiswa(e.target.value)}
                 placeholder="Cari nama atau NISN siswa..."
                 className={INPUT_CLASS}
               />
+
+              {/* Info hasil */}
+              {!loadingSiswa && (
+                <p className="text-[10px] text-slate-500 flex items-center gap-1">
+                  <School size={10} />
+                  {filterKelas !== ''
+                    ? `${filteredSiswa.length} dari ${totalSiswaDiKelas} siswa di kelas ini`
+                    : `Menampilkan ${filteredSiswa.length} dari ${siswaList.length} siswa`}
+                  {searchSiswa.trim() && ' (terfilter search)'}
+                </p>
+              )}
+
+              {/* List siswa */}
               {loadingSiswa ? (
                 <div className="py-4 text-center">
-                  <Loader2 size={16} className="animate-spin inline text-slate-500" />
+                  <Loader2
+                    size={16}
+                    className="animate-spin inline text-slate-500"
+                  />
                 </div>
               ) : (
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800/60">
                   {filteredSiswa.length === 0 ? (
                     <p className="text-xs text-slate-500 text-center py-4">
-                      Tidak ada siswa cocok
+                      {filterKelas !== ''
+                        ? 'Tidak ada siswa di kelas ini'
+                        : 'Tidak ada siswa cocok'}
                     </p>
                   ) : (
                     filteredSiswa.map((s) => (
@@ -304,7 +487,9 @@ export function ModalSetoran({
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-slate-800/60 transition cursor-pointer"
                       >
-                        <p className="text-sm text-slate-200 font-medium">{s.nama_lengkap}</p>
+                        <p className="text-sm text-slate-200 font-medium">
+                          {s.nama_lengkap}
+                        </p>
                         <p className="text-[10px] text-slate-500">
                           {s.kelas?.nama_kelas ?? '-'} · {s.nisn}
                         </p>
@@ -317,7 +502,7 @@ export function ModalSetoran({
           )}
         </div>
 
-        {/* TANGGAL & JENIS */}
+        {/* ======================== TANGGAL & JENIS ======================== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className={LABEL_CLASS}>Tanggal *</label>
@@ -332,7 +517,9 @@ export function ModalSetoran({
             <label className={LABEL_CLASS}>Jenis *</label>
             <select
               value={form.jenis}
-              onChange={(e) => setForm({ ...form, jenis: e.target.value as JenisSetoran })}
+              onChange={(e) =>
+                setForm({ ...form, jenis: e.target.value as JenisSetoran })
+              }
               className={INPUT_CLASS + ' cursor-pointer'}
             >
               <option value="Tahfidz">Tahfidz (hafalan baru)</option>
@@ -341,7 +528,7 @@ export function ModalSetoran({
           </div>
         </div>
 
-        {/* RENTANG HAFALAN */}
+        {/* ======================== RENTANG HAFALAN ======================== */}
         <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
             <BookMarked size={13} /> Rentang Hafalan
@@ -353,7 +540,9 @@ export function ModalSetoran({
               <label className={LABEL_CLASS}>Mulai</label>
               <select
                 value={form.surah_mulai}
-                onChange={(e) => setForm({ ...form, surah_mulai: Number(e.target.value) })}
+                onChange={(e) =>
+                  setForm({ ...form, surah_mulai: Number(e.target.value) })
+                }
                 className={INPUT_CLASS + ' cursor-pointer'}
               >
                 {Array.from(surahMap.values()).map((s) => (
@@ -400,7 +589,10 @@ export function ModalSetoran({
                 max={maxAyatSelesai}
                 value={form.ayat_selesai}
                 onChange={(e) =>
-                  setForm({ ...form, ayat_selesai: Number(e.target.value) || 1 })
+                  setForm({
+                    ...form,
+                    ayat_selesai: Number(e.target.value) || 1,
+                  })
                 }
                 placeholder="Ayat selesai"
                 className={INPUT_CLASS}
@@ -422,14 +614,17 @@ export function ModalSetoran({
           </div>
         </div>
 
-        {/* KUALITAS & NILAI */}
+        {/* ======================== KUALITAS & NILAI ======================== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className={LABEL_CLASS}>Kualitas</label>
             <select
               value={form.kualitas}
               onChange={(e) =>
-                setForm({ ...form, kualitas: e.target.value as KualitasHafalan })
+                setForm({
+                  ...form,
+                  kualitas: e.target.value as KualitasHafalan,
+                })
               }
               className={INPUT_CLASS + ' cursor-pointer'}
             >
@@ -453,7 +648,7 @@ export function ModalSetoran({
           </div>
         </div>
 
-        {/* CATATAN */}
+        {/* ======================== CATATAN ======================== */}
         <div>
           <label className={LABEL_CLASS}>Catatan</label>
           <textarea
@@ -465,7 +660,7 @@ export function ModalSetoran({
           />
         </div>
 
-        {/* ACTIONS */}
+        {/* ======================== ACTIONS ======================== */}
         <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
           <button
             onClick={onClose}
