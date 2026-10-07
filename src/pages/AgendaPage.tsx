@@ -332,6 +332,7 @@ export function AgendaPage() {
   const todayJadwal = sortedJadwalList.filter(
     (j) => j.hari?.trim().toLowerCase() === todayHari.trim().toLowerCase()
   );
+  const groupedTodayJadwal = groupJadwalByWaktu(todayJadwal);
 
   const otherJadwal = sortedJadwalList.filter(
     (j) => j.hari?.trim().toLowerCase() !== todayHari.trim().toLowerCase()
