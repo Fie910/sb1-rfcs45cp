@@ -96,7 +96,8 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   path: string;
-  kategori?: string; 
+  kategori?: string;
+  customAccess?: 'tahfidz';
 };
 
 export type NavGroup = {
@@ -137,7 +138,7 @@ export const NAVIGATION_CONFIG: NavGroup[] = [
       { key: 'presensi', label: 'Input Presensi Siswa', icon: CalendarCheck, path: '/presensi' },
       { key: 'nilai', label: 'Input Nilai Siswa', icon: ClipboardList, path: '/nilai' },
       { key: 'perpustakaan', label: 'Perpustakaan', icon: Library, path: '/perpustakaan'},
-      { key: 'tahfidz', label: 'Tahfidz Quran', icon: BookOpen, path: '/tahfidz' },
+      { key: 'tahfidz', label: 'Tahfidz Quran', icon: BookOpen, path: '/tahfidz', customAccess?: 'tahfidz' },
     ],
   },
   {
