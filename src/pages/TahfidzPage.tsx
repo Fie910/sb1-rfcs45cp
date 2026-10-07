@@ -9,6 +9,8 @@ import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 import { supabase } from '@/lib/supabase';
 import type { TahfidzSurah } from '@/types/database';
+import { canAccessTahfidz, isTahfidzManager } from '@/components/tahfidz/shared';
+import { ShieldAlert } from 'lucide-react';
 
 // =============================================================================
 // LAZY TAB COMPONENTS
