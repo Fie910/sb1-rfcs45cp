@@ -1,3 +1,4 @@
+//src/services/suratService.ts
 import { supabase } from '../lib/supabase';
 import { sendNotification } from '../lib/notification';
 import { Surat, KategoriSurat, DisposisiSurat, JenisSurat } from '../types/surat';
