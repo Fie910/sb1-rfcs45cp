@@ -153,8 +153,8 @@ export function getJenisSerialIcon(jenis: JenisSerial | string | null | undefine
 }
 
 /** Return Lucide icon sesuai warna kategori (untuk fallback cover) */
-export function getBookIcon() {
-  return Book;
+//export function getBookIcon() {
+  //return Book;
 }
 
 // =============================================================================
