@@ -464,6 +464,7 @@ export function BukuTamuPage() {
     value: s.id,
     label: s.nama_lengkap,
     hint: s.kelas_nama ?? undefined,
+    searchText: `${s.nisn} ${s.kelas_nama ?? ''}`,
       }))}
   value={form.siswa_id}
   onChange={(v) => setForm({ ...form, siswa_id: v })}
