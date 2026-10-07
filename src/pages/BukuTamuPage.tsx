@@ -48,7 +48,7 @@ const emptyForm = {
 export function BukuTamuPage() {
   const [gurus, setGurus] = useState<Guru[]>([]);
   const [divisis, setDivisis] = useState<Divisi[]>([]);
-  const [siswas, setSiswas] = useState<Siswa[]>([]);
+  const [siswas, setSiswas] = useState<SiswaPublicRow[]>([]);
   const [loadingMaster, setLoadingMaster] = useState(true);
 
   const [form, setForm] = useState(emptyForm);
