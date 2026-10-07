@@ -208,7 +208,7 @@ export function AgendaPage() {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [journalModal, setJournalModal] = useState(false);
-  const [activeJadwal, setActiveJadwal] = useState<JadwalKbmWithRelations | null>(null);
+  const [activeJadwalGroup, setActiveJadwalGroup] = useState<JadwalGroup | null>(null);
   const [journalText, setJournalText] = useState('');
   const [saving, setSaving] = useState(false);
 
