@@ -229,36 +229,27 @@ const { error } = await supabase
       return;
     }
 
-    // Notifikasi ke guru/divisi tujuan
-    // Notifikasi (tidak butuh createdData)
-const originInstansi = form.instansi ? ` dari ${form.instansi}` : '';
-const pesanNotif = `${form.nama_tamu}${originInstansi} ingin bertemu. Keperluan: ${form.keperluan}`;
-
+// Notifikasi via RPC (SECURITY DEFINER — bisa jalan sebagai anon)
 try {
+  let targetIds: string[] = [];
+
   if (form.guru_id) {
-    await sendNotification({
-      guruIds: form.guru_id,
-      judul: 'Tamu Baru Menunggu',
-      pesan: pesanNotif,
-      tipe: 'buku_tamu',
-      tautan: '/buku_tamu/kelola',
-    });
+    targetIds = [form.guru_id];
   } else if (form.divisi_id) {
-    const targetIds = await getGuruIdsByDivisi(form.divisi_id);
-    if (targetIds.length > 0) {
-      // ✅ Ambil nama divisi dari state lokal, bukan dari createdData
-      const selectedDivisi = divisis.find((d) => d.id === form.divisi_id);
-      const namaDivisi = selectedDivisi?.nama_divisi
-        ? ` ${selectedDivisi.nama_divisi}`
-        : '';
-      await sendNotification({
-        guruIds: targetIds,
-        judul: `Tamu Baru (Divisi${namaDivisi})`,
-        pesan: pesanNotif,
-        tipe: 'buku_tamu',
-        tautan: '/buku_tamu/kelola',
-      });
-    }
+    // Fetch guru per divisi via RPC publik
+    const { data: divisiGurus } = await supabase.rpc('get_gurus_by_divisi_public', {
+      p_divisi_id: form.divisi_id,
+    });
+    targetIds = (divisiGurus as any[])?.map((g) => g.id) ?? [];
+  }
+
+  if (targetIds.length > 0) {
+    await supabase.rpc('notify_buku_tamu', {
+      p_guru_ids: targetIds,
+      p_nama_tamu: form.nama_tamu,
+      p_instansi: form.instansi || null,
+      p_keperluan: form.keperluan,
+    });
   }
 } catch (notifErr) {
   console.error('Gagal kirim notif:', notifErr);
