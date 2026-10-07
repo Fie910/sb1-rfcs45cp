@@ -35,9 +35,6 @@ export function isPustakawan(role: string | null | undefined): boolean {
 /** Durasi peminjaman default (hari) */
 export const DURASI_PINJAM_HARI = 7;
 
-/** Maksimal perpanjangan */
-
-
 /** Denda per hari keterlambatan (Rupiah) */
 export const DENDA_PER_HARI = 500;
 
@@ -151,11 +148,6 @@ export function getJenisSerialIcon(jenis: JenisSerial | string | null | undefine
       return Library;
   }
 }
-
-/** Return Lucide icon sesuai warna kategori (untuk fallback cover) */
-//export function getBookIcon() {
-  //return Book;
-//}
 
 // =============================================================================
 // HELPERS — TANGGAL & DENDA
