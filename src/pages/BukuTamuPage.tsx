@@ -15,6 +15,15 @@ import { SearchableSelect } from '@/components/SearchableSelect';
 import { sendNotification, getGuruIdsByDivisi } from '@/lib/notifications/notification';
 import type { Guru, Divisi, Siswa, StatusBukuTamu } from '@/types/database';
 
+// Tambah type lokal untuk response RPC
+type SiswaPublicRow = {
+  id: number;
+  nama_lengkap: string;
+  nisn: string;
+  kelas_id: number | null;
+  kelas_nama: string | null;
+};
+
 const KATEGORI_OPTIONS = [
   'Kemitraan DUDI',
   'Orang Tua / BK',
