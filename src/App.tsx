@@ -275,6 +275,7 @@ function AppContent() {
           <Route path="/buku_tamu" element={<ProtectedRoute accessKey="buku_tamu"><BukuTamuPage /></ProtectedRoute>} />
           <Route path="/bk" element={<ProtectedRoute accessKey="bk"><BimbinganKonselingPage /></ProtectedRoute>} />
           <Route path="/perpustakaan" element={<ProtectedRoute accessKey="perpustakaan"><PerpustakaanPage /></ProtectedRoute>} />
+          <Route path="/tahfidz" element={<ProtectedRoute accessKey="tahfidz"><TahfidzPage /></ProtectedRoute>}/>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
