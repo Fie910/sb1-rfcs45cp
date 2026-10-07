@@ -13,6 +13,7 @@ export type SelectOption = {
   value: string | number;
   label: string;
   hint?: string;
+  searchText?: string;
   disabled?: boolean;
 };
 
