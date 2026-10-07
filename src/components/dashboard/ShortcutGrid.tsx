@@ -568,11 +568,13 @@ export function ShortcutGrid({ shortcuts, loading, onEdit, badgeCounts }: Props)
   title={cfg.label}
 >
   {/* BADGE OVERLAY — kanan atas */}
-  {(badgeCounts?.[s.page_key] ?? 0) > 0 && (
-    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg shadow-rose-500/30 border border-rose-400/50 z-10 animate-pulse">
-      {(badgeCounts?.[s.page_key] ?? 0) > 99 ? '99+' : badgeCounts![s.page_key]}
-    </span>
-  )}
+{(badgeCounts?.[s.page_key as PageKey] ?? 0) > 0 && (
+  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg shadow-rose-500/30 border border-rose-400/50 z-10 animate-pulse">
+    {(badgeCounts?.[s.page_key as PageKey] ?? 0) > 99
+      ? '99+'
+      : badgeCounts![s.page_key as PageKey]}
+  </span>
+)}
 
   <div className={`w-10 h-10 rounded-xl ${colors.bg} ${colors.border} border ${colors.text} flex items-center justify-center transition group-hover:scale-110`}>
     <Icon size={18} />
