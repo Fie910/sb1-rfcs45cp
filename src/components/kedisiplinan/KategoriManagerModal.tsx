@@ -382,7 +382,7 @@ export function KategoriManagerModal({ open, onClose, kategoriList, onChanged }:
 
       <ConfirmModal
         open={!!deleteTarget}
-        onCancel={() => setDeleteTarget(null)}
+        onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Hapus Kategori"
         message={`Yakin hapus kategori "${deleteTarget?.nama}"? Pelanggaran yang sudah tercatat dengan kategori ini tidak akan terhapus (kategori jadi kosong).`}
