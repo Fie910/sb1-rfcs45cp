@@ -487,7 +487,7 @@ const COLOR_MAP: Record<string, { bg: string; text: string; border: string; hove
 // TYPES
 // =============================================================================
 type ShortcutItem = {
-  page_key: PageKey;
+  page_key: string;
   urutan: number;
 };
 
