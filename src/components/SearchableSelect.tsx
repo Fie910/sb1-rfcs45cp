@@ -57,15 +57,16 @@ export function SearchableSelect({
     [options, value]
   );
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return options;
-    const q = query.toLowerCase();
-    return options.filter(
-      (o) =>
-        o.label.toLowerCase().includes(q) ||
-        (o.hint && o.hint.toLowerCase().includes(q))
-    );
-  }, [options, query]);
+const filtered = useMemo(() => {
+  if (!query.trim()) return options;
+  const q = query.toLowerCase();
+  return options.filter(
+    (o) =>
+      o.label.toLowerCase().includes(q) ||
+      (o.hint && o.hint.toLowerCase().includes(q)) ||
+      (o.searchText && o.searchText.toLowerCase().includes(q))   // ← TAMBAH
+  );
+}, [options, query]);
 
   // Hitung posisi dropdown relatif terhadap viewport (fixed positioning)
   const updatePosition = useCallback(() => {
