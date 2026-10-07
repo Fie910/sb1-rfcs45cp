@@ -1,0 +1,1578 @@
+=== lib/ai.ts ===
+// src/lib/ai.ts
+// AI client untuk Gemini API — dipakai untuk auto-resume notulensi.
+// ✅ Robust: auto-retry (503/429) + multi-model fallback.
+
+import { supabase } from './supabase';
+
+// =============================================================================
+// CONFIG
+// =============================================================================
+const GEMINI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+];
+
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+
+const MAX_RETRY_PER_MODEL = 2;
+const RETRY_DELAY_MS = 2500;
+const RETRYABLE_STATUS = [429, 500, 502, 503, 504];
+
+// =============================================================================
+// TYPES
+// =============================================================================
+export type ResumeNotulensiResult = {
+  ringkasan_eksekutif: string;
+  pembahasan: string;
+  keputusan: string;
+  action_items: {
+    deskripsi: string;
+    pic_nama: string | null;
+    deadline: string | null;
+    prioritas: 'Tinggi' | 'Sedang' | 'Rendah';
+  }[];
+};
+
+export type PolishOptions = {
+  mode: 'formal' | 'ringkas' | 'detail';
+};
+
+// =============================================================================
+// HELPER — CORE REQUEST dengan fallback
+// =============================================================================
+async function callGeminiWithFallback(payload: any): Promise<any> {
+  if (!API_KEY) {
+    throw new Error('Gemini API key belum diset. Hubungi administrator.');
+  }
+
+  let lastError: Error | null = null;
+  const attempted: string[] = [];
+
+  for (const model of GEMINI_MODELS) {
+    attempted.push(model);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+
+    for (let attempt = 1; attempt <= MAX_RETRY_PER_MODEL + 1; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          return await res.json();
+        }
+
+        const isRetryable = RETRYABLE_STATUS.includes(res.status);
+        let serverMsg = '';
+        try {
+          const errBody = await res.text();
+          const errJson = JSON.parse(errBody);
+          serverMsg = errJson?.error?.message ?? '';
+        } catch { /* ignore */ }
+
+        lastError = new Error(
+          serverMsg ? `[${model}] ${serverMsg}` : `[${model}] HTTP ${res.status}`
+        );
+
+        if (!isRetryable) break;
+
+        if (attempt <= MAX_RETRY_PER_MODEL) {
+          console.warn(`[ai] ${model} gagal (${res.status}), retry ${attempt}/${MAX_RETRY_PER_MODEL}...`);
+          await sleep(RETRY_DELAY_MS);
+        }
+      } catch (err: any) {
+        lastError = err;
+        if (attempt <= MAX_RETRY_PER_MODEL) await sleep(RETRY_DELAY_MS);
+      }
+    }
+
+    console.warn(`[ai] Model ${model} gagal, coba model berikutnya...`);
+  }
+
+  const errMsg = lastError?.message ?? 'Semua model AI gagal.';
+  if (errMsg.includes('UNAVAILABLE') || errMsg.includes('503')) {
+    throw new Error(
+      'Server AI sedang sibuk (high demand). Coba lagi dalam 1-2 menit.'
+    );
+  }
+  throw new Error(
+    `AI gagal merespons setelah mencoba: ${attempted.join(', ')}. Coba lagi nanti.`
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// =============================================================================
+// HEALTH CHECK
+// =============================================================================
+export async function checkAiAvailable(): Promise<boolean> {
+  if (!API_KEY) return false;
+  try {
+    const data = await callGeminiWithFallback({
+      contents: [{ parts: [{ text: 'Ping' }] }],
+      generationConfig: { maxOutputTokens: 5 },
+    });
+    return Boolean(data);
+  } catch {
+    return false;
+  }
+}
+
+// =============================================================================
+// MAIN — GENERATE RESUME NOTULENSI
+// =============================================================================
+export async function generateResumeNotulensi(
+  input: {
+    judul_rapat: string;
+    jenis_rapat: string;
+    tanggal: string;
+    pembahasan_mentah: string;
+    keputusan_mentah?: string;
+    peserta_list?: string[];
+  }
+): Promise<ResumeNotulensiResult> {
+  const pesertaSection = input.peserta_list?.length
+    ? `\n\nDaftar peserta: ${input.peserta_list.join(', ')}`
+    : '';
+
+  const prompt = `Anda adalah notulis rapat profesional di sekolah SMK di Indonesia. Tugas Anda adalah mengubah catatan rapat mentah menjadi notulensi resmi yang rapi, terstruktur, dan formal dalam Bahasa Indonesia.
+
+Konteks Rapat:
+- Judul: ${input.judul_rapat}
+- Jenis: ${input.jenis_rapat}
+- Tanggal: ${input.tanggal}${pesertaSection}
+
+Catatan Mentah:
+${input.pembahasan_mentah}
+
+${input.keputusan_mentah ? `Keputusan Awal:\n${input.keputusan_mentah}` : ''}
+
+INSTRUKSI OUTPUT:
+Kembalikan HANYA JSON valid (tanpa markdown code fence) dengan struktur berikut:
+
+{
+  "ringkasan_eksekutif": "1-2 paragraf ringkasan inti rapat (100-200 kata)",
+  "pembahasan": "Poin-poin pembahasan terstruktur. Gunakan format:\\n- Poin 1\\n- Poin 2\\n- dst.",
+  "keputusan": "Keputusan-keputusan yang diambil. Gunakan format:\\n1. Keputusan pertama\\n2. Keputusan kedua\\n- dst.",
+  "action_items": [
+    {
+      "deskripsi": "Deskripsi tugas konkret (mulai dengan kata kerja)",
+      "pic_nama": "Nama orang yang bertanggung jawab (kalau ada di catatan, kalau tidak: null)",
+      "deadline": "Format YYYY-MM-DD (kalau disebutkan, kalau tidak: null)",
+      "prioritas": "Tinggi|Sedang|Rendah"
+    }
+  ]
+}
+
+ATURAN PENTING:
+1. JANGAN mengarang informasi yang tidak ada di catatan mentah.
+2. Kalau tidak ada keputusan, isi field keputusan dengan "Belum ada keputusan formal yang diambil dalam rapat ini."
+3. Kalau tidak ada action item, kembalikan array kosong [].
+4. Bahasa harus formal dan profesional, sesuai standar administrasi sekolah.
+5. Pertahankan istilah teknis, nama orang, nama tempat, dan nomor surat apa adanya.
+6. Output HARUS valid JSON. Jangan tambahkan penjelasan apapun di luar JSON.`;
+
+  try {
+    const data = await callGeminiWithFallback({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('AI tidak mengembalikan respons. Coba lagi.');
+
+    const cleaned = rawText
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    const parsed = JSON.parse(cleaned) as ResumeNotulensiResult;
+
+    if (!Array.isArray(parsed.action_items)) {
+      parsed.action_items = [];
+    }
+    parsed.action_items = parsed.action_items.map((a) => ({
+      deskripsi: a.deskripsi ?? '',
+      pic_nama: a.pic_nama ?? null,
+      deadline: a.deadline ?? null,
+      prioritas: (['Tinggi', 'Sedang', 'Rendah'].includes(a.prioritas)
+        ? a.prioritas
+        : 'Sedang') as 'Tinggi' | 'Sedang' | 'Rendah',
+    }));
+
+    return parsed;
+  } catch (err: any) {
+    console.error('[ai] generateResumeNotulensi error:', err);
+    throw new Error(err.message || 'Gagal generate resume dengan AI.');
+  }
+}
+
+// =============================================================================
+// POLISH — Rapikan teks
+// =============================================================================
+export async function polishText(
+  text: string,
+  mode: PolishOptions['mode'] = 'formal'
+): Promise<string> {
+  const modeInstruction = {
+    formal: 'Ubah menjadi bahasa Indonesia formal & profesional, sesuai standar administrasi sekolah.',
+    ringkas: 'Ringkas menjadi 2-3 kalimat padat tanpa kehilangan informasi penting.',
+    detail: 'Kembangkan dengan detail, tambahkan konteks bila perlu, tapi jangan mengarang fakta.',
+  }[mode];
+
+  const prompt = `Tugas: ${modeInstruction}
+
+Teks asli:
+${text}
+
+Output: Hanya teks hasil, tanpa penjelasan tambahan.`;
+
+  const data = await callGeminiWithFallback({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+  });
+
+  const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!result) throw new Error('AI tidak mengembalikan respons.');
+  return result.trim();
+}
+
+// =============================================================================
+// AUTO-TITLE
+// =============================================================================
+export async function generateJudulRapat(pembahasan: string): Promise<string> {
+  const prompt = `Berdasarkan catatan rapat berikut, buat judul rapat yang singkat (maks 60 karakter), formal, dan menggambarkan inti rapat. Output: HANYA judul, tanpa tanda kutip atau penjelasan.
+
+Catatan:
+${pembahasan.slice(0, 1500)}`;
+
+  const data = await callGeminiWithFallback({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.5, maxOutputTokens: 100 },
+  });
+
+  return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
+    .trim()
+    .replace(/^["']|["']$/g, '');
+}
+
+=== lib/charts.ts ===
+// src/lib/charts.ts
+// Konfigurasi tema chart Recharts yang konsisten untuk seluruh aplikasi.
+//
+// Semua chart di aplikasi (Dashboard Kepsek, Monev Divisi, dan lain-lain)
+// WAJIB mengimpor konstanta dari file ini, bukan hardcode warna.
+
+// =============================================================================
+// COLOR PALETTE
+// =============================================================================
+
+export const CHART_COLORS = {
+  indigo: '#6366f1',
+  emerald: '#10b981',
+  amber: '#f59e0b',
+  rose: '#f43f5e',
+  blue: '#3b82f6',
+  purple: '#a855f7',
+  teal: '#14b8a6',
+  orange: '#f97316',
+} as const;
+
+// Warna utama untuk gradient fill chart (indigo)
+export const CHART_GRADIENT = {
+  id: 'chartGradient',
+  from: '#6366f1',
+  to: '#3b82f6',
+} as const;
+
+// =============================================================================
+// STYLE KONSISTEN — untuk seluruh chart
+// =============================================================================
+
+// Style untuk X dan Y axis
+export const AXIS_STYLE = {
+  stroke: '#64748b',
+  fontSize: 12,
+  tickLine: false,
+  axisLine: false,
+} as const;
+
+// Style untuk CartesianGrid
+export const GRID_STYLE = {
+  stroke: '#1e293b',
+  strokeDasharray: '3 3',
+  vertical: false,
+} as const;
+
+// Style untuk Tooltip — tema dark konsisten
+export const TOOLTIP_STYLE = {
+  contentStyle: {
+    backgroundColor: '#0f172a',
+    border: '1px solid #1e293b',
+    borderRadius: '12px',
+    color: '#e2e8f0',
+    fontSize: '12px',
+    padding: '8px 12px',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+  },
+  labelStyle: {
+    color: '#94a3b8',
+    fontSize: '11px',
+    fontWeight: 600,
+    marginBottom: '6px',
+  },
+  itemStyle: {
+    color: '#e2e8f0',
+  },
+} as const;
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Format tanggal YYYY-MM-DD → "12 Sep" untuk sumbu X.
+ */
+export function formatShortDate(dateStr: string): string {
+  const date = new Date(`${dateStr}T00:00:00+07:00`);
+  return date.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+/**
+ * Format tanggal YYYY-MM-DD → "Sen" (nama hari singkat).
+ */
+export function formatShortDay(dateStr: string): string {
+  const date = new Date(`${dateStr}T00:00:00+07:00`);
+  return date.toLocaleDateString('id-ID', {
+    weekday: 'short',
+  });
+}
+
+/**
+ * Format angka menjadi persentase.
+ */
+export function formatPercent(value: number): string {
+  return `${Math.round(value)}%`;
+}
+
+// =============================================================================
+// TEMA KOMPONEN RECHARTS SIAP PAKAI
+// =============================================================================
+
+/**
+ * Konfigurasi default untuk komponen Line / Area / Bar.
+ * Pakai spread operator:
+ *   <Line {...LINE_DEFAULTS} dataKey="hadir" />
+ */
+export const LINE_DEFAULTS = {
+  type: 'monotone' as const,
+  strokeWidth: 2.5,
+  dot: { r: 3, strokeWidth: 2 },
+  activeDot: { r: 5, strokeWidth: 2 },
+};
+
+/**
+ * Margin default untuk ResponsiveContainer.
+ */
+export const CHART_MARGIN = {
+  top: 10,
+  right: 10,
+  left: -15,
+  bottom: 0,
+};
+
+/**
+ * Tinggi default chart (px).
+ */
+export const CHART_HEIGHT = 240;
+
+=== lib/date.ts ===
+import type { HariMinggu } from '@/types/database';
+
+// =============================================================================
+// KONSTANTA
+// =============================================================================
+
+const WIB_TZ = 'Asia/Jakarta';
+
+// =============================================================================
+// TANGGAL — Format YYYY-MM-DD
+// =============================================================================
+
+/**
+ * Mendapatkan tanggal dalam format YYYY-MM-DD berbasis WIB.
+ * Menerima parameter Date opsional (untuk testing).
+ */
+export function getWibDateString(date: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: WIB_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === 'year')?.value ?? '1970';
+  const month = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const day = parts.find((p) => p.type === 'day')?.value ?? '01';
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Alias `getWibDateString()` — semantik "hari ini WIB".
+ * Menggantikan helper duplikat: getTodayDateWib, getTodayDateStrWib,
+ * getWIBTodayString, getTodayWIB.
+ */
+export function getTodayDateWib(): string {
+  return getWibDateString();
+}
+
+/**
+ * Tanggal 1 bulan berjalan (YYYY-MM-01) berbasis WIB.
+ * Menggantikan: getFirstDayOfMonthWib, getFirstDayOfMonth,
+ * getStartOfMonthWIB, getWIBFirstDayOfMonthString.
+ */
+export function getFirstDayOfMonthWib(): string {
+  const today = getWibDateString();
+  return `${today.slice(0, 7)}-01`;
+}
+
+/**
+ * Tanggal terakhir bulan berjalan (YYYY-MM-DD) berbasis WIB.
+ * Menggantikan: getLastDayOfMonth.
+ */
+export function getLastDayOfMonthWib(): string {
+  const today = getWibDateString();
+  const [yearStr, monthStr] = today.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${yearStr}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
+}
+
+/**
+ * Bulan berjalan dalam format YYYY-MM berbasis WIB.
+ * Cocok untuk filter bulan (AttendanceSummary).
+ */
+export function getMonthYearWib(): string {
+  return getWibDateString().slice(0, 7);
+}
+
+// =============================================================================
+// NAMA HARI (Bahasa Indonesia)
+// =============================================================================
+
+/**
+ * Nama hari (Senin..Minggu) dari hari ini berbasis WIB.
+ * Menggantikan: getTodayHariWib, getTodayHariWIB.
+ */
+export function getTodayHariWib(): HariMinggu {
+  const hari = new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long',
+    timeZone: WIB_TZ,
+  }).format(new Date());
+
+  const cleanHari = hari.replace("'", '').replace('’', '');
+  return (cleanHari.charAt(0).toUpperCase() + cleanHari.slice(1)) as HariMinggu;
+}
+
+/**
+ * Nama hari (Senin..Minggu) dari string tanggal YYYY-MM-DD.
+ * Menggantikan: getHariFromDateString, getHariFromDate.
+ */
+export function getHariFromDateString(dateStr: string): HariMinggu {
+  const dateObj = new Date(`${dateStr}T12:00:00+07:00`);
+  const hari = new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long',
+    timeZone: WIB_TZ,
+  }).format(dateObj);
+
+  const cleanHari = hari.replace("'", '').replace('’', '');
+  return (cleanHari.charAt(0).toUpperCase() + cleanHari.slice(1)) as HariMinggu;
+}
+
+/**
+ * @deprecated Gunakan `getTodayHariWib()` sebagai gantinya.
+ * Dipertahankan untuk backward compatibility.
+ */
+export function getHariIniLokal(): string {
+  return getTodayHariWib();
+}
+
+// =============================================================================
+// WAKTU — Format HH:mm
+// =============================================================================
+
+/**
+ * Jam saat ini dalam format HH:mm berbasis WIB.
+ * Menggantikan: getCurrentTimeStrWib (duplikat).
+ */
+export function getCurrentTimeStrWib(): string {
+  return new Intl.DateTimeFormat('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: WIB_TZ,
+  })
+    .format(new Date())
+    .replace('.', ':');
+}
+
+/**
+ * Cek apakah waktu saat ini (WIB) berada di antara waktu mulai & selesai.
+ * Format waktu: HH:mm
+ */
+export function isJadwalAktif(waktuMulai: string, waktuSelesai: string): boolean {
+  if (!waktuMulai || !waktuSelesai) return false;
+
+  const now = getCurrentTimeStrWib();
+  const mulai = waktuMulai.slice(0, 5);
+  const selesai = waktuSelesai.slice(0, 5);
+
+  return now >= mulai && now <= selesai;
+}
+
+// =============================================================================
+// FORMAT TANGGAL (Display)
+// =============================================================================
+
+/**
+ * Format tanggal YYYY-MM-DD → "Senin, 12 September 2026"
+ * Menggantikan: formatDateWIB (versi panjang).
+ */
+export function formatDateWibLong(dateStr: string): string {
+  if (!dateStr) return '-';
+  const dateObj = dateStr.includes('T')
+    ? new Date(dateStr)
+    : new Date(`${dateStr}T00:00:00+07:00`);
+
+  return dateObj.toLocaleDateString('id-ID', {
+    timeZone: WIB_TZ,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Format tanggal YYYY-MM-DD → "Sen, 12 Sep 2026"
+ */
+export function formatDateWibShort(dateStr: string): string {
+  if (!dateStr) return '-';
+  const dateObj = dateStr.includes('T')
+    ? new Date(dateStr)
+    : new Date(`${dateStr}T00:00:00+07:00`);
+
+  return dateObj.toLocaleDateString('id-ID', {
+    timeZone: WIB_TZ,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Format tanggal YYYY-MM-DD → "12/09/2026"
+ * Menggantikan: formatTanggal (versi dd/mm/yyyy di TodoListPage).
+ */
+export function formatTanggalDDMMYYYY(dateString: string | null): string | null {
+  if (!dateString) return null;
+  const rawDate = dateString.split('T')[0];
+  const [year, month, day] = rawDate.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Format tanggal YYYY-MM-DD → "12 September 2026" (tanpa nama hari).
+ */
+export function formatDateWibNoDay(dateStr: string): string {
+  if (!dateStr) return '-';
+  const dateObj = dateStr.includes('T')
+    ? new Date(dateStr)
+    : new Date(`${dateStr}T00:00:00+07:00`);
+
+  return dateObj.toLocaleDateString('id-ID', {
+    timeZone: WIB_TZ,
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+=== lib/notification.ts ===
+// src/lib/notification.ts
+// Helper terpusat untuk mengirim notifikasi in-app + memicu push notification.
+//
+// Cara pakai:
+//   await sendNotification({
+//     guruIds: 'uuid-tunggal-atau-array',
+//     judul: 'Judul notifikasi',
+//     pesan: 'Isi pesan',
+//     tipe: 'tugas', // lihat TIPE_NOTIFIKASI di bawah
+//     tautan: '/todo',
+//   });
+//
+// Push notification akan otomatis dikirim oleh webhook Supabase → Edge Function
+// `send-push`, KECUALI untuk `tipe` yang ada di NON_PUSH_TIPE.
+
+import { supabase } from '@/lib/supabase';
+
+// Daftar `tipe` notifikasi yang TIDAK perlu dikirim sebagai push notification.
+// Notifikasi ini tetap muncul di lonceng aplikasi, tapi tidak membangunkan HP user.
+const NON_PUSH_TIPE = new Set([
+  'pengumuman', // terlalu sering → berisik
+  'kegiatan', // informatif, tidak urgent
+  'buku_tamu', // guru bisa cek manual di halaman Buku Tamu
+]);
+
+export type SendNotificationPayload = {
+  /** Satu UUID atau array UUID guru penerima */
+  guruIds: string | string[];
+  judul: string;
+  pesan: string;
+  tipe: string;
+  /** Path relatif di aplikasi, mis. "/todo", "/piket". Default: "/" */
+  tautan?: string | null;
+};
+
+type SendResult = {
+  sent: number;
+  error: string | null;
+};
+
+// =============================================================================
+// UTAMA — Kirim notifikasi ke satu atau banyak guru
+// =============================================================================
+
+/**
+ * Kirim notifikasi ke daftar guru. Otomatis:
+ * - Deduplikasi & filter ID kosong
+ * - Insert batch (1 query, bukan loop)
+ * - Trigger push via webhook (kecuali tipe non-push)
+ */
+export async function sendNotification(
+  payload: SendNotificationPayload
+): Promise<SendResult> {
+  const ids = Array.isArray(payload.guruIds) ? payload.guruIds : [payload.guruIds];
+  const uniqueIds = Array.from(new Set(ids.filter((id) => !!id)));
+
+  if (uniqueIds.length === 0) {
+    return { sent: 0, error: null };
+  }
+
+  const rows = uniqueIds.map((guruId) => ({
+    guru_id: guruId,
+    judul: payload.judul,
+    pesan: payload.pesan,
+    tipe: payload.tipe,
+    tautan: payload.tautan ?? '/',
+    is_read: false,
+  }));
+
+  const { error } = await supabase.from('notifikasi').insert(rows);
+
+  if (error) {
+    console.error('[notification] Gagal insert:', error.message);
+    return { sent: 0, error: error.message };
+  }
+
+  return { sent: uniqueIds.length, error: null };
+}
+
+/**
+ * Apakah notifikasi tipe ini akan dikirim sebagai push?
+ * Berguna untuk UI feedback (mis. tampilkan badge "Push akan dikirim").
+ */
+export function willSendPush(tipe: string): boolean {
+  return !NON_PUSH_TIPE.has(tipe);
+}
+
+// =============================================================================
+// HELPER — Broadcast & ambil penerima
+// =============================================================================
+
+/**
+ * Broadcast ke SEMUA guru di sekolah.
+ * Cocok untuk: pengumuman global, agenda sekolah besar, libur nasional.
+ */
+export async function broadcastToAllGurus(
+  payload: Omit<SendNotificationPayload, 'guruIds'>
+): Promise<SendResult> {
+  const { data, error } = await supabase.from('gurus').select('id');
+
+  if (error || !data) {
+    return { sent: 0, error: error?.message ?? 'Gagal mengambil daftar guru' };
+  }
+
+  return sendNotification({
+    ...payload,
+    guruIds: data.map((g) => g.id),
+  });
+}
+
+/**
+ * Ambil daftar ID guru berdasarkan kode role.
+ * Contoh role: 'kepegawaian', 'kesiswaan', 'akademik', 'admin'.
+ */
+export async function getGuruIdsByRole(role: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('gurus')
+    .select('id')
+    .eq('role', role);
+
+  if (error) {
+    console.error('[notification] Gagal ambil guru by role:', error.message);
+    return [];
+  }
+  return data?.map((g) => g.id) ?? [];
+}
+
+/**
+ * Ambil daftar ID guru dalam satu divisi.
+ */
+export async function getGuruIdsByDivisi(divisiId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('gurus')
+    .select('id')
+    .eq('divisi_id', divisiId);
+
+  if (error) {
+    console.error('[notification] Gagal ambil guru by divisi:', error.message);
+    return [];
+  }
+  return data?.map((g) => g.id) ?? [];
+}
+
+/**
+ * Ambil daftar ID guru piket pada hari tertentu.
+ * @param hari — 'Senin' | 'Selasa' | ... | 'Sabtu'
+ */
+export async function getGuruIdsPiketHari(hari: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('jadwal_pikets')
+    .select('guru_id')
+    .eq('hari_piket', hari);
+
+  if (error) {
+    console.error('[notification] Gagal ambil guru piket:', error.message);
+    return [];
+  }
+  return data?.map((j) => j.guru_id) ?? [];
+}
+
+/**
+ * Ambil ID guru piket penyambutan pada hari tertentu (tabel berbeda).
+ */
+export async function getGuruIdsPiketPenyambutan(hari: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('jadwal_piket_penyambutans')
+    .select('guru_id')
+    .eq('hari', hari);
+
+  if (error) {
+    console.error('[notification] Gagal ambil guru piket penyambutan:', error.message);
+    return [];
+  }
+  return data?.map((j) => j.guru_id) ?? [];
+}
+
+=== lib/pdfColoredExport.ts ===
+// src/lib/pdfColoredExport.ts
+// Helper terpusat untuk export PDF berwarna — mirror tampilan aplikasi.
+// ✅ Sekarang support tanda tangan kepala sekolah + titimangsa otomatis.
+
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { supabase } from './supabase';
+
+// =============================================================================
+// TYPES
+// =============================================================================
+export type RGB = [number, number, number];
+
+export type PdfColumn = {
+  header: string;
+  halign?: 'left' | 'center' | 'right';
+  width?: number | 'auto';
+  textColor?: RGB;
+  bold?: boolean;
+  format?: (value: any, row: any) => string;
+  colorize?: (value: any, row: any) => { bg?: RGB; text?: RGB } | null;
+};
+
+export type PdfStatBox = {
+  label: string;
+  value: string | number;
+  color: RGB;
+};
+
+export type PdfSignature = {
+  /** Nama lengkap kepala sekolah (wajib) */
+  nama: string;
+  /** NIP kepala sekolah (opsional) */
+  nip?: string | null;
+  /** Jabatan — default: 'Kepala Sekolah' */
+  jabatan?: string;
+  /** Kota titimangsa — default: 'Sukahideng' */
+  kota?: string;
+  /** Tanggal titimangsa (YYYY-MM-DD) — default: hari ini */
+  tanggal?: string;
+};
+
+export type PdfExportOptions = {
+  filename: string;
+  title: string;
+  subtitle?: string;
+  schoolName?: string;
+  schoolAddress?: string;
+  stats?: PdfStatBox[];
+  columns: PdfColumn[];
+  rows: any[];
+  orientation?: 'p' | 'l';
+  footerNote?: string;
+  /** ✅ Tanda tangan kepala sekolah */
+  signature?: PdfSignature;
+};
+
+// =============================================================================
+// COLOR PALETTE
+// =============================================================================
+export const PDF_COLORS: Record<string, RGB> = {
+  indigo: [79, 70, 229],
+  indigoLight: [238, 242, 255],
+  emerald: [16, 185, 129],
+  emeraldLight: [209, 250, 229],
+  emeraldDark: [6, 95, 70],
+  amber: [245, 158, 11],
+  amberLight: [254, 243, 199],
+  amberDark: [120, 53, 15],
+  blue: [59, 130, 246],
+  blueLight: [219, 234, 254],
+  blueDark: [30, 64, 175],
+  rose: [239, 68, 68],
+  roseLight: [254, 226, 226],
+  roseDark: [153, 27, 27],
+  purple: [168, 85, 247],
+  purpleLight: [243, 232, 255],
+  purpleDark: [107, 33, 168],
+  teal: [20, 184, 166],
+  tealLight: [204, 251, 241],
+  tealDark: [15, 118, 110],
+  slate900: [15, 23, 42],
+  slate700: [51, 65, 85],
+  slate500: [100, 116, 139],
+  slate300: [203, 213, 225],
+  slate100: [241, 245, 249],
+  slate50: [248, 250, 252],
+  white: [255, 255, 255],
+  black: [0, 0, 0],
+};
+
+// =============================================================================
+// HELPER — Warna Badge Persentase
+// =============================================================================
+export function getPersenWarna(pct: number): { bg: RGB; text: RGB } {
+  if (pct >= 85)
+    return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
+  if (pct >= 75) return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
+  return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
+}
+
+// =============================================================================
+// HELPER — Format Tanggal
+// =============================================================================
+export function formatTanggalPdf(d: string): string {
+  const date = new Date(`${d}T12:00:00+07:00`);
+  return date.toLocaleDateString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+export function formatTanggalPanjangPdf(d: string): string {
+  const date = new Date(`${d}T12:00:00+07:00`);
+  return date.toLocaleDateString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+// =============================================================================
+// ✅ HELPER — Fetch Kepala Sekolah
+// =============================================================================
+/**
+ * Ambil data kepala sekolah dari DB.
+ * Prioritas: pengaturan_sekolahs.nama_kepsek → gurus WHERE role='kepala'.
+ */
+export async function fetchKepalaSekolahData(): Promise<{
+  nama: string;
+  nip: string | null;
+} | null> {
+  try {
+    // 1. Coba dari pengaturan_sekolahs
+    const { data: setting } = await supabase
+      .from('pengaturan_sekolahs')
+      .select('nama_kepsek, nip_kepsek')
+      .limit(1)
+      .maybeSingle();
+
+    if (setting?.nama_kepsek) {
+      return {
+        nama: setting.nama_kepsek,
+        nip: setting.nip_kepsek ?? null,
+      };
+    }
+
+    // 2. Fallback: dari tabel gurus
+    const { data: guru } = await supabase
+      .from('gurus')
+      .select('nama_lengkap, nip')
+      .eq('role', 'kepala')
+      .maybeSingle();
+
+    if (guru?.nama_lengkap) {
+      return {
+        nama: guru.nama_lengkap,
+        nip: guru.nip ?? null,
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('[pdfColoredExport] Gagal fetch kepala sekolah:', err);
+    return null;
+  }
+}
+
+// =============================================================================
+// INTERNAL — Draw Kotak Statistik
+// =============================================================================
+function drawStatBox(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  label: string,
+  value: string,
+  color: RGB
+) {
+  const lightBg: RGB = [
+    Math.round(color[0] * 0.12 + 255 * 0.88),
+    Math.round(color[1] * 0.12 + 255 * 0.88),
+    Math.round(color[2] * 0.12 + 255 * 0.88),
+  ];
+
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(x, y, w, h, 2.5, 2.5, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(color[0], color[1], color[2]);
+  doc.text(value, x + w / 2, y + h / 2 + 1, { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(
+    PDF_COLORS.slate500[0],
+    PDF_COLORS.slate500[1],
+    PDF_COLORS.slate500[2]
+  );
+  doc.text(label, x + w / 2, y + h - 2.5, { align: 'center' });
+}
+
+// =============================================================================
+// ✅ INTERNAL — Draw Blok Tanda Tangan
+// =============================================================================
+function drawSignatureBlock(
+  doc: jsPDF,
+  pageWidth: number,
+  pageHeight: number,
+  signature: PdfSignature
+): void {
+  const marginX = 12;
+  const rightX = pageWidth - marginX;
+
+  const jabatan = signature.jabatan ?? 'Kepala Sekolah';
+  const kota = signature.kota ?? 'Sukahideng';
+  const tanggal = signature.tanggal ?? new Date().toISOString().slice(0, 10);
+
+  // Posisi baseline (dari bawah)
+  const nipY = pageHeight - 20;
+  const namaY = pageHeight - 25;
+  const jabatanY = pageHeight - 50;
+  const titimangsaY = pageHeight - 55;
+
+  // 1. Titimangsa
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(
+    PDF_COLORS.slate900[0],
+    PDF_COLORS.slate900[1],
+    PDF_COLORS.slate900[2]
+  );
+  doc.text(`${kota}, ${formatTanggalPanjangPdf(tanggal)}`, rightX, titimangsaY, {
+    align: 'right',
+  });
+
+  // 2. Jabatan
+  doc.text(`${jabatan},`, rightX, jabatanY, { align: 'right' });
+
+  // 3. Ruang kosong untuk tanda tangan (25mm) — tidak digambar, hanya spacing
+
+  // 4. Nama Kepala Sekolah (bold)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(signature.nama, rightX, namaY, { align: 'right' });
+
+  // 5. NIP (kalau ada)
+  if (signature.nip) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`NIP. ${signature.nip}`, rightX, nipY, { align: 'right' });
+  }
+}
+
+// =============================================================================
+// MAIN — EXPORT COLORED PDF
+// =============================================================================
+export function exportColoredPdf(options: PdfExportOptions): void {
+  const {
+    filename,
+    title,
+    subtitle,
+    schoolName = 'SMK KH. A. WAHAB MUHSIN SUKAHIDENG',
+    schoolAddress = 'Jl. Pahlawan KHZ Musthafa Sukarapih Sukarame Tasikmalaya Jawa Barat',
+    stats,
+    columns,
+    rows,
+    orientation = 'l',
+    footerNote,
+    signature,
+  } = options;
+
+  const doc = new jsPDF(orientation, 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 12;
+  const contentWidth = pageWidth - marginX * 2;
+
+  // ══════════════════════════════════════════════
+  // 1. KOP SURAT
+  // ══════════════════════════════════════════════
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(
+    PDF_COLORS.slate900[0],
+    PDF_COLORS.slate900[1],
+    PDF_COLORS.slate900[2]
+  );
+  doc.text(schoolName, pageWidth / 2, 13, { align: 'center' });
+
+  if (schoolAddress) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(
+      PDF_COLORS.slate500[0],
+      PDF_COLORS.slate500[1],
+      PDF_COLORS.slate500[2]
+    );
+    doc.text(schoolAddress, pageWidth / 2, 18, { align: 'center' });
+  }
+
+  doc.setDrawColor(
+    PDF_COLORS.indigo[0],
+    PDF_COLORS.indigo[1],
+    PDF_COLORS.indigo[2]
+  );
+  doc.setLineWidth(0.8);
+  doc.line(marginX, 21, pageWidth - marginX, 21);
+
+  // ══════════════════════════════════════════════
+  // 2. JUDUL
+  // ══════════════════════════════════════════════
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(
+    PDF_COLORS.slate900[0],
+    PDF_COLORS.slate900[1],
+    PDF_COLORS.slate900[2]
+  );
+  doc.text(title, pageWidth / 2, 29, { align: 'center' });
+
+  let cursorY = 34;
+
+  if (subtitle) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(
+      PDF_COLORS.slate500[0],
+      PDF_COLORS.slate500[1],
+      PDF_COLORS.slate500[2]
+    );
+    doc.text(subtitle, pageWidth / 2, cursorY, { align: 'center' });
+    cursorY += 5;
+  }
+
+  // ══════════════════════════════════════════════
+  // 3. KPI BOXES
+  // ══════════════════════════════════════════════
+  let tableStartY = cursorY + 4;
+
+  if (stats && stats.length > 0) {
+    const gap = 4;
+    const boxW = (contentWidth - gap * (stats.length - 1)) / stats.length;
+    const boxH = 17;
+    const boxY = tableStartY;
+
+    stats.forEach((s, i) => {
+      const x = marginX + i * (boxW + gap);
+      drawStatBox(doc, x, boxY, boxW, boxH, s.label, String(s.value), s.color);
+    });
+
+    tableStartY = boxY + boxH + 5;
+  }
+
+  // ══════════════════════════════════════════════
+  // 4. TABEL
+  // ══════════════════════════════════════════════
+  const headers = columns.map((c) => c.header);
+  const body = rows.map((row) =>
+    columns.map((col) => {
+      const rawValue = (row as any)[col.header];
+      if (col.format) return col.format(rawValue, row);
+      return rawValue ?? '-';
+    })
+  );
+
+  const columnStyles: Record<number, any> = {};
+  columns.forEach((col, i) => {
+    columnStyles[i] = {
+      halign: col.halign ?? 'left',
+      cellWidth: col.width ?? 'auto',
+      fontStyle: col.bold ? 'bold' : 'normal',
+    };
+    if (col.textColor) {
+      columnStyles[i].textColor = col.textColor;
+    }
+  });
+
+  autoTable(doc, {
+    startY: tableStartY,
+    head: [headers],
+    body,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2.5,
+      lineColor: PDF_COLORS.slate300,
+      lineWidth: 0.1,
+      valign: 'middle',
+      overflow: 'linebreak',
+      textColor: PDF_COLORS.slate900,
+    },
+    headStyles: {
+      fillColor: PDF_COLORS.indigo,
+      textColor: PDF_COLORS.white,
+      fontStyle: 'bold',
+      halign: 'center',
+      fontSize: 8.5,
+    },
+    alternateRowStyles: {
+      fillColor: PDF_COLORS.slate50,
+    },
+    columnStyles,
+    didParseCell: (data) => {
+      if (data.section !== 'body') return;
+      const colIndex = data.column.index;
+      const col = columns[colIndex];
+      if (!col?.colorize) return;
+
+      const row = rows[data.row.index];
+      const value = data.cell.raw;
+      const override = col.colorize(value, row);
+      if (!override) return;
+
+      if (override.bg) data.cell.styles.fillColor = override.bg;
+      if (override.text) data.cell.styles.textColor = override.text;
+    },
+  });
+
+  // ══════════════════════════════════════════════
+  // 5. ✅ TANDA TANGAN KEPALA SEKOLAH
+  // ══════════════════════════════════════════════
+  if (signature) {
+    const lastTableY = (doc as any).lastAutoTable?.finalY ?? 0;
+    // Blok tanda tangan butuh space ~60mm dari bawah
+    const needY = pageHeight - 65;
+
+    // Kalau tabel terlalu panjang, pindah halaman baru
+    if (lastTableY > needY) {
+      doc.addPage();
+    }
+
+    // Gambar di halaman aktif (last page)
+    const currentPageHeight = doc.internal.pageSize.getHeight();
+    drawSignatureBlock(doc, pageWidth, currentPageHeight, signature);
+  }
+
+  // ══════════════════════════════════════════════
+  // 6. FOOTER DI SETIAP HALAMAN
+  // ══════════════════════════════════════════════
+  const pageCount = doc.getNumberOfPages();
+  const cetakTanggal = new Date().toLocaleDateString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(
+      PDF_COLORS.slate500[0],
+      PDF_COLORS.slate500[1],
+      PDF_COLORS.slate500[2]
+    );
+
+    const leftText = footerNote
+      ? `${footerNote} · Dicetak: ${cetakTanggal}`
+      : `Dicetak: ${cetakTanggal}`;
+    doc.text(leftText, marginX, pageHeight - 6);
+
+    doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - marginX, pageHeight - 6, {
+      align: 'right',
+    });
+  }
+
+  // ══════════════════════════════════════════════
+  // 7. SAVE
+  // ══════════════════════════════════════════════
+  const finalName = filename.toLowerCase().endsWith('.pdf')
+    ? filename
+    : `${filename}.pdf`;
+  doc.save(finalName);
+}
+
+=== lib/pushNotification.ts ===
+//src/lib/pushNotification.ts
+import { supabase } from '@/lib/supabase';
+
+export async function registerServiceWorker() {
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      return registration;
+    } catch (error) {
+      console.warn(
+        'Service Worker tidak dapat didaftarkan pada lingkungan ini (misal: StackBlitz/WebContainer):',
+        error
+      );
+      return null;
+    }
+  } else {
+    console.warn('Browser atau lingkungan ini tidak mendukung Service Worker.');
+  }
+  return null;
+}
+
+export async function requestNotificationPermission(guruId: string) {
+  if (!('Notification' in window)) {
+    alert('Browser tidak mendukung notifikasi push');
+    return false;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return false;
+
+  const publicKey = import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY;
+  if (!publicKey) {
+    console.error(
+      'VITE_WEB_PUSH_PUBLIC_KEY belum diisi di .env — subscription tidak bisa dibuat.'
+    );
+    return false;
+  }
+
+  const registration = await registerServiceWorker();
+  if (!registration) {
+    console.warn('Service Worker gagal register — push tidak bisa dibuat.');
+    return false;
+  }
+
+  // Unsubscribe subscription lama (kalau ada) untuk menghindari duplikat endpoint
+  const existingSub = await registration.pushManager.getSubscription();
+  if (existingSub) {
+    await existingSub.unsubscribe();
+  }
+
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey),
+  });
+
+  const subJson = subscription.toJSON();
+  const keys = subJson.keys;
+
+  if (!subJson.endpoint || !keys?.p256dh || !keys?.auth) {
+    console.error('Subscription tidak lengkap:', subJson);
+    return false;
+  }
+
+  // Simpan ke tabel push_subscriptions (bukan gurus)
+  const { error } = await supabase.from('push_subscriptions').upsert(
+    {
+      guru_id: guruId,
+      endpoint: subJson.endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+      user_agent: navigator.userAgent,
+    },
+    { onConflict: 'endpoint' }
+  );
+
+  if (error) {
+    console.error('Gagal menyimpan push subscription:', error.message);
+    return false;
+  }
+
+  return true;
+}
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+=== services/suratService.ts ===
+//src/services/suratService.ts
+import { supabase } from '../lib/supabase';
+import { sendNotification } from '../lib/notification';
+import { Surat, KategoriSurat, DisposisiSurat, JenisSurat } from '../types/surat';
+
+export interface Guru {
+  id: string;
+  nip?: string | null;
+  nama_lengkap: string;
+  email?: string;
+  role?: string | null;
+  jabatan?: string | null;
+}
+
+// --- A. MASTER KATEGORI ---
+export const getKategoriSuratList = async (jenis?: JenisSurat) => {
+  let query = supabase.from('kategori_surat').select('*').order('kode');
+  if (jenis) query = query.eq('jenis_surat', jenis);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as KategoriSurat[];
+};
+
+export const createKategoriSurat = async (kategori: Omit<KategoriSurat, 'id'>) => {
+  const { data, error } = await supabase.from('kategori_surat').insert([kategori]).select();
+  if (error) throw error;
+  return data[0] as KategoriSurat;
+};
+
+export const updateKategoriSurat = async (id: string, updateData: Partial<KategoriSurat>) => {
+  const { data, error } = await supabase
+    .from('kategori_surat')
+    .update(updateData)
+    .eq('id', id)
+    .select();
+  if (error) throw error;
+  return data[0] as KategoriSurat;
+};
+
+export const deleteKategoriSurat = async (id: string) => {
+  const { error } = await supabase.from('kategori_surat').delete().eq('id', id);
+  if (error) throw error;
+};
+
+// --- B. SURAT (CRUD & UPLOAD) ---
+export const getSuratList = async (jenis?: JenisSurat) => {
+  let query = supabase
+    .from('surat')
+    .select('*, kategori_surat(*), siswas(id, nama_lengkap, nisn)')
+    .order('created_at', { ascending: false });
+
+  if (jenis) query = query.eq('jenis_surat', jenis);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as Surat[];
+};
+
+export const getSuratById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('surat')
+    .select('*, kategori_surat(*), siswas(id, nama_lengkap, nisn)')
+    .eq('id', id)
+    .single();
+
+  if (error) throw error;
+  return data as Surat;
+};
+
+export const getNextUrutanSurat = async (jenis: JenisSurat) => {
+  const { count, error } = await supabase
+    .from('surat')
+    .select('*', { count: 'exact', head: true })
+    .eq('jenis_surat', jenis);
+
+  if (error) throw error;
+  return (count || 0) + 1;
+};
+
+export const uploadFileSurat = async (file: File, folder: 'berkas' | 'bukti' = 'berkas') => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${folder}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const filePath = `${folder}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('dokumen-surat')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from('dokumen-surat').getPublicUrl(filePath);
+
+  return data.publicUrl;
+};
+
+export const createSurat = async (suratData: Omit<Surat, 'id' | 'created_at'>) => {
+  const { data, error } = await supabase.from('surat').insert([suratData]).select();
+  if (error) throw error;
+  return data[0] as Surat;
+};
+
+export const updateSurat = async (id: string, updateData: Partial<Surat>) => {
+  const { data, error } = await supabase.from('surat').update(updateData).eq('id', id).select();
+  if (error) throw error;
+  return data[0] as Surat;
+};
+
+export const deleteSurat = async (id: string) => {
+  const { error } = await supabase.from('surat').delete().eq('id', id);
+  if (error) throw error;
+};
+
+// --- C. DISPOSISI SURAT & GURU ---
+export const getGuruList = async (): Promise<Guru[]> => {
+  const { data, error } = await supabase
+    .from('gurus')
+    .select('id, nip, nama_lengkap, email, role')
+    .order('nama_lengkap', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching guru:', error);
+    return [];
+  }
+  return data || [];
+};
+
+export const getDisposisiBySuratId = async (suratId: string) => {
+  const { data, error } = await supabase
+    .from('disposisi_surat')
+    .select('*')
+    .eq('surat_id', suratId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data as DisposisiSurat[];
+};
+
+export const createDisposisi = async (
+  disposisi: Omit<DisposisiSurat, 'id' | 'created_at' | 'updated_at'>,
+  nomorSurat?: string
+) => {
+  // 1. Simpan data disposisi ke tabel disposisi_surat
+  const { data, error } = await supabase.from('disposisi_surat').insert([disposisi]).select();
+  if (error) throw error;
+
+  const createdDisposisi = data[0] as DisposisiSurat;
+
+  // 2. Kirim notifikasi ke penerima jika penerima_id (guru_id) tersedia
+  //    Pakai helper sendNotification agar konsisten dengan modul lain.
+  if (disposisi.penerima_id) {
+    const infoNomor = nomorSurat ? ` (No: ${nomorSurat})` : '';
+    await sendNotification({
+      guruIds: disposisi.penerima_id,
+      judul: '📬 Disposisi Surat Baru',
+      pesan: `Anda menerima instruksi disposisi surat${infoNomor} dari ${disposisi.pemberi_disposisi}: "${disposisi.instruksi}"`,
+      tipe: 'disposisi_surat',
+      tautan: '/tugas-disposisi',
+    });
+  }
+
+  return createdDisposisi;
+};
+
+export const updateStatusDisposisi = async (
+  id: string,
+  status: 'PENDING' | 'PROSES' | 'SELESAI',
+  catatan_tindak_lanjut?: string
+) => {
+  const { data, error } = await supabase
+    .from('disposisi_surat')
+    .update({
+      status,
+      catatan_tindak_lanjut,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select();
+
+  if (error) throw error;
+  return data[0] as DisposisiSurat;
+};
+
+=== utils/formatSurat.ts ===
+//src/utils/formatSurat.ts
+// Konversi Angka Bulan (0-11) ke Bulan Romawi
+export const getBulanRomawi = (monthIndex: number): string => {
+  const romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+  return romanMonths[monthIndex] || 'I';
+};
+
+// Merakit Format Nomor Surat: [Urut]/[Kode]/[Sekolah]/[Romawi]/[Tahun]
+export const formatNomorSurat = (
+  urutan: number,
+  kodePerihal: string,
+  namaSekolah: string = 'SMK-KHAWM',
+  dateString?: string
+): string => {
+  const date = dateString ? new Date(dateString) : new Date();
+  const nomorUrutStr = String(urutan).padStart(3, '0');
+  const bulanRomawi = getBulanRomawi(date.getMonth());
+  const tahun = date.getFullYear();
+
+  return `${nomorUrutStr}/${kodePerihal}/${namaSekolah}/${bulanRomawi}/${tahun}`;
+};
