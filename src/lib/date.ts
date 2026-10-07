@@ -66,9 +66,6 @@ export function getLastDayOfMonthWib(): string {
  * Bulan berjalan dalam format YYYY-MM berbasis WIB.
  * Cocok untuk filter bulan (AttendanceSummary).
  */
-export function getMonthYearWib(): string {
-  return getWibDateString().slice(0, 7);
-}
 
 // =============================================================================
 // NAMA HARI (Bahasa Indonesia)
