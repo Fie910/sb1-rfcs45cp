@@ -63,7 +63,11 @@ type Shortcut = {
 // =============================================================================
 // KOMPONEN UTAMA
 // =============================================================================
-export function DashboardPage() {
+export function DashboardPage({
+  badgeCounts,
+}: {
+  badgeCounts?: Partial<Record<PageKey, number>>;
+}) {
   const { guru } = useAuth();
 
   const [pengumumanList, setPengumumanList] = useState<Pengumuman[]>([]);
@@ -80,10 +84,6 @@ export function DashboardPage() {
     const interval = setInterval(() => setNow(new Date()), 60 * 1000);
     return () => clearInterval(interval);
   }, []);
-
-  // Di interface DashboardPage (kalau ada) atau langsung di signature:
-export function DashboardPage({ badgeCounts }: { badgeCounts?: Partial<Record<PageKey, number>> }) {
-  // ...
 
   // ==========================================================================
   // FETCH PENGUMUMAN
