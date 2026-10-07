@@ -1849,3 +1849,87 @@ export type AgendaGuruKehadiranRow = {
     waktu_selesai: string | null;
   } | null;
 };
+
+// =============================================================================
+// TAHFIDZ QURAN
+// =============================================================================
+
+export type TahfidzSurah = {
+  nomor: number;
+  nama: string;
+  nama_latin: string;
+  jumlah_ayat: number;
+  juz: number;
+  halaman_mulai: number;
+  halaman_selesai: number;
+  tempat_turun: 'Makkiyah' | 'Madaniyah' | null;
+  urutan_turun: number | null;
+  created_at: string;
+};
+
+export type JenisSetoran = 'Tahfidz' | 'Murojaah';
+export type KualitasHafalan = 'Lancar' | 'Cukup' | 'Perlu Ulang';
+
+export type TahfidzSetoran = {
+  id: string;
+  siswa_id: number;
+  guru_tahfidz_id: string | null;
+  tanggal: string;
+  jenis: JenisSetoran;
+  surah_mulai: number;
+  ayat_mulai: number;
+  surah_selesai: number;
+  ayat_selesai: number;
+  kualitas: KualitasHafalan | null;
+  nilai: number | null;
+  catatan: string | null;
+  created_at: string;
+  created_by: string | null;
+  updated_at: string;
+};
+
+export type TahfidzSetoranWithRelations = TahfidzSetoran & {
+  siswa?: {
+    id: number;
+    nisn: string;
+    nama_lengkap: string;
+    kelas_id: number | null;
+    kelas?: { id: number; nama_kelas: string } | null;
+  } | null;
+  guru?: {
+    id: string;
+    nama_lengkap: string;
+  } | null;
+};
+
+export type TahfidzTarget = {
+  id: string;
+  siswa_id: number;
+  tahun_ajaran_id: number | null;
+  semester: 'Ganjil' | 'Genap' | null;
+  target_juz: number | null;
+  target_halaman: number | null;
+  target_surah: number | null;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+};
+
+export type TahfidzProgress = {
+  siswa_id: number;
+  nama_lengkap: string;
+  nisn: string;
+  kelas_id: number | null;
+  nama_kelas: string | null;
+  total_setoran_tahfidz: number;
+  total_setoran_murojaah: number;
+  total_ayat_hafalan: number;
+  total_halaman_hafalan: number;
+  rata_rata_nilai: number | null;
+  terakhir_setoran: string | null;
+};
+
+// Constants
+export const JENIS_SETORAN_OPTIONS: JenisSetoran[] = ['Tahfidz', 'Murojaah'];
+export const KUALITAS_HAFALAN_OPTIONS: KualitasHafalan[] = ['Lancar', 'Cukup', 'Perlu Ulang'];
