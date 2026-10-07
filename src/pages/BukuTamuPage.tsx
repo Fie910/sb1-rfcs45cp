@@ -460,17 +460,19 @@ export function BukuTamuPage() {
                 <GraduationCap size={12} /> Siswa Terkait
               </label>
               <SearchableSelect
-                options={siswas.map((s) => ({
-                  value: s.id,
-                  label: s.nama_lengkap,
-                  hint: `NISN: ${s.nisn}`,
-                }))}
-                value={form.siswa_id}
-                onChange={(v) => setForm({ ...form, siswa_id: v })}
-                placeholder="Pilih Nama Siswa"
-                searchPlaceholder="Cari nama atau NISN siswa..."
-                emptyMessage="Siswa tidak ditemukan"
-              />
+  options={siswas.map((s) => ({
+    value: s.id,
+    label: s.nama_lengkap,
+    hint: s.kelas_nama
+      ? `${s.kelas_nama} · NISN: ${s.nisn}`
+      : `NISN: ${s.nisn}`,
+  }))}
+  value={form.siswa_id}
+  onChange={(v) => setForm({ ...form, siswa_id: v })}
+  placeholder="Pilih Nama Siswa"
+  searchPlaceholder="Cari nama siswa / NISN / kelas..."
+  emptyMessage="Siswa tidak ditemukan"
+/>
             </div>
           )}
 
