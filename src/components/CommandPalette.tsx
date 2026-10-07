@@ -75,22 +75,23 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [recentKeys, setRecentKeys] = useState<PageKey[]>([]);
 
   // Build flat list of accessible items
-  const allItems: CommandItem[] = useMemo(() => {
-    const items: CommandItem[] = [];
-    NAVIGATION_CONFIG.forEach((group) => {
-      group.items.forEach((item) => {
-        if (!hasAccess(item.key)) return;
-        items.push({
-          key: item.key,
-          label: item.label,
-          group: group.groupTitle,
-          icon: item.icon,
-          path: item.path,
-        });
+const allItems: CommandItem[] = useMemo(() => {
+  const items: CommandItem[] = [];
+  NAVIGATION_CONFIG.forEach((group) => {
+    group.items.forEach((item) => {
+      if (!hasAccess(item.key)) return;
+      if (item.customAccess === 'tahfidz' && !canAccessTahfidz(guru)) return;
+      items.push({
+        key: item.key,
+        label: item.label,
+        group: group.groupTitle,
+        icon: item.icon,
+        path: item.path,
       });
     });
-    return items;
-  }, [hasAccess]);
+  });
+  return items;
+}, [hasAccess, guru]);
 
   // Recent items (resolve + filter accessible)
   const recentItems: CommandItem[] = useMemo(() => {
