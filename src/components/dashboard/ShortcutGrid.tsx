@@ -510,16 +510,19 @@ type Props = {
 // KOMPONEN
 // =============================================================================
 export function ShortcutGrid({ shortcuts, loading, onEdit, badgeCounts }: Props) {
-  const { hasAccess } = useAuth();
+  const { guru, hasAccess } = useAuth();   // ← tambah `guru`
 
-  const valid = shortcuts
-    .filter((s) => {
-      // Filter: ada di config + user punya akses
-      if (!PAGE_CONFIG[s.page_key]) return false;
-      if (!hasAccess(s.page_key as PageKey)) return false;
-      return true;
-    })
-    .sort((a, b) => a.urutan - b.urutan);
+const valid = shortcuts
+  .filter((s) => {
+    if (!PAGE_CONFIG[s.page_key]) return false;
+    if (!hasAccess(s.page_key as PageKey)) return false;
+
+    // ✅ Custom access filter: tahfidz hanya untuk guru tahfidz + manager
+    if (s.page_key === 'tahfidz' && !canAccessTahfidz(guru)) return false;
+
+    return true;
+  })
+  .sort((a, b) => a.urutan - b.urutan);
 
 
   return (
