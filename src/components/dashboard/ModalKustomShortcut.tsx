@@ -62,12 +62,18 @@ export function ModalKustomShortcut({
   // ==========================================================================
   // FILTER PAGE_CONFIG BY ROLE
   // ==========================================================================
-  const accessibleKeys = useMemo(() => {
-    return Object.keys(PAGE_CONFIG).filter((key) => {
-      // hasAccess() butuh PageKey — page_key di sini kebetulan sama
-      return hasAccess(key as PageKey);
-    });
-  }, [hasAccess]);
+
+const accessibleKeys = useMemo(() => {
+  return Object.keys(PAGE_CONFIG).filter((key) => {
+    // hasAccess() butuh PageKey — page_key di sini kebetulan sama
+    if (!hasAccess(key as PageKey)) return false;
+
+    // ✅ Custom access filter: tahfidz hanya untuk guru tahfidz + manager
+    if (key === 'tahfidz' && !canAccessTahfidz(guru)) return false;
+
+    return true;
+  });
+}, [hasAccess, guru]);   // ← tambah `guru` ke deps
 
   // Cek apakah user bisa akses shortcut tertentu
   const canAccess = (key: string) => accessibleKeys.includes(key);
