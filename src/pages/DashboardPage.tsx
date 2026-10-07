@@ -233,6 +233,7 @@ export function DashboardPage({ badgeCounts }: { badgeCounts?: Partial<Record<Pa
         shortcuts={shortcuts}
         loading={loadingShortcuts}
         onEdit={() => setEditModalOpen(true)}
+        badgeCounts={badgeCounts}
       />
 
       {/* ==================== MODAL DETAIL PENGUMUMAN ==================== */}
