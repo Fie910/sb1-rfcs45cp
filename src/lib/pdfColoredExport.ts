@@ -27,7 +27,7 @@ export type PdfStatBox = {
   color: RGB;
 };
 
-export type PdfSignature = {
+type PdfSignature = {
   /** Nama lengkap kepala sekolah (wajib) */
   nama: string;
   /** NIP kepala sekolah (opsional) */
