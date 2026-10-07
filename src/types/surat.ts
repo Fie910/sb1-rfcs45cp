@@ -1,3 +1,4 @@
+//src/types/surat.ts
 export type JenisSurat = 'MASUK' | 'KELUAR' | 'SK';
 export type StatusDisposisi = 'PENDING' | 'PROSES' | 'SELESAI';
 
