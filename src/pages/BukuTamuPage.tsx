@@ -220,11 +220,9 @@ export function BukuTamuPage() {
       status: 'menunggu' as StatusBukuTamu,
     };
 
-    const { data: createdData, error } = await supabase
-      .from('buku_tamu')
-      .insert(payload)
-      .select('*, gurus(nama_lengkap), divisis(nama_divisi)')
-      .single();
+const { error } = await supabase
+  .from('buku_tamu')
+  .insert(payload);
 
     if (error) {
       showToast('error', 'Gagal menyimpan: ' + error.message);
