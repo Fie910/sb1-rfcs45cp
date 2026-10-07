@@ -130,11 +130,6 @@ export function getRetensiBadge(tanggalRetensi: string | null | undefined): {
   };
 }
 
-/** Cek apakah dokumen siap dimusnahkan */
-export function isSiapDimusnahkan(tanggalRetensi: string | null | undefined): boolean {
-  return daysToRetensi(tanggalRetensi) <= 0;
-}
-
 // =============================================================================
 // COMPRESSION HELPERS
 // =============================================================================
