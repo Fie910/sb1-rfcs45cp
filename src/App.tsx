@@ -107,7 +107,8 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children
 // ROUTE PUBLIK (tanpa login) — scan QR aset + verifikasi surat/notulensi
 // =============================================================================
 const PUBLIC_PATH_PREFIXES = [
-  '/scan', 
+  '/scan',
+  '/buku_tamu',
   '/verifikasi-surat', 
   '/verifikasi-notulensi', 
   '/verifikasi-arsip', 
@@ -188,6 +189,7 @@ function AppContent() {
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path="/scan/:token" element={<ScanAsetPage />} />
+          <Route path="/buku_tamu" element={<BukuTamuPage />} />
           <Route path="/verifikasi-surat/:token" element={<VerifikasiSuratPage />} />
           <Route path="/verifikasi-notulensi/:token" element={<VerifikasiNotulensiPage />} />
           <Route path="/verifikasi-arsip/:token" element={<VerifikasiArsipPage />} />
@@ -272,7 +274,7 @@ function AppContent() {
           <Route path="/hak_akses" element={<ProtectedRoute accessKey="hak_akses"><HakAksesPage /></ProtectedRoute>} />
           <Route path="/hari_libur" element={<ProtectedRoute accessKey="hari_libur"><HariLiburPage /></ProtectedRoute>} />
           <Route path="/audit_log" element={<ProtectedRoute accessKey="audit_log"><AuditLogPage /></ProtectedRoute>} />
-          <Route path="/buku_tamu" element={<ProtectedRoute accessKey="buku_tamu"><BukuTamuPage /></ProtectedRoute>} />
+          
           <Route path="/bk" element={<ProtectedRoute accessKey="bk"><BimbinganKonselingPage /></ProtectedRoute>} />
           <Route path="/perpustakaan" element={<ProtectedRoute accessKey="perpustakaan"><PerpustakaanPage /></ProtectedRoute>} />
           <Route path="/tahfidz" element={<ProtectedRoute accessKey="tahfidz"><TahfidzPage /></ProtectedRoute>}/>
