@@ -193,16 +193,3 @@ export function formatTanggalDDMMYYYY(dateString: string | null): string | null 
 /**
  * Format tanggal YYYY-MM-DD → "12 September 2026" (tanpa nama hari).
  */
-export function formatDateWibNoDay(dateStr: string): string {
-  if (!dateStr) return '-';
-  const dateObj = dateStr.includes('T')
-    ? new Date(dateStr)
-    : new Date(`${dateStr}T00:00:00+07:00`);
-
-  return dateObj.toLocaleDateString('id-ID', {
-    timeZone: WIB_TZ,
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
