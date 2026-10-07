@@ -29,7 +29,7 @@ const ALL_TABS: TabDef[] = [
 
 export function RapatPage() {
   const { guru } = useAuth();
-  const isManager = isRapatManager(guru?.role);
+  const isManager = isRapatManager(guru);
 
   // ✅ Auto-close rapat menggantung > 7 hari (trigger sekali saat mount)
   useAutoCloseRapat((count) => {
