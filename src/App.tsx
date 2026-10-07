@@ -101,6 +101,10 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children
   if (accessKey && !hasAccess(accessKey)) {
     return <Navigate to="/" replace />;
   }
+    // Guard khusus tahfidz — role staf biasa tidak boleh akses meski via URL
+  if (accessKey === 'tahfidz' && !canAccessTahfidz(guru)) {
+    return <Navigate to="/" replace />;
+  }
   return children;
 }
 
