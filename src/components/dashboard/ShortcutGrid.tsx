@@ -562,18 +562,25 @@ export function ShortcutGrid({ shortcuts, loading, onEdit }: Props) {
 
             return (
               <Link
-                key={s.page_key}
-                to={cfg.path}
-                className={`group flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-950/60 border ${colors.border} ${colors.hoverBorder} transition active:scale-95 cursor-pointer`}
-                title={cfg.label}
-              >
-                <div className={`w-10 h-10 rounded-xl ${colors.bg} ${colors.border} border ${colors.text} flex items-center justify-center transition group-hover:scale-110`}>
-                  <Icon size={18} />
-                </div>
-                <p className="text-[10px] font-bold text-slate-300 text-center leading-tight line-clamp-2">
-                  {cfg.shortLabel}
-                </p>
-              </Link>
+  key={s.page_key}
+  to={cfg.path}
+  className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-950/60 border ${colors.border} ${colors.hoverBorder} transition active:scale-95 cursor-pointer`}
+  title={cfg.label}
+>
+  {/* BADGE OVERLAY — kanan atas */}
+  {(badgeCounts?.[s.page_key] ?? 0) > 0 && (
+    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg shadow-rose-500/30 border border-rose-400/50 z-10 animate-pulse">
+      {(badgeCounts?.[s.page_key] ?? 0) > 99 ? '99+' : badgeCounts![s.page_key]}
+    </span>
+  )}
+
+  <div className={`w-10 h-10 rounded-xl ${colors.bg} ${colors.border} border ${colors.text} flex items-center justify-center transition group-hover:scale-110`}>
+    <Icon size={18} />
+  </div>
+  <p className="text-[10px] font-bold text-slate-300 text-center leading-tight line-clamp-2">
+    {cfg.shortLabel}
+  </p>
+</Link>
             );
           })}
         </div>
