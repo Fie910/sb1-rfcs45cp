@@ -342,6 +342,24 @@ export function ModalSetoran({
         showToast('success', 'Setoran ditambahkan');
       }
 
+      try {
+  const { checkAndAwardMilestone } = await import('@/lib/tahfidz/checkMilestone');
+  const result = await checkAndAwardMilestone(
+    Number(form.siswa_id),
+    surahMap,
+    currentGuruId
+  );
+  if (result.awarded.length > 0) {
+    const names = result.awarded.map((a) => a.milestone.nama).join(', ');
+    showToast(
+      'success',
+      `🏆 Milestone tercapai: ${names} (+${result.total_poin_baru} poin)`
+    );
+  }
+} catch (err) {
+  console.warn('[milestone] Gagal check:', err);
+}
+
       onSaved();
     } catch (err: any) {
       showToast('error', 'Gagal simpan: ' + (err.message || 'Error'));
