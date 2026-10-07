@@ -2,7 +2,6 @@
 // Helper & konstanta bersama untuk Modul Perpustakaan.
 
 import {
-  Book,
   BookOpen,
   BookMarked,
   Library,
