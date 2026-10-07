@@ -149,9 +149,24 @@ const RAPAT_MANAGER_ROLES = [
   'staf_akademik', 'staf_kesiswaan', 'staf_sarpras', 'staf_keuangan',
 ];
 
-export function isRapatManager(role: string | null | undefined): boolean {
-  if (!role) return false;
-  return RAPAT_MANAGER_ROLES.includes(role.toLowerCase());
+type GuruRoleFields = {
+  role?: string | null;
+  role2?: string | null;
+  role3?: string | null;
+};
+
+export function isRapatManager(guru: GuruRoleFields | string | null | undefined): boolean {
+  if (!guru) return false;
+
+  // Backward-compat: kalau argumen string (dipakai lama)
+  if (typeof guru === 'string') {
+    return RAPAT_MANAGER_ROLES.includes(guru.toLowerCase());
+  }
+
+  const roles = [guru.role, guru.role2, guru.role3]
+    .map((r) => (r ?? '').toLowerCase())
+    .filter(Boolean);
+  return roles.some((r) => RAPAT_MANAGER_ROLES.includes(r));
 }
 
 // =============================================================================
