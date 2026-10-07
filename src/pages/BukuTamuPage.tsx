@@ -12,7 +12,6 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { sendNotification, getGuruIdsByDivisi } from '@/lib/notifications/notification';
 import type { Guru, Divisi, Siswa, StatusBukuTamu } from '@/types/database';
 
 // Tambah type lokal untuk response RPC
