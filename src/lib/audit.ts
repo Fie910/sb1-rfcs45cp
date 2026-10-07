@@ -60,8 +60,6 @@ export const AUDIT_MODUL = {
   HRIS: 'Data Kepegawaian',
 } as const;
 
-export type AuditModul = (typeof AUDIT_MODUL)[keyof typeof AUDIT_MODUL];
-
 type LogParams = {
   aksi: AuditAction;
   modul: string;
