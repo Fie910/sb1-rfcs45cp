@@ -717,6 +717,11 @@ const handleSaveJournalGroup = async (e: React.FormEvent) => {
           jarak_dari_sekolah: gpsResult.distance,
           menit_terlambat: menitTerlambat,
           alpa_jam_pelajaran: alpaJp,
+            // Snapshot ↓
+          mapel_nama_snapshot: jadwal.mata_pelajarans?.nama_mapel ?? null,
+          kelas_nama_snapshot: jadwal.kelas?.nama_kelas ?? null,
+          waktu_mulai_snapshot: jadwal.waktu_mulai,
+          waktu_selesai_snapshot: jadwal.waktu_selesai,
         });
         if (error) throw error;
       }
