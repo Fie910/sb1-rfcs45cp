@@ -121,35 +121,6 @@ export function getJenisPemeliharaanBadge(jenis: string | null): string {
 // ICON GETTERS
 // =============================================================================
 
-//export function getKondisiIcon(kondisi: string | null) {
-  //switch (kondisi) {
-    //case 'Baik':
-      //return CheckCircle2;
-    //case 'Rusak Ringan':
-      //return AlertTriangle;
-    //case 'Rusak Berat':
-      //return XCircle;
-    //default:
-      //return Package;
-  //}
-//}
-
-//export function getStatusAsetIcon(status: string | null) {
-  //switch (status) {
-    //case 'Aktif':
-      //return CheckCircle2;
-    //case 'Dipinjam':
-      //return Send;
-    //case 'Perbaikan':
-      //return Wrench;
-    //case 'Hilang':
-      //return XCircle;
-    //case 'Dihapus':
-      //return ShieldCheck;
-    //default:
-      //return Clock;
-  //}
-}
 
 // =============================================================================
 // FORMATTERS
