@@ -88,7 +88,8 @@ export type PageKey =
   | 'hris'
   | 'rapat'
   | 'mitra'
-  | 'arsip' ;
+  | 'arsip'
+  | 'tahfidz';
 
 type NavItem = {
   key: PageKey;
