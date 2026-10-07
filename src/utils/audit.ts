@@ -58,6 +58,7 @@ export const AUDIT_MODUL = {
   KEDISIPLINAN: 'Kedisiplinan Siswa',
   PERPUS: 'Perpustakaan',
   HRIS: 'Data Kepegawaian',
+  TAHFIDZ: 'tahfidz',
 } as const;
 
 type LogParams = {
