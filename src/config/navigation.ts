@@ -89,7 +89,7 @@ export type PageKey =
   | 'mitra'
   | 'arsip' ;
 
-export type NavItem = {
+type NavItem = {
   key: PageKey;
   label: string;
   icon: LucideIcon;
