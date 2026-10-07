@@ -4,12 +4,12 @@
 import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import { BookOpen, Users, Target, BarChart3, BookMarked } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { isTahfidzManager } from '@/components/tahfidz/shared';
+import { canAccessTahfidz, isTahfidzManager } from '@/components/tahfidz/shared';
 import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 import { supabase } from '@/lib/supabase';
 import type { TahfidzSurah } from '@/types/database';
-import { canAccessTahfidz, isTahfidzManager } from '@/components/tahfidz/shared';
+
 import { ShieldAlert } from 'lucide-react';
 
 // =============================================================================
