@@ -9,7 +9,6 @@ import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 import { supabase } from '@/lib/supabase';
 import type { TahfidzSurah } from '@/types/database';
-
 import { ShieldAlert } from 'lucide-react';
 
 // =============================================================================
@@ -68,8 +67,26 @@ const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
 // =============================================================================
 export function TahfidzPage() {
   const { guru } = useAuth();
+  const hasAccess = canAccessTahfidz(guru);
   const isManager = isTahfidzManager(guru);
-
+  if (!hasAccess) {
+    return (
+      <div className="p-4 md:p-8 max-w-3xl mx-auto">
+        <div className="text-center py-20 px-6 bg-slate-900 border border-slate-800 rounded-3xl">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert size={28} />
+          </div>
+          <h3 className="text-lg font-bold text-slate-100 mb-2">
+            Akses Ditolak
+          </h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+            Modul Tahfidz hanya bisa diakses oleh guru tahfidz dan manajemen sekolah.
+            Hubungi administrator untuk mendapatkan akses.
+          </p>
+        </div>
+      </div>
+    );
+  }
   const visibleTabs = useMemo(
     () => ALL_TABS.filter((t) => !t.managerOnly || isManager),
     [isManager]
