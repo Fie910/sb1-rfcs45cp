@@ -33,6 +33,9 @@ const TargetTab = lazy(() =>
 const RekapTab = lazy(() =>
   import('@/components/tahfidz/RekapTab').then((m) => ({ default: m.RekapTab }))
 );
+const SertifikatTab = lazy(() =>
+  import('@/components/tahfidz/SertifikatTab').then((m) => ({ default: m.SertifikatTab }))
+);
 
 // =============================================================================
 // TAB DEFINITION
