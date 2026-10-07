@@ -20,11 +20,7 @@ export const CHART_COLORS = {
 } as const;
 
 // Warna utama untuk gradient fill chart (indigo)
-export const CHART_GRADIENT = {
-  id: 'chartGradient',
-  from: '#6366f1',
-  to: '#3b82f6',
-} as const;
+
 
 // =============================================================================
 // STYLE KONSISTEN — untuk seluruh chart
