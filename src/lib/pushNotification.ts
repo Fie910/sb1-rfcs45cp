@@ -1,7 +1,7 @@
 //src/lib/pushNotification.ts
 import { supabase } from '@/lib/supabase';
 
-export async function registerServiceWorker() {
+async function registerServiceWorker() {
   if ('serviceWorker' in navigator && 'PushManager' in window) {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
