@@ -463,14 +463,12 @@ export function BukuTamuPage() {
   options={siswas.map((s) => ({
     value: s.id,
     label: s.nama_lengkap,
-    hint: s.kelas_nama
-      ? `${s.kelas_nama} · NISN: ${s.nisn}`
-      : `NISN: ${s.nisn}`,
-  }))}
+    hint: s.kelas_nama ?? undefined,
+      }))}
   value={form.siswa_id}
   onChange={(v) => setForm({ ...form, siswa_id: v })}
   placeholder="Pilih Nama Siswa"
-  searchPlaceholder="Cari nama siswa / NISN / kelas..."
+  searchPlaceholder="Cari nama siswa atau kelas..."
   emptyMessage="Siswa tidak ditemukan"
 />
             </div>
