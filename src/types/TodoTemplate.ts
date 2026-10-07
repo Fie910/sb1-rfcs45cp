@@ -1,3 +1,4 @@
+//src/types/TodoTemplate.ts
 export type PriorityType = 'Tinggi' | 'Sedang' | 'Rendah';
 export type StatusType = 'Belum Selesai' | 'Sedang Dikerjakan' | 'Selesai';
 export type TipeRutin = 'Harian' | 'Mingguan' | 'Bulanan';
