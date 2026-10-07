@@ -40,7 +40,7 @@ type Props = {
 
 export function SetoranTab({ surahMap, isManager }: Props) {
   const { guru } = useAuth();
-  const confirm = useConfirm();
+  const confirm = useConfirm(); 
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
