@@ -60,6 +60,22 @@ export function hitungHalamanSetoran(
 }
 
 /**
+ * Wrapper prioritas perhitungan halaman:
+ *   1. Precise mapping (kalau halamanMap tersedia) — AKURAT
+ *   2. Fallback formula lama (kalau halamanMap kosong)
+ */
+export function getHalamanSetoran(
+  setoran: RentangSetoran,
+  surahMap: Map<number, TahfidzSurah>,
+  halamanMap?: TahfidzHalamanDetail[]
+): number {
+  if (halamanMap && halamanMap.length > 0) {
+    return hitungHalamanPrecise(setoran, halamanMap);
+  }
+  return hitungHalamanSetoran(setoran, surahMap);
+}
+
+/**
  * Hitung total ayat untuk satu setoran (lintas surah).
  */
 export function hitungTotalAyatSetoran(
