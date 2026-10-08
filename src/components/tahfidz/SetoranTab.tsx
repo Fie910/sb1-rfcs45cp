@@ -30,10 +30,12 @@ import { useAuth } from '@/context/AuthContext';
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];   // ← BARU
   isManager: boolean;
 };
 
-export function SetoranTab({ surahMap, isManager }: Props) {
+export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
+
   const { guru } = useAuth();
   const confirm = useConfirm(); 
 
