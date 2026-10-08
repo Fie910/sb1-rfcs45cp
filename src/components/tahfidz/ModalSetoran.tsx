@@ -33,6 +33,7 @@ type Props = {
   onClose: () => void;
   onSaved: () => void;
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];   // ← BARU
   editTarget: TahfidzSetoran | null;
   currentGuruId: string | null;
 };
