@@ -69,6 +69,7 @@ export function ModalSetoran({
   onClose,
   onSaved,
   surahMap,
+  halamanMap,   // ← BARU
   editTarget,
   currentGuruId,
 }: Props) {
