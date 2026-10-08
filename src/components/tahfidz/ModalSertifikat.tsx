@@ -2,19 +2,20 @@
 // Form cetak sertifikat tahfidz per siswa.
 
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Printer, User, BookMarked } from 'lucide-react';
+import { Loader2, Printer, BookMarked } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { INPUT_CLASS, LABEL_CLASS } from './shared';
-import { hitungHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
+import { getHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
 import { generateSertifikatTahfidz } from '@/lib/pdf/generateSertifikatTahfidz';
-import type { TahfidzSurah, TahfidzSetoranWithRelations } from '@/types/database';
+import type {
+  TahfidzSurah,
+  TahfidzHalamanDetail,
+  TahfidzSetoranWithRelations,
+} from '@/types/database';
 
-// =============================================================================
-// PRESET PENCAPAIAN
-// =============================================================================
 const PRESET_PENCAPAIAN = [
   { label: 'Juz 30 (Amma) Lengkap', value: 'Juz 30 (Amma) Lengkap' },
   { label: 'Juz 1 Lengkap', value: 'Juz 1 Lengkap' },
@@ -32,7 +33,6 @@ type SiswaOption = {
   id: number;
   nisn: string;
   nama_lengkap: string;
-  kelas_id: number | null;
   kelas_nama: string;
 };
 
@@ -41,9 +41,10 @@ type Props = {
   onClose: () => void;
   siswa: SiswaOption | null;
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
 };
 
-export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
+export function ModalSertifikat({ open, onClose, siswa, surahMap, halamanMap }: Props) {
   const [loading, setLoading] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [setoranList, setSetoranList] = useState<TahfidzSetoranWithRelations[]>([]);
@@ -52,11 +53,8 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
   const [customPencapaian, setCustomPencapaian] = useState('');
   const [deskripsi, setDeskripsi] = useState('');
   const [nomorSertifikat, setNomorSertifikat] = useState('');
-  const [tanggalTerbit, setTanggalTerbit] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [tanggalTerbit, setTanggalTerbit] = useState(new Date().toISOString().slice(0, 10));
 
-  // Fetch setoran siswa saat modal dibuka
   useEffect(() => {
     if (!open || !siswa) return;
     (async () => {
@@ -73,7 +71,6 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
     })();
   }, [open, siswa]);
 
-  // Reset saat modal buka/tutup
   useEffect(() => {
     if (!open) return;
     setPreset(PRESET_PENCAPAIAN[0].value);
@@ -83,28 +80,21 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
     setTanggalTerbit(new Date().toISOString().slice(0, 10));
   }, [open]);
 
-  // Statistik
   const stats = useMemo(() => {
     const totalHalaman = setoranList.reduce(
-      (sum, s) => sum + hitungHalamanSetoran(s, surahMap),
+      (sum, s) => sum + getHalamanSetoran(s, surahMap, halamanMap),
       0
     );
     const nilaiArr = setoranList
       .map((s) => s.nilai)
       .filter((n): n is number => n !== null && n !== undefined);
     const rataNilai =
-      nilaiArr.length > 0
-        ? nilaiArr.reduce((a, b) => a + b, 0) / nilaiArr.length
-        : null;
+      nilaiArr.length > 0 ? nilaiArr.reduce((a, b) => a + b, 0) / nilaiArr.length : null;
     return { totalHalaman, rataNilai };
-  }, [setoranList, surahMap]);
+  }, [setoranList, surahMap, halamanMap]);
 
-  const pencapaianFinal =
-    preset === '__custom__' ? customPencapaian.trim() : preset;
+  const pencapaianFinal = preset === '__custom__' ? customPencapaian.trim() : preset;
 
-  // ===========================================================================
-  // HANDLER
-  // ===========================================================================
   const handlePrint = async () => {
     if (!siswa) return;
     if (!pencapaianFinal) {
@@ -144,38 +134,27 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
     }
   };
 
-  // ===========================================================================
-  // RENDER
-  // ===========================================================================
   return (
     <Modal open={open} onClose={onClose} title="Cetak Sertifikat Tahfidz" size="lg">
       <div className="space-y-4">
-        {/* Siswa */}
         {siswa && (
           <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 font-bold">
               {siswa.nama_lengkap.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-emerald-300 truncate">
-                {siswa.nama_lengkap}
-              </p>
-              <p className="text-[10px] text-emerald-400/70">
-                {siswa.kelas_nama} · {siswa.nisn}
-              </p>
+              <p className="text-sm font-bold text-emerald-300 truncate">{siswa.nama_lengkap}</p>
+              <p className="text-[10px] text-emerald-400/70">{siswa.kelas_nama} · {siswa.nisn}</p>
             </div>
             {!loading && (
               <div className="text-right">
-                <p className="text-lg font-extrabold text-emerald-400">
-                  {formatHalaman(stats.totalHalaman)}
-                </p>
+                <p className="text-lg font-extrabold text-emerald-400">{formatHalaman(stats.totalHalaman)}</p>
                 <p className="text-[9px] text-emerald-400/70 uppercase">halaman</p>
               </div>
             )}
           </div>
         )}
 
-        {/* Pencapaian */}
         <div>
           <label className={LABEL_CLASS}>Pencapaian *</label>
           <select
@@ -184,12 +163,9 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
             className={INPUT_CLASS + ' cursor-pointer'}
           >
             {PRESET_PENCAPAIAN.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
+              <option key={p.value} value={p.value}>{p.label}</option>
             ))}
           </select>
-
           {preset === '__custom__' && (
             <input
               value={customPencapaian}
@@ -200,7 +176,6 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
           )}
         </div>
 
-        {/* Nomor Sertifikat */}
         <div>
           <label className={LABEL_CLASS}>Nomor Sertifikat (opsional)</label>
           <input
@@ -211,7 +186,6 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
           />
         </div>
 
-        {/* Tanggal Terbit */}
         <div>
           <label className={LABEL_CLASS}>Tanggal Terbit</label>
           <input
@@ -222,7 +196,6 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
           />
         </div>
 
-        {/* Deskripsi */}
         <div>
           <label className={LABEL_CLASS}>Deskripsi Tambahan (opsional)</label>
           <textarea
@@ -234,7 +207,6 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
           />
         </div>
 
-        {/* Info */}
         <div className="px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-800 text-[10px] text-slate-400 flex items-start gap-2">
           <BookMarked size={12} className="shrink-0 mt-0.5 text-emerald-400" />
           <span>
@@ -243,7 +215,6 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
           </span>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
           <button
             onClick={onClose}
@@ -257,11 +228,7 @@ export function ModalSertifikat({ open, onClose, siswa, surahMap }: Props) {
             disabled={printing || !siswa || !pencapaianFinal}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
           >
-            {printing ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Printer size={14} />
-            )}
+            {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
             Cetak Sertifikat
           </button>
         </div>
