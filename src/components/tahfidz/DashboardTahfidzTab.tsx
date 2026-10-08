@@ -4,36 +4,32 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   BarChart3, RefreshCw, Loader2, BookMarked, Users, TrendingUp,
-  Trophy, Crown, Medal, Award, Star, Target,
+  Trophy, Crown, Medal, Award, Star,
 } from 'lucide-react';
 import {
   ResponsiveContainer, Tooltip, Legend, CartesianGrid,
-  BarChart, Bar, XAxis, YAxis,
-  AreaChart, Area,
+  AreaChart, Area, XAxis, YAxis,
 } from 'recharts';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { formatTanggalShort } from './shared';
 import {
-  hitungHalamanSetoran,
-  hitungTotalAyatSetoran,
+  getHalamanSetoran,
   formatHalaman,
 } from '@/lib/tahfidz/hitungHalaman';
 import type {
   TahfidzSurah,
+  TahfidzHalamanDetail,
   TahfidzSetoranWithRelations,
-  TahfidzProgress,
 } from '@/types/database';
 
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
   isManager: boolean;
 };
 
-// =============================================================================
-// CHART COLORS
-// =============================================================================
 const COLORS = {
   emerald: '#10b981',
   indigo: '#6366f1',
@@ -55,17 +51,13 @@ function getLast6Months(): { key: string; label: string }[] {
   return result;
 }
 
-export function DashboardTahfidzTab({ surahMap }: Props) {
+export function DashboardTahfidzTab({ surahMap, halamanMap }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const [setoranList, setSetoranList] = useState<TahfidzSetoranWithRelations[]>([]);
   const [siswaCount, setSiswaCount] = useState(0);
-  const [guruTahfidzCount, setGuruTahfidzCount] = useState(0);
 
-  // ===========================================================================
-  // FETCH
-  // ===========================================================================
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -76,7 +68,7 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
       sixMonthsAgo.setDate(1);
       const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
 
-      const [setoranRes, siswaRes, guruRes] = await Promise.all([
+      const [setoranRes, siswaRes] = await Promise.all([
         supabase
           .from('tahfidz_setoran')
           .select(`
@@ -92,15 +84,10 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
           .from('siswas')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'AKTIF'),
-        supabase
-          .from('gurus')
-          .select('id, role3')
-          .eq('role3', 'tahfidz'),
       ]);
 
       setSetoranList((setoranRes.data as any) ?? []);
       setSiswaCount(siswaRes.count ?? 0);
-      setGuruTahfidzCount((guruRes.data ?? []).length);
     } catch (err: any) {
       showToast('error', 'Gagal memuat dashboard: ' + (err.message || 'Error'));
     } finally {
@@ -113,9 +100,6 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
     fetchAll(false);
   }, [fetchAll]);
 
-  // ===========================================================================
-  // KPI STATS
-  // ===========================================================================
   const stats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const setoranHariIni = setoranList.filter((s) => s.tanggal === today).length;
@@ -123,7 +107,7 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
     const totalMurojaah = setoranList.filter((s) => s.jenis === 'Murojaah').length;
 
     const totalHalaman = setoranList.reduce(
-      (sum, s) => sum + hitungHalamanSetoran(s, surahMap),
+      (sum, s) => sum + getHalamanSetoran(s, surahMap, halamanMap),
       0
     );
 
@@ -135,18 +119,9 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
         ? nilaiList.reduce((a, b) => a + b, 0) / nilaiList.length
         : null;
 
-    return {
-      setoranHariIni,
-      totalTahfidz,
-      totalMurojaah,
-      totalHalaman,
-      rataNilai,
-    };
-  }, [setoranList, surahMap]);
+    return { setoranHariIni, totalTahfidz, totalMurojaah, totalHalaman, rataNilai };
+  }, [setoranList, surahMap, halamanMap]);
 
-  // ===========================================================================
-  // TREN 6 BULAN
-  // ===========================================================================
   const trenBulanan = useMemo(() => {
     const months = getLast6Months();
     const map = new Map<string, { tahfidz: number; murojaah: number; halaman: number }>();
@@ -158,7 +133,7 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
       if (!e) return;
       if (s.jenis === 'Tahfidz') e.tahfidz += 1;
       else e.murojaah += 1;
-      e.halaman += hitungHalamanSetoran(s, surahMap);
+      e.halaman += getHalamanSetoran(s, surahMap, halamanMap);
     });
 
     return months.map((m) => {
@@ -170,11 +145,8 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
         Halaman: Number(e.halaman.toFixed(1)),
       };
     });
-  }, [setoranList, surahMap]);
+  }, [setoranList, surahMap, halamanMap]);
 
-  // ===========================================================================
-  // TOP 10 SISWA (LEADERBOARD)
-  // ===========================================================================
   const leaderboard = useMemo(() => {
     type Agg = {
       siswa_id: number;
@@ -201,7 +173,7 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
       };
 
       if (s.jenis === 'Tahfidz') existing.total_tahfidz += 1;
-      existing.total_halaman += hitungHalamanSetoran(s, surahMap);
+      existing.total_halaman += getHalamanSetoran(s, surahMap, halamanMap);
       if (s.nilai !== null && s.nilai !== undefined) existing.nilai_arr.push(s.nilai);
 
       map.set(s.siswa.id, existing);
@@ -221,20 +193,14 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
         return b.rata_nilai - a.rata_nilai;
       })
       .slice(0, 10);
-  }, [setoranList, surahMap]);
+  }, [setoranList, surahMap, halamanMap]);
 
-  // ===========================================================================
-  // SETORAN TERBARU
-  // ===========================================================================
   const terbaru = useMemo(() => {
     return [...setoranList]
       .sort((a, b) => b.tanggal.localeCompare(a.tanggal))
       .slice(0, 8);
   }, [setoranList]);
 
-  // ===========================================================================
-  // RENDER
-  // ===========================================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -246,7 +212,6 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* HEADER */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-extrabold text-slate-100 flex items-center gap-2">
@@ -266,53 +231,19 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
         </button>
       </div>
 
-      {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KpiCard
-          icon={BookMarked}
-          label="Setoran Hari Ini"
-          value={stats.setoranHariIni}
-          color="emerald"
-        />
-        <KpiCard
-          icon={TrendingUp}
-          label="Total Tahfidz"
-          value={stats.totalTahfidz}
-          color="indigo"
-        />
-        <KpiCard
-          icon={Award}
-          label="Total Murojaah"
-          value={stats.totalMurojaah}
-          color="purple"
-        />
-        <KpiCard
-          icon={BookMarked}
-          label="Halaman Hafalan"
-          value={formatHalaman(stats.totalHalaman)}
-          color="amber"
-        />
-        <KpiCard
-          icon={Users}
-          label="Siswa Aktif"
-          value={siswaCount}
-          color="teal"
-        />
-        <KpiCard
-          icon={Star}
-          label="Rata Nilai"
-          value={stats.rataNilai ? stats.rataNilai.toFixed(1) : '—'}
-          color="rose"
-        />
+        <KpiCard icon={BookMarked} label="Setoran Hari Ini" value={stats.setoranHariIni} color="emerald" />
+        <KpiCard icon={TrendingUp} label="Total Tahfidz" value={stats.totalTahfidz} color="indigo" />
+        <KpiCard icon={Award} label="Total Murojaah" value={stats.totalMurojaah} color="purple" />
+        <KpiCard icon={BookMarked} label="Halaman Hafalan" value={formatHalaman(stats.totalHalaman)} color="amber" />
+        <KpiCard icon={Users} label="Siswa Aktif" value={siswaCount} color="teal" />
+        <KpiCard icon={Star} label="Rata Nilai" value={stats.rataNilai ? stats.rataNilai.toFixed(1) : '—'} color="rose" />
       </div>
 
-      {/* CHART TREN */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp size={16} className="text-emerald-400" />
-          <h3 className="text-sm font-bold text-slate-100">
-            Tren Setoran 6 Bulan
-          </h3>
+          <h3 className="text-sm font-bold text-slate-100">Tren Setoran 6 Bulan</h3>
         </div>
         {setoranList.length === 0 ? (
           <EmptyChart label="Belum ada data setoran" />
@@ -332,87 +263,43 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} />
               <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{
-                  background: '#0f172a',
-                  border: '1px solid #1e293b',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-              />
+              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }} />
               <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} iconSize={8} />
-              <Area
-                type="monotone"
-                dataKey="Tahfidz"
-                stroke={COLORS.emerald}
-                strokeWidth={2}
-                fill="url(#gradTahfidz)"
-              />
-              <Area
-                type="monotone"
-                dataKey="Murojaah"
-                stroke={COLORS.indigo}
-                strokeWidth={2}
-                fill="url(#gradMurojaah)"
-              />
+              <Area type="monotone" dataKey="Tahfidz" stroke={COLORS.emerald} strokeWidth={2} fill="url(#gradTahfidz)" />
+              <Area type="monotone" dataKey="Murojaah" stroke={COLORS.indigo} strokeWidth={2} fill="url(#gradMurojaah)" />
             </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
 
-      {/* ROW: Leaderboard + Setoran Terbaru */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* LEADERBOARD */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
           <div className="flex items-center gap-2 mb-3">
             <Trophy size={16} className="text-amber-400" />
-            <h3 className="text-sm font-bold text-slate-100">
-              Top 10 Siswa Paling Rajin
-            </h3>
+            <h3 className="text-sm font-bold text-slate-100">Top 10 Siswa Paling Rajin</h3>
           </div>
           {leaderboard.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-xs">
-              Belum ada aktivitas hafalan
-            </div>
+            <div className="text-center py-8 text-slate-500 text-xs">Belum ada aktivitas hafalan</div>
           ) : (
             <div className="space-y-2">
               {leaderboard.map((s, idx) => (
-                <div
-                  key={s.siswa_id}
-                  className="flex items-center gap-3 bg-slate-950/60 border border-slate-800/60 rounded-xl p-2.5 hover:border-emerald-500/30 transition"
-                >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-extrabold text-xs ${
-                      idx === 0
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : idx === 1
-                          ? 'bg-slate-400/20 text-slate-300 border border-slate-400/30'
-                          : idx === 2
-                            ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
-                            : 'bg-slate-800 text-slate-400 border border-slate-700'
-                    }`}
-                  >
-                    {idx === 0 ? (
-                      <Crown size={14} />
-                    ) : idx < 3 ? (
-                      <Medal size={14} />
-                    ) : (
-                      `#${idx + 1}`
-                    )}
+                <div key={s.siswa_id} className="flex items-center gap-3 bg-slate-950/60 border border-slate-800/60 rounded-xl p-2.5 hover:border-emerald-500/30 transition">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-extrabold text-xs ${
+                    idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : idx === 1 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/30'
+                      : idx === 2 ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  }`}>
+                    {idx === 0 ? <Crown size={14} /> : idx < 3 ? <Medal size={14} /> : `#${idx + 1}`}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-200 truncate">
-                      {s.nama_lengkap}
-                    </p>
+                    <p className="text-xs font-bold text-slate-200 truncate">{s.nama_lengkap}</p>
                     <p className="text-[10px] text-slate-500">
-                      {s.kelas} · {s.total_tahfidz}× setoran · rata nilai{' '}
-                      {s.rata_nilai.toFixed(0)}
+                      {s.kelas} · {s.total_tahfidz}× setoran · rata nilai {s.rata_nilai.toFixed(0)}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-extrabold text-emerald-400">
-                      {formatHalaman(s.total_halaman)}
-                    </p>
+                    <p className="text-sm font-extrabold text-emerald-400">{formatHalaman(s.total_halaman)}</p>
                     <p className="text-[9px] text-slate-500 uppercase">halaman</p>
                   </div>
                 </div>
@@ -421,38 +308,28 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
           )}
         </div>
 
-        {/* SETORAN TERBARU */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
           <div className="flex items-center gap-2 mb-3">
             <BookMarked size={16} className="text-indigo-400" />
             <h3 className="text-sm font-bold text-slate-100">Setoran Terbaru</h3>
           </div>
           {terbaru.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-xs">
-              Belum ada setoran
-            </div>
+            <div className="text-center py-8 text-slate-500 text-xs">Belum ada setoran</div>
           ) : (
             <div className="space-y-2">
               {terbaru.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-2 bg-slate-950/60 border border-slate-800/60 rounded-xl p-2.5"
-                >
+                <div key={s.id} className="flex items-center gap-2 bg-slate-950/60 border border-slate-800/60 rounded-xl p-2.5">
                   <div className="w-1.5 h-10 rounded-full bg-emerald-500/60 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-200 truncate">
-                      {s.siswa?.nama_lengkap ?? '—'}
-                    </p>
+                    <p className="text-xs font-bold text-slate-200 truncate">{s.siswa?.nama_lengkap ?? '—'}</p>
                     <p className="text-[10px] text-slate-500 truncate">
                       {s.siswa?.kelas?.nama_kelas ?? '-'} · {formatTanggalShort(s.tanggal)}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[10px] font-bold text-emerald-400">
-                      {s.jenis}
-                    </p>
+                    <p className="text-[10px] font-bold text-emerald-400">{s.jenis}</p>
                     <p className="text-[10px] text-slate-500">
-                      {formatHalaman(hitungHalamanSetoran(s, surahMap))} hal
+                      {formatHalaman(getHalamanSetoran(s, surahMap, halamanMap))} hal
                     </p>
                   </div>
                 </div>
@@ -465,9 +342,6 @@ export function DashboardTahfidzTab({ surahMap }: Props) {
   );
 }
 
-// =============================================================================
-// SUB KOMPONEN
-// =============================================================================
 type KpiColor = 'emerald' | 'indigo' | 'amber' | 'rose' | 'teal' | 'purple';
 
 const CM: Record<KpiColor, { bg: string; text: string; border: string }> = {
@@ -479,29 +353,17 @@ const CM: Record<KpiColor, { bg: string; text: string; border: string }> = {
   purple: { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'border-purple-500/30' },
 };
 
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: typeof BookMarked;
-  label: string;
-  value: number | string;
-  color: KpiColor;
+function KpiCard({ icon: Icon, label, value, color }: {
+  icon: typeof BookMarked; label: string; value: number | string; color: KpiColor;
 }) {
   const c = CM[color];
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex items-center gap-2.5">
-      <div
-        className={`w-8 h-8 rounded-lg ${c.bg} ${c.border} border ${c.text} flex items-center justify-center shrink-0`}
-      >
+      <div className={`w-8 h-8 rounded-lg ${c.bg} ${c.border} border ${c.text} flex items-center justify-center shrink-0`}>
         <Icon size={14} />
       </div>
       <div className="min-w-0">
-        <p className="text-[9px] font-bold uppercase text-slate-500 leading-tight">
-          {label}
-        </p>
+        <p className="text-[9px] font-bold uppercase text-slate-500 leading-tight">{label}</p>
         <p className={`text-base font-extrabold ${c.text}`}>{value}</p>
       </div>
     </div>
