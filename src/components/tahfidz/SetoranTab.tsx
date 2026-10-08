@@ -19,17 +19,12 @@ import {
   formatTanggalShort,
 } from './shared';
 import {
-  hitungHalamanSetoran,
+  getHalamanSetoran,   // ← ganti dari hitungHalamanSetoran
   hitungTotalAyatSetoran,
   formatHalaman,
   formatRentangHafalan,
 } from '@/lib/tahfidz/hitungHalaman';
-import type {
-  TahfidzSurah,
-  TahfidzSetoran,
-  TahfidzSetoranWithRelations,
-  JenisSetoran,
-} from '@/types/database';
+import type { TahfidzSurah, TahfidzSetoran, TahfidzSetoranWithRelations, JenisSetoran, TahfidzHalamanDetail } from '@/types/database';
 import { useAuth } from '@/context/AuthContext';
 
 type Props = {
