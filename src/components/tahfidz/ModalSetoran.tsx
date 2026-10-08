@@ -3,16 +3,14 @@
 // Filter kelas default mengikuti jadwal guru dari tabel jadwal_kbmjps.
 
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Loader2, Save, X, User, BookMarked, School, Info,
-} from 'lucide-react';
+import { Loader2, Save, X, User, BookMarked, School, Info } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { INPUT_CLASS, LABEL_CLASS } from './shared';
 import {
-  hitungHalamanSetoran,
+  getHalamanSetoran,
   hitungTotalAyatSetoran,
   formatHalaman,
 } from '@/lib/tahfidz/hitungHalaman';
@@ -21,9 +19,8 @@ import type {
   TahfidzSetoran,
   JenisSetoran,
   KualitasHafalan,
+  TahfidzHalamanDetail,
 } from '@/types/database';
-import { getHalamanSetoran, hitungTotalAyatSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
-import type { TahfidzSurah, TahfidzSetoran, JenisSetoran, KualitasHafalan, TahfidzHalamanDetail } from '@/types/database';
 
 // =============================================================================
 // TYPES
