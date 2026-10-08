@@ -285,7 +285,7 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
 
             <div className="divide-y divide-slate-800/60">
               {filtered.map((item) => {
-                const halaman = hitungHalamanSetoran(item, surahMap);
+                const halaman = getHalamanSetoran(item, surahMap, halamanMap);
                 const totalAyat = hitungTotalAyatSetoran(item, surahMap);
                 return (
                   <div
