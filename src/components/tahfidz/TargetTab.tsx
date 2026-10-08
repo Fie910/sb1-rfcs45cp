@@ -4,21 +4,25 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Target, Search, Loader2, RefreshCw, Plus, Pencil, Trash2,
-  TrendingUp, Users, Filter,
+  TrendingUp, Users,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { INPUT_CLASS } from './shared';
-import { hitungHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
+import { getHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
 import { ModalTarget } from './ModalTarget';
 import type {
-  TahfidzSurah, TahfidzTarget, TahfidzSetoranWithRelations,
+  TahfidzSurah,
+  TahfidzHalamanDetail,
+  TahfidzTarget,
+  TahfidzSetoranWithRelations,
 } from '@/types/database';
 
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
   isManager: boolean;
 };
 
@@ -38,10 +42,7 @@ type TargetRow = {
   persen: number;
 };
 
-// =============================================================================
-// COMPONENT
-// =============================================================================
-export function TargetTab({ surahMap }: Props) {
+export function TargetTab({ surahMap, halamanMap }: Props) {
   const confirm = useConfirm();
 
   const [loading, setLoading] = useState(true);
@@ -57,9 +58,6 @@ export function TargetTab({ surahMap }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<{ target: TahfidzTarget | null; siswa: SiswaOption } | null>(null);
 
-  // ===========================================================================
-  // FETCH
-  // ===========================================================================
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -71,15 +69,11 @@ export function TargetTab({ surahMap }: Props) {
           .from('siswas')
           .select('id, nisn, nama_lengkap, kelas_id, kelas:kelas_id (nama_kelas)')
           .eq('status', 'AKTIF')
-          .order('nama_lengkap', { ascending: true }),
+          .order('nama_lengkap'),
         supabase
           .from('tahfidz_setoran')
           .select('id, siswa_id, tanggal, jenis, surah_mulai, ayat_mulai, surah_selesai, ayat_selesai'),
-        supabase
-          .from('tahun_ajarans')
-          .select('*')
-          .eq('is_aktif', true)
-          .maybeSingle(),
+        supabase.from('tahun_ajarans').select('*').eq('is_aktif', true).maybeSingle(),
       ]);
 
       setTargets((targetRes.data as TahfidzTarget[]) ?? []);
@@ -104,13 +98,9 @@ export function TargetTab({ surahMap }: Props) {
 
   useEffect(() => { fetchAll(false); }, [fetchAll]);
 
-  // ===========================================================================
-  // BUILD ROWS: siswa + target + realisasi
-  // ===========================================================================
   const rows = useMemo<TargetRow[]>(() => {
     const targetMap = new Map<number, TahfidzTarget>();
     targets.forEach((t) => {
-      // Filter hanya tahun ajaran aktif
       if (tahunAjaranAktif && t.tahun_ajaran_id !== tahunAjaranAktif.id) return;
       targetMap.set(t.siswa_id, t);
     });
@@ -119,10 +109,9 @@ export function TargetTab({ surahMap }: Props) {
     const realisasiAyat = new Map<number, number>();
 
     setoranList.forEach((s) => {
-      const halaman = hitungHalamanSetoran(s, surahMap);
+      const halaman = getHalamanSetoran(s, surahMap, halamanMap);
       realisasiHalaman.set(s.siswa_id, (realisasiHalaman.get(s.siswa_id) ?? 0) + halaman);
 
-      // hitung ayat
       let ayat = 0;
       if (s.surah_mulai === s.surah_selesai) {
         ayat = s.ayat_selesai - s.ayat_mulai + 1;
@@ -149,19 +138,10 @@ export function TargetTab({ surahMap }: Props) {
         persen = Math.min(100, (halaman / target.target_halaman) * 100);
       }
 
-      return {
-        siswa,
-        target,
-        realisasi_halaman: halaman,
-        realisasi_ayat: ayat,
-        persen,
-      };
+      return { siswa, target, realisasi_halaman: halaman, realisasi_ayat: ayat, persen };
     });
-  }, [targets, siswaList, setoranList, surahMap, tahunAjaranAktif]);
+  }, [targets, siswaList, setoranList, surahMap, halamanMap, tahunAjaranAktif]);
 
-  // ===========================================================================
-  // FILTER
-  // ===========================================================================
   const filtered = useMemo(() => {
     let result = rows;
     if (filterKelas !== '') {
@@ -175,7 +155,6 @@ export function TargetTab({ surahMap }: Props) {
           r.siswa.nisn.toLowerCase().includes(q)
       );
     }
-    // Sort: yang belum ada target dulu, lalu persen naik
     return result.sort((a, b) => {
       const aHas = a.target ? 1 : 0;
       const bHas = b.target ? 1 : 0;
@@ -194,15 +173,9 @@ export function TargetTab({ surahMap }: Props) {
     return Array.from(map.entries()).map(([id, nama]) => ({ id, nama }));
   }, [siswaList]);
 
-  // ===========================================================================
-  // STATS
-  // ===========================================================================
   const stats = useMemo(() => {
     const adaTarget = rows.filter((r) => r.target).length;
-    const totalHalamanTarget = rows.reduce(
-      (sum, r) => sum + (r.target?.target_halaman ?? 0),
-      0
-    );
+    const totalHalamanTarget = rows.reduce((sum, r) => sum + (r.target?.target_halaman ?? 0), 0);
     const totalHalamanRealisasi = rows.reduce((sum, r) => sum + r.realisasi_halaman, 0);
     const rataPersen =
       adaTarget > 0
@@ -211,9 +184,6 @@ export function TargetTab({ surahMap }: Props) {
     return { adaTarget, totalHalamanTarget, totalHalamanRealisasi, rataPersen };
   }, [rows]);
 
-  // ===========================================================================
-  // HANDLERS
-  // ===========================================================================
   const handleOpenModal = (siswa: SiswaOption, target: TahfidzTarget | null) => {
     setEditTarget({ target, siswa });
     setModalOpen(true);
@@ -229,10 +199,7 @@ export function TargetTab({ surahMap }: Props) {
     if (!ok) return;
 
     try {
-      const { error } = await supabase
-        .from('tahfidz_target')
-        .delete()
-        .eq('id', row.target.id);
+      const { error } = await supabase.from('tahfidz_target').delete().eq('id', row.target.id);
       if (error) throw error;
       showToast('success', 'Target dihapus');
       fetchAll(true);
@@ -241,9 +208,6 @@ export function TargetTab({ surahMap }: Props) {
     }
   };
 
-  // ===========================================================================
-  // RENDER
-  // ===========================================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -255,7 +219,6 @@ export function TargetTab({ surahMap }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Target size={18} className="text-emerald-400" />
@@ -276,7 +239,6 @@ export function TargetTab({ surahMap }: Props) {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatBox label="Siswa Punya Target" value={`${stats.adaTarget} / ${rows.length}`} color="text-emerald-400" />
         <StatBox label="Target Halaman" value={formatHalaman(stats.totalHalamanTarget)} color="text-indigo-400" />
@@ -284,7 +246,6 @@ export function TargetTab({ surahMap }: Props) {
         <StatBox label="Rata Capaian" value={`${stats.rataPersen.toFixed(0)}%`} color="text-rose-400" />
       </div>
 
-      {/* Filter */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="relative sm:col-span-2">
@@ -309,7 +270,6 @@ export function TargetTab({ surahMap }: Props) {
         </div>
       </div>
 
-      {/* List */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-16">
@@ -320,40 +280,30 @@ export function TargetTab({ surahMap }: Props) {
           <div className="divide-y divide-slate-800/60">
             {filtered.map((row) => {
               const hasTarget = !!row.target;
-              const percentColor = row.persen >= 100
-                ? 'text-emerald-400'
-                : row.persen >= 70
-                  ? 'text-teal-400'
-                  : row.persen >= 40
-                    ? 'text-amber-400'
-                    : 'text-rose-400';
-              const barColor = row.persen >= 100
-                ? 'bg-emerald-500'
-                : row.persen >= 70
-                  ? 'bg-teal-500'
-                  : row.persen >= 40
-                    ? 'bg-amber-500'
-                    : 'bg-rose-500';
+              const percentColor =
+                row.persen >= 100 ? 'text-emerald-400'
+                  : row.persen >= 70 ? 'text-teal-400'
+                  : row.persen >= 40 ? 'text-amber-400'
+                  : 'text-rose-400';
+              const barColor =
+                row.persen >= 100 ? 'bg-emerald-500'
+                  : row.persen >= 70 ? 'bg-teal-500'
+                  : row.persen >= 40 ? 'bg-amber-500'
+                  : 'bg-rose-500';
 
               return (
                 <div key={row.siswa.id} className="px-4 py-3 hover:bg-slate-800/30 transition">
                   <div className="flex flex-col md:flex-row md:items-center gap-3">
-                    {/* Siswa */}
                     <div className="flex items-center gap-2 md:w-1/3 min-w-0">
                       <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold shrink-0 text-xs">
                         {row.siswa.nama_lengkap.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-200 truncate">
-                          {row.siswa.nama_lengkap}
-                        </p>
-                        <p className="text-[10px] text-slate-500">
-                          {row.siswa.kelas_nama} · {row.siswa.nisn}
-                        </p>
+                        <p className="text-sm font-bold text-slate-200 truncate">{row.siswa.nama_lengkap}</p>
+                        <p className="text-[10px] text-slate-500">{row.siswa.kelas_nama} · {row.siswa.nisn}</p>
                       </div>
                     </div>
 
-                    {/* Progress */}
                     <div className="md:flex-1 min-w-0">
                       {hasTarget && row.target?.target_halaman ? (
                         <>
@@ -361,15 +311,10 @@ export function TargetTab({ surahMap }: Props) {
                             <span className="text-slate-400">
                               {formatHalaman(row.realisasi_halaman)} / {row.target.target_halaman} hal
                             </span>
-                            <span className={`font-extrabold ${percentColor}`}>
-                              {row.persen.toFixed(0)}%
-                            </span>
+                            <span className={`font-extrabold ${percentColor}`}>{row.persen.toFixed(0)}%</span>
                           </div>
                           <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${barColor} transition-all`}
-                              style={{ width: `${Math.min(100, row.persen)}%` }}
-                            />
+                            <div className={`h-full ${barColor} transition-all`} style={{ width: `${Math.min(100, row.persen)}%` }} />
                           </div>
                         </>
                       ) : hasTarget ? (
@@ -383,7 +328,6 @@ export function TargetTab({ surahMap }: Props) {
                       )}
                     </div>
 
-                    {/* Aksi */}
                     <div className="flex items-center gap-1 md:justify-end">
                       <button
                         onClick={() => handleOpenModal(row.siswa, row.target)}
@@ -410,7 +354,6 @@ export function TargetTab({ surahMap }: Props) {
         )}
       </div>
 
-      {/* Modal */}
       <ModalTarget
         open={modalOpen}
         onClose={() => { setModalOpen(false); setEditTarget(null); }}
@@ -423,9 +366,6 @@ export function TargetTab({ surahMap }: Props) {
   );
 }
 
-// =============================================================================
-// SUB
-// =============================================================================
 function StatBox({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3">
