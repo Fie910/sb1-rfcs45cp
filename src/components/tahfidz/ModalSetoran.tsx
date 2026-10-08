@@ -243,17 +243,17 @@ export function ModalSetoran({
   // PREVIEW HALAMAN & AYAT
   // ===========================================================================
   const preview = useMemo(() => {
-    const dummy: any = {
+  const dummy: any = {
       surah_mulai: form.surah_mulai,
       ayat_mulai: form.ayat_mulai,
       surah_selesai: form.surah_selesai,
       ayat_selesai: form.ayat_selesai,
     };
-    return {
-      halaman: hitungHalamanSetoran(dummy, surahMap),
-      ayat: hitungTotalAyatSetoran(dummy, surahMap),
-    };
-  }, [form, surahMap]);
+  return {
+    halaman: getHalamanSetoran(dummy, surahMap, halamanMap),
+    ayat: hitungTotalAyatSetoran(dummy, surahMap),
+  };
+}, [form, surahMap, halamanMap]);
 
   // ===========================================================================
   // SISWA FILTERED (kelas + search)
