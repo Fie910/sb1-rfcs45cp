@@ -7,16 +7,19 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
-import { INPUT_CLASS, formatTanggalShort } from './shared';
-import {
-  hitungHalamanSetoran, formatHalaman,
-} from '@/lib/tahfidz/hitungHalaman';
+import { INPUT_CLASS } from './shared';
+import { getHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
 import { ModalSertifikat } from './ModalSertifikat';
-import type { TahfidzSurah, TahfidzSetoranWithRelations } from '@/types/database';
+import type {
+  TahfidzSurah,
+  TahfidzHalamanDetail,
+  TahfidzSetoranWithRelations,
+} from '@/types/database';
 
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
   isManager: boolean;
 };
 
@@ -31,7 +34,7 @@ type SiswaRow = {
   last_tanggal: string | null;
 };
 
-export function SertifikatTab({ surahMap }: Props) {
+export function SertifikatTab({ surahMap, halamanMap }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [setoranList, setSetoranList] = useState<TahfidzSetoranWithRelations[]>([]);
@@ -43,9 +46,6 @@ export function SertifikatTab({ surahMap }: Props) {
   const [selectedSiswa, setSelectedSiswa] = useState<SiswaRow | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // ===========================================================================
-  // FETCH
-  // ===========================================================================
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -74,16 +74,16 @@ export function SertifikatTab({ surahMap }: Props) {
 
   useEffect(() => { fetchAll(false); }, [fetchAll]);
 
-  // ===========================================================================
-  // BUILD ROWS
-  // ===========================================================================
   const rows = useMemo<SiswaRow[]>(() => {
-    const halamanMap = new Map<number, number>();
+    const halamanMapAgg = new Map<number, number>();
     const countMap = new Map<number, number>();
     const lastMap = new Map<number, string>();
 
     setoranList.forEach((s) => {
-      halamanMap.set(s.siswa_id, (halamanMap.get(s.siswa_id) ?? 0) + hitungHalamanSetoran(s, surahMap));
+      halamanMapAgg.set(
+        s.siswa_id,
+        (halamanMapAgg.get(s.siswa_id) ?? 0) + getHalamanSetoran(s, surahMap, halamanMap)
+      );
       countMap.set(s.siswa_id, (countMap.get(s.siswa_id) ?? 0) + 1);
       const last = lastMap.get(s.siswa_id);
       if (!last || s.tanggal > last) lastMap.set(s.siswa_id, s.tanggal);
@@ -95,13 +95,12 @@ export function SertifikatTab({ surahMap }: Props) {
       nama_lengkap: s.nama_lengkap,
       kelas_id: s.kelas_id,
       kelas_nama: s.kelas?.nama_kelas ?? '-',
-      total_halaman: halamanMap.get(s.id) ?? 0,
+      total_halaman: halamanMapAgg.get(s.id) ?? 0,
       total_setoran: countMap.get(s.id) ?? 0,
       last_tanggal: lastMap.get(s.id) ?? null,
     }));
-  }, [siswaList, setoranList, surahMap]);
+  }, [siswaList, setoranList, surahMap, halamanMap]);
 
-  // Filter
   const filtered = useMemo(() => {
     let result = rows;
     if (filterKelas !== '') result = result.filter((r) => r.kelas_id === filterKelas);
@@ -111,7 +110,6 @@ export function SertifikatTab({ surahMap }: Props) {
         (r) => r.nama_lengkap.toLowerCase().includes(q) || r.nisn.toLowerCase().includes(q)
       );
     }
-    // Sort by total halaman DESC
     return result.sort((a, b) => b.total_halaman - a.total_halaman);
   }, [rows, filterKelas, search]);
 
@@ -123,9 +121,6 @@ export function SertifikatTab({ surahMap }: Props) {
     return Array.from(map.entries()).map(([id, nama]) => ({ id, nama }));
   }, [rows]);
 
-  // ===========================================================================
-  // HANDLER
-  // ===========================================================================
   const handleOpenModal = (row: SiswaRow) => {
     if (row.total_halaman <= 0) {
       showToast('error', 'Siswa belum punya setoran hafalan');
@@ -135,9 +130,6 @@ export function SertifikatTab({ surahMap }: Props) {
     setModalOpen(true);
   };
 
-  // ===========================================================================
-  // RENDER
-  // ===========================================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -149,7 +141,6 @@ export function SertifikatTab({ surahMap }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Award size={18} className="text-emerald-400" />
@@ -166,7 +157,6 @@ export function SertifikatTab({ surahMap }: Props) {
         </button>
       </div>
 
-      {/* Info */}
       <div className="px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-start gap-2">
         <Award size={14} className="shrink-0 mt-0.5" />
         <span>
@@ -175,7 +165,6 @@ export function SertifikatTab({ surahMap }: Props) {
         </span>
       </div>
 
-      {/* Filter */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="relative sm:col-span-2">
@@ -200,7 +189,6 @@ export function SertifikatTab({ surahMap }: Props) {
         </div>
       </div>
 
-      {/* List */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-16">
@@ -212,25 +200,16 @@ export function SertifikatTab({ surahMap }: Props) {
             {filtered.map((row) => {
               const eligible = row.total_halaman >= 0.5;
               return (
-                <div
-                  key={row.id}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/30 transition"
-                >
+                <div key={row.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/30 transition">
                   <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold shrink-0 text-xs">
                     {row.nama_lengkap.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-slate-200 truncate">
-                      {row.nama_lengkap}
-                    </p>
-                    <p className="text-[10px] text-slate-500">
-                      {row.kelas_nama} · {row.nisn}
-                    </p>
+                    <p className="text-sm font-bold text-slate-200 truncate">{row.nama_lengkap}</p>
+                    <p className="text-[10px] text-slate-500">{row.kelas_nama} · {row.nisn}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-extrabold text-emerald-400">
-                      {formatHalaman(row.total_halaman)}
-                    </p>
+                    <p className="text-sm font-extrabold text-emerald-400">{formatHalaman(row.total_halaman)}</p>
                     <p className="text-[9px] text-slate-500 uppercase">halaman</p>
                   </div>
                   <button
@@ -248,12 +227,12 @@ export function SertifikatTab({ surahMap }: Props) {
         )}
       </div>
 
-      {/* Modal */}
       <ModalSertifikat
         open={modalOpen}
         onClose={() => { setModalOpen(false); setSelectedSiswa(null); }}
         siswa={selectedSiswa}
         surahMap={surahMap}
+        halamanMap={halamanMap}
       />
     </div>
   );
