@@ -3,6 +3,8 @@
 // Mapping halaman mengikuti Mushaf Madinah (604 halaman).
 
 import type { TahfidzSurah, TahfidzSetoran } from '@/types/database';
+import type { TahfidzSurah, TahfidzHalamanDetail } from '@/types/database';
+import { hitungHalamanPrecise } from './hitungHalamanPrecise';
 
 type RentangSetoran = Pick<
   TahfidzSetoran,
