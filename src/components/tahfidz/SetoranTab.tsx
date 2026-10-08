@@ -114,7 +114,7 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
     const totalTahfidz = filtered.filter((s) => s.jenis === 'Tahfidz').length;
     const totalMurojaah = filtered.filter((s) => s.jenis === 'Murojaah').length;
     const totalHalaman = filtered.reduce(
-      (sum, s) => sum + hitungHalamanSetoran(s, surahMap),
+      (sum, s) => sum + getHalamanSetoran(s, surahMap, halamanMap),
       0
     );
     return { totalTahfidz, totalMurojaah, totalHalaman };
