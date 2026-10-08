@@ -105,16 +105,21 @@ export function TahfidzPage() {
   const [halamanMap, setHalamanMap] = useState<TahfidzHalamanDetail[]>([]);
   const [loadingSurah, setLoadingSurah] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from('tahfidz_surah')
+useEffect(() => {
+  (async () => {
+    const [surahRes, halamanRes] = await Promise.all([
+      supabase.from('tahfidz_surah').select('*').order('nomor', { ascending: true }),
+      supabase
+        .from('tahfidz_halaman_detail')
         .select('*')
-        .order('nomor', { ascending: true });
-      setSurahList((data as TahfidzSurah[]) ?? []);
-      setLoadingSurah(false);
-    })();
-  }, []);
+        .order('halaman', { ascending: true })
+        .order('surah_nomor', { ascending: true }),
+    ]);
+    setSurahList((surahRes.data as TahfidzSurah[]) ?? []);
+    setHalamanMap((halamanRes.data as TahfidzHalamanDetail[]) ?? []);
+    setLoadingSurah(false);
+  })();
+}, []);
 
   // Buat map untuk lookup O(1)
   const surahMap = useMemo(() => {
