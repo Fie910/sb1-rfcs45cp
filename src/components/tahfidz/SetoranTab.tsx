@@ -378,15 +378,18 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
       </div>
 
       {/* MODAL */}
-<ModalSetoran
-  open={modalOpen}
-  onClose={() => { setModalOpen(false); setEditTarget(null); }}
-  onSaved={handleSaved}
-  surahMap={surahMap}
-  halamanMap={halamanMap}   {/* ← BARU */}
-  editTarget={editTarget}
-  currentGuruId={guru?.id ?? null}
-/>
+      <ModalSetoran
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditTarget(null);
+        }}
+        onSaved={handleSaved}
+        surahMap={surahMap}
+        halamanMap={halamanMap}
+        editTarget={editTarget}
+        currentGuruId={guru?.id ?? null}
+      />
     </div>
   );
 }
