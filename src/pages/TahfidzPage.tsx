@@ -8,7 +8,6 @@ import { canAccessTahfidz, isTahfidzManager } from '@/components/tahfidz/shared'
 import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 import { supabase } from '@/lib/supabase';
-import type { TahfidzSurah } from '@/types/database';
 import { ShieldAlert } from 'lucide-react';
 import type { TahfidzSurah, TahfidzHalamanDetail } from '@/types/database';
 
