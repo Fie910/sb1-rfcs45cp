@@ -2,7 +2,11 @@
 // Utility kalkulasi halaman Al-Quran dari rentang surah+ayat.
 // Mapping halaman mengikuti Mushaf Madinah (604 halaman).
 
-import type { TahfidzSurah, TahfidzHalamanDetail } from '@/types/database';
+import type {
+  TahfidzSurah,
+  TahfidzSetoran,
+  TahfidzHalamanDetail,
+} from '@/types/database';
 import { hitungHalamanPrecise } from './hitungHalamanPrecise';
 
 type RentangSetoran = Pick<
