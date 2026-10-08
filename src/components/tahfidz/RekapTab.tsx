@@ -3,19 +3,23 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  BarChart3, RefreshCw, Loader2, Download, Users, BookMarked,
-  TrendingUp, Star,
+  BarChart3, RefreshCw, Loader2, Download, Users, BookMarked, TrendingUp, Star,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { INPUT_CLASS } from './shared';
-import { hitungHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
+import { getHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
 import { exportColoredPdf, PDF_COLORS } from '@/lib/pdf/pdfColoredExport';
-import type { TahfidzSurah, TahfidzSetoranWithRelations } from '@/types/database';
+import type {
+  TahfidzSurah,
+  TahfidzHalamanDetail,
+  TahfidzSetoranWithRelations,
+} from '@/types/database';
 
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
   isManager: boolean;
 };
 
@@ -29,9 +33,6 @@ type KelasRekap = {
   siswa_terlibat: number;
 };
 
-// =============================================================================
-// HELPER
-// =============================================================================
 function getFirstDayOfMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
@@ -43,10 +44,7 @@ function getLastDayOfMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(last).padStart(2, '0')}`;
 }
 
-// =============================================================================
-// COMPONENT
-// =============================================================================
-export function RekapTab({ surahMap }: Props) {
+export function RekapTab({ surahMap, halamanMap }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [setoranList, setSetoranList] = useState<TahfidzSetoranWithRelations[]>([]);
@@ -83,9 +81,6 @@ export function RekapTab({ surahMap }: Props) {
 
   useEffect(() => { fetchAll(false); }, [fetchAll]);
 
-  // ===========================================================================
-  // REKAP PER KELAS
-  // ===========================================================================
   const rekapPerKelas = useMemo<KelasRekap[]>(() => {
     const map = new Map<number | null, KelasRekap>();
     const siswaSet = new Map<number | null, Set<number>>();
@@ -107,16 +102,13 @@ export function RekapTab({ surahMap }: Props) {
       };
 
       existing.total_setoran += 1;
-      existing.total_halaman += hitungHalamanSetoran(s, surahMap);
-
+      existing.total_halaman += getHalamanSetoran(s, surahMap, halamanMap);
       map.set(kelasId, existing);
 
-      // Track unique siswa
       const set = siswaSet.get(kelasId) ?? new Set<number>();
       set.add(s.siswa.id);
       siswaSet.set(kelasId, set);
 
-      // Nilai
       if (s.nilai !== null && s.nilai !== undefined) {
         const arr = nilaiMap.get(kelasId) ?? [];
         arr.push(s.nilai);
@@ -124,39 +116,32 @@ export function RekapTab({ surahMap }: Props) {
       }
     });
 
-    return Array.from(map.values()).map((r) => {
-      const set = siswaSet.get(r.kelas_id) ?? new Set();
-      const nilaiArr = nilaiMap.get(r.kelas_id) ?? [];
-      return {
-        ...r,
-        siswa_terlibat: set.size,
-        rata_nilai:
-          nilaiArr.length > 0
-            ? nilaiArr.reduce((a, b) => a + b, 0) / nilaiArr.length
-            : 0,
-      };
-    }).sort((a, b) => b.total_halaman - a.total_halaman);
-  }, [setoranList, surahMap]);
+    return Array.from(map.values())
+      .map((r) => {
+        const set = siswaSet.get(r.kelas_id) ?? new Set();
+        const nilaiArr = nilaiMap.get(r.kelas_id) ?? [];
+        return {
+          ...r,
+          siswa_terlibat: set.size,
+          rata_nilai:
+            nilaiArr.length > 0
+              ? nilaiArr.reduce((a, b) => a + b, 0) / nilaiArr.length
+              : 0,
+        };
+      })
+      .sort((a, b) => b.total_halaman - a.total_halaman);
+  }, [setoranList, surahMap, halamanMap]);
 
-  // ===========================================================================
-  // TOTAL
-  // ===========================================================================
   const totals = useMemo(() => {
     const totalHalaman = rekapPerKelas.reduce((s, r) => s + r.total_halaman, 0);
     const totalSetoran = rekapPerKelas.reduce((s, r) => s + r.total_setoran, 0);
     const allNilai = setoranList
       .map((s) => s.nilai)
       .filter((n): n is number => n !== null && n !== undefined);
-    const rataNilai =
-      allNilai.length > 0
-        ? allNilai.reduce((a, b) => a + b, 0) / allNilai.length
-        : 0;
+    const rataNilai = allNilai.length > 0 ? allNilai.reduce((a, b) => a + b, 0) / allNilai.length : 0;
     return { totalHalaman, totalSetoran, rataNilai };
   }, [rekapPerKelas, setoranList]);
 
-  // ===========================================================================
-  // EXPORT PDF
-  // ===========================================================================
   const handleExportPdf = () => {
     if (rekapPerKelas.length === 0) {
       showToast('error', 'Tidak ada data untuk diexport');
@@ -197,9 +182,6 @@ export function RekapTab({ surahMap }: Props) {
     showToast('success', 'PDF sedang diunduh...');
   };
 
-  // ===========================================================================
-  // RENDER
-  // ===========================================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -211,7 +193,6 @@ export function RekapTab({ surahMap }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <BarChart3 size={18} className="text-emerald-400" />
@@ -236,38 +217,25 @@ export function RekapTab({ surahMap }: Props) {
         </div>
       </div>
 
-      {/* Filter Periode */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Dari</label>
-            <input
-              type="date"
-              value={dari}
-              onChange={(e) => setDari(e.target.value)}
-              className={INPUT_CLASS}
-            />
+            <input type="date" value={dari} onChange={(e) => setDari(e.target.value)} className={INPUT_CLASS} />
           </div>
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Sampai</label>
-            <input
-              type="date"
-              value={sampai}
-              onChange={(e) => setSampai(e.target.value)}
-              className={INPUT_CLASS}
-            />
+            <input type="date" value={sampai} onChange={(e) => setSampai(e.target.value)} className={INPUT_CLASS} />
           </div>
         </div>
       </div>
 
-      {/* Total Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <TotalCard icon={BookMarked} label="Total Setoran" value={totals.totalSetoran} color="indigo" />
         <TotalCard icon={TrendingUp} label="Total Halaman" value={formatHalaman(totals.totalHalaman)} color="emerald" />
         <TotalCard icon={Star} label="Rata Nilai" value={totals.rataNilai.toFixed(1)} color="amber" />
       </div>
 
-      {/* Table Rekap */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-100">Rekap Per Kelas</h3>
@@ -316,9 +284,6 @@ export function RekapTab({ surahMap }: Props) {
   );
 }
 
-// =============================================================================
-// SUB
-// =============================================================================
 function TotalCard({ icon: Icon, label, value, color }: {
   icon: any; label: string; value: string | number; color: 'indigo' | 'emerald' | 'amber';
 }) {
