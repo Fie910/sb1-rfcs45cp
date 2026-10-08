@@ -22,6 +22,8 @@ import type {
   JenisSetoran,
   KualitasHafalan,
 } from '@/types/database';
+import { getHalamanSetoran, hitungTotalAyatSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
+import type { TahfidzSurah, TahfidzSetoran, JenisSetoran, KualitasHafalan, TahfidzHalamanDetail } from '@/types/database';
 
 // =============================================================================
 // TYPES
