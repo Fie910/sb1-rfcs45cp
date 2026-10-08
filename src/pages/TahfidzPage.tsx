@@ -102,6 +102,7 @@ export function TahfidzPage() {
 
   // Fetch master surah sekali, share ke semua tab
   const [surahList, setSurahList] = useState<TahfidzSurah[]>([]);
+  const [halamanMap, setHalamanMap] = useState<TahfidzHalamanDetail[]>([]);
   const [loadingSurah, setLoadingSurah] = useState(true);
 
   useEffect(() => {
