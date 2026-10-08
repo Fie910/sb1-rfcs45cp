@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Users, Search, Loader2, RefreshCw, ArrowLeft, BookMarked,
-  TrendingUp, Award, Calendar, Star,
+  TrendingUp, Calendar, Star,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -13,14 +13,19 @@ import {
   getNilaiBadge, formatTanggalShort,
 } from './shared';
 import {
-  hitungHalamanSetoran, hitungTotalAyatSetoran,
+  getHalamanSetoran, hitungTotalAyatSetoran,
   formatHalaman, formatRentangHafalan,
 } from '@/lib/tahfidz/hitungHalaman';
-import type { TahfidzSurah, TahfidzSetoranWithRelations } from '@/types/database';
+import type {
+  TahfidzSurah,
+  TahfidzHalamanDetail,
+  TahfidzSetoranWithRelations,
+} from '@/types/database';
 
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
   isManager: boolean;
 };
 
@@ -39,10 +44,7 @@ type SiswaWithStats = {
 
 type KelasOption = { id: number; nama_kelas: string };
 
-// =============================================================================
-// COMPONENT
-// =============================================================================
-export function ProgressSiswaTab({ surahMap }: Props) {
+export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedSiswa, setSelectedSiswa] = useState<SiswaWithStats | null>(null);
 
@@ -54,9 +56,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
   const [search, setSearch] = useState('');
   const [filterKelas, setFilterKelas] = useState<number | ''>('');
 
-  // ===========================================================================
-  // FETCH
-  // ===========================================================================
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -73,10 +72,7 @@ export function ProgressSiswaTab({ surahMap }: Props) {
             guru:guru_tahfidz_id (id, nama_lengkap)
           `)
           .order('tanggal', { ascending: false }),
-        supabase
-          .from('kelas')
-          .select('id, nama_kelas')
-          .order('nama_kelas', { ascending: true }),
+        supabase.from('kelas').select('id, nama_kelas').order('nama_kelas'),
       ]);
 
       setSetoranList((setoranRes.data as any) ?? []);
@@ -91,9 +87,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
 
   useEffect(() => { fetchAll(false); }, [fetchAll]);
 
-  // ===========================================================================
-  // AGGREGATE PER SISWA
-  // ===========================================================================
   const siswaStats = useMemo<SiswaWithStats[]>(() => {
     const map = new Map<number, SiswaWithStats>();
 
@@ -114,7 +107,7 @@ export function ProgressSiswaTab({ surahMap }: Props) {
 
       existing.total_setoran += 1;
       if (s.jenis === 'Tahfidz') existing.total_tahfidz += 1;
-      existing.total_halaman += hitungHalamanSetoran(s, surahMap);
+      existing.total_halaman += getHalamanSetoran(s, surahMap, halamanMap);
 
       if (!existing.terakhir_setoran || s.tanggal > existing.terakhir_setoran) {
         existing.terakhir_setoran = s.tanggal;
@@ -123,7 +116,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
       map.set(s.siswa.id, existing);
     });
 
-    // Hitung rata-rata nilai
     const nilaiMap = new Map<number, number[]>();
     setoranList.forEach((s) => {
       if (!s.siswa || s.nilai === null || s.nilai === undefined) return;
@@ -142,11 +134,8 @@ export function ProgressSiswaTab({ surahMap }: Props) {
             : 0,
       };
     });
-  }, [setoranList, surahMap]);
+  }, [setoranList, surahMap, halamanMap]);
 
-  // ===========================================================================
-  // FILTERED LIST
-  // ===========================================================================
   const filtered = useMemo(() => {
     let result = siswaStats;
     if (filterKelas !== '') {
@@ -167,9 +156,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
     });
   }, [siswaStats, filterKelas, search]);
 
-  // ===========================================================================
-  // RIWAYAT SISWA TERPILIH
-  // ===========================================================================
   const riwayatSiswa = useMemo(() => {
     if (!selectedSiswa) return [];
     return setoranList
@@ -177,9 +163,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
       .sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   }, [setoranList, selectedSiswa]);
 
-  // ===========================================================================
-  // RENDER
-  // ===========================================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -189,9 +172,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
     );
   }
 
-  // ===========================================================================
-  // VIEW: DETAIL
-  // ===========================================================================
   if (view === 'detail' && selectedSiswa) {
     return (
       <div className="space-y-4">
@@ -202,19 +182,14 @@ export function ProgressSiswaTab({ surahMap }: Props) {
           <ArrowLeft size={14} /> Kembali ke List
         </button>
 
-        {/* Header siswa */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
           <div className="flex items-start gap-3">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl shrink-0">
               {selectedSiswa.nama_lengkap.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-extrabold text-slate-100">
-                {selectedSiswa.nama_lengkap}
-              </h2>
-              <p className="text-xs text-slate-400">
-                {selectedSiswa.kelas_nama} · NISN {selectedSiswa.nisn}
-              </p>
+              <h2 className="text-lg font-extrabold text-slate-100">{selectedSiswa.nama_lengkap}</h2>
+              <p className="text-xs text-slate-400">{selectedSiswa.kelas_nama} · NISN {selectedSiswa.nisn}</p>
             </div>
           </div>
 
@@ -222,31 +197,22 @@ export function ProgressSiswaTab({ surahMap }: Props) {
             <MiniStat label="Total Setoran" value={selectedSiswa.total_setoran} color="text-indigo-400" />
             <MiniStat label="Hafalan Baru" value={selectedSiswa.total_tahfidz} color="text-emerald-400" />
             <MiniStat label="Halaman" value={formatHalaman(selectedSiswa.total_halaman)} color="text-amber-400" />
-            <MiniStat
-              label="Rata Nilai"
-              value={selectedSiswa.rata_nilai.toFixed(1)}
-              color="text-rose-400"
-            />
+            <MiniStat label="Rata Nilai" value={selectedSiswa.rata_nilai.toFixed(1)} color="text-rose-400" />
           </div>
         </div>
 
-        {/* Riwayat */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-2">
             <Calendar size={14} className="text-emerald-400" />
-            <h3 className="text-sm font-bold text-slate-100">
-              Riwayat Setoran ({riwayatSiswa.length})
-            </h3>
+            <h3 className="text-sm font-bold text-slate-100">Riwayat Setoran ({riwayatSiswa.length})</h3>
           </div>
 
           {riwayatSiswa.length === 0 ? (
-            <p className="text-center py-12 text-slate-500 text-xs">
-              Belum ada setoran
-            </p>
+            <p className="text-center py-12 text-slate-500 text-xs">Belum ada setoran</p>
           ) : (
             <div className="divide-y divide-slate-800/60">
               {riwayatSiswa.map((item) => {
-                const halaman = hitungHalamanSetoran(item, surahMap);
+                const halaman = getHalamanSetoran(item, surahMap, halamanMap);
                 const ayat = hitungTotalAyatSetoran(item, surahMap);
                 return (
                   <div key={item.id} className="px-4 py-3 hover:bg-slate-800/30">
@@ -261,27 +227,19 @@ export function ProgressSiswaTab({ surahMap }: Props) {
                               {item.kualitas}
                             </span>
                           )}
-                          <span className="text-[10px] text-slate-500">
-                            {formatTanggalShort(item.tanggal)}
-                          </span>
+                          <span className="text-[10px] text-slate-500">{formatTanggalShort(item.tanggal)}</span>
                         </div>
-                        <p className="text-xs text-slate-200">
-                          {formatRentangHafalan(item, surahMap)}
-                        </p>
+                        <p className="text-xs text-slate-200">{formatRentangHafalan(item, surahMap)}</p>
                         <p className="text-[10px] text-slate-500 mt-0.5">
                           {ayat} ayat · {formatHalaman(halaman)} halaman
                           {item.guru && ` · oleh ${item.guru.nama_lengkap}`}
                         </p>
                         {item.catatan && (
-                          <p className="text-[10px] text-slate-400 italic mt-1">
-                            "{item.catatan}"
-                          </p>
+                          <p className="text-[10px] text-slate-400 italic mt-1">"{item.catatan}"</p>
                         )}
                       </div>
                       <div className="text-right shrink-0">
-                        <p className={`text-lg font-extrabold ${getNilaiBadge(item.nilai)}`}>
-                          {item.nilai ?? '—'}
-                        </p>
+                        <p className={`text-lg font-extrabold ${getNilaiBadge(item.nilai)}`}>{item.nilai ?? '—'}</p>
                         <p className="text-[9px] text-slate-500 uppercase">nilai</p>
                       </div>
                     </div>
@@ -295,18 +253,12 @@ export function ProgressSiswaTab({ surahMap }: Props) {
     );
   }
 
-  // ===========================================================================
-  // VIEW: LIST
-  // ===========================================================================
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Users size={18} className="text-emerald-400" />
-          <h2 className="text-base font-extrabold text-slate-100">
-            Progress Hafalan Siswa
-          </h2>
+          <h2 className="text-base font-extrabold text-slate-100">Progress Hafalan Siswa</h2>
           <span className="text-xs text-slate-500">({filtered.length} siswa)</span>
         </div>
         <button
@@ -319,7 +271,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
         </button>
       </div>
 
-      {/* Filter */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="relative sm:col-span-2">
@@ -344,14 +295,11 @@ export function ProgressSiswaTab({ surahMap }: Props) {
         </div>
       </div>
 
-      {/* List */}
       {filtered.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl text-center py-16">
           <Users size={40} className="text-slate-700 mx-auto mb-3" />
           <p className="text-sm text-slate-500">
-            {search || filterKelas !== ''
-              ? 'Tidak ada siswa cocok filter.'
-              : 'Belum ada data setoran.'}
+            {search || filterKelas !== '' ? 'Tidak ada siswa cocok filter.' : 'Belum ada data setoran.'}
           </p>
         </div>
       ) : (
@@ -370,18 +318,14 @@ export function ProgressSiswaTab({ surahMap }: Props) {
                   <p className="text-sm font-bold text-slate-100 truncate group-hover:text-emerald-300 transition">
                     {s.nama_lengkap}
                   </p>
-                  <p className="text-[10px] text-slate-500">
-                    {s.kelas_nama} · {s.nisn}
-                  </p>
+                  <p className="text-[10px] text-slate-500">{s.kelas_nama} · {s.nisn}</p>
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <StatMini label="Setoran" value={s.total_setoran} icon={BookMarked} />
                     <StatMini label="Halaman" value={formatHalaman(s.total_halaman)} icon={TrendingUp} />
                     <StatMini label="Nilai" value={s.rata_nilai.toFixed(0)} icon={Star} />
                   </div>
                   {s.terakhir_setoran && (
-                    <p className="text-[10px] text-slate-500 mt-2">
-                      Terakhir: {formatTanggalShort(s.terakhir_setoran)}
-                    </p>
+                    <p className="text-[10px] text-slate-500 mt-2">Terakhir: {formatTanggalShort(s.terakhir_setoran)}</p>
                   )}
                 </div>
               </div>
@@ -393,9 +337,6 @@ export function ProgressSiswaTab({ surahMap }: Props) {
   );
 }
 
-// =============================================================================
-// SUB KOMPONEN
-// =============================================================================
 function MiniStat({ label, value, color }: { label: string; value: number | string; color: string }) {
   return (
     <div className="text-center px-2 py-2 rounded-xl bg-slate-950/60 border border-slate-800">
