@@ -1938,6 +1938,15 @@ export type TahfidzProgress = {
   terakhir_setoran: string | null;
 };
 
+export type TahfidzHalamanDetail = {
+  id: number;
+  halaman: number;
+  surah_nomor: number;
+  ayat_mulai: number;
+  ayat_selesai: number;
+  created_at: string;
+};
+
 // Tambah di bagian TAHFIDZ
 export type TahfidzMilestone = {
   id: string;
