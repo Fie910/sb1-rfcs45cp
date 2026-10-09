@@ -527,9 +527,6 @@ export async function generateRaportTahfidz(
   // ==========================================================================
   // 9. TANDA TANGAN + QR
   // ==========================================================================
-  // ==========================================================================
-  // 9. TANDA TANGAN + QR
-  // ==========================================================================
   if (y > pageHeight - 80) {
     doc.addPage();
     y = 30;
@@ -565,7 +562,6 @@ export async function generateRaportTahfidz(
   doc.setFontSize(11);
   doc.text(guruNama, marginX, y);
   doc.text(pengaturan.nama_kepsek ?? '-', rightX, y);
-  }
 
   // QR Verifikasi (opsional)
   if (data.verificationToken) {
