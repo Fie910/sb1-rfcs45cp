@@ -258,11 +258,11 @@ export function ModalSetoranAyat({
     }
 
     const ayatRange = getAyatRange(
-      form.surah_mulai,
-      form.ayat_mulai,
-      form.surah_selesai,
-      form.ayat_selesai
-    );
+    form.surah_mulai,
+    toAyatNumber(form.ayat_mulai),
+    form.surah_selesai,
+    toAyatNumber(form.ayat_selesai)
+  );
 
     if (ayatRange.length === 0) {
       showToast('error', 'Rentang ayat tidak valid');
