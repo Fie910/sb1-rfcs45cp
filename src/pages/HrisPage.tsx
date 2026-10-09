@@ -1,19 +1,41 @@
 // src/pages/HrisPage.tsx
 // Container halaman HRIS dengan 4 tab fungsional.
+// ✅ Lazy load per tab — optimasi bundle size.
 
-import { useState, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import {
   UserCog, Users, User, FolderOpen, BarChart3, Shield,
+  CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isHrManager } from '@/components/hris/shared';
-import { PegawaiTab } from '@/components/hris/PegawaiTab';
-import { ProfilSayaTab } from '@/components/hris/ProfilSayaTab';
-import { DokumenSayaTab } from '@/components/hris/DokumenSayaTab';
-import { DashboardHrTab } from '@/components/hris/DashboardHrTab';
-import { CalendarDays } from 'lucide-react';
-import { CutiIzinPage } from '@/components/hris/cuti/CutiIzinPage';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
+import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 
+// =============================================================================
+// LAZY TAB COMPONENTS
+// =============================================================================
+const PegawaiTab = lazy(() =>
+  import('@/components/hris/PegawaiTab').then((m) => ({ default: m.PegawaiTab }))
+);
+const ProfilSayaTab = lazy(() =>
+  import('@/components/hris/ProfilSayaTab').then((m) => ({ default: m.ProfilSayaTab }))
+);
+const DokumenSayaTab = lazy(() =>
+  import('@/components/hris/DokumenSayaTab').then((m) => ({ default: m.DokumenSayaTab }))
+);
+const DashboardHrTab = lazy(() =>
+  import('@/components/hris/DashboardHrTab').then((m) => ({ default: m.DashboardHrTab }))
+);
+const CutiIzinPage = lazy(() =>
+  import('@/components/hris/cuti/CutiIzinPage').then((m) => ({
+    default: m.CutiIzinPage,
+  }))
+);
+
+// =============================================================================
+// TYPES
+// =============================================================================
 type TabKey = 'pegawai' | 'profil_saya' | 'dokumen' | 'cuti' | 'dashboard';
 
 type TabDef = {
@@ -31,6 +53,34 @@ const ALL_TABS: TabDef[] = [
   { key: 'dashboard', label: 'Dashboard HR', icon: BarChart3, managerOnly: true },
 ];
 
+// Prefetch map
+const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
+  pegawai: () => import('@/components/hris/PegawaiTab'),
+  profil_saya: () => import('@/components/hris/ProfilSayaTab'),
+  dokumen: () => import('@/components/hris/DokumenSayaTab'),
+  cuti: () => import('@/components/hris/cuti/CutiIzinPage'),
+  dashboard: () => import('@/components/hris/DashboardHrTab'),
+};
+
+// Role yang boleh akses HRIS (non-manager)
+const HR_ACCESS_ROLES = [
+  'guru',
+  'guru_piket',
+  'bk',
+  'pustakawan',
+  'akademik',
+  'kesiswaan',
+  'sarpras',
+  'keuangan',
+  'staf_akademik',
+  'staf_kesiswaan',
+  'staf_sarpras',
+  'staf_keuangan',
+];
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 export function HrisPage() {
   const { guru } = useAuth();
   const isManager = isHrManager(guru?.role);
@@ -51,13 +101,14 @@ export function HrisPage() {
     }
   }, [isManager, activeTab]);
 
-  // Guard: non-manager tidak boleh akses halaman
+  // Prefetch tab lain saat browser idle
+  usePrefetchTabs(TAB_IMPORTERS, activeTab);
+
+  // Guard: role tanpa akses
   if (
     !isManager &&
     guru?.role &&
-    !['guru', 'guru_piket', 'bk', 'pustakawan', 'akademik', 'kesiswaan', 'sarpras', 'keuangan', 'staf_akademik', 'staf_kesiswaan', 'staf_sarpras', 'staf_keuangan' ].includes(
-      guru.role.toLowerCase()
-    )
+    !HR_ACCESS_ROLES.includes(guru.role.toLowerCase())
   ) {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -111,13 +162,22 @@ export function HrisPage() {
         })}
       </div>
 
-      {/* TAB CONTENT */}
+      {/* TAB CONTENT — LAZY */}
       <div className="min-h-[400px]">
-        {activeTab === 'pegawai' && isManager && <PegawaiTab />}
-        {activeTab === 'profil_saya' && <ProfilSayaTab />}
-        {activeTab === 'dokumen' && <DokumenSayaTab />}
-        {activeTab === 'cuti' && <CutiIzinPage />}
-        {activeTab === 'dashboard' && isManager && <DashboardHrTab />}
+        <Suspense
+          fallback={
+            <TabLoadingFallback
+              label={`Memuat ${visibleTabs.find((t) => t.key === activeTab)?.label ?? ''}...`}
+              minHeight="500px"
+            />
+          }
+        >
+          {activeTab === 'pegawai' && isManager && <PegawaiTab />}
+          {activeTab === 'profil_saya' && <ProfilSayaTab />}
+          {activeTab === 'dokumen' && <DokumenSayaTab />}
+          {activeTab === 'cuti' && <CutiIzinPage />}
+          {activeTab === 'dashboard' && isManager && <DashboardHrTab />}
+        </Suspense>
       </div>
     </div>
   );
