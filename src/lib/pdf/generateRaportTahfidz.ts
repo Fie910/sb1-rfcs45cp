@@ -547,8 +547,15 @@ export async function generateRaportTahfidz(
   y += 20;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  const guruTahfidz =
-    setoran.find((s) => s.guru?.nama_lengkap)?.guru?.nama_lengkap ?? '.......................';
+const guruTahfidz =
+  (setoran.find((s: any) => {
+    const g = s.guru;
+    if (!g) return false;
+    if (Array.isArray(g)) return g[0]?.nama_lengkap;
+    return g?.nama_lengkap;
+  })?.guru as any);
+const guruNama =
+  (Array.isArray(guruTahfidz) ? guruTahfidz[0]?.nama_lengkap : guruTahfidz?.nama_lengkap) ?? '.......................';
   doc.text(guruTahfidz, marginX, y);
   doc.text(pengaturan.nama_kepsek ?? '-', rightX, y);
 
