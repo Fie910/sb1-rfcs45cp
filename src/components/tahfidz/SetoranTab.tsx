@@ -208,8 +208,17 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
             Refresh
           </button>
           <button
+            onClick={() => setModalAyatOpen(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer"
+            title="Mode per ayat (detail)"
+          >
+            <BookOpen size={14} />
+            Per Ayat
+          </button>
+          <button
             onClick={handleOpenAdd}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer"
+            title="Mode rentang (cepat)"
           >
             <Plus size={14} />
             Tambah Setoran
