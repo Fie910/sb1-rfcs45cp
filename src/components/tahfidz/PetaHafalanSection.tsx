@@ -164,7 +164,7 @@ export function PetaHafalanSection({ siswaId, surahMap }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center">
-            <Map size={14} />
+            <MapIcon size={14} />
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-100">Peta Hafalan</h3>
