@@ -342,6 +342,9 @@ export function DashboardTahfidzTab({ surahMap, halamanMap }: Props) {
       </div>
       {/* ✅ Section Ayat Bermasalah */}
       <AyatBermasalahSection surahMap={surahMap} />
+
+      {/* ✅ Section Leaderboard Milestone */}
+      <LeaderboardMilestoneSection isManager={isManager} />
     </div>
   );
 }
