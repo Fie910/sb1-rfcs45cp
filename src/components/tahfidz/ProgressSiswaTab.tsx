@@ -321,6 +321,12 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
           }}
         />
 
+        {/* ✅ Section Peta Hafalan */}
+        <PetaHafalanSection
+          siswaId={selectedSiswa.id}
+          surahMap={surahMap}
+        />
+
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
