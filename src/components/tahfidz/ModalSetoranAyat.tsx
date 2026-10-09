@@ -1,10 +1,10 @@
 // src/components/tahfidz/ModalSetoranAyat.tsx
 // Modal penilaian per ayat — alternatif dari ModalSetoran.
-// Fitur: pilih surah+rentang ayat, nilai per ayat (Lancar/Cukup/Perlu Ulang), auto-aggregate.
+// ✅ Auto-check milestone setelah save.
 
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Loader2, Save, X, User, BookMarked, School, Info, CheckCircle2,
+  Loader2, Save, X, User, BookMarked, Info, CheckCircle2,
   AlertCircle, XCircle, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Modal } from '@/components/Modal';
@@ -57,9 +57,9 @@ const EMPTY_FORM = {
   tanggal: new Date().toISOString().slice(0, 10),
   jenis: 'Tahfidz' as JenisSetoran,
   surah_mulai: 1,
-  ayat_mulai: 1 as number | string,      // ← bisa empty
+  ayat_mulai: 1 as number | string,
   surah_selesai: 1,
-  ayat_selesai: 7 as number | string,    // ← bisa empty
+  ayat_selesai: 7 as number | string,
   catatan: '',
 };
 
@@ -87,7 +87,6 @@ const KUALITAS_STYLE: Record<string, { bg: string; border: string; text: string 
   },
 };
 
-// Helper: konversi ayat ke number dengan fallback
 function toAyatNumber(v: number | string): number {
   const n = typeof v === 'number' ? v : parseInt(v, 10);
   return Number.isFinite(n) && n > 0 ? n : 1;
@@ -129,7 +128,6 @@ export function ModalSetoranAyat({
     (async () => {
       setLoadingSiswa(true);
 
-      // Fetch siswa
       const { data: siswaData } = await supabase
         .from('siswas')
         .select('id, nisn, nama_lengkap, kelas_id, kelas:kelas_id (nama_kelas)')
@@ -138,7 +136,6 @@ export function ModalSetoranAyat({
 
       setSiswaList((siswaData as any) ?? []);
 
-      // Fetch jadwal guru → unique kelas
       const { data: jadwalData } = await supabase
         .from('jadwal_kbmjps')
         .select(`kelas_id, kelas:kelas_id (id, nama_kelas)`)
@@ -156,7 +153,6 @@ export function ModalSetoranAyat({
         setKelasList(list);
         if (list.length === 1) setFilterKelas(list[0].id);
       } else {
-        // Fallback: semua kelas
         const { data: allKelas } = await supabase
           .from('kelas')
           .select('id, nama_kelas')
@@ -185,7 +181,6 @@ export function ModalSetoranAyat({
   const maxAyatMulai = surahMulai?.jumlah_ayat ?? 1;
   const maxAyatSelesai = surahSelesai?.jumlah_ayat ?? 1;
 
-  // Auto-adjust
   useEffect(() => {
     const n = toAyatNumber(form.ayat_mulai);
     if (typeof form.ayat_mulai === 'number' && n > maxAyatMulai) {
@@ -229,7 +224,6 @@ export function ModalSetoranAyat({
     };
   }, [form, surahMap, halamanMap]);
 
-  // Siswa filtered
   const filteredSiswa = useMemo(() => {
     let result = siswaList;
     if (filterKelas !== '') {
@@ -258,18 +252,17 @@ export function ModalSetoranAyat({
     }
 
     const ayatRange = getAyatRange(
-    form.surah_mulai,
-    toAyatNumber(form.ayat_mulai),
-    form.surah_selesai,
-    toAyatNumber(form.ayat_selesai)
-  );
+      form.surah_mulai,
+      toAyatNumber(form.ayat_mulai),
+      form.surah_selesai,
+      toAyatNumber(form.ayat_selesai)
+    );
 
     if (ayatRange.length === 0) {
       showToast('error', 'Rentang ayat tidak valid');
       return;
     }
 
-    // Cek limit — prevent terlalu banyak ayat (mis: Al-Baqarah full = 286 ayat)
     if (ayatRange.length > 100) {
       showToast(
         'error',
@@ -320,7 +313,6 @@ export function ModalSetoranAyat({
     return { total, lancar, cukup, perluUlang, belum };
   }, [penilaian]);
 
-  // Auto-aggregate kualitas untuk setoran
   const aggregatedKualitas = useMemo<KualitasHafalan>(() => {
     const { total, lancar, cukup } = penilaianStats;
     if (total === 0) return 'Lancar';
@@ -333,7 +325,7 @@ export function ModalSetoranAyat({
   }, [penilaianStats]);
 
   // ===========================================================================
-  // SAVE
+  // SAVE + MILESTONE CHECK
   // ===========================================================================
   const handleSave = async () => {
     if (penilaianStats.belum > 0) {
@@ -347,16 +339,19 @@ export function ModalSetoranAyat({
     setSaving(true);
 
     try {
-      // 1. Insert setoran utama (dapat ID)
+      const aMulai = toAyatNumber(form.ayat_mulai);
+      const aSelesai = toAyatNumber(form.ayat_selesai);
+
+      // 1. Insert setoran utama
       const setoranPayload = {
         siswa_id: Number(form.siswa_id),
         guru_tahfidz_id: currentGuruId,
         tanggal: form.tanggal,
         jenis: form.jenis,
         surah_mulai: form.surah_mulai,
-        ayat_mulai: form.ayat_mulai,
+        ayat_mulai: aMulai,
         surah_selesai: form.surah_selesai,
-        ayat_selesai: form.ayat_selesai,
+        ayat_selesai: aSelesai,
         kualitas: aggregatedKualitas,
         nilai: null,
         catatan: form.catatan || null,
@@ -395,11 +390,32 @@ export function ModalSetoranAyat({
         deskripsi: `Setoran per ayat: ${selectedSiswa?.nama_lengkap} (${penilaian.length} ayat)`,
       });
 
-      // 4. Success
       showToast(
         'success',
         `Setoran tersimpan (${penilaian.length} ayat, ${aggregatedKualitas})`
       );
+
+      // ✅ Auto-check milestone (dengan filter semester + range target)
+      try {
+        const { checkAndAwardMilestone } = await import('@/lib/tahfidz/checkMilestone');
+        const result = await checkAndAwardMilestone(
+          Number(form.siswa_id),
+          surahMap,
+          currentGuruId,
+          halamanMap
+        );
+
+        if (result.awarded.length > 0) {
+          const names = result.awarded.map((a) => a.milestone.nama).join(', ');
+          showToast(
+            'success',
+            `🏆 Milestone: ${names} (+${result.total_poin_baru} poin)`
+          );
+        }
+      } catch (err) {
+        console.warn('[milestone] Gagal check:', err);
+      }
+
       onSaved();
     } catch (err: any) {
       showToast('error', 'Gagal simpan: ' + (err.message || 'Error'));
@@ -413,14 +429,8 @@ export function ModalSetoranAyat({
   // ===========================================================================
   if (step === 'penilaian') {
     return (
-      <Modal
-        open={open}
-        onClose={onClose}
-        title="Penilaian Per Ayat"
-        size="lg"
-      >
+      <Modal open={open} onClose={onClose} title="Penilaian Per Ayat" size="lg">
         <div className="space-y-4">
-          {/* Header info */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 font-bold">
@@ -431,7 +441,9 @@ export function ModalSetoranAyat({
                   {selectedSiswa?.nama_lengkap}
                 </p>
                 <p className="text-[10px] text-slate-500">
-                  {selectedSiswa?.kelas?.nama_kelas} · {getSurahMeta(form.surah_mulai)?.nama_latin} {form.ayat_mulai}-{form.ayat_selesai}
+                  {selectedSiswa?.kelas?.nama_kelas} ·{' '}
+                  {getSurahMeta(form.surah_mulai)?.nama_latin}{' '}
+                  {toAyatNumber(form.ayat_mulai)}-{toAyatNumber(form.ayat_selesai)}
                 </p>
               </div>
             </div>
@@ -443,7 +455,6 @@ export function ModalSetoranAyat({
             </button>
           </div>
 
-          {/* Quick actions */}
           <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-slate-900 border border-slate-800">
             <span className="text-[10px] font-bold uppercase text-slate-500 mr-1">
               Set Semua:
@@ -468,7 +479,6 @@ export function ModalSetoranAyat({
             </button>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-4 gap-2">
             <StatChip label="Lancar" value={penilaianStats.lancar} color="emerald" />
             <StatChip label="Cukup" value={penilaianStats.cukup} color="amber" />
@@ -476,7 +486,6 @@ export function ModalSetoranAyat({
             <StatChip label="Belum" value={penilaianStats.belum} color="slate" />
           </div>
 
-          {/* List Ayat */}
           <div className="space-y-2 max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
             {penilaian.map((a, idx) => (
               <AyatRow
@@ -490,11 +499,11 @@ export function ModalSetoranAyat({
             ))}
           </div>
 
-          {/* Footer */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
             <div className="flex items-center gap-3 text-xs">
               <span className="text-slate-500">
-                Auto-kualitas: <strong className="text-emerald-400">{aggregatedKualitas}</strong>
+                Auto-kualitas:{' '}
+                <strong className="text-emerald-400">{aggregatedKualitas}</strong>
               </span>
               <span className="text-slate-500">·</span>
               <span className="text-slate-500">
@@ -528,14 +537,8 @@ export function ModalSetoranAyat({
   // RENDER — STEP 1: FORM
   // ===========================================================================
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Setoran Per Ayat (Mode Detail)"
-      size="lg"
-    >
+    <Modal open={open} onClose={onClose} title="Setoran Per Ayat (Mode Detail)" size="lg">
       <div className="space-y-4">
-        {/* Info banner */}
         <div className="px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-300 flex items-start gap-2">
           <Info size={12} className="shrink-0 mt-0.5" />
           <span>
@@ -560,7 +563,10 @@ export function ModalSetoranAyat({
                 </p>
               </div>
               <button
-                onClick={() => { setForm((f) => ({ ...f, siswa_id: '' })); setSearchSiswa(''); }}
+                onClick={() => {
+                  setForm((f) => ({ ...f, siswa_id: '' }));
+                  setSearchSiswa('');
+                }}
                 className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 transition cursor-pointer"
               >
                 <X size={14} />
@@ -571,7 +577,9 @@ export function ModalSetoranAyat({
               <div className="flex gap-2">
                 <select
                   value={filterKelas}
-                  onChange={(e) => setFilterKelas(e.target.value === '' ? '' : Number(e.target.value))}
+                  onChange={(e) =>
+                    setFilterKelas(e.target.value === '' ? '' : Number(e.target.value))
+                  }
                   disabled={loadingSiswa}
                   className={INPUT_CLASS + ' cursor-pointer flex-1'}
                 >
@@ -594,12 +602,17 @@ export function ModalSetoranAyat({
               ) : (
                 <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800/60">
                   {filteredSiswa.length === 0 ? (
-                    <p className="text-xs text-slate-500 text-center py-4">Tidak ada siswa cocok</p>
+                    <p className="text-xs text-slate-500 text-center py-4">
+                      Tidak ada siswa cocok
+                    </p>
                   ) : (
                     filteredSiswa.map((s) => (
                       <button
                         key={s.id}
-                        onClick={() => { setForm((f) => ({ ...f, siswa_id: String(s.id) })); setSearchSiswa(''); }}
+                        onClick={() => {
+                          setForm((f) => ({ ...f, siswa_id: String(s.id) }));
+                          setSearchSiswa('');
+                        }}
                         className="w-full text-left px-3 py-2 hover:bg-slate-800/60 transition cursor-pointer"
                       >
                         <p className="text-sm text-slate-200 font-medium">{s.nama_lengkap}</p>
@@ -709,7 +722,6 @@ export function ModalSetoranAyat({
             </div>
           </div>
 
-          {/* Preview */}
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
             <span className="text-emerald-400 font-bold">📖 {preview.ayat} ayat</span>
             <span className="text-emerald-300">≈ {formatHalaman(preview.halaman)} halaman</span>
