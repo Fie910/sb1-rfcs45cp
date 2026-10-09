@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Users, Search, Loader2, RefreshCw, ArrowLeft, BookMarked,
   TrendingUp, Calendar, Star, ChevronDown, ChevronRight,
-  CheckCircle2, AlertCircle, XCircle,
+  CheckCircle2, AlertCircle, XCircle, FileText,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
