@@ -2,6 +2,7 @@
 // Form tambah/edit setoran hafalan (mode rentang).
 // Filter kelas default mengikuti jadwal guru dari tabel jadwal_kbmjps.
 // ✅ Input nomor ayat bisa dikosongkan (fallback ke 1 saat blur).
+// ✅ Auto-check milestone setelah save.
 
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -279,7 +280,7 @@ export function ModalSetoran({
   }, [siswaList, filterKelas]);
 
   // ===========================================================================
-  // SAVE
+  // SAVE + MILESTONE CHECK
   // ===========================================================================
   const handleSave = async () => {
     if (!form.siswa_id) {
@@ -343,6 +344,27 @@ export function ModalSetoran({
         showToast('success', 'Setoran ditambahkan');
       }
 
+      // ✅ Auto-check milestone (dengan filter semester + range target)
+      try {
+        const { checkAndAwardMilestone } = await import('@/lib/tahfidz/checkMilestone');
+        const result = await checkAndAwardMilestone(
+          Number(form.siswa_id),
+          surahMap,
+          currentGuruId,
+          halamanMap
+        );
+
+        if (result.awarded.length > 0) {
+          const names = result.awarded.map((a) => a.milestone.nama).join(', ');
+          showToast(
+            'success',
+            `🏆 Milestone: ${names} (+${result.total_poin_baru} poin)`
+          );
+        }
+      } catch (err) {
+        console.warn('[milestone] Gagal check:', err);
+      }
+
       onSaved();
     } catch (err: any) {
       showToast('error', 'Gagal simpan: ' + (err.message || 'Error'));
@@ -399,8 +421,7 @@ export function ModalSetoran({
                     {kelasList.length === 1 && (
                       <span className="font-bold"> · {kelasList[0].nama_kelas}</span>
                     )}
-                    {kelasList.length > 1 &&
-                      ` (${kelasList.length} kelas)`}
+                    {kelasList.length > 1 && ` (${kelasList.length} kelas)`}
                   </span>
                 </div>
               )}
