@@ -1,5 +1,5 @@
 // src/lib/tahfidz/semester.ts
-// Helper untuk semester date range (standar Indonesia).
+// Helper semester date range (standar Indonesia).
 //
 // TA 2025/2026:
 //   - Ganjil: 2025-07-01 s/d 2025-12-31
@@ -9,19 +9,16 @@ export type SemesterType = 'Ganjil' | 'Genap';
 
 /**
  * Parse tahun ajaran "2025/2026" → date range per semester.
- * Format input: "YYYY/YYYY" atau "YYYY-YYYY".
  */
 export function getSemesterDateRange(
   tahunAjaran: string,
   semester: SemesterType
 ): { start: string; end: string } {
-  // Parse "2025/2026" atau "2025-2026"
   const parts = tahunAjaran.split(/[\/\-]/).map((s) => s.trim());
   const startYear = parseInt(parts[0], 10);
   const endYear = parseInt(parts[1], 10) || startYear + 1;
 
   if (!Number.isFinite(startYear)) {
-    // Fallback: pakai tahun sekarang
     const now = new Date();
     const y = now.getFullYear();
     return semester === 'Ganjil'
@@ -48,8 +45,8 @@ export function isDateInSemester(
 }
 
 /**
- * Cek apakah setoran (rentang surah-ayat) ada di dalam target (rentang surah-ayat).
- * Return true kalau SELURUH setoran dalam range target.
+ * Cek apakah setoran ada di dalam target (composite surah+ayat).
+ * Return true kalau SELURUH setoran berada dalam range target.
  */
 export function isSetoranDalamTarget(
   setoran: {
@@ -65,7 +62,7 @@ export function isSetoranDalamTarget(
     ayat_selesai: number;
   }
 ): boolean {
-  // Bandingkan surah+ayat sebagai composite value
+  // Composite value: surah * 1000 + ayat (aman karena max ayat = 286)
   const setoranMulaiVal = setoran.surah_mulai * 1000 + setoran.ayat_mulai;
   const setoranSelesaiVal = setoran.surah_selesai * 1000 + setoran.ayat_selesai;
   const targetMulaiVal = target.surah_mulai * 1000 + target.ayat_mulai;
