@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { formatTanggalShort } from './shared';
 import { LeaderboardMilestoneSection } from './LeaderboardMilestoneSection';
+import { LeaderboardMilestoneSection } from './LeaderboardMilestoneSection';
 import {
   getHalamanSetoran,
   formatHalaman,
