@@ -22,6 +22,7 @@ import type {
   TahfidzHalamanDetail,
   TahfidzSetoranWithRelations,
 } from '@/types/database';
+import { AyatBermasalahSection } from './AyatBermasalahSection';
 
 type Props = {
   surahList: TahfidzSurah[];
