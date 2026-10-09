@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Map, Loader2, BookOpen, CheckCircle2, AlertCircle, XCircle,
+  Map as MapIcon, Loader2, BookOpen, CheckCircle2, AlertCircle, XCircle,
   Info, ChevronDown,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
