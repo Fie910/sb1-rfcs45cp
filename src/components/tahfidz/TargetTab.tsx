@@ -107,9 +107,10 @@ export function TargetTab({ surahMap, halamanMap }: Props) {
   }, [fetchAll]);
 
   // ===========================================================================
-  // ROWS
+  // ROWS — hitung realisasi DENGAN filter range target
   // ===========================================================================
   const rows = useMemo<TargetRow[]>(() => {
+    // Map target by siswa_id (hanya tahun ajaran aktif)
     const targetMap = new Map<number, TahfidzTarget>();
     targets.forEach((t) => {
       if (tahunAjaranAktif && t.tahun_ajaran_id !== tahunAjaranAktif.id) return;
@@ -120,6 +121,26 @@ export function TargetTab({ surahMap, halamanMap }: Props) {
     const realisasiAyat = new Map<number, number>();
 
     setoranList.forEach((s) => {
+      const target = targetMap.get(s.siswa_id);
+
+      // ✅ Filter: kalau target punya range, hanya hitung setoran DALAM range
+      if (
+        target?.surah_mulai != null &&
+        target?.ayat_mulai != null &&
+        target?.surah_selesai != null &&
+        target?.ayat_selesai != null
+      ) {
+        const setoranMulai = s.surah_mulai * 1000 + s.ayat_mulai;
+        const setoranSelesai = s.surah_selesai * 1000 + s.ayat_selesai;
+        const targetMulai = target.surah_mulai * 1000 + target.ayat_mulai;
+        const targetSelesai = target.surah_selesai * 1000 + target.ayat_selesai;
+
+        const inRange =
+          setoranMulai >= targetMulai && setoranSelesai <= targetSelesai;
+
+        if (!inRange) return; // ⏭️ Skip setoran luar target
+      }
+
       const halaman = getHalamanSetoran(s, surahMap, halamanMap);
       realisasiHalaman.set(
         s.siswa_id,
