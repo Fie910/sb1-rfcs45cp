@@ -1,19 +1,49 @@
 // src/pages/KedisiplinanPage.tsx
 // Container halaman Kedisiplinan Siswa dengan tab navigation.
+// ✅ Lazy load per tab — optimasi bundle size.
 
-import { useState, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import {
   ShieldAlert, AlertTriangle, Trophy, FileWarning,
-  BarChart3, ClipboardList, Shield, Loader2,
+  BarChart3, ClipboardList, Shield,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isKedisiplinanManager } from '@/components/kedisiplinan/shared';
-import { PelanggaranTab } from '@/components/kedisiplinan/PelanggaranTab';
-import { PrestasiTab } from '@/components/kedisiplinan/PrestasiTab';
-import { SuratPeringatanTab } from '@/components/kedisiplinan/SuratPeringatanTab';
-import { RekapPoinTab } from '@/components/kedisiplinan/RekapPoinTab';
-import { DashboardKedisiplinanTab } from '@/components/kedisiplinan/DashboardKedisiplinanTab';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
+import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 
+// =============================================================================
+// LAZY TAB COMPONENTS
+// =============================================================================
+const PelanggaranTab = lazy(() =>
+  import('@/components/kedisiplinan/PelanggaranTab').then((m) => ({
+    default: m.PelanggaranTab,
+  }))
+);
+const PrestasiTab = lazy(() =>
+  import('@/components/kedisiplinan/PrestasiTab').then((m) => ({
+    default: m.PrestasiTab,
+  }))
+);
+const SuratPeringatanTab = lazy(() =>
+  import('@/components/kedisiplinan/SuratPeringatanTab').then((m) => ({
+    default: m.SuratPeringatanTab,
+  }))
+);
+const RekapPoinTab = lazy(() =>
+  import('@/components/kedisiplinan/RekapPoinTab').then((m) => ({
+    default: m.RekapPoinTab,
+  }))
+);
+const DashboardKedisiplinanTab = lazy(() =>
+  import('@/components/kedisiplinan/DashboardKedisiplinanTab').then((m) => ({
+    default: m.DashboardKedisiplinanTab,
+  }))
+);
+
+// =============================================================================
+// TYPES
+// =============================================================================
 type TabKey = 'pelanggaran' | 'prestasi' | 'sp' | 'rekap' | 'dashboard';
 
 type TabDef = {
@@ -31,6 +61,18 @@ const ALL_TABS: TabDef[] = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3, managerOnly: true },
 ];
 
+// Prefetch map
+const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
+  pelanggaran: () => import('@/components/kedisiplinan/PelanggaranTab'),
+  prestasi: () => import('@/components/kedisiplinan/PrestasiTab'),
+  sp: () => import('@/components/kedisiplinan/SuratPeringatanTab'),
+  rekap: () => import('@/components/kedisiplinan/RekapPoinTab'),
+  dashboard: () => import('@/components/kedisiplinan/DashboardKedisiplinanTab'),
+};
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 export function KedisiplinanPage() {
   const { guru } = useAuth();
   const isManager = isKedisiplinanManager(guru?.role);
@@ -48,6 +90,9 @@ export function KedisiplinanPage() {
       setActiveTab('pelanggaran');
     }
   }, [isManager, activeTab]);
+
+  // Prefetch tab lain saat browser idle
+  usePrefetchTabs(TAB_IMPORTERS, activeTab);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -100,13 +145,22 @@ export function KedisiplinanPage() {
             })}
           </div>
 
-          {/* TAB CONTENT */}
+          {/* TAB CONTENT — LAZY */}
           <div className="min-h-[400px]">
-            {activeTab === 'pelanggaran' && <PelanggaranTab />}
-            {activeTab === 'prestasi' && <PrestasiTab />}
-            {activeTab === 'sp' && <SuratPeringatanTab />}
-            {activeTab === 'rekap' && <RekapPoinTab />}
-            {activeTab === 'dashboard' && <DashboardKedisiplinanTab />}
+            <Suspense
+              fallback={
+                <TabLoadingFallback
+                  label={`Memuat ${visibleTabs.find((t) => t.key === activeTab)?.label ?? ''}...`}
+                  minHeight="500px"
+                />
+              }
+            >
+              {activeTab === 'pelanggaran' && <PelanggaranTab />}
+              {activeTab === 'prestasi' && <PrestasiTab />}
+              {activeTab === 'sp' && <SuratPeringatanTab />}
+              {activeTab === 'rekap' && <RekapPoinTab />}
+              {activeTab === 'dashboard' && <DashboardKedisiplinanTab />}
+            </Suspense>
           </div>
         </>
       )}
