@@ -299,6 +299,15 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
             <MiniStat label="Halaman" value={formatHalaman(selectedSiswa.total_halaman)} color="text-amber-400" />
             <MiniStat label="Rata Nilai" value={selectedSiswa.rata_nilai.toFixed(1)} color="text-rose-400" />
           </div>
+
+          {/* Tombol Cetak Raport */}
+          <button
+            onClick={() => setRaportModalOpen(true)}
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer"
+          >
+            <FileText size={14} />
+            Cetak Raport Tahfidz
+          </button>
         </div>
 
         {/* ✅ Section Rekomendasi Latihan */}
