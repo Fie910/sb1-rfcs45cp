@@ -1,16 +1,18 @@
 // src/components/tahfidz/SetoranTab.tsx
 // Tab utama: list setoran + filter + tambah/edit/hapus.
+// ✅ Setoran per-ayat tidak bisa diedit (disabled + tooltip).
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   BookMarked, Plus, Search, RefreshCw, Loader2, Pencil, Trash2,
-  Calendar, User, Award, Filter,
+  Calendar, User, Award, Filter, BookOpen, Info,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalSetoran } from './ModalSetoran';
+import { ModalSetoranAyat } from './ModalSetoranAyat';
 import {
   INPUT_CLASS,
   getJenisSetoranBadge,
@@ -19,31 +21,43 @@ import {
   formatTanggalShort,
 } from './shared';
 import {
-  getHalamanSetoran,   // ← ganti dari hitungHalamanSetoran
+  getHalamanSetoran,
   hitungTotalAyatSetoran,
   formatHalaman,
   formatRentangHafalan,
 } from '@/lib/tahfidz/hitungHalaman';
-import type { TahfidzSurah, TahfidzSetoran, TahfidzSetoranWithRelations, JenisSetoran, TahfidzHalamanDetail } from '@/types/database';
+import type {
+  TahfidzSurah,
+  TahfidzHalamanDetail,
+  TahfidzSetoran,
+  TahfidzSetoranWithRelations,
+  JenisSetoran,
+} from '@/types/database';
 import { useAuth } from '@/context/AuthContext';
-import { ModalSetoranAyat } from './ModalSetoranAyat';
-import { BookOpen } from 'lucide-react';  // tambah BookOpen ke import lucide
 
+// =============================================================================
+// TYPES
+// =============================================================================
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
-  halamanMap: TahfidzHalamanDetail[];   // ← BARU
+  halamanMap: TahfidzHalamanDetail[];
   isManager: boolean;
 };
 
+// =============================================================================
+// COMPONENT
+// =============================================================================
 export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
-
   const { guru } = useAuth();
-  const confirm = useConfirm(); 
+  const confirm = useConfirm();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [list, setList] = useState<TahfidzSetoranWithRelations[]>([]);
+
+  // ✅ NEW: Set of setoran_id yang punya penilaian per ayat
+  const [setoranAyatIds, setSetoranAyatIds] = useState<Set<string>>(new Set());
 
   // Filter
   const [search, setSearch] = useState('');
@@ -84,6 +98,14 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
       const { data, error } = await query;
       if (error) throw error;
       setList((data as any) ?? []);
+
+      // ✅ Fetch semua setoran_id yang punya penilaian per ayat
+      const { data: ayatIds } = await supabase
+        .from('tahfidz_setoran_ayat')
+        .select('setoran_id');
+
+      const ids = new Set<string>((ayatIds ?? []).map((a: any) => a.setoran_id));
+      setSetoranAyatIds(ids);
     } catch (err: any) {
       showToast('error', 'Gagal memuat: ' + (err.message || 'Error'));
     } finally {
@@ -121,7 +143,7 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
       0
     );
     return { totalTahfidz, totalMurojaah, totalHalaman };
-  }, [filtered, surahMap]);
+  }, [filtered, surahMap, halamanMap]);
 
   // ===========================================================================
   // HANDLERS
@@ -132,19 +154,35 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
   };
 
   const handleOpenEdit = (item: TahfidzSetoran) => {
+    // ✅ Setoran per-ayat tidak bisa diedit
+    if (setoranAyatIds.has(item.id)) {
+      showToast(
+        'info',
+        'Setoran per ayat tidak bisa diedit. Hapus & buat ulang jika perlu koreksi.'
+      );
+      return;
+    }
     setEditTarget(item);
     setModalOpen(true);
   };
 
   const handleDelete = async (item: TahfidzSetoranWithRelations) => {
+    // ✅ Konfirmasi lebih detail kalau per-ayat
+    const isPerAyat = setoranAyatIds.has(item.id);
+    const messageExtra = isPerAyat
+      ? ' Semua penilaian per ayat akan ikut terhapus.'
+      : '';
+
     const ok = await confirm({
       title: 'Hapus Setoran',
-      message: `Yakin hapus setoran ${item.siswa?.nama_lengkap} tanggal ${formatTanggalShort(item.tanggal)}?`,
+      message: `Yakin hapus setoran ${item.siswa?.nama_lengkap} tanggal ${formatTanggalShort(item.tanggal)}?${messageExtra}`,
       variant: 'danger',
     });
     if (!ok) return;
 
     try {
+      // Setoran ayat punya ON DELETE CASCADE ke tahfidz_setoran
+      // Jadi hapus setoran utama otomatis hapus penilaian per ayat
       const { error } = await supabase
         .from('tahfidz_setoran')
         .delete()
@@ -155,7 +193,7 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
         aksi: 'DELETE',
         modul: AUDIT_MODUL.TAHFIDZ,
         targetId: item.id,
-        deskripsi: `Hapus setoran tahfidz: ${item.siswa?.nama_lengkap}`,
+        deskripsi: `Hapus setoran tahfidz: ${item.siswa?.nama_lengkap}${isPerAyat ? ' (per ayat)' : ''}`,
       });
 
       showToast('success', 'Setoran dihapus');
@@ -168,6 +206,11 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
   const handleSaved = () => {
     setModalOpen(false);
     setEditTarget(null);
+    fetchAll(true);
+  };
+
+  const handleSavedAyat = () => {
+    setModalAyatOpen(false);
     fetchAll(true);
   };
 
@@ -272,6 +315,16 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
         </div>
       </div>
 
+      {/* INFO BANNER */}
+      <div className="px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-800 text-[10px] text-slate-400 flex items-start gap-2">
+        <Info size={12} className="shrink-0 mt-0.5 text-indigo-400" />
+        <span>
+          Setoran dengan badge <strong className="text-indigo-300">Per Ayat</strong>{' '}
+          tidak bisa diedit langsung. Untuk koreksi, hapus lalu buat ulang dengan
+          mode <strong>Per Ayat</strong>.
+        </span>
+      </div>
+
       {/* LIST */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
@@ -299,6 +352,8 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
               {filtered.map((item) => {
                 const halaman = getHalamanSetoran(item, surahMap, halamanMap);
                 const totalAyat = hitungTotalAyatSetoran(item, surahMap);
+                const isPerAyat = setoranAyatIds.has(item.id);
+
                 return (
                   <div
                     key={item.id}
@@ -314,7 +369,8 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
                           {item.siswa?.nama_lengkap ?? '—'}
                         </p>
                         <p className="text-[10px] text-slate-500">
-                          {item.siswa?.kelas?.nama_kelas ?? '-'} · {item.siswa?.nisn ?? '-'}
+                          {item.siswa?.kelas?.nama_kelas ?? '-'} ·{' '}
+                          {item.siswa?.nisn ?? '-'}
                         </p>
                       </div>
                     </div>
@@ -327,9 +383,16 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
 
                     {/* Hafalan */}
                     <div className="md:col-span-3 min-w-0">
-                      <p className="text-xs text-slate-200 truncate">
-                        {formatRentangHafalan(item, surahMap)}
-                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <p className="text-xs text-slate-200 truncate">
+                          {formatRentangHafalan(item, surahMap)}
+                        </p>
+                        {isPerAyat && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[9px] font-bold shrink-0">
+                            <BookOpen size={8} /> Per Ayat
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-slate-500">
                         {totalAyat} ayat · {formatHalaman(halaman)} halaman
                       </p>
@@ -346,7 +409,9 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
 
                     {/* Nilai + Kualitas */}
                     <div className="md:col-span-1 flex md:flex-col items-center md:justify-center gap-1">
-                      <span className={`text-sm font-extrabold ${getNilaiBadge(item.nilai)}`}>
+                      <span
+                        className={`text-sm font-extrabold ${getNilaiBadge(item.nilai)}`}
+                      >
                         {item.nilai ?? '—'}
                       </span>
                       {item.kualitas && (
@@ -360,13 +425,25 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
 
                     {/* Aksi */}
                     <div className="md:col-span-2 flex items-center md:justify-end gap-1">
-                      <button
-                        onClick={() => handleOpenEdit(item)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition cursor-pointer"
-                        title="Edit"
-                      >
-                        <Pencil size={14} />
-                      </button>
+                      {/* ✅ Edit button — disable kalau per-ayat */}
+                      {isPerAyat ? (
+                        <button
+                          disabled
+                          className="p-1.5 rounded-lg text-slate-600 opacity-40 cursor-not-allowed"
+                          title="Setoran per ayat tidak bisa diedit (hapus & buat ulang)"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleOpenEdit(item)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition cursor-pointer"
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
+
                       {isManager && (
                         <button
                           onClick={() => handleDelete(item)}
@@ -389,7 +466,7 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
         )}
       </div>
 
-      {/* MODAL */}
+      {/* MODAL RENTANG */}
       <ModalSetoran
         open={modalOpen}
         onClose={() => {
@@ -403,13 +480,11 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
         currentGuruId={guru?.id ?? null}
       />
 
+      {/* MODAL PER AYAT */}
       <ModalSetoranAyat
         open={modalAyatOpen}
         onClose={() => setModalAyatOpen(false)}
-        onSaved={() => {
-          setModalAyatOpen(false);
-          fetchAll(true);
-        }}
+        onSaved={handleSavedAyat}
         surahMap={surahMap}
         halamanMap={halamanMap}
         currentGuruId={guru?.id ?? null}
