@@ -347,6 +347,7 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
           onClose={() => setMurojaahPrefill(null)}
           onSaved={() => {
             setMurojaahPrefill(null);
+            setRekomendasiKey((k) => k + 1);
             fetchAll(true);
           }}
           surahMap={surahMap}
