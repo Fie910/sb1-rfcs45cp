@@ -22,6 +22,7 @@ import { useQuranText } from '@/hooks/useQuranText';
 import { RekomendasiLatihanSection } from './RekomendasiLatihanSection';
 import { ModalSetoranAyat } from './ModalSetoranAyat';
 import { ModalRaportTahfidz } from './ModalRaportTahfidz';
+import { PetaHafalanSection } from './PetaHafalanSection';
 import type {
   TahfidzSurah,
   TahfidzHalamanDetail,
