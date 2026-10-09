@@ -361,6 +361,8 @@ export function TargetTab({ surahMap, halamanMap }: Props) {
         siswa={editTarget?.siswa ?? null}
         existingTarget={editTarget?.target ?? null}
         tahunAjaranAktif={tahunAjaranAktif}
+        surahMap={surahMap}
+        halamanMap={halamanMap}
       />
     </div>
   );
