@@ -402,6 +402,18 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
         editTarget={editTarget}
         currentGuruId={guru?.id ?? null}
       />
+
+      <ModalSetoranAyat
+        open={modalAyatOpen}
+        onClose={() => setModalAyatOpen(false)}
+        onSaved={() => {
+          setModalAyatOpen(false);
+          fetchAll(true);
+        }}
+        surahMap={surahMap}
+        halamanMap={halamanMap}
+        currentGuruId={guru?.id ?? null}
+      />
     </div>
   );
 }
