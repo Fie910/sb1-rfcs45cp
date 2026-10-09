@@ -15,7 +15,7 @@ type RentangSetoran = Pick<
 >;
 
 /**
- * Hitung halaman (desimal) untuk satu setoran.
+ * Hitung halaman (desimal) untuk satu setoran — FORMULA LAMA (fallback).
  * - Single surah: proporsi ayat × total halaman surah
  * - Lintas surah: jumlahkan halaman per segmen
  */
@@ -35,7 +35,6 @@ export function hitungHalamanSetoran(
 
   let total = 0;
 
-  // Segmen 1: sisa surah_mulai
   const surahAwal = surahMap.get(surah_mulai);
   if (surahAwal && surahAwal.jumlah_ayat > 0) {
     const ayatSisa = surahAwal.jumlah_ayat - ayat_mulai + 1;
@@ -43,7 +42,6 @@ export function hitungHalamanSetoran(
     total += (ayatSisa / surahAwal.jumlah_ayat) * totalHalamanAwal;
   }
 
-  // Segmen 2: surah-surah di tengah (full)
   for (let n = surah_mulai + 1; n < surah_selesai; n++) {
     const surah = surahMap.get(n);
     if (surah) {
@@ -51,7 +49,6 @@ export function hitungHalamanSetoran(
     }
   }
 
-  // Segmen 3: awal surah_selesai
   const surahAkhir = surahMap.get(surah_selesai);
   if (surahAkhir && surahAkhir.jumlah_ayat > 0) {
     const totalHalamanAkhir =
@@ -131,4 +128,34 @@ export function formatRentangHafalan(
     return `${surahAwal.nama_latin} : ${setoran.ayat_mulai}-${setoran.ayat_selesai}`;
   }
   return `${surahAwal.nama_latin} : ${setoran.ayat_mulai} → ${surahAkhir.nama_latin} : ${setoran.ayat_selesai}`;
+}
+
+// =============================================================================
+// BARU — untuk Target Range Ayat
+// =============================================================================
+
+/**
+ * Hitung total halaman dari range surah+ayat.
+ * Contoh: An-Naba 1 → An-Nas 6 (Juz 30 full).
+ */
+export function hitungTotalHalamanRange(
+  surahMulai: number,
+  ayatMulai: number,
+  surahSelesai: number,
+  ayatSelesai: number,
+  halamanMap: TahfidzHalamanDetail[]
+): number {
+  if (!surahMulai || !surahSelesai) return 0;
+  if (surahMulai > surahSelesai) return 0;
+  if (surahMulai === surahSelesai && ayatMulai > ayatSelesai) return 0;
+  if (!halamanMap || halamanMap.length === 0) return 0;
+
+  const setoran: RentangSetoran = {
+    surah_mulai: surahMulai,
+    ayat_mulai: ayatMulai,
+    surah_selesai: surahSelesai,
+    ayat_selesai: ayatSelesai,
+  };
+
+  return hitungHalamanPrecise(setoran, halamanMap);
 }
