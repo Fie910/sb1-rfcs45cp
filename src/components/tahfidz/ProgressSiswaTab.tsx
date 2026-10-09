@@ -295,6 +295,15 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
           </div>
         </div>
 
+        {/* ✅ Section Rekomendasi Latihan */}
+        <RekomendasiLatihanSection
+          siswaId={selectedSiswa.id}
+          surahMap={surahMap}
+          onOpenMurojaah={(surah, ayatMulai, ayatSelesai) => {
+            setMurojaahPrefill({ surah, ayatMulai, ayatSelesai });
+          }}
+        />
+
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
