@@ -399,7 +399,7 @@ export function ModalSetoranAyat({
       if (!ok) return;
     }
 
-        setSaving(true);
+    setSaving(true);
 
     try {
       // ✅ Ambil ayat yang sudah dinilai saja
