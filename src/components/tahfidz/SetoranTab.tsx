@@ -26,6 +26,8 @@ import {
 } from '@/lib/tahfidz/hitungHalaman';
 import type { TahfidzSurah, TahfidzSetoran, TahfidzSetoranWithRelations, JenisSetoran, TahfidzHalamanDetail } from '@/types/database';
 import { useAuth } from '@/context/AuthContext';
+import { ModalSetoranAyat } from './ModalSetoranAyat';
+import { BookOpen } from 'lucide-react';  // tambah BookOpen ke import lucide
 
 type Props = {
   surahList: TahfidzSurah[];
@@ -51,6 +53,7 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
 
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalAyatOpen, setModalAyatOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<TahfidzSetoran | null>(null);
 
   // ===========================================================================
