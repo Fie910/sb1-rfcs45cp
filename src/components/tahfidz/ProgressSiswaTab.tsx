@@ -336,6 +336,28 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
             </div>
           )}
         </div>
+              {/* Modal Murojaah dari Rekomendasi */}
+      {murojaahPrefill && (
+        <ModalSetoranAyat
+          open={!!murojaahPrefill}
+          onClose={() => setMurojaahPrefill(null)}
+          onSaved={() => {
+            setMurojaahPrefill(null);
+            fetchAll(true);
+          }}
+          surahMap={surahMap}
+          halamanMap={halamanMap}
+          currentGuruId={null}
+          initialData={{
+            siswa_id: String(selectedSiswa?.id ?? ''),
+            jenis: 'Murojaah',
+            surah_mulai: murojaahPrefill.surah,
+            ayat_mulai: murojaahPrefill.ayatMulai,
+            surah_selesai: murojaahPrefill.surah,
+            ayat_selesai: murojaahPrefill.ayatSelesai,
+          }}
+        />
+      )}
       </div>
     );
   }
