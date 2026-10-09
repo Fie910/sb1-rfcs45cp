@@ -187,11 +187,17 @@ export function ModalSetoranAyat({
 
   // Auto-adjust
   useEffect(() => {
-    if (form.ayat_mulai > maxAyatMulai) setForm((f) => ({ ...f, ayat_mulai: 1 }));
+    const n = toAyatNumber(form.ayat_mulai);
+    if (typeof form.ayat_mulai === 'number' && n > maxAyatMulai) {
+      setForm((f) => ({ ...f, ayat_mulai: 1 }));
+    }
   }, [maxAyatMulai, form.ayat_mulai]);
 
   useEffect(() => {
-    if (form.ayat_selesai > maxAyatSelesai) setForm((f) => ({ ...f, ayat_selesai: 1 }));
+    const n = toAyatNumber(form.ayat_selesai);
+    if (typeof form.ayat_selesai === 'number' && n > maxAyatSelesai) {
+      setForm((f) => ({ ...f, ayat_selesai: 1 }));
+    }
   }, [maxAyatSelesai, form.ayat_selesai]);
 
   useEffect(() => {
