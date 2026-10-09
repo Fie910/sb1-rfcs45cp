@@ -1918,6 +1918,10 @@ export type TahfidzTarget = {
   target_juz: number | null;
   target_halaman: number | null;
   target_surah: number | null;
+  surah_mulai: number | null;
+  ayat_mulai: number | null;
+  surah_selesai: number | null;
+  ayat_selesai: number | null; 
   catatan: string | null;
   created_at: string;
   updated_at: string;
