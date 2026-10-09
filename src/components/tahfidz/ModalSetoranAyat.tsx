@@ -194,11 +194,23 @@ export function ModalSetoranAyat({
   // Reset saat modal open
   useEffect(() => {
     if (!open) return;
-    setForm({ ...EMPTY_FORM });
+    if (initialData) {
+      setForm({
+        ...EMPTY_FORM,
+        siswa_id: initialData.siswa_id ?? '',
+        jenis: initialData.jenis ?? 'Tahfidz',
+        surah_mulai: initialData.surah_mulai ?? 1,
+        ayat_mulai: initialData.ayat_mulai ?? 1,
+        surah_selesai: initialData.surah_selesai ?? 1,
+        ayat_selesai: initialData.ayat_selesai ?? 7,
+      });
+    } else {
+      setForm({ ...EMPTY_FORM });
+    }
     setStep('form');
     setPenilaian([]);
     setSearchSiswa('');
-  }, [open]);
+  }, [open, initialData]);
 
   // ===========================================================================
   // SURAH INFO
