@@ -403,7 +403,7 @@ export function ModalSetoranAyat({
         open={open}
         onClose={onClose}
         title="Penilaian Per Ayat"
-        size="xl"
+        size="lg"
       >
         <div className="space-y-4">
           {/* Header info */}
