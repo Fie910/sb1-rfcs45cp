@@ -12,9 +12,6 @@ import { getSemesterDateRange, type SemesterType } from '@/lib/tahfidz/semester'
 // =============================================================================
 // TYPES
 // =============================================================================
-type Props = {
-  isManager: boolean;
-};
 
 type LeaderboardRow = {
   siswa_id: number;
