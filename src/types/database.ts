@@ -1969,6 +1969,8 @@ export type TahfidzMilestoneTercapai = {
   id: string;
   siswa_id: number;
   milestone_id: string;
+  tahun_ajaran_id: number | null;
+  semester: 'Ganjil' | 'Genap' | null;
   tanggal_tercapai: string;
   prestasi_id: string | null;
   catatan: string | null;
