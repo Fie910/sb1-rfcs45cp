@@ -151,3 +151,24 @@ export function useQuranText() {
     getSurahMeta,
   };
 }
+
+  /**
+   * ✅ Ambil teks ayat tertentu (untuk display per ayat).
+   */
+  const getAyatText = (surahNomor: number, ayatNomor: number): string | null => {
+    if (!quranData) return null;
+    const surahData = quranData[String(surahNomor)];
+    if (!surahData) return null;
+    const ayat = surahData.verses.find((v) => v.n === ayatNomor);
+    return ayat?.t ?? null;
+  };
+
+  return {
+    quranData,
+    metaData,
+    loading,
+    error,
+    getAyatRange,
+    getSurahMeta,
+    getAyatText,   // ← TAMBAH
+  };
