@@ -11,7 +11,6 @@ import {
   drawKopSurat,
   drawQrVerifikasi,
   fetchPengaturan,
-  formatTanggalPendek,
   tanggalHariIni,
 } from './pdfShared';
 import { getSemesterDateRange, type SemesterType } from '@/lib/tahfidz/semester';
