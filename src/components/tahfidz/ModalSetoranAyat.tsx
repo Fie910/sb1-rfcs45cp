@@ -204,12 +204,14 @@ export function ModalSetoranAyat({
     setForm((f) => {
       const u: any = {};
       if (f.surah_selesai < f.surah_mulai) u.surah_selesai = f.surah_mulai;
-      if (f.surah_selesai === f.surah_mulai && f.ayat_selesai < f.ayat_mulai) {
-        u.ayat_selesai = f.ayat_mulai;
+      const aMulai = toAyatNumber(f.ayat_mulai);
+      const aSelesai = toAyatNumber(f.ayat_selesai);
+      if (f.surah_selesai === f.surah_mulai && aSelesai < aMulai) {
+        u.ayat_selesai = aMulai;
       }
       return Object.keys(u).length > 0 ? { ...f, ...u } : f;
     });
-  }, [form.surah_mulai, form.ayat_mulai]);
+  }, [form.surah_mulai, form.ayat_mulai, form.ayat_selesai]);
 
   // ===========================================================================
   // PREVIEW (halaman & ayat)
