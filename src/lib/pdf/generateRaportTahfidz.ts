@@ -190,7 +190,7 @@ export async function generateRaportTahfidz(
     ['Nama Lengkap', data.siswa.nama_lengkap],
     ['NISN', data.siswa.nisn],
     ['Kelas', data.siswa.kelas_nama],
-    ['Periode', `${formatTanggalPendek(dateRange.start)} s/d ${formatTanggalPendek(dateRange.end)}`],
+    ['Periode', `${formatTanggalPendekRaport(dateRange.start)} s/d ${formatTanggalPendekRaport(dateRange.end)}`],
   ];
 
   doc.setFont('helvetica', 'normal');
@@ -406,7 +406,7 @@ export async function generateRaportTahfidz(
           : `${surahAwal?.nama_latin ?? '?'}:${s.ayat_mulai} → ${surahAkhir?.nama_latin ?? '?'}:${s.ayat_selesai}`;
 
       doc.text(`${idx + 1}`, colX[0], y);
-      doc.text(formatTanggalPendek(s.tanggal), colX[1], y);
+      doc.text(formatTanggalPendekRaport(s.tanggal), colX[1], y);
 
       const hafalanTrimmed =
         hafalan.length > 45 ? hafalan.slice(0, 42) + '...' : hafalan;
@@ -451,7 +451,7 @@ export async function generateRaportTahfidz(
         y = 20;
       }
 
-      const tgl = formatTanggalPendek(m.tanggal_tercapai);
+      const tgl = formatTanggalPendekRaport(m.tanggal_tercapai);
       doc.setFont('helvetica', 'bold');
       doc.text(
         `${idx + 1}. ${m.milestone?.nama ?? '—'}`,
