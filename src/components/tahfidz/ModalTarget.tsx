@@ -66,6 +66,10 @@ export function ModalTarget({
         target_juz: '',
         target_halaman: '',
         target_surah: '',
+        surah_mulai: '',
+        ayat_mulai: '',
+        surah_selesai: '',
+        ayat_selesai: '',
         semester: (tahunAjaranAktif?.semester as any) ?? 'Ganjil',
         catatan: '',
       });
