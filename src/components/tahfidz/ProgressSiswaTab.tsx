@@ -20,6 +20,7 @@ import {
 } from '@/lib/tahfidz/hitungHalaman';
 import { useQuranText } from '@/hooks/useQuranText';
 import { RekomendasiLatihanSection } from './RekomendasiLatihanSection';
+import { ModalSetoranAyat } from './ModalSetoranAyat';
 import type {
   TahfidzSurah,
   TahfidzHalamanDetail,
