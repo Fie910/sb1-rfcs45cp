@@ -72,6 +72,10 @@ export function ModalTarget({
     }
   }, [open, existingTarget, tahunAjaranAktif]);
 
+  const hasRange =
+  existingTarget.surah_mulai != null && existingTarget.ayat_mulai != null &&
+  existingTarget.surah_selesai != null && existingTarget.ayat_selesai != null;
+
   const handleSave = async () => {
     if (!siswa) return;
     const tJuz = form.target_juz ? Number(form.target_juz) : null;
