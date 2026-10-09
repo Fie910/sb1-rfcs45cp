@@ -87,6 +87,12 @@ const KUALITAS_STYLE: Record<string, { bg: string; border: string; text: string 
   },
 };
 
+// Helper: konversi ayat ke number dengan fallback
+function toAyatNumber(v: number | string): number {
+  const n = typeof v === 'number' ? v : parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
 // =============================================================================
 // COMPONENT
 // =============================================================================
