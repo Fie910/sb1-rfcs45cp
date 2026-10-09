@@ -62,7 +62,7 @@ async function loadQuranData(): Promise<{ quran: QuranData; meta: SurahMeta[] }>
   try {
     return await loadingPromise;
   } catch (err) {
-    loadingPromise = null;  // Reset agar bisa retry
+    loadingPromise = null; // Reset agar bisa retry
     throw err;
   }
 }
@@ -102,10 +102,9 @@ export function useQuranText() {
     };
   }, []);
 
-  /**
-   * Ambil ayat-ayat dalam rentang surah+ayat tertentu.
-   * Return array { surah, ayat, text }
-   */
+  // ===========================================================================
+  // API 1: getAyatRange — ambil rentang ayat (untuk per-ayat scoring)
+  // ===========================================================================
   const getAyatRange = (
     surahMulai: number,
     ayatMulai: number,
@@ -124,9 +123,7 @@ export function useQuranText() {
       const isLast = s === surahSelesai;
 
       const startAyat = isFirst ? ayatMulai : 1;
-      const endAyat = isLast
-        ? ayatSelesai
-        : surahData.verses.length;
+      const endAyat = isLast ? ayatSelesai : surahData.verses.length;
 
       for (const v of surahData.verses) {
         if (v.n >= startAyat && v.n <= endAyat) {
@@ -138,28 +135,24 @@ export function useQuranText() {
     return result;
   };
 
+  // ===========================================================================
+  // API 2: getSurahMeta — metadata surah (nama, arti, jumlah ayat)
+  // ===========================================================================
   const getSurahMeta = (nomor: number): SurahMeta | null => {
     return metaData?.find((m) => m.nomor === nomor) ?? null;
   };
 
-  return {
-    quranData,
-    metaData,
-    loading,
-    error,
-    getAyatRange,
-    getSurahMeta,
-  };
-}
-
-  /**
-   * ✅ Ambil teks ayat tertentu (untuk display per ayat).
-   */
-  const getAyatText = (surahNomor: number, ayatNomor: number): string | null => {
+  // ===========================================================================
+  // API 3: getAyatText — ambil teks satu ayat (untuk display per ayat)
+  // ===========================================================================
+  const getAyatText = (
+    surahNomor: number,
+    ayatNomor: number
+  ): string | null => {
     if (!quranData) return null;
     const surahData = quranData[String(surahNomor)];
     if (!surahData) return null;
-    const ayat = surahData.verses.find((v) => v.n === ayatNomor);
+    const ayat = surahData.verses.find((v: QuranVerse) => v.n === ayatNomor);
     return ayat?.t ?? null;
   };
 
@@ -170,5 +163,6 @@ export function useQuranText() {
     error,
     getAyatRange,
     getSurahMeta,
-    getAyatText,   // ← TAMBAH
+    getAyatText,   // ✅ TAMBAH INI
   };
+}
