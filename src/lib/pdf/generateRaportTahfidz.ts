@@ -541,7 +541,7 @@ export async function generateRaportTahfidz(
   doc.text(`Sukahideng, ${tanggalHariIni()}`, rightX, y);
 
   y += 5;
-  doc.text('Guru Tahfidz,', marginX, y);
+  doc.text(guruNama, marginX, y);
   doc.text('Kepala Sekolah,', rightX, y);
 
   y += 20;
