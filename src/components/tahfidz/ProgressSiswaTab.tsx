@@ -81,6 +81,12 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
   const [search, setSearch] = useState('');
   const [filterKelas, setFilterKelas] = useState<number | ''>('');
 
+  const [murojaahPrefill, setMurojaahPrefill] = useState<{
+  surah: number;
+  ayatMulai: number;
+  ayatSelesai: number;
+} | null>(null);
+
   // ===========================================================================
   // FETCH LIST + KELAS
   // ===========================================================================
