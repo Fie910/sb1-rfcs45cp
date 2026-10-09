@@ -21,6 +21,20 @@ import type {
 } from '@/types/database';
 
 // =============================================================================
+// HELPER LOKAL
+// =============================================================================
+function formatTanggalPendekRaport(d: string): string {
+  if (!d) return '-';
+  const date = new Date(`${d.split('T')[0]}T12:00:00+07:00`);
+  return date.toLocaleDateString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+// =============================================================================
 // TYPES
 // =============================================================================
 export type RaportTahfidzData = {
