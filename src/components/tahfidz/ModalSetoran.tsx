@@ -1,9 +1,12 @@
 // src/components/tahfidz/ModalSetoran.tsx
-// Form tambah/edit setoran hafalan.
+// Form tambah/edit setoran hafalan (mode rentang).
 // Filter kelas default mengikuti jadwal guru dari tabel jadwal_kbmjps.
+// ✅ Input nomor ayat bisa dikosongkan (fallback ke 1 saat blur).
 
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Save, X, User, BookMarked, School, Info } from 'lucide-react';
+import {
+  Loader2, Save, X, User, BookMarked, School, Info,
+} from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -16,11 +19,19 @@ import {
 } from '@/lib/tahfidz/hitungHalaman';
 import type {
   TahfidzSurah,
+  TahfidzHalamanDetail,
   TahfidzSetoran,
   JenisSetoran,
   KualitasHafalan,
-  TahfidzHalamanDetail,
 } from '@/types/database';
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+function toAyatNumber(v: number | string): number {
+  const n = typeof v === 'number' ? v : parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
 
 // =============================================================================
 // TYPES
@@ -30,7 +41,7 @@ type Props = {
   onClose: () => void;
   onSaved: () => void;
   surahMap: Map<number, TahfidzSurah>;
-  halamanMap: TahfidzHalamanDetail[];   // ← BARU
+  halamanMap: TahfidzHalamanDetail[];
   editTarget: TahfidzSetoran | null;
   currentGuruId: string | null;
 };
@@ -50,9 +61,9 @@ const EMPTY_FORM = {
   tanggal: new Date().toISOString().slice(0, 10),
   jenis: 'Tahfidz' as JenisSetoran,
   surah_mulai: 1,
-  ayat_mulai: 1,
+  ayat_mulai: 1 as number | string,
   surah_selesai: 1,
-  ayat_selesai: 1,
+  ayat_selesai: 1 as number | string,
   kualitas: 'Lancar' as KualitasHafalan,
   nilai: 90,
   catatan: '',
@@ -66,7 +77,7 @@ export function ModalSetoran({
   onClose,
   onSaved,
   surahMap,
-  halamanMap,   // ← BARU
+  halamanMap,
   editTarget,
   currentGuruId,
 }: Props) {
@@ -85,7 +96,7 @@ export function ModalSetoran({
   const [kelasFromJadwal, setKelasFromJadwal] = useState(false);
 
   // ===========================================================================
-  // LOAD KELAS DARI JADWAL GURU (atau semua kelas sebagai fallback)
+  // LOAD KELAS DARI JADWAL GURU
   // ===========================================================================
   useEffect(() => {
     if (!open) return;
@@ -95,7 +106,6 @@ export function ModalSetoran({
     (async () => {
       setLoadingKelas(true);
       try {
-        // 1. Ambil kelas unik dari jadwal guru
         const { data: jadwalData } = await supabase
           .from('jadwal_kbmjps')
           .select(`
@@ -115,13 +125,8 @@ export function ModalSetoran({
           );
           setKelasList(list);
           setKelasFromJadwal(true);
-
-          // Auto-select kalau cuma 1 kelas
-          if (list.length === 1 && !editTarget) {
-            setFilterKelas(list[0].id);
-          }
+          if (list.length === 1 && !editTarget) setFilterKelas(list[0].id);
         } else {
-          // 2. Fallback: semua kelas (untuk admin / guru tanpa jadwal)
           const { data: allKelas } = await supabase
             .from('kelas')
             .select('id, nama_kelas')
@@ -157,7 +162,7 @@ export function ModalSetoran({
   }, [open, siswaList.length]);
 
   // ===========================================================================
-  // SET FORM DARI editTarget SAAT MODAL DIBUKA
+  // SET FORM DARI editTarget
   // ===========================================================================
   useEffect(() => {
     if (!open) return;
@@ -176,11 +181,8 @@ export function ModalSetoran({
       });
       setSearchSiswa('');
 
-      // Kalau filter kelas aktif dan siswa target BUKAN di kelas itu → reset filter
       if (filterKelas !== '') {
-        const targetSiswa = siswaList.find(
-          (s) => s.id === editTarget.siswa_id
-        );
+        const targetSiswa = siswaList.find((s) => s.id === editTarget.siswa_id);
         if (targetSiswa && targetSiswa.kelas_id !== filterKelas) {
           setFilterKelas('');
         }
@@ -188,7 +190,6 @@ export function ModalSetoran({
     } else {
       setForm({ ...EMPTY_FORM, siswa_id: '' });
       setSearchSiswa('');
-      // Reset filter ke default (kalau guru punya 1 kelas, tetap auto-select)
       if (kelasFromJadwal && kelasList.length === 1) {
         setFilterKelas(kelasList[0].id);
       } else {
@@ -208,13 +209,15 @@ export function ModalSetoran({
 
   // Auto-adjust ayat ketika surah berubah
   useEffect(() => {
-    if (form.ayat_mulai > maxAyatMulai) {
+    const n = toAyatNumber(form.ayat_mulai);
+    if (typeof form.ayat_mulai === 'number' && n > maxAyatMulai) {
       setForm((f) => ({ ...f, ayat_mulai: 1 }));
     }
   }, [maxAyatMulai, form.ayat_mulai]);
 
   useEffect(() => {
-    if (form.ayat_selesai > maxAyatSelesai) {
+    const n = toAyatNumber(form.ayat_selesai);
+    if (typeof form.ayat_selesai === 'number' && n > maxAyatSelesai) {
       setForm((f) => ({ ...f, ayat_selesai: 1 }));
     }
   }, [maxAyatSelesai, form.ayat_selesai]);
@@ -222,48 +225,41 @@ export function ModalSetoran({
   // Auto-set surah_selesai = surah_mulai & ayat_selesai >= ayat_mulai
   useEffect(() => {
     setForm((f) => {
-      const updates: any = {};
-      if (f.surah_selesai < f.surah_mulai) {
-        updates.surah_selesai = f.surah_mulai;
+      const u: any = {};
+      if (f.surah_selesai < f.surah_mulai) u.surah_selesai = f.surah_mulai;
+      const aMulai = toAyatNumber(f.ayat_mulai);
+      const aSelesai = toAyatNumber(f.ayat_selesai);
+      if (f.surah_selesai === f.surah_mulai && aSelesai < aMulai) {
+        u.ayat_selesai = aMulai;
       }
-      if (
-        f.surah_selesai === f.surah_mulai &&
-        f.ayat_selesai < f.ayat_mulai
-      ) {
-        updates.ayat_selesai = f.ayat_mulai;
-      }
-      return Object.keys(updates).length > 0 ? { ...f, ...updates } : f;
+      return Object.keys(u).length > 0 ? { ...f, ...u } : f;
     });
-  }, [form.surah_mulai, form.ayat_mulai]);
+  }, [form.surah_mulai, form.ayat_mulai, form.ayat_selesai]);
 
   // ===========================================================================
   // PREVIEW HALAMAN & AYAT
   // ===========================================================================
   const preview = useMemo(() => {
-  const dummy: any = {
+    const dummy: any = {
       surah_mulai: form.surah_mulai,
-      ayat_mulai: form.ayat_mulai,
+      ayat_mulai: toAyatNumber(form.ayat_mulai),
       surah_selesai: form.surah_selesai,
-      ayat_selesai: form.ayat_selesai,
+      ayat_selesai: toAyatNumber(form.ayat_selesai),
     };
-  return {
-    halaman: getHalamanSetoran(dummy, surahMap, halamanMap),
-    ayat: hitungTotalAyatSetoran(dummy, surahMap),
-  };
-}, [form, surahMap, halamanMap]);
+    return {
+      halaman: getHalamanSetoran(dummy, surahMap, halamanMap),
+      ayat: hitungTotalAyatSetoran(dummy, surahMap),
+    };
+  }, [form, surahMap, halamanMap]);
 
   // ===========================================================================
-  // SISWA FILTERED (kelas + search)
+  // SISWA FILTERED
   // ===========================================================================
   const filteredSiswa = useMemo(() => {
     let result = siswaList;
-
-    // Filter kelas
     if (filterKelas !== '') {
       result = result.filter((s) => s.kelas_id === filterKelas);
     }
-
-    // Filter search
     if (searchSiswa.trim()) {
       const q = searchSiswa.toLowerCase();
       result = result.filter(
@@ -272,9 +268,8 @@ export function ModalSetoran({
           s.nisn.toLowerCase().includes(q)
       );
     }
-
     return result.slice(0, 50);
-  }, [siswaList, searchSiswa, filterKelas]);
+  }, [siswaList, filterKelas, searchSiswa]);
 
   const selectedSiswa = siswaList.find((s) => String(s.id) === form.siswa_id);
 
@@ -291,11 +286,15 @@ export function ModalSetoran({
       showToast('error', 'Pilih siswa dulu');
       return;
     }
-    if (form.ayat_mulai > maxAyatMulai) {
+
+    const aMulai = toAyatNumber(form.ayat_mulai);
+    const aSelesai = toAyatNumber(form.ayat_selesai);
+
+    if (aMulai > maxAyatMulai) {
       showToast('error', `Ayat mulai maksimal ${maxAyatMulai}`);
       return;
     }
-    if (form.ayat_selesai > maxAyatSelesai) {
+    if (aSelesai > maxAyatSelesai) {
       showToast('error', `Ayat selesai maksimal ${maxAyatSelesai}`);
       return;
     }
@@ -308,12 +307,13 @@ export function ModalSetoran({
         tanggal: form.tanggal,
         jenis: form.jenis,
         surah_mulai: form.surah_mulai,
-        ayat_mulai: form.ayat_mulai,
+        ayat_mulai: aMulai,
         surah_selesai: form.surah_selesai,
-        ayat_selesai: form.ayat_selesai,
+        ayat_selesai: aSelesai,
         kualitas: form.kualitas,
         nilai: form.nilai,
         catatan: form.catatan || null,
+        halaman_snapshot: null,
         created_by: currentGuruId,
       };
 
@@ -343,24 +343,6 @@ export function ModalSetoran({
         showToast('success', 'Setoran ditambahkan');
       }
 
-      try {
-  const { checkAndAwardMilestone } = await import('@/lib/tahfidz/checkMilestone');
-  const result = await checkAndAwardMilestone(
-    Number(form.siswa_id),
-    surahMap,
-    currentGuruId
-  );
-  if (result.awarded.length > 0) {
-    const names = result.awarded.map((a) => a.milestone.nama).join(', ');
-    showToast(
-      'success',
-      `🏆 Milestone tercapai: ${names} (+${result.total_poin_baru} poin)`
-    );
-  }
-} catch (err) {
-  console.warn('[milestone] Gagal check:', err);
-}
-
       onSaved();
     } catch (err: any) {
       showToast('error', 'Gagal simpan: ' + (err.message || 'Error'));
@@ -387,7 +369,6 @@ export function ModalSetoran({
           </label>
 
           {selectedSiswa ? (
-            // Siswa sudah dipilih
             <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-emerald-300 truncate">
@@ -409,22 +390,17 @@ export function ModalSetoran({
               </button>
             </div>
           ) : (
-            // Belum pilih siswa — tampilkan filter + search + list
             <div className="space-y-2">
-              {/* Info jadwal guru */}
               {kelasFromJadwal && (
                 <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-300">
                   <Info size={12} className="shrink-0 mt-0.5" />
                   <span>
                     Kelas disesuaikan dengan jadwal mengajar Anda
                     {kelasList.length === 1 && (
-                      <span className="font-bold">
-                        {' '}
-                        · {kelasList[0].nama_kelas}
-                      </span>
+                      <span className="font-bold"> · {kelasList[0].nama_kelas}</span>
                     )}
                     {kelasList.length > 1 &&
-                      ` (${kelasList.length} kelas: ${kelasList.map((k) => k.nama_kelas).join(', ')})`}
+                      ` (${kelasList.length} kelas)`}
                   </span>
                 </div>
               )}
@@ -434,9 +410,7 @@ export function ModalSetoran({
                 <select
                   value={filterKelas}
                   onChange={(e) =>
-                    setFilterKelas(
-                      e.target.value === '' ? '' : Number(e.target.value)
-                    )
+                    setFilterKelas(e.target.value === '' ? '' : Number(e.target.value))
                   }
                   disabled={loadingKelas}
                   className={INPUT_CLASS + ' cursor-pointer flex-1 disabled:opacity-50'}
@@ -445,9 +419,7 @@ export function ModalSetoran({
                     {kelasFromJadwal ? 'Semua Kelas Saya' : 'Semua Kelas'}
                   </option>
                   {kelasList.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.nama_kelas}
-                    </option>
+                    <option key={k.id} value={k.id}>{k.nama_kelas}</option>
                   ))}
                 </select>
                 {filterKelas !== '' && (
@@ -483,10 +455,7 @@ export function ModalSetoran({
               {/* List siswa */}
               {loadingSiswa ? (
                 <div className="py-4 text-center">
-                  <Loader2
-                    size={16}
-                    className="animate-spin inline text-slate-500"
-                  />
+                  <Loader2 size={16} className="animate-spin inline text-slate-500" />
                 </div>
               ) : (
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800/60">
@@ -506,9 +475,7 @@ export function ModalSetoran({
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-slate-800/60 transition cursor-pointer"
                       >
-                        <p className="text-sm text-slate-200 font-medium">
-                          {s.nama_lengkap}
-                        </p>
+                        <p className="text-sm text-slate-200 font-medium">{s.nama_lengkap}</p>
                         <p className="text-[10px] text-slate-500">
                           {s.kelas?.nama_kelas ?? '-'} · {s.nisn}
                         </p>
@@ -536,9 +503,7 @@ export function ModalSetoran({
             <label className={LABEL_CLASS}>Jenis *</label>
             <select
               value={form.jenis}
-              onChange={(e) =>
-                setForm({ ...form, jenis: e.target.value as JenisSetoran })
-              }
+              onChange={(e) => setForm({ ...form, jenis: e.target.value as JenisSetoran })}
               className={INPUT_CLASS + ' cursor-pointer'}
             >
               <option value="Tahfidz">Tahfidz (hafalan baru)</option>
@@ -559,9 +524,7 @@ export function ModalSetoran({
               <label className={LABEL_CLASS}>Mulai</label>
               <select
                 value={form.surah_mulai}
-                onChange={(e) =>
-                  setForm({ ...form, surah_mulai: Number(e.target.value) })
-                }
+                onChange={(e) => setForm({ ...form, surah_mulai: Number(e.target.value) })}
                 className={INPUT_CLASS + ' cursor-pointer'}
               >
                 {Array.from(surahMap.values()).map((s) => (
@@ -575,15 +538,17 @@ export function ModalSetoran({
                 min={1}
                 max={maxAyatMulai}
                 value={form.ayat_mulai}
-                onChange={(e) =>
-                  setForm({ ...form, ayat_mulai: Number(e.target.value) || 1 })
-                }
+                onChange={(e) => setForm({ ...form, ayat_mulai: e.target.value })}
+                onBlur={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || toAyatNumber(v) < 1) {
+                    setForm((f) => ({ ...f, ayat_mulai: 1 }));
+                  }
+                }}
                 placeholder="Ayat mulai"
                 className={INPUT_CLASS}
               />
-              <p className="text-[10px] text-slate-500">
-                Maks: {maxAyatMulai} ayat
-              </p>
+              <p className="text-[10px] text-slate-500">Maks: {maxAyatMulai} ayat</p>
             </div>
 
             {/* Selesai */}
@@ -591,9 +556,7 @@ export function ModalSetoran({
               <label className={LABEL_CLASS}>Selesai</label>
               <select
                 value={form.surah_selesai}
-                onChange={(e) =>
-                  setForm({ ...form, surah_selesai: Number(e.target.value) })
-                }
+                onChange={(e) => setForm({ ...form, surah_selesai: Number(e.target.value) })}
                 className={INPUT_CLASS + ' cursor-pointer'}
               >
                 {Array.from(surahMap.values()).map((s) => (
@@ -607,29 +570,24 @@ export function ModalSetoran({
                 min={1}
                 max={maxAyatSelesai}
                 value={form.ayat_selesai}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    ayat_selesai: Number(e.target.value) || 1,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, ayat_selesai: e.target.value })}
+                onBlur={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || toAyatNumber(v) < 1) {
+                    setForm((f) => ({ ...f, ayat_selesai: 1 }));
+                  }
+                }}
                 placeholder="Ayat selesai"
                 className={INPUT_CLASS}
               />
-              <p className="text-[10px] text-slate-500">
-                Maks: {maxAyatSelesai} ayat
-              </p>
+              <p className="text-[10px] text-slate-500">Maks: {maxAyatSelesai} ayat</p>
             </div>
           </div>
 
           {/* Preview */}
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
-            <span className="text-emerald-400 font-bold">
-              📖 {preview.ayat} ayat
-            </span>
-            <span className="text-emerald-300">
-              ≈ {formatHalaman(preview.halaman)} halaman
-            </span>
+            <span className="text-emerald-400 font-bold">📖 {preview.ayat} ayat</span>
+            <span className="text-emerald-300">≈ {formatHalaman(preview.halaman)} halaman</span>
           </div>
         </div>
 
@@ -639,12 +597,7 @@ export function ModalSetoran({
             <label className={LABEL_CLASS}>Kualitas</label>
             <select
               value={form.kualitas}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  kualitas: e.target.value as KualitasHafalan,
-                })
-              }
+              onChange={(e) => setForm({ ...form, kualitas: e.target.value as KualitasHafalan })}
               className={INPUT_CLASS + ' cursor-pointer'}
             >
               <option value="Lancar">Lancar</option>
@@ -659,9 +612,7 @@ export function ModalSetoran({
               min={0}
               max={100}
               value={form.nilai}
-              onChange={(e) =>
-                setForm({ ...form, nilai: Number(e.target.value) || 0 })
-              }
+              onChange={(e) => setForm({ ...form, nilai: Number(e.target.value) || 0 })}
               className={INPUT_CLASS}
             />
           </div>
@@ -693,11 +644,7 @@ export function ModalSetoran({
             disabled={saving || !form.siswa_id}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
           >
-            {saving ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Save size={14} />
-            )}
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             {editTarget ? 'Simpan Perubahan' : 'Tambah Setoran'}
           </button>
         </div>
