@@ -33,7 +33,7 @@ type MilestoneDetail = {
 // =============================================================================
 // COMPONENT
 // =============================================================================
-export function LeaderboardMilestoneSection({ isManager }: Props) {
+export function LeaderboardMilestoneSection() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [list, setList] = useState<LeaderboardRow[]>([]);
