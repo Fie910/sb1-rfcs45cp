@@ -342,14 +342,16 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
         </div>
               {/* Modal Murojaah dari Rekomendasi */}
       {murojaahPrefill && (
-        <ModalSetoranAyat
-          open={!!murojaahPrefill}
-          onClose={() => setMurojaahPrefill(null)}
-          onSaved={() => {
-            setMurojaahPrefill(null);
-            setRekomendasiKey((k) => k + 1);
-            fetchAll(true);
-          }}
+      <ModalSetoranAyat
+        open={!!murojaahPrefill}
+        onClose={() => setMurojaahPrefill(null)}
+        onSaved={async () => {
+          setMurojaahPrefill(null);
+          // ✅ Refetch setoran + ayat dulu, BARU bump key
+          await fetchAll(true);
+          // Force remount Rekomendasi setelah data baru loaded
+          setRekomendasiKey((k) => k + 1);
+        }}
           surahMap={surahMap}
           halamanMap={halamanMap}
           currentGuruId={null}
