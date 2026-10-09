@@ -527,6 +527,9 @@ export async function generateRaportTahfidz(
   // ==========================================================================
   // 9. TANDA TANGAN + QR
   // ==========================================================================
+  // ==========================================================================
+  // 9. TANDA TANGAN + QR
+  // ==========================================================================
   if (y > pageHeight - 80) {
     doc.addPage();
     y = 30;
@@ -534,6 +537,19 @@ export async function generateRaportTahfidz(
   y += 10;
 
   const rightX = pageWidth - marginX - 60;
+
+  // ✅ Deklarasi guruNama DI ATAS sebelum dipakai
+  const guruTahfidz = (setoran.find((s: any) => {
+    const g = s.guru;
+    if (!g) return false;
+    if (Array.isArray(g)) return g[0]?.nama_lengkap;
+    return g?.nama_lengkap;
+  })?.guru as any);
+  const guruNama =
+    (Array.isArray(guruTahfidz)
+      ? guruTahfidz[0]?.nama_lengkap
+      : guruTahfidz?.nama_lengkap) ?? '.......................';
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
@@ -541,29 +557,14 @@ export async function generateRaportTahfidz(
   doc.text(`Sukahideng, ${tanggalHariIni()}`, rightX, y);
 
   y += 5;
-  doc.text(guruNama, marginX, y);
+  doc.text('Guru Tahfidz,', marginX, y);
   doc.text('Kepala Sekolah,', rightX, y);
 
   y += 20;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-const guruTahfidz =
-  (setoran.find((s: any) => {
-    const g = s.guru;
-    if (!g) return false;
-    if (Array.isArray(g)) return g[0]?.nama_lengkap;
-    return g?.nama_lengkap;
-  })?.guru as any);
-const guruNama =
-  (Array.isArray(guruTahfidz) ? guruTahfidz[0]?.nama_lengkap : guruTahfidz?.nama_lengkap) ?? '.......................';
-  doc.text(guruTahfidz, marginX, y);
+  doc.text(guruNama, marginX, y);
   doc.text(pengaturan.nama_kepsek ?? '-', rightX, y);
-
-  y += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  if (pengaturan.nip_kepsek) {
-    doc.text(`NIP. ${pengaturan.nip_kepsek}`, rightX, y);
   }
 
   // QR Verifikasi (opsional)
