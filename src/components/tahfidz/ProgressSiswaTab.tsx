@@ -300,6 +300,7 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
 
         {/* ✅ Section Rekomendasi Latihan */}
         <RekomendasiLatihanSection
+          key={rekomendasiKey}
           siswaId={selectedSiswa.id}
           surahMap={surahMap}
           onOpenMurojaah={(surah, ayatMulai, ayatSelesai) => {
