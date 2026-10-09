@@ -339,6 +339,8 @@ export function DashboardTahfidzTab({ surahMap, halamanMap }: Props) {
           )}
         </div>
       </div>
+      {/* ✅ Section Ayat Bermasalah */}
+      <AyatBermasalahSection surahMap={surahMap} />
     </div>
   );
 }
