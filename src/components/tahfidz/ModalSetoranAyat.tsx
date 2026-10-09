@@ -687,7 +687,14 @@ export function ModalSetoranAyat({
                 min={1}
                 max={maxAyatSelesai}
                 value={form.ayat_selesai}
-                onChange={(e) => setForm({ ...form, ayat_selesai: Number(e.target.value) || 1 })}
+                onChange={(e) => setForm({ ...form, ayat_selesai: e.target.value })}
+                onBlur={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || toAyatNumber(v) < 1) {
+                    setForm((f) => ({ ...f, ayat_selesai: 1 }));
+                  }
+                }}
+                placeholder="Ayat selesai"
                 className={INPUT_CLASS}
               />
               <p className="text-[10px] text-slate-500">Maks: {maxAyatSelesai} ayat</p>
