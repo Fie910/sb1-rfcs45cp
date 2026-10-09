@@ -352,18 +352,16 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
             </div>
           )}
         </div>
-              {/* Modal Murojaah dari Rekomendasi */}
+      {/* Modal Murojaah dari Rekomendasi */}
       {murojaahPrefill && (
-      <ModalSetoranAyat
-        open={!!murojaahPrefill}
-        onClose={() => setMurojaahPrefill(null)}
-        onSaved={async () => {
-          setMurojaahPrefill(null);
-          // ✅ Refetch setoran + ayat dulu, BARU bump key
-          await fetchAll(true);
-          // Force remount Rekomendasi setelah data baru loaded
-          setRekomendasiKey((k) => k + 1);
-        }}
+        <ModalSetoranAyat
+          open={!!murojaahPrefill}
+          onClose={() => setMurojaahPrefill(null)}
+          onSaved={() => {
+            setMurojaahPrefill(null);
+            setRekomendasiKey((k) => k + 1);
+            fetchAll(true);
+          }}
           surahMap={surahMap}
           halamanMap={halamanMap}
           currentGuruId={null}
@@ -377,6 +375,24 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
           }}
         />
       )}
+
+      {/* Modal Raport Tahfidz */}
+      <ModalRaportTahfidz
+        open={raportModalOpen}
+        onClose={() => setRaportModalOpen(false)}
+        siswa={
+          selectedSiswa
+            ? {
+                id: selectedSiswa.id,
+                nama_lengkap: selectedSiswa.nama_lengkap,
+                nisn: selectedSiswa.nisn,
+                kelas_nama: selectedSiswa.kelas_nama,
+              }
+            : null
+        }
+        surahMap={surahMap}
+        halamanMap={halamanMap}
+      />
       </div>
     );
   }
