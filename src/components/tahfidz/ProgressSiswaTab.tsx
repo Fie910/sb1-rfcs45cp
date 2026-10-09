@@ -91,6 +91,8 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
   ayatSelesai: number;
 } | null>(null);
 
+  const [raportModalOpen, setRaportModalOpen] = useState(false);
+
   // ===========================================================================
   // FETCH LIST + KELAS
   // ===========================================================================
