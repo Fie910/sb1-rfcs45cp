@@ -52,6 +52,33 @@ type AyatPenilaian = {
   kualitas: KualitasHafalan | null;
 };
 
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+  surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
+  currentGuruId: string | null;
+  initialData?: {
+    siswa_id?: string;
+    jenis?: JenisSetoran;
+    surah_mulai?: number;
+    ayat_mulai?: number;
+    surah_selesai?: number;
+    ayat_selesai?: number;
+  };
+};
+
+export function ModalSetoranAyat({
+  open,
+  onClose,
+  onSaved,
+  surahMap,
+  halamanMap,
+  currentGuruId,
+  initialData,
+}: Props) {
+  
 const EMPTY_FORM = {
   siswa_id: '',
   tanggal: new Date().toISOString().slice(0, 10),
