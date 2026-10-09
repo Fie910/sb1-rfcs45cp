@@ -219,9 +219,9 @@ export function ModalSetoranAyat({
   const preview = useMemo(() => {
     const dummy: any = {
       surah_mulai: form.surah_mulai,
-      ayat_mulai: form.ayat_mulai,
+      ayat_mulai: toAyatNumber(form.ayat_mulai),
       surah_selesai: form.surah_selesai,
-      ayat_selesai: form.ayat_selesai,
+      ayat_selesai: toAyatNumber(form.ayat_selesai),
     };
     return {
       halaman: getHalamanSetoran(dummy, surahMap, halamanMap),
