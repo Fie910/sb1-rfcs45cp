@@ -1,10 +1,12 @@
 // src/components/tahfidz/ProgressSiswaTab.tsx
 // List siswa + drill-down detail progress hafalan per siswa.
+// ✅ A1: Tampilkan penilaian per ayat (kalau ada) di riwayat setoran.
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Users, Search, Loader2, RefreshCw, ArrowLeft, BookMarked,
-  TrendingUp, Calendar, Star,
+  TrendingUp, Calendar, Star, ChevronDown, ChevronRight,
+  CheckCircle2, AlertCircle, XCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -16,12 +18,17 @@ import {
   getHalamanSetoran, hitungTotalAyatSetoran,
   formatHalaman, formatRentangHafalan,
 } from '@/lib/tahfidz/hitungHalaman';
+import { useQuranText } from '@/hooks/useQuranText';
 import type {
   TahfidzSurah,
   TahfidzHalamanDetail,
   TahfidzSetoranWithRelations,
+  KualitasHafalan,
 } from '@/types/database';
 
+// =============================================================================
+// TYPES
+// =============================================================================
 type Props = {
   surahList: TahfidzSurah[];
   surahMap: Map<number, TahfidzSurah>;
@@ -44,7 +51,20 @@ type SiswaWithStats = {
 
 type KelasOption = { id: number; nama_kelas: string };
 
+type SetoranAyatDetail = {
+  id: number;
+  setoran_id: string;
+  surah_nomor: number;
+  ayat_nomor: number;
+  kualitas: KualitasHafalan;
+};
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
+  const { getAyatText, loading: loadingQuran } = useQuranText();
+
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedSiswa, setSelectedSiswa] = useState<SiswaWithStats | null>(null);
 
@@ -53,9 +73,16 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
   const [setoranList, setSetoranList] = useState<TahfidzSetoranWithRelations[]>([]);
   const [kelasList, setKelasList] = useState<KelasOption[]>([]);
 
+  // ✅ NEW: Map setoran_id → daftar ayat dinilai
+  const [ayatMap, setAyatMap] = useState<Map<string, SetoranAyatDetail[]>>(new Map());
+  const [loadingAyat, setLoadingAyat] = useState(false);
+
   const [search, setSearch] = useState('');
   const [filterKelas, setFilterKelas] = useState<number | ''>('');
 
+  // ===========================================================================
+  // FETCH LIST + KELAS
+  // ===========================================================================
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -85,8 +112,58 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
     }
   }, []);
 
-  useEffect(() => { fetchAll(false); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll(false);
+  }, [fetchAll]);
 
+  // ===========================================================================
+  // ✅ NEW: FETCH AYAT saat detail siswa dipilih
+  // ===========================================================================
+  useEffect(() => {
+    if (!selectedSiswa) {
+      setAyatMap(new Map());
+      return;
+    }
+
+    (async () => {
+      setLoadingAyat(true);
+      try {
+        // Ambil semua setoran siswa ini
+        const setoranIds = setoranList
+          .filter((s) => s.siswa?.id === selectedSiswa.id)
+          .map((s) => s.id);
+
+        if (setoranIds.length === 0) {
+          setAyatMap(new Map());
+          return;
+        }
+
+        // Query ayat dinilai untuk setoran-setoran tersebut
+        const { data } = await supabase
+          .from('tahfidz_setoran_ayat')
+          .select('id, setoran_id, surah_nomor, ayat_nomor, kualitas')
+          .in('setoran_id', setoranIds)
+          .order('surah_nomor', { ascending: true })
+          .order('ayat_nomor', { ascending: true });
+
+        const map = new Map<string, SetoranAyatDetail[]>();
+        (data ?? []).forEach((row: any) => {
+          if (!map.has(row.setoran_id)) map.set(row.setoran_id, []);
+          map.get(row.setoran_id)!.push(row);
+        });
+
+        setAyatMap(map);
+      } catch (err) {
+        console.warn('[ProgressSiswa] Gagal load ayat:', err);
+      } finally {
+        setLoadingAyat(false);
+      }
+    })();
+  }, [selectedSiswa, setoranList]);
+
+  // ===========================================================================
+  // STATS AGREGAT PER SISWA
+  // ===========================================================================
   const siswaStats = useMemo<SiswaWithStats[]>(() => {
     const map = new Map<number, SiswaWithStats>();
 
@@ -163,6 +240,9 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
       .sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   }, [setoranList, selectedSiswa]);
 
+  // ===========================================================================
+  // RENDER — DETAIL
+  // ===========================================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -176,7 +256,10 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
     return (
       <div className="space-y-4">
         <button
-          onClick={() => { setView('list'); setSelectedSiswa(null); }}
+          onClick={() => {
+            setView('list');
+            setSelectedSiswa(null);
+          }}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
         >
           <ArrowLeft size={14} /> Kembali ke List
@@ -188,8 +271,12 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
               {selectedSiswa.nama_lengkap.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-extrabold text-slate-100">{selectedSiswa.nama_lengkap}</h2>
-              <p className="text-xs text-slate-400">{selectedSiswa.kelas_nama} · NISN {selectedSiswa.nisn}</p>
+              <h2 className="text-lg font-extrabold text-slate-100">
+                {selectedSiswa.nama_lengkap}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {selectedSiswa.kelas_nama} · NISN {selectedSiswa.nisn}
+              </p>
             </div>
           </div>
 
@@ -202,50 +289,34 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-2">
-            <Calendar size={14} className="text-emerald-400" />
-            <h3 className="text-sm font-bold text-slate-100">Riwayat Setoran ({riwayatSiswa.length})</h3>
+          <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar size={14} className="text-emerald-400" />
+              <h3 className="text-sm font-bold text-slate-100">
+                Riwayat Setoran ({riwayatSiswa.length})
+              </h3>
+            </div>
+            {loadingAyat && (
+              <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                <Loader2 size={10} className="animate-spin" /> Memuat ayat...
+              </span>
+            )}
           </div>
 
           {riwayatSiswa.length === 0 ? (
             <p className="text-center py-12 text-slate-500 text-xs">Belum ada setoran</p>
           ) : (
             <div className="divide-y divide-slate-800/60">
-              {riwayatSiswa.map((item) => {
-                const halaman = getHalamanSetoran(item, surahMap, halamanMap);
-                const ayat = hitungTotalAyatSetoran(item, surahMap);
-                return (
-                  <div key={item.id} className="px-4 py-3 hover:bg-slate-800/30">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`inline-flex px-2 py-0.5 rounded-md border text-[10px] font-bold ${getJenisSetoranBadge(item.jenis)}`}>
-                            {item.jenis}
-                          </span>
-                          {item.kualitas && (
-                            <span className={`inline-flex px-2 py-0.5 rounded-md border text-[10px] font-bold ${getKualitasBadge(item.kualitas)}`}>
-                              {item.kualitas}
-                            </span>
-                          )}
-                          <span className="text-[10px] text-slate-500">{formatTanggalShort(item.tanggal)}</span>
-                        </div>
-                        <p className="text-xs text-slate-200">{formatRentangHafalan(item, surahMap)}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {ayat} ayat · {formatHalaman(halaman)} halaman
-                          {item.guru && ` · oleh ${item.guru.nama_lengkap}`}
-                        </p>
-                        {item.catatan && (
-                          <p className="text-[10px] text-slate-400 italic mt-1">"{item.catatan}"</p>
-                        )}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className={`text-lg font-extrabold ${getNilaiBadge(item.nilai)}`}>{item.nilai ?? '—'}</p>
-                        <p className="text-[9px] text-slate-500 uppercase">nilai</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {riwayatSiswa.map((item) => (
+                <RiwayatItem
+                  key={item.id}
+                  setoran={item}
+                  ayatList={ayatMap.get(item.id) ?? []}
+                  surahMap={surahMap}
+                  halamanMap={halamanMap}
+                  getAyatText={getAyatText}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -253,12 +324,17 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
     );
   }
 
+  // ===========================================================================
+  // RENDER — LIST
+  // ===========================================================================
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Users size={18} className="text-emerald-400" />
-          <h2 className="text-base font-extrabold text-slate-100">Progress Hafalan Siswa</h2>
+          <h2 className="text-base font-extrabold text-slate-100">
+            Progress Hafalan Siswa
+          </h2>
           <span className="text-xs text-slate-500">({filtered.length} siswa)</span>
         </div>
         <button
@@ -284,7 +360,9 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
           </div>
           <select
             value={filterKelas}
-            onChange={(e) => setFilterKelas(e.target.value === '' ? '' : Number(e.target.value))}
+            onChange={(e) =>
+              setFilterKelas(e.target.value === '' ? '' : Number(e.target.value))
+            }
             className={INPUT_CLASS + ' cursor-pointer'}
           >
             <option value="">Semua Kelas</option>
@@ -299,7 +377,9 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl text-center py-16">
           <Users size={40} className="text-slate-700 mx-auto mb-3" />
           <p className="text-sm text-slate-500">
-            {search || filterKelas !== '' ? 'Tidak ada siswa cocok filter.' : 'Belum ada data setoran.'}
+            {search || filterKelas !== ''
+              ? 'Tidak ada siswa cocok filter.'
+              : 'Belum ada data setoran.'}
           </p>
         </div>
       ) : (
@@ -307,7 +387,10 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
           {filtered.map((s) => (
             <button
               key={s.id}
-              onClick={() => { setSelectedSiswa(s); setView('detail'); }}
+              onClick={() => {
+                setSelectedSiswa(s);
+                setView('detail');
+              }}
               className="text-left bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-4 transition group cursor-pointer"
             >
               <div className="flex items-start gap-3">
@@ -318,14 +401,18 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
                   <p className="text-sm font-bold text-slate-100 truncate group-hover:text-emerald-300 transition">
                     {s.nama_lengkap}
                   </p>
-                  <p className="text-[10px] text-slate-500">{s.kelas_nama} · {s.nisn}</p>
+                  <p className="text-[10px] text-slate-500">
+                    {s.kelas_nama} · {s.nisn}
+                  </p>
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <StatMini label="Setoran" value={s.total_setoran} icon={BookMarked} />
                     <StatMini label="Halaman" value={formatHalaman(s.total_halaman)} icon={TrendingUp} />
                     <StatMini label="Nilai" value={s.rata_nilai.toFixed(0)} icon={Star} />
                   </div>
                   {s.terakhir_setoran && (
-                    <p className="text-[10px] text-slate-500 mt-2">Terakhir: {formatTanggalShort(s.terakhir_setoran)}</p>
+                    <p className="text-[10px] text-slate-500 mt-2">
+                      Terakhir: {formatTanggalShort(s.terakhir_setoran)}
+                    </p>
                   )}
                 </div>
               </div>
@@ -337,7 +424,188 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
   );
 }
 
-function MiniStat({ label, value, color }: { label: string; value: number | string; color: string }) {
+// =============================================================================
+// SUB — RIWAYAT ITEM (dengan expander per-ayat)
+// =============================================================================
+function RiwayatItem({
+  setoran,
+  ayatList,
+  surahMap,
+  halamanMap,
+  getAyatText,
+}: {
+  setoran: TahfidzSetoranWithRelations;
+  ayatList: SetoranAyatDetail[];
+  surahMap: Map<number, TahfidzSurah>;
+  halamanMap: TahfidzHalamanDetail[];
+  getAyatText: (surah: number, ayat: number) => string | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const halaman = getHalamanSetoran(setoran, surahMap, halamanMap);
+  const ayat = hitungTotalAyatSetoran(setoran, surahMap);
+  const hasAyat = ayatList.length > 0;
+
+  // Stats ayat
+  const stats = useMemo(() => {
+    const lancar = ayatList.filter((a) => a.kualitas === 'Lancar').length;
+    const cukup = ayatList.filter((a) => a.kualitas === 'Cukup').length;
+    const perlu = ayatList.filter((a) => a.kualitas === 'Perlu Ulang').length;
+    return { total: ayatList.length, lancar, cukup, perlu };
+  }, [ayatList]);
+
+  return (
+    <div className="hover:bg-slate-800/20 transition">
+      {/* Main Info */}
+      <div className="px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className={`inline-flex px-2 py-0.5 rounded-md border text-[10px] font-bold ${getJenisSetoranBadge(setoran.jenis)}`}>
+                {setoran.jenis}
+              </span>
+              {setoran.kualitas && (
+                <span className={`inline-flex px-2 py-0.5 rounded-md border text-[10px] font-bold ${getKualitasBadge(setoran.kualitas)}`}>
+                  {setoran.kualitas}
+                </span>
+              )}
+              {hasAyat && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold">
+                  <CheckCircle2 size={9} /> Per Ayat
+                </span>
+              )}
+              <span className="text-[10px] text-slate-500">
+                {formatTanggalShort(setoran.tanggal)}
+              </span>
+            </div>
+            <p className="text-xs text-slate-200">
+              {formatRentangHafalan(setoran, surahMap)}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {ayat} ayat · {formatHalaman(halaman)} halaman
+              {setoran.guru && ` · oleh ${setoran.guru.nama_lengkap}`}
+            </p>
+            {setoran.catatan && (
+              <p className="text-[10px] text-slate-400 italic mt-1">
+                "{setoran.catatan}"
+              </p>
+            )}
+          </div>
+          <div className="text-right shrink-0">
+            <p className={`text-lg font-extrabold ${getNilaiBadge(setoran.nilai)}`}>
+              {setoran.nilai ?? '—'}
+            </p>
+            <p className="text-[9px] text-slate-500 uppercase">nilai</p>
+          </div>
+        </div>
+
+        {/* Expander Toggle */}
+        {hasAyat && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="mt-3 w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-indigo-500/40 text-xs font-bold text-slate-300 transition cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              <span>Lihat penilaian per ayat ({stats.total})</span>
+            </div>
+            <div className="flex items-center gap-2 text-[10px]">
+              {stats.lancar > 0 && (
+                <span className="text-emerald-400">✓ {stats.lancar}</span>
+              )}
+              {stats.cukup > 0 && (
+                <span className="text-amber-400">~ {stats.cukup}</span>
+              )}
+              {stats.perlu > 0 && (
+                <span className="text-rose-400">✗ {stats.perlu}</span>
+              )}
+            </div>
+          </button>
+        )}
+      </div>
+
+      {/* Ayat Detail */}
+      {hasAyat && expanded && (
+        <div className="px-4 pb-4 space-y-1.5">
+          {ayatList.map((a) => (
+            <AyatDetailRow
+              key={`${a.surah_nomor}-${a.ayat_nomor}`}
+              ayat={a}
+              surahMap={surahMap}
+              text={getAyatText(a.surah_nomor, a.ayat_nomor)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// SUB — AYAT DETAIL ROW
+// =============================================================================
+function AyatDetailRow({
+  ayat,
+  surahMap,
+  text,
+}: {
+  ayat: SetoranAyatDetail;
+  surahMap: Map<number, TahfidzSurah>;
+  text: string | null;
+}) {
+  const kualitasConfig: Record<string, { bg: string; border: string; text: string; icon: any }> = {
+    Lancar: { bg: 'bg-emerald-500/5', border: 'border-emerald-500/30', text: 'text-emerald-400', icon: CheckCircle2 },
+    Cukup: { bg: 'bg-amber-500/5', border: 'border-amber-500/30', text: 'text-amber-400', icon: AlertCircle },
+    'Perlu Ulang': { bg: 'bg-rose-500/5', border: 'border-rose-500/30', text: 'text-rose-400', icon: XCircle },
+  };
+
+  const c = kualitasConfig[ayat.kualitas] ?? kualitasConfig['Lancar'];
+  const Icon = c.icon;
+
+  return (
+    <div className={`flex items-start gap-3 p-2.5 rounded-lg border ${c.bg} ${c.border}`}>
+      {/* Ayat Number */}
+      <div className={`inline-flex items-center justify-center min-w-[32px] h-8 rounded-lg bg-slate-900 border ${c.border} ${c.text} font-bold text-xs shrink-0`}>
+        {ayat.ayat_nomor}
+      </div>
+
+      {/* Arabic Text */}
+      <div className="flex-1 min-w-0">
+        {text ? (
+          <p
+            className="text-right text-base leading-loose text-slate-100"
+            dir="rtl"
+            style={{ fontFamily: 'Amiri, "Traditional Arabic", serif' }}
+          >
+            {text}
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500 italic">
+            Teks tidak tersedia
+          </p>
+        )}
+      </div>
+
+      {/* Badge Kualitas */}
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border ${c.border} ${c.text} text-[10px] font-bold shrink-0`}>
+        <Icon size={10} />
+        {ayat.kualitas}
+      </span>
+    </div>
+  );
+}
+
+// =============================================================================
+// SUB
+// =============================================================================
+function MiniStat({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number | string;
+  color: string;
+}) {
   return (
     <div className="text-center px-2 py-2 rounded-xl bg-slate-950/60 border border-slate-800">
       <p className={`text-lg font-extrabold ${color}`}>{value}</p>
@@ -346,7 +614,15 @@ function MiniStat({ label, value, color }: { label: string; value: number | stri
   );
 }
 
-function StatMini({ label, value, icon: Icon }: { label: string; value: number | string; icon: any }) {
+function StatMini({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number | string;
+  icon: any;
+}) {
   return (
     <div className="text-center px-1.5 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800/60">
       <Icon size={10} className="mx-auto text-emerald-400 mb-0.5" />
