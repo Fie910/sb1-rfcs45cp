@@ -54,6 +54,10 @@ export function ModalTarget({
         target_juz: existingTarget.target_juz?.toString() ?? '',
         target_halaman: existingTarget.target_halaman?.toString() ?? '',
         target_surah: existingTarget.target_surah?.toString() ?? '',
+        surah_mulai: existingTarget.surah_mulai?.toString() ?? '',
+        ayat_mulai: existingTarget.ayat_mulai?.toString() ?? '',
+        surah_selesai: existingTarget.surah_selesai?.toString() ?? '',
+        ayat_selesai: existingTarget.ayat_selesai?.toString() ?? '',
         semester: (existingTarget.semester as any) ?? 'Ganjil',
         catatan: existingTarget.catatan ?? '',
       });
