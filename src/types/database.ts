@@ -1947,6 +1947,7 @@ export type TahfidzHalamanDetail = {
   created_at: string;
 };
 
+
 // Tambah di bagian TAHFIDZ
 export type TahfidzMilestone = {
   id: string;
