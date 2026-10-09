@@ -1,17 +1,45 @@
 // src/pages/MitraPage.tsx
 // Halaman utama Modul Mitra DUDI & MoU dengan 4 tab.
+// ✅ Lazy load per tab — optimasi bundle size.
 
-import { useState, useMemo, useEffect } from 'react';
-import { Building2, FileSignature, History, BarChart3, Users } from 'lucide-react';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
+import {
+  Building2, FileSignature, History, BarChart3, Users,
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isMitraManager } from '@/components/mitra/shared';
 import { checkMouRemindersThrottled } from '@/lib/mitraNotifications';
 import { showToast } from '@/components/Toast';
-import { DatabaseMitraTab } from '@/components/mitra/DatabaseMitraTab';
-import { MouKerjasamaTab } from '@/components/mitra/MouKerjasamaTab';
-import { RiwayatKerjasamaTab } from '@/components/mitra/RiwayatKerjasamaTab';
-import { DashboardMitraTab } from '@/components/mitra/DashboardMitraTab';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
+import { usePrefetchTabs } from '@/hooks/useLazyTabs';
 
+// =============================================================================
+// LAZY TAB COMPONENTS
+// =============================================================================
+const DatabaseMitraTab = lazy(() =>
+  import('@/components/mitra/DatabaseMitraTab').then((m) => ({
+    default: m.DatabaseMitraTab,
+  }))
+);
+const MouKerjasamaTab = lazy(() =>
+  import('@/components/mitra/MouKerjasamaTab').then((m) => ({
+    default: m.MouKerjasamaTab,
+  }))
+);
+const RiwayatKerjasamaTab = lazy(() =>
+  import('@/components/mitra/RiwayatKerjasamaTab').then((m) => ({
+    default: m.RiwayatKerjasamaTab,
+  }))
+);
+const DashboardMitraTab = lazy(() =>
+  import('@/components/mitra/DashboardMitraTab').then((m) => ({
+    default: m.DashboardMitraTab,
+  }))
+);
+
+// =============================================================================
+// TYPES
+// =============================================================================
 type TabKey = 'mitra' | 'mou' | 'riwayat' | 'dashboard';
 
 type TabDef = {
@@ -28,10 +56,21 @@ const ALL_TABS: TabDef[] = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3, managerOnly: true },
 ];
 
+// Prefetch map
+const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
+  mitra: () => import('@/components/mitra/DatabaseMitraTab'),
+  mou: () => import('@/components/mitra/MouKerjasamaTab'),
+  riwayat: () => import('@/components/mitra/RiwayatKerjasamaTab'),
+  dashboard: () => import('@/components/mitra/DashboardMitraTab'),
+};
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 export function MitraPage() {
   const { guru } = useAuth();
   const isManager = isMitraManager(guru?.role);
-  
+
   // ✅ Auto-cek reminder MoU (throttle 30 menit)
   useEffect(() => {
     if (!isManager) return;
@@ -44,16 +83,22 @@ export function MitraPage() {
       }
     })();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [isManager]);
-  
+
   const visibleTabs = useMemo(
     () => ALL_TABS.filter((t) => !t.managerOnly || isManager),
     [isManager]
   );
 
   const [activeTab, setActiveTab] = useState<TabKey>('mitra');
-  const effectiveTab = visibleTabs.find((t) => t.key === activeTab)?.key ?? 'mitra';
+  const effectiveTab =
+    visibleTabs.find((t) => t.key === activeTab)?.key ?? 'mitra';
+
+  // Prefetch tab lain saat browser idle
+  usePrefetchTabs(TAB_IMPORTERS, effectiveTab);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -94,12 +139,21 @@ export function MitraPage() {
         })}
       </div>
 
-      {/* CONTENT */}
+      {/* CONTENT — LAZY */}
       <div className="min-h-[400px]">
-        {effectiveTab === 'mitra' && <DatabaseMitraTab />}
-        {effectiveTab === 'mou' && <MouKerjasamaTab />}
-        {effectiveTab === 'riwayat' && <RiwayatKerjasamaTab />}
-        {effectiveTab === 'dashboard' && isManager && <DashboardMitraTab />}
+        <Suspense
+          fallback={
+            <TabLoadingFallback
+              label={`Memuat ${visibleTabs.find((t) => t.key === effectiveTab)?.label ?? ''}...`}
+              minHeight="500px"
+            />
+          }
+        >
+          {effectiveTab === 'mitra' && <DatabaseMitraTab />}
+          {effectiveTab === 'mou' && <MouKerjasamaTab />}
+          {effectiveTab === 'riwayat' && <RiwayatKerjasamaTab />}
+          {effectiveTab === 'dashboard' && isManager && <DashboardMitraTab />}
+        </Suspense>
       </div>
     </div>
   );
