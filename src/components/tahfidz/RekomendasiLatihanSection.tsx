@@ -69,14 +69,14 @@ export function RekomendasiLatihanSection({ siswaId, onOpenMurojaah }: Props) {
           tahunAktif.semester as SemesterType
         );
 
-        // 2. Ambil setoran siswa dalam semester ini
+        // 2. Ambil setoran + created_at, sort ASC by created_at
         const { data: setoranList } = await supabase
           .from('tahfidz_setoran')
-          .select('id, tanggal')
+          .select('id, tanggal, created_at')
           .eq('siswa_id', siswaId)
           .gte('tanggal', dateRange.start)
           .lte('tanggal', dateRange.end)
-          .order('tanggal', { ascending: true });
+          .order('created_at', { ascending: true });  // ✅ ASC
 
         if (!setoranList || setoranList.length === 0) {
           setRekomendasi([]);
@@ -84,7 +84,6 @@ export function RekomendasiLatihanSection({ siswaId, onOpenMurojaah }: Props) {
         }
 
         const setoranIds = setoranList.map((s) => s.id);
-        const setoranTanggalMap = new Map(setoranList.map((s) => [s.id, s.tanggal]));
 
         // 3. Ambil semua ayat dinilai
         const { data: ayatData } = await supabase
@@ -97,31 +96,41 @@ export function RekomendasiLatihanSection({ siswaId, onOpenMurojaah }: Props) {
           return;
         }
 
-        // 4. Group by ayat → cari penilaian TERAKHIR per ayat
-        type AyatRiwayat = {
+        // 4. ✅ Group by ayat → overwrite sequentially (sort berdasar urutan setoran ASC)
+        const setoranOrderMap = new Map<string, number>();
+        setoranList.forEach((s, idx) => setoranOrderMap.set(s.id, idx));
+
+        // Sort ayatData by urutan setoran
+        const sortedAyat = [...ayatData].sort((a: any, b: any) => {
+          const aIdx = setoranOrderMap.get(a.setoran_id) ?? 0;
+          const bIdx = setoranOrderMap.get(b.setoran_id) ?? 0;
+          return aIdx - bIdx;
+        });
+
+        type AyatTerakhir = {
           kualitas: string;
-          tanggal: string;
+          setoran_id: string;
           total: number;
         };
-        const ayatMap = new Map<string, AyatRiwayat>();
+        const ayatMap = new Map<string, AyatTerakhir>();
 
-        ayatData.forEach((row: any) => {
+        sortedAyat.forEach((row: any) => {
           const key = `${row.surah_nomor}:${row.ayat_nomor}`;
-          const tanggal = setoranTanggalMap.get(row.setoran_id) ?? '1970-01-01';
-
           const existing = ayatMap.get(key);
-          if (!existing || tanggal > existing.tanggal) {
-            ayatMap.set(key, {
-              kualitas: row.kualitas,
-              tanggal,
-              total: (existing?.total ?? 0) + 1,
-            });
-          } else if (existing) {
-            existing.total += 1;
-          }
+
+          // Selalu overwrite dengan yang TERAKHIR (sorted ascending)
+          ayatMap.set(key, {
+            kualitas: row.kualitas,
+            setoran_id: row.setoran_id,
+            total: (existing?.total ?? 0) + 1,
+          });
         });
 
         // 5. Filter: kualitas terakhir = Perlu Ulang / Cukup
+        const setoranTanggalMap = new Map(
+          setoranList.map((s) => [s.id, s.tanggal])
+        );
+
         const list: RekomendasiItem[] = [];
         ayatMap.forEach((value, key) => {
           const [surahStr, ayatStr] = key.split(':');
@@ -133,20 +142,30 @@ export function RekomendasiLatihanSection({ siswaId, onOpenMurojaah }: Props) {
               surah_nomor: surah,
               ayat_nomor: ayat,
               kualitas_terakhir: value.kualitas,
-              tanggal_terakhir: value.tanggal,
+              tanggal_terakhir: setoranTanggalMap.get(value.setoran_id) ?? '—',
               total_pernah_dinilai: value.total,
             });
           }
         });
 
-        // 6. Sort: Perlu Ulang dulu, lalu surah+ayat
+        // 6. Sort
         list.sort((a, b) => {
           const order: Record<string, number> = { 'Perlu Ulang': 1, Cukup: 2 };
-          const diff = (order[a.kualitas_terakhir] ?? 9) - (order[b.kualitas_terakhir] ?? 9);
+          const diff =
+            (order[a.kualitas_terakhir] ?? 9) - (order[b.kualitas_terakhir] ?? 9);
           if (diff !== 0) return diff;
-          if (a.surah_nomor !== b.surah_nomor) return a.surah_nomor - b.surah_nomor;
+          if (a.surah_nomor !== b.surah_nomor)
+            return a.surah_nomor - b.surah_nomor;
           return a.ayat_nomor - b.ayat_nomor;
         });
+
+        console.log(
+          '[Rekomendasi] Total ayat direkomendasikan:',
+          list.length,
+          '· dari',
+          setoranList.length,
+          'setoran'
+        );
 
         setRekomendasi(list);
       } catch (err) {
