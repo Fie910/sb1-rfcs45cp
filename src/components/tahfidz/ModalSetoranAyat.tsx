@@ -2,6 +2,7 @@
 // Modal penilaian per ayat — alternatif dari ModalSetoran.
 // ✅ Support initialData (prefill dari rekomendasi/murojaah).
 // ✅ Auto-check milestone setelah save.
+// ✅ Bisa skip ayat yang belum dinilai (dengan konfirmasi).
 
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -9,6 +10,7 @@ import {
   AlertCircle, XCircle, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Modal } from '@/components/Modal';
+import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
@@ -114,6 +116,7 @@ export function ModalSetoranAyat({
   initialData,
 }: Props) {
   const { getAyatRange, getSurahMeta, loading: loadingQuran } = useQuranText();
+  const confirm = useConfirm();
 
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState<'form' | 'penilaian'>('form');
@@ -175,7 +178,7 @@ export function ModalSetoranAyat({
   }, [open, currentGuruId, siswaList.length]);
 
   // ===========================================================================
-  // RESET / PREFILL FORM saat modal open
+  // RESET / PREFILL FORM
   // ===========================================================================
   useEffect(() => {
     if (!open) return;
@@ -250,7 +253,6 @@ export function ModalSetoranAyat({
     };
   }, [form, surahMap, halamanMap]);
 
-  // Siswa filtered
   const filteredSiswa = useMemo(() => {
     let result = siswaList;
     if (filterKelas !== '') {
@@ -340,27 +342,61 @@ export function ModalSetoranAyat({
     return { total, lancar, cukup, perluUlang, belum };
   }, [penilaian]);
 
+  // ✅ Aggregasi hanya dari ayat yang DINILAI
   const aggregatedKualitas = useMemo<KualitasHafalan>(() => {
-    const { total, lancar, cukup } = penilaianStats;
-    if (total === 0) return 'Lancar';
-    const persenLancar = (lancar / total) * 100;
-    const persenLancarCukup = ((lancar + cukup) / total) * 100;
+    const totalDinilai = penilaianStats.total - penilaianStats.belum;
+    if (totalDinilai === 0) return 'Perlu Ulang';
+
+    const persenLancar = (penilaianStats.lancar / totalDinilai) * 100;
+    const persenLancarCukup =
+      ((penilaianStats.lancar + penilaianStats.cukup) / totalDinilai) * 100;
 
     if (persenLancar >= 80) return 'Lancar';
     if (persenLancarCukup >= 50) return 'Cukup';
     return 'Perlu Ulang';
   }, [penilaianStats]);
 
+  const canSave = useMemo(() => {
+    // Bisa save kalau minimal 1 ayat dinilai
+    return penilaianStats.total > 0 && penilaianStats.belum < penilaianStats.total;
+  }, [penilaianStats]);
+
   // ===========================================================================
-  // SAVE
+  // SAVE (dengan konfirmasi skip ayat)
   // ===========================================================================
   const handleSave = async () => {
-    if (penilaianStats.belum > 0) {
-      showToast(
-        'error',
-        `${penilaianStats.belum} ayat belum dinilai. Klik semua ayat dulu.`
-      );
+    // Validasi minimal: harus ada yang dinilai
+    if (!canSave) {
+      showToast('error', 'Belum ada ayat yang dinilai');
       return;
+    }
+
+    // ✅ Konfirmasi kalau ada ayat belum dinilai
+    if (penilaianStats.belum > 0) {
+      const belumDinilai = penilaian.filter((a) => a.kualitas === null);
+      const listPreview = belumDinilai
+        .slice(0, 5)
+        .map(
+          (a) =>
+            `${getSurahMeta(a.surah)?.nama_latin ?? `Surah ${a.surah}`} : ${a.ayat}`
+        )
+        .join('\n• ');
+
+      const sisaInfo =
+        belumDinilai.length > 5
+          ? `\n...dan ${belumDinilai.length - 5} ayat lainnya`
+          : '';
+
+      const ok = await confirm({
+        title: 'Ada Ayat Belum Dinilai',
+        message:
+          `Ada ${penilaianStats.belum} ayat yang belum diberi penilaian:\n\n• ${listPreview}${sisaInfo}\n\nAyat yang tidak dinilai TIDAK akan disimpan. Lanjutkan?`,
+        confirmLabel: 'Ya, Simpan',
+        cancelLabel: 'Batal',
+        variant: 'warning',
+      });
+
+      if (!ok) return;
     }
 
     setSaving(true);
@@ -369,6 +405,7 @@ export function ModalSetoranAyat({
       const aMulai = toAyatNumber(form.ayat_mulai);
       const aSelesai = toAyatNumber(form.ayat_selesai);
 
+      // 1. Insert setoran utama
       const setoranPayload = {
         siswa_id: Number(form.siswa_id),
         guru_tahfidz_id: currentGuruId,
@@ -394,7 +431,10 @@ export function ModalSetoranAyat({
       if (setoranErr) throw setoranErr;
       if (!setoranData) throw new Error('Gagal dapat ID setoran');
 
-      const ayatRows = penilaian.map((a) => ({
+      // 2. ✅ Filter hanya ayat yang sudah dinilai
+      const penilaianTerisi = penilaian.filter((a) => a.kualitas !== null);
+
+      const ayatRows = penilaianTerisi.map((a) => ({
         setoran_id: setoranData.id,
         surah_nomor: a.surah,
         ayat_nomor: a.ayat,
@@ -407,21 +447,29 @@ export function ModalSetoranAyat({
 
       if (ayatErr) throw ayatErr;
 
+      // 3. Log
       await logActivity({
         aksi: 'CREATE',
         modul: AUDIT_MODUL.TAHFIDZ,
         targetId: setoranData.id,
-        deskripsi: `Setoran per ayat: ${selectedSiswa?.nama_lengkap} (${penilaian.length} ayat)`,
+        deskripsi: `Setoran per ayat: ${selectedSiswa?.nama_lengkap} (${penilaianTerisi.length}/${penilaian.length} ayat)`,
       });
 
+      // 4. Toast
+      const skipInfo =
+        penilaianStats.belum > 0
+          ? ` · ${penilaianStats.belum} ayat di-skip`
+          : '';
       showToast(
         'success',
-        `Setoran tersimpan (${penilaian.length} ayat, ${aggregatedKualitas})`
+        `Setoran tersimpan (${penilaianTerisi.length} ayat, ${aggregatedKualitas})${skipInfo}`
       );
 
-      // Auto milestone
+      // 5. Milestone
       try {
-        const { checkAndAwardMilestone } = await import('@/lib/tahfidz/checkMilestone');
+        const { checkAndAwardMilestone } = await import(
+          '@/lib/tahfidz/checkMilestone'
+        );
         const result = await checkAndAwardMilestone(
           Number(form.siswa_id),
           surahMap,
@@ -506,7 +554,11 @@ export function ModalSetoranAyat({
           <div className="grid grid-cols-4 gap-2">
             <StatChip label="Lancar" value={penilaianStats.lancar} color="emerald" />
             <StatChip label="Cukup" value={penilaianStats.cukup} color="amber" />
-            <StatChip label="Perlu Ulang" value={penilaianStats.perluUlang} color="rose" />
+            <StatChip
+              label="Perlu Ulang"
+              value={penilaianStats.perluUlang}
+              color="rose"
+            />
             <StatChip label="Belum" value={penilaianStats.belum} color="slate" />
           </div>
 
@@ -517,14 +569,17 @@ export function ModalSetoranAyat({
                 index={idx}
                 ayat={a}
                 surahMeta={getSurahMeta(a.surah)}
-                isFirstOfSurah={idx === 0 || penilaian[idx - 1]?.surah !== a.surah}
+                isFirstOfSurah={
+                  idx === 0 || penilaian[idx - 1]?.surah !== a.surah
+                }
                 onSetKualitas={(k) => setAyatKualitas(idx, k)}
               />
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
-            <div className="flex items-center gap-3 text-xs">
+          {/* Footer */}
+          <div className="space-y-3 pt-3 border-t border-slate-800">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
               <span className="text-slate-500">
                 Auto-kualitas:{' '}
                 <strong className="text-emerald-400">{aggregatedKualitas}</strong>
@@ -533,8 +588,17 @@ export function ModalSetoranAyat({
               <span className="text-slate-500">
                 {preview.ayat} ayat · {formatHalaman(preview.halaman)} hal
               </span>
+              {penilaianStats.belum > 0 && (
+                <>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-amber-400 font-bold">
+                    ⚠ {penilaianStats.belum} belum dinilai (akan di-skip)
+                  </span>
+                </>
+              )}
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex gap-2 justify-end">
               <button
                 onClick={onClose}
                 disabled={saving}
@@ -544,11 +608,16 @@ export function ModalSetoranAyat({
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || penilaianStats.belum > 0}
+                disabled={saving || !canSave}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!canSave ? 'Minimal 1 ayat harus dinilai' : ''}
               >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                Simpan ({penilaian.length} ayat)
+                {saving ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                Simpan ({penilaianStats.total - penilaianStats.belum} ayat)
               </button>
             </div>
           </div>
@@ -561,7 +630,12 @@ export function ModalSetoranAyat({
   // RENDER — STEP 1: FORM
   // ===========================================================================
   return (
-    <Modal open={open} onClose={onClose} title="Setoran Per Ayat (Mode Detail)" size="lg">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Setoran Per Ayat (Mode Detail)"
+      size="lg"
+    >
       <div className="space-y-4">
         <div className="px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-300 flex items-start gap-2">
           <Info size={12} className="shrink-0 mt-0.5" />
@@ -602,14 +676,18 @@ export function ModalSetoranAyat({
                 <select
                   value={filterKelas}
                   onChange={(e) =>
-                    setFilterKelas(e.target.value === '' ? '' : Number(e.target.value))
+                    setFilterKelas(
+                      e.target.value === '' ? '' : Number(e.target.value)
+                    )
                   }
                   disabled={loadingSiswa}
                   className={INPUT_CLASS + ' cursor-pointer flex-1'}
                 >
                   <option value="">Semua Kelas</option>
                   {kelasList.map((k) => (
-                    <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                    <option key={k.id} value={k.id}>
+                      {k.nama_kelas}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -621,7 +699,10 @@ export function ModalSetoranAyat({
               />
               {loadingSiswa ? (
                 <div className="py-4 text-center">
-                  <Loader2 size={16} className="animate-spin inline text-slate-500" />
+                  <Loader2
+                    size={16}
+                    className="animate-spin inline text-slate-500"
+                  />
                 </div>
               ) : (
                 <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800/60">
@@ -639,7 +720,9 @@ export function ModalSetoranAyat({
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-slate-800/60 transition cursor-pointer"
                       >
-                        <p className="text-sm text-slate-200 font-medium">{s.nama_lengkap}</p>
+                        <p className="text-sm text-slate-200 font-medium">
+                          {s.nama_lengkap}
+                        </p>
                         <p className="text-[10px] text-slate-500">
                           {s.kelas?.nama_kelas ?? '-'} · {s.nisn}
                         </p>
@@ -667,7 +750,9 @@ export function ModalSetoranAyat({
             <label className={LABEL_CLASS}>Jenis *</label>
             <select
               value={form.jenis}
-              onChange={(e) => setForm({ ...form, jenis: e.target.value as JenisSetoran })}
+              onChange={(e) =>
+                setForm({ ...form, jenis: e.target.value as JenisSetoran })
+              }
               className={INPUT_CLASS + ' cursor-pointer'}
             >
               <option value="Tahfidz">Tahfidz (hafalan baru)</option>
@@ -687,7 +772,9 @@ export function ModalSetoranAyat({
               <label className={LABEL_CLASS}>Mulai</label>
               <select
                 value={form.surah_mulai}
-                onChange={(e) => setForm({ ...form, surah_mulai: Number(e.target.value) })}
+                onChange={(e) =>
+                  setForm({ ...form, surah_mulai: Number(e.target.value) })
+                }
                 className={INPUT_CLASS + ' cursor-pointer'}
               >
                 {Array.from(surahMap.values()).map((s) => (
@@ -701,7 +788,9 @@ export function ModalSetoranAyat({
                 min={1}
                 max={maxAyatMulai}
                 value={form.ayat_mulai}
-                onChange={(e) => setForm({ ...form, ayat_mulai: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, ayat_mulai: e.target.value })
+                }
                 onBlur={(e) => {
                   const v = e.target.value;
                   if (v === '' || toAyatNumber(v) < 1) {
@@ -711,14 +800,18 @@ export function ModalSetoranAyat({
                 placeholder="Ayat mulai"
                 className={INPUT_CLASS}
               />
-              <p className="text-[10px] text-slate-500">Maks: {maxAyatMulai} ayat</p>
+              <p className="text-[10px] text-slate-500">
+                Maks: {maxAyatMulai} ayat
+              </p>
             </div>
 
             <div className="space-y-2">
               <label className={LABEL_CLASS}>Selesai</label>
               <select
                 value={form.surah_selesai}
-                onChange={(e) => setForm({ ...form, surah_selesai: Number(e.target.value) })}
+                onChange={(e) =>
+                  setForm({ ...form, surah_selesai: Number(e.target.value) })
+                }
                 className={INPUT_CLASS + ' cursor-pointer'}
               >
                 {Array.from(surahMap.values()).map((s) => (
@@ -732,7 +825,9 @@ export function ModalSetoranAyat({
                 min={1}
                 max={maxAyatSelesai}
                 value={form.ayat_selesai}
-                onChange={(e) => setForm({ ...form, ayat_selesai: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, ayat_selesai: e.target.value })
+                }
                 onBlur={(e) => {
                   const v = e.target.value;
                   if (v === '' || toAyatNumber(v) < 1) {
@@ -742,15 +837,23 @@ export function ModalSetoranAyat({
                 placeholder="Ayat selesai"
                 className={INPUT_CLASS}
               />
-              <p className="text-[10px] text-slate-500">Maks: {maxAyatSelesai} ayat</p>
+              <p className="text-[10px] text-slate-500">
+                Maks: {maxAyatSelesai} ayat
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
-            <span className="text-emerald-400 font-bold">📖 {preview.ayat} ayat</span>
-            <span className="text-emerald-300">≈ {formatHalaman(preview.halaman)} halaman</span>
+            <span className="text-emerald-400 font-bold">
+              📖 {preview.ayat} ayat
+            </span>
+            <span className="text-emerald-300">
+              ≈ {formatHalaman(preview.halaman)} halaman
+            </span>
             {preview.ayat > 100 && (
-              <span className="text-rose-400 font-bold ml-auto">⚠ Maks 100 ayat</span>
+              <span className="text-rose-400 font-bold ml-auto">
+                ⚠ Maks 100 ayat
+              </span>
             )}
           </div>
         </div>
@@ -828,7 +931,10 @@ function AyatRow({
         <div className="mb-2 pb-2 border-b border-slate-800/60">
           <p className="text-[11px] font-bold text-emerald-400">
             {surahMeta.nomor}. {surahMeta.nama_latin}
-            <span className="text-slate-500 font-normal"> · {surahMeta.arti}</span>
+            <span className="text-slate-500 font-normal">
+              {' '}
+              · {surahMeta.arti}
+            </span>
           </p>
         </div>
       )}
@@ -856,7 +962,7 @@ function AyatRow({
               onClick={() => onSetKualitas(opt.value)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
                 isSelected
-                  ? `${c.bg} ${c.border} ${c.text} ring-2 ring-offset-2 ring-offset-slate-950 ring-${opt.color}-500/30`
+                  ? `${c.bg} ${c.border} ${c.text}`
                   : `bg-slate-900 border-slate-800 text-slate-400 hover:${c.border} hover:${c.text}`
               }`}
             >
