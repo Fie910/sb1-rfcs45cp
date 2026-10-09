@@ -399,22 +399,36 @@ export function ModalSetoranAyat({
       if (!ok) return;
     }
 
-    setSaving(true);
+        setSaving(true);
 
     try {
-      const aMulai = toAyatNumber(form.ayat_mulai);
-      const aSelesai = toAyatNumber(form.ayat_selesai);
+      // ✅ Ambil ayat yang sudah dinilai saja
+      const penilaianTerisi = penilaian.filter((a) => a.kualitas !== null);
 
-      // 1. Insert setoran utama
+      if (penilaianTerisi.length === 0) {
+        throw new Error('Tidak ada ayat yang dinilai');
+      }
+
+      // ✅ Range aktual = min/max dari ayat yang dinilai
+      // (penilaian sudah terurut oleh getAyatRange)
+      const firstScored = penilaianTerisi[0];
+      const lastScored = penilaianTerisi[penilaianTerisi.length - 1];
+
+      const actualSurahMulai = firstScored.surah;
+      const actualAyatMulai = firstScored.ayat;
+      const actualSurahSelesai = lastScored.surah;
+      const actualAyatSelesai = lastScored.ayat;
+
+      // 1. Insert setoran utama dengan range AKTUAL
       const setoranPayload = {
         siswa_id: Number(form.siswa_id),
         guru_tahfidz_id: currentGuruId,
         tanggal: form.tanggal,
         jenis: form.jenis,
-        surah_mulai: form.surah_mulai,
-        ayat_mulai: aMulai,
-        surah_selesai: form.surah_selesai,
-        ayat_selesai: aSelesai,
+        surah_mulai: actualSurahMulai,
+        ayat_mulai: actualAyatMulai,
+        surah_selesai: actualSurahSelesai,
+        ayat_selesai: actualAyatSelesai,
         kualitas: aggregatedKualitas,
         nilai: null,
         catatan: form.catatan || null,
