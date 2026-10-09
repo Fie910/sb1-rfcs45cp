@@ -305,23 +305,46 @@ export function TargetTab({ surahMap, halamanMap }: Props) {
                     </div>
 
                     <div className="md:flex-1 min-w-0">
-                      {hasTarget && row.target?.target_halaman ? (
-                        <>
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-slate-400">
-                              {formatHalaman(row.realisasi_halaman)} / {row.target.target_halaman} hal
-                            </span>
-                            <span className={`font-extrabold ${percentColor}`}>{row.persen.toFixed(0)}%</span>
-                          </div>
-                          <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div className={`h-full ${barColor} transition-all`} style={{ width: `${Math.min(100, row.persen)}%` }} />
-                          </div>
-                        </>
-                      ) : hasTarget ? (
-                        <p className="text-xs text-slate-500 italic">
-                          Target: {row.target?.target_juz ? `${row.target.target_juz} juz` : ''}
-                          {row.target?.target_surah ? ` · ${row.target.target_surah} surah` : ''}
-                          {!row.target?.target_halaman && !row.target?.target_juz && !row.target?.target_surah ? 'Belum diset' : ''}
+                      {hasTarget && row.target?.surah_mulai && row.target?.ayat_mulai ? (
+  <>
+    <p className="text-xs text-slate-300 font-bold mb-1">
+      📖 {surahMap.get(row.target.surah_mulai)?.nama_latin} {row.target.ayat_mulai}
+      {' → '}
+      {surahMap.get(row.target.surah_selesai!)?.nama_latin} {row.target.ayat_selesai}
+    </p>
+    <div className="flex items-center justify-between text-xs mb-1">
+      <span className="text-slate-400">
+        {formatHalaman(row.realisasi_halaman)} / {row.target.target_halaman} hal
+      </span>
+      <span className={`font-extrabold ${percentColor}`}>{row.persen.toFixed(0)}%</span>
+    </div>
+    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+      <div
+        className={`h-full ${barColor} transition-all`}
+        style={{ width: `${Math.min(100, row.persen)}%` }}
+      />
+    </div>
+  </>
+) : hasTarget && row.target?.target_halaman ? (
+  <>
+    <div className="flex items-center justify-between text-xs mb-1">
+      <span className="text-slate-400">
+        {formatHalaman(row.realisasi_halaman)} / {row.target.target_halaman} hal
+      </span>
+      <span className={`font-extrabold ${percentColor}`}>{row.persen.toFixed(0)}%</span>
+    </div>
+    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+      <div
+        className={`h-full ${barColor} transition-all`}
+        style={{ width: `${Math.min(100, row.persen)}%` }}
+      />
+    </div>
+  </>
+) : hasTarget ? (
+  <p className="text-xs text-slate-500 italic">Target custom (lihat detail)</p>
+) : (
+  <p className="text-xs text-slate-500 italic">Belum ada target</p>
+)}
                         </p>
                       ) : (
                         <p className="text-xs text-slate-500 italic">Belum ada target</p>
