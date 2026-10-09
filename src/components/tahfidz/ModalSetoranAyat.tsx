@@ -57,9 +57,9 @@ const EMPTY_FORM = {
   tanggal: new Date().toISOString().slice(0, 10),
   jenis: 'Tahfidz' as JenisSetoran,
   surah_mulai: 1,
-  ayat_mulai: 1,
+  ayat_mulai: 1 as number | string,      // ← bisa empty
   surah_selesai: 1,
-  ayat_selesai: 7,
+  ayat_selesai: 7 as number | string,    // ← bisa empty
   catatan: '',
 };
 
