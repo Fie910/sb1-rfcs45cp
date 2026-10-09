@@ -19,6 +19,7 @@ import {
   formatHalaman, formatRentangHafalan,
 } from '@/lib/tahfidz/hitungHalaman';
 import { useQuranText } from '@/hooks/useQuranText';
+import { RekomendasiLatihanSection } from './RekomendasiLatihanSection';
 import type {
   TahfidzSurah,
   TahfidzHalamanDetail,
