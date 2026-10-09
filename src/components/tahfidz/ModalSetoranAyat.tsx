@@ -1,5 +1,6 @@
 // src/components/tahfidz/ModalSetoranAyat.tsx
 // Modal penilaian per ayat — alternatif dari ModalSetoran.
+// ✅ Support initialData (prefill dari rekomendasi/murojaah).
 // ✅ Auto-check milestone setelah save.
 
 import { useState, useEffect, useMemo } from 'react';
@@ -35,6 +36,14 @@ type Props = {
   surahMap: Map<number, TahfidzSurah>;
   halamanMap: TahfidzHalamanDetail[];
   currentGuruId: string | null;
+  initialData?: {
+    siswa_id?: string;
+    jenis?: JenisSetoran;
+    surah_mulai?: number;
+    ayat_mulai?: number;
+    surah_selesai?: number;
+    ayat_selesai?: number;
+  };
 };
 
 type SiswaOption = {
@@ -52,33 +61,6 @@ type AyatPenilaian = {
   kualitas: KualitasHafalan | null;
 };
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  onSaved: () => void;
-  surahMap: Map<number, TahfidzSurah>;
-  halamanMap: TahfidzHalamanDetail[];
-  currentGuruId: string | null;
-  initialData?: {
-    siswa_id?: string;
-    jenis?: JenisSetoran;
-    surah_mulai?: number;
-    ayat_mulai?: number;
-    surah_selesai?: number;
-    ayat_selesai?: number;
-  };
-};
-
-export function ModalSetoranAyat({
-  open,
-  onClose,
-  onSaved,
-  surahMap,
-  halamanMap,
-  currentGuruId,
-  initialData,
-}: Props) {
-  
 const EMPTY_FORM = {
   siswa_id: '',
   tanggal: new Date().toISOString().slice(0, 10),
@@ -129,6 +111,7 @@ export function ModalSetoranAyat({
   surahMap,
   halamanMap,
   currentGuruId,
+  initialData,
 }: Props) {
   const { getAyatRange, getSurahMeta, loading: loadingQuran } = useQuranText();
 
@@ -191,9 +174,12 @@ export function ModalSetoranAyat({
     })();
   }, [open, currentGuruId, siswaList.length]);
 
-  // Reset saat modal open
+  // ===========================================================================
+  // RESET / PREFILL FORM saat modal open
+  // ===========================================================================
   useEffect(() => {
     if (!open) return;
+
     if (initialData) {
       setForm({
         ...EMPTY_FORM,
@@ -207,13 +193,14 @@ export function ModalSetoranAyat({
     } else {
       setForm({ ...EMPTY_FORM });
     }
+
     setStep('form');
     setPenilaian([]);
     setSearchSiswa('');
   }, [open, initialData]);
 
   // ===========================================================================
-  // SURAH INFO
+  // SURAH INFO + AUTO-ADJUST
   // ===========================================================================
   const surahMulai = surahMap.get(form.surah_mulai);
   const surahSelesai = surahMap.get(form.surah_selesai);
@@ -248,7 +235,7 @@ export function ModalSetoranAyat({
   }, [form.surah_mulai, form.ayat_mulai, form.ayat_selesai]);
 
   // ===========================================================================
-  // PREVIEW (halaman & ayat)
+  // PREVIEW
   // ===========================================================================
   const preview = useMemo(() => {
     const dummy: any = {
@@ -263,6 +250,7 @@ export function ModalSetoranAyat({
     };
   }, [form, surahMap, halamanMap]);
 
+  // Siswa filtered
   const filteredSiswa = useMemo(() => {
     let result = siswaList;
     if (filterKelas !== '') {
@@ -364,7 +352,7 @@ export function ModalSetoranAyat({
   }, [penilaianStats]);
 
   // ===========================================================================
-  // SAVE + MILESTONE CHECK
+  // SAVE
   // ===========================================================================
   const handleSave = async () => {
     if (penilaianStats.belum > 0) {
@@ -381,7 +369,6 @@ export function ModalSetoranAyat({
       const aMulai = toAyatNumber(form.ayat_mulai);
       const aSelesai = toAyatNumber(form.ayat_selesai);
 
-      // 1. Insert setoran utama
       const setoranPayload = {
         siswa_id: Number(form.siswa_id),
         guru_tahfidz_id: currentGuruId,
@@ -407,7 +394,6 @@ export function ModalSetoranAyat({
       if (setoranErr) throw setoranErr;
       if (!setoranData) throw new Error('Gagal dapat ID setoran');
 
-      // 2. Bulk insert ayat
       const ayatRows = penilaian.map((a) => ({
         setoran_id: setoranData.id,
         surah_nomor: a.surah,
@@ -421,7 +407,6 @@ export function ModalSetoranAyat({
 
       if (ayatErr) throw ayatErr;
 
-      // 3. Log
       await logActivity({
         aksi: 'CREATE',
         modul: AUDIT_MODUL.TAHFIDZ,
@@ -434,7 +419,7 @@ export function ModalSetoranAyat({
         `Setoran tersimpan (${penilaian.length} ayat, ${aggregatedKualitas})`
       );
 
-      // ✅ Auto-check milestone (dengan filter semester + range target)
+      // Auto milestone
       try {
         const { checkAndAwardMilestone } = await import('@/lib/tahfidz/checkMilestone');
         const result = await checkAndAwardMilestone(
