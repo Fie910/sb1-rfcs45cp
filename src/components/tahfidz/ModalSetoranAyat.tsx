@@ -445,9 +445,7 @@ export function ModalSetoranAyat({
       if (setoranErr) throw setoranErr;
       if (!setoranData) throw new Error('Gagal dapat ID setoran');
 
-      // 2. ✅ Filter hanya ayat yang sudah dinilai
-      const penilaianTerisi = penilaian.filter((a) => a.kualitas !== null);
-
+      // 2. ✅ Bulk insert ayat dinilai
       const ayatRows = penilaianTerisi.map((a) => ({
         setoran_id: setoranData.id,
         surah_nomor: a.surah,
