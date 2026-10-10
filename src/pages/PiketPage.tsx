@@ -428,29 +428,32 @@ if (res.queued) {
     const newWaktu = isSudah ? null : new Date().toISOString();
     const newGuruPiket = isSudah ? null : guru?.id;
 
-    setSaving(true);
-    const { error } = await supabase
-      .from('izin_guru_pikets')
-      .update({
-        status_penyampaian: newStatusPenyampaian,
-        status_penanganan: newStatusPenanganan,
-        waktu_penyampaian: newWaktu,
-        guru_piket_id: newGuruPiket,
-      })
-      .eq('id', izin.id);
-
-    if (error) {
-      showToast('error', 'Gagal memperbarui: ' + error.message);
-    } else {
-      showToast(
-        'success',
-        !isSudah
-          ? 'Tugas ditandai selesai & diserahkan'
-          : 'Status dikembalikan ke menunggu'
-      );
-      fetchData();
-    }
-    setSaving(false);
+    try {
+  const res = await offlineUpdate(
+    'izin_guru_pikets',
+    { id: izin.id },
+    {
+      status_penyampaian: newStatusPenyampaian,
+      status_penanganan: newStatusPenanganan,
+      waktu_penyampaian: newWaktu,
+      guru_piket_id: newGuruPiket,
+    },
+    { userId: guru?.id ?? '', label: 'Status delegasi tugas' }
+  );
+  if (res.queued) {
+    showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
+    // Optimistic local update
+    setIzinList((prev) => prev.map((x) => x.id === izin.id
+      ? { ...x, status_penyampaian: newStatusPenyampaian, status_penanganan: newStatusPenanganan, waktu_penyampaian: newWaktu ?? undefined, guru_piket_id: newGuruPiket ?? undefined }
+      : x));
+  } else {
+    showToast('success', !isSudah ? 'Tugas ditandai selesai & diserahkan' : 'Status dikembalikan ke menunggu');
+    fetchData();
+  }
+} catch (err: any) {
+  showToast('error', 'Gagal memperbarui: ' + (err?.message ?? err));
+}
+setSaving(false);
   };
 
   if (loading) {
