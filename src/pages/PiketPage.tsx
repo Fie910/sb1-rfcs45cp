@@ -252,6 +252,24 @@ export function PiketPage() {
     setPresensiMap((prev) => ({ ...prev, [item.id]: newStatus }));
 
     try {
+      const res = await offlineUpsert(
+  'presensi_guru_piket',
+  {
+    tanggal: selectedDate,
+    jadwal_kbmjp_id: item.id,
+    guru_id: item.guru_id,
+    status: newStatus,
+    piket_user_id: guru?.id || null,
+  },
+  'tanggal,jadwal_kbmjp_id',
+  { userId: guru?.id ?? '', label: 'Presensi guru per JP' }
+);
+if (res.queued) {
+  showToast('success', `Tersimpan lokal. Akan dikirim saat online.`);
+} else {
+  showToast('success', `Status presensi ${item.gurus?.nama_lengkap || 'Guru'} diperbarui`);
+}
+      
       const { error } = await supabase.from('presensi_guru_piket').upsert(
         {
           tanggal: selectedDate,
