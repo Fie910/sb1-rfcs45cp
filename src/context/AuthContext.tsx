@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { resetAuditCache, logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { resetAuditCache, logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { Guru, GuruRole } from '@/types/database';
 import type { PageKey } from '@/config/navigation';
 
