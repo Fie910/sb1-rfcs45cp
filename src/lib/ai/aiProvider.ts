@@ -1,10 +1,13 @@
 // src/lib/ai/aiProvider.ts
 // Multi-provider AI wrapper dengan failover otomatis.
 //
-// Urutan Text:   Groq → OpenRouter → Gemini
-// Urutan Vision: (PDF: Gemini saja) | (Gambar: Groq → OpenRouter → Gemini)
+// Urutan Text:   Groq → Gemini
+// Urutan Vision: (PDF: Gemini saja) | (Gambar: Groq → Gemini)
+//
+// Catatan: OpenRouter dihapus karena model `:free` sudah tidak reliable
+// (banyak deprecated per Des 2025). Kalau nanti stabil, bisa ditambah kembali.
 
-export type AIProviderId = 'groq' | 'openrouter' | 'gemini';
+export type AIProviderId = 'groq' | 'gemini';
 
 export interface AITextRequest {
   prompt: string;
@@ -22,7 +25,6 @@ export interface AIVisionRequest {
   temperature?: number;
   maxTokens?: number;
   jsonMode?: boolean;
-  skipProviders?: AIProviderId[];
 }
 
 export interface AIResult {
@@ -37,20 +39,14 @@ export interface AIResult {
 const ENV = import.meta.env;
 
 const GROQ_KEY = ENV.VITE_GROQ_API_KEY as string | undefined;
-const OPENROUTER_KEY = ENV.VITE_OPENROUTER_API_KEY as string | undefined;
 const GEMINI_KEY = ENV.VITE_GEMINI_API_KEY as string | undefined;
 
 const hasGroq = Boolean(GROQ_KEY && GROQ_KEY.startsWith('gsk_'));
-const hasOpenRouter = Boolean(OPENROUTER_KEY && OPENROUTER_KEY.startsWith('sk-or-'));
 const hasGemini = Boolean(GEMINI_KEY && GEMINI_KEY.length > 10);
 
 // ============================================================================
 // CONFIG — MODEL LIST
 // ============================================================================
-// ⚠️ CATATAN: Daftar model gratis OpenRouter sering berubah.
-// Cek model gratis terbaru di: https://openrouter.ai/models?max_price=0
-// Kalau ada yang 404, ganti dengan model dari link di atas.
-
 // Groq text — sesuai account Anda
 const GROQ_MODELS = [
   'openai/gpt-oss-120b',
@@ -60,20 +56,6 @@ const GROQ_MODELS = [
 // Groq vision — hanya untuk gambar (bukan PDF)
 const GROQ_VISION_MODELS = ['qwen/qwen3.8-27b'];
 
-// OpenRouter text — 🔄 DIPERBARUI Des 2025
-const OPENROUTER_MODELS = [
-  'qwen/qwen3-235b-a22b:free',
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
-  'google/gemma-3-27b-it:free',
-];
-
-// OpenRouter vision — 🔄 DIPERBARUI Des 2025
-const OPENROUTER_VISION_MODELS = [
-  'qwen/qwen2.5-vl-72b-instruct:free',
-  'qwen/qwen2.5-vl-32b-instruct:free',
-];
-
 // Gemini text
 const GEMINI_MODELS = [
   'gemini-3.8-flash',
@@ -81,7 +63,7 @@ const GEMINI_MODELS = [
   'gemini-3.5-flash-lite',
 ];
 
-// Gemini vision
+// Gemini vision (gambar & PDF)
 const GEMINI_VISION_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash'];
 
 // ============================================================================
@@ -226,108 +208,6 @@ async function callGroqVision(req: AIVisionRequest, model: string): Promise<stri
 }
 
 // ============================================================================
-// OPENROUTER — TEXT
-// ============================================================================
-async function callOpenRouter(req: AITextRequest, model: string): Promise<string> {
-  if (!hasOpenRouter) throw new Error('OpenRouter API key tidak valid');
-
-  const messages: any[] = [];
-  if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
-  messages.push({ role: 'user', content: req.prompt });
-
-  const body: any = {
-    model,
-    messages,
-    temperature: req.temperature ?? 0.3,
-    max_tokens: req.maxTokens ?? 4096,
-  };
-  if (req.jsonMode) body.response_format = { type: 'json_object' };
-
-  const res = await fetchWithRetry(
-    'https://openrouter.ai/api/v1/chat/completions',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENROUTER_KEY}`,
-        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-        'X-Title': 'SISFO SMK',
-      },
-      body: JSON.stringify(body),
-    },
-    model
-  );
-
-  if (!res.ok) {
-    const err = await readErrorBody(res);
-    console.error(`[ai] OpenRouter ${model} HTTP ${res.status}:`, err);
-    throw new Error(`OpenRouter ${model} HTTP ${res.status}: ${err.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error(`OpenRouter ${model} tidak mengembalikan teks`);
-  return text;
-}
-
-// ============================================================================
-// OPENROUTER — VISION
-// ============================================================================
-async function callOpenRouterVision(
-  req: AIVisionRequest,
-  model: string
-): Promise<string> {
-  if (!hasOpenRouter) throw new Error('OpenRouter API key tidak valid');
-
-  const userContent: any[] = [
-    { type: 'text', text: req.prompt },
-    {
-      type: 'image_url',
-      image_url: { url: `data:${req.imageMimeType};base64,${req.imageBase64}` },
-    },
-  ];
-
-  const messages: any[] = [];
-  if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
-  messages.push({ role: 'user', content: userContent });
-
-  const body: any = {
-    model,
-    messages,
-    temperature: req.temperature ?? 0.3,
-    max_tokens: req.maxTokens ?? 4096,
-  };
-
-  const res = await fetchWithRetry(
-    'https://openrouter.ai/api/v1/chat/completions',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENROUTER_KEY}`,
-        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-        'X-Title': 'SISFO SMK',
-      },
-      body: JSON.stringify(body),
-    },
-    model
-  );
-
-  if (!res.ok) {
-    const err = await readErrorBody(res);
-    console.error(`[ai] OpenRouter Vision ${model} HTTP ${res.status}:`, err);
-    throw new Error(
-      `OpenRouter Vision ${model} HTTP ${res.status}: ${err.slice(0, 200)}`
-    );
-  }
-
-  const data = await res.json();
-  const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error(`OpenRouter Vision ${model} tidak mengembalikan teks`);
-  return text;
-}
-
-// ============================================================================
 // GEMINI — TEXT
 // ============================================================================
 async function callGemini(req: AITextRequest, model: string): Promise<string> {
@@ -431,7 +311,7 @@ async function callGeminiVision(
 export async function generateText(req: AITextRequest): Promise<AIResult> {
   const attempts: string[] = [];
 
-  // 1. Groq
+  // 1. Groq (primary — cepat & gratis 14.400 req/hari)
   if (hasGroq) {
     for (const model of GROQ_MODELS) {
       try {
@@ -444,20 +324,7 @@ export async function generateText(req: AITextRequest): Promise<AIResult> {
     }
   }
 
-  // 2. OpenRouter
-  if (hasOpenRouter) {
-    for (const model of OPENROUTER_MODELS) {
-      try {
-        const text = await callOpenRouter(req, model);
-        console.info(`[ai] ✅ ${model} (openrouter)`);
-        return { text, provider: 'openrouter', model };
-      } catch (e: any) {
-        attempts.push(`openrouter:${model}:${e.message.slice(0, 80)}`);
-      }
-    }
-  }
-
-  // 3. Gemini
+  // 2. Gemini (fallback)
   if (hasGemini) {
     for (const model of GEMINI_MODELS) {
       try {
@@ -472,7 +339,7 @@ export async function generateText(req: AITextRequest): Promise<AIResult> {
 
   console.error('[ai] semua provider gagal:', attempts);
   throw new Error(
-    'Semua provider AI gagal merespons. Cek konfigurasi API key atau hubungi admin.'
+    'Semua provider AI gagal merespons. Cek koneksi internet atau coba lagi nanti.'
   );
 }
 
@@ -501,11 +368,10 @@ export async function generateJSON<T>(
 // ============================================================================
 export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
   const attempts: string[] = [];
-  const skip = new Set(req.skipProviders ?? []);
   const isPdf = req.imageMimeType === 'application/pdf';
 
-  // 1. Groq Vision (hanya kalau bukan PDF)
-  if (hasGroq && !isPdf && !skip.has('groq')) {
+  // 1. Groq Vision (hanya untuk gambar, bukan PDF)
+  if (hasGroq && !isPdf) {
     for (const model of GROQ_VISION_MODELS) {
       try {
         const text = await callGroqVision(req, model);
@@ -516,26 +382,11 @@ export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
       }
     }
   } else if (isPdf) {
-    console.info('[ai] 📄 PDF terdeteksi → skip Groq');
+    console.info('[ai] 📄 PDF terdeteksi → langsung ke Gemini');
   }
 
-  // 2. OpenRouter Vision (hanya kalau bukan PDF)
-  if (hasOpenRouter && !isPdf && !skip.has('openrouter')) {
-    for (const model of OPENROUTER_VISION_MODELS) {
-      try {
-        const text = await callOpenRouterVision(req, model);
-        console.info(`[ai] ✅ ${model} (openrouter vision)`);
-        return { text, provider: 'openrouter', model };
-      } catch (e: any) {
-        attempts.push(`openrouter:${model}:${e.message.slice(0, 80)}`);
-      }
-    }
-  } else if (isPdf) {
-    console.info('[ai] 📄 PDF terdeteksi → skip OpenRouter');
-  }
-
-  // 3. Gemini Vision (gambar & PDF)
-  if (hasGemini && !skip.has('gemini')) {
+  // 2. Gemini Vision (gambar & PDF)
+  if (hasGemini) {
     for (const model of GEMINI_VISION_MODELS) {
       try {
         const text = await callGeminiVision(req, model);
@@ -580,13 +431,12 @@ export async function generateJSONVision<T>(
 // HEALTH CHECK
 // ============================================================================
 export function hasAnyProvider(): boolean {
-  return hasGroq || hasOpenRouter || hasGemini;
+  return hasGroq || hasGemini;
 }
 
 export function getAvailableProviders(): AIProviderId[] {
   const list: AIProviderId[] = [];
   if (hasGroq) list.push('groq');
-  if (hasOpenRouter) list.push('openrouter');
   if (hasGemini) list.push('gemini');
   return list;
 }
