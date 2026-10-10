@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { offlineInsert, offlineUpdate } from '@/lib/offline/offlineClient';
 import { showToast } from '@/components/Toast';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import {
