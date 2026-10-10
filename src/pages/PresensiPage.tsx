@@ -280,54 +280,48 @@ export function PresensiPage() {
     showToast('info', 'Semua siswa ditandai Hadir');
   };
 
-  const handleSave = async () => {
-    if (hariLibur) {
-      showToast('error', 'Tidak dapat menyimpan presensi di hari libur');
-      return;
-    }
+const handleSave = async () => {
+  if (hariLibur) {
+    showToast('error', 'Tidak dapat menyimpan presensi di hari libur');
+    return;
+  }
+  if (!selectedKelas || !selectedJadwalId || siswaList.length === 0) {
+    showToast('error', 'Pilih kelas dan jam pelajaran terlebih dahulu');
+    return;
+  }
+  if (!guru) {
+    showToast('error', 'Sesi login guru tidak ditemukan');
+    return;
+  }
+  const unselectedSiswa = siswaList.filter((s) => !attendance[s.id]);
+  if (unselectedSiswa.length > 0) {
+    showToast('error', `Masih ada ${unselectedSiswa.length} siswa yang belum diabsen`);
+    return;
+  }
 
-    if (!selectedKelas || !selectedJadwalId || siswaList.length === 0) {
-      showToast('error', 'Pilih kelas dan jam pelajaran terlebih dahulu');
-      return;
-    }
-
-    if (!guru) {
-      showToast('error', 'Sesi login guru tidak ditemukan');
-      return;
-    }
-
-    const unselectedSiswa = siswaList.filter((s) => !attendance[s.id]);
-    if (unselectedSiswa.length > 0) {
-      showToast('error', `Masih ada ${unselectedSiswa.length} siswa yang belum diabsen`);
-      return;
-    }
-
-    setSaving(true);
-
+  setSaving(true);
+  try {
     if (hasExisting) {
-      const updates = siswaList.map((s) => {
+      // Update per siswa (compound match)
+      let queuedCount = 0;
+      for (const s of siswaList) {
         const status = attendance[s.id];
         const ket = keterangan[s.id] ?? null;
-        return supabase
-          .from('presensis')
-          .update({
-            status,
-            keterangan: ket,
-            guru_id: guru.id,
-          })
-          .eq('siswa_id', s.id)
-          .eq('tanggal', tanggal)
-          .eq('jadwal_kbm_id', selectedJadwalId);
-      });
-
-      const results = await Promise.all(updates);
-      const failed = results.filter((r) => r.error);
-      if (failed.length > 0) {
-        showToast('error', `Gagal memperbarui ${failed.length} presensi`);
+        const res = await offlineUpdate(
+          'presensis',
+          { siswa_id: s.id, tanggal, jadwal_kbm_id: selectedJadwalId },
+          { status, keterangan: ket, guru_id: guru.id },
+          { userId: guru.id, label: 'Presensi siswa (update)' }
+        );
+        if (res.queued) queuedCount++;
+      }
+      if (queuedCount > 0) {
+        showToast('success', `Tersimpan lokal (${queuedCount} siswa). Akan dikirim saat online.`);
       } else {
         showToast('success', 'Presensi jam pelajaran ini berhasil diperbarui');
       }
     } else {
+      // Batch insert — satu queue entry
       const rows = siswaList.map((s) => ({
         siswa_id: s.id,
         jadwal_kbm_id: selectedJadwalId,
@@ -336,18 +330,24 @@ export function PresensiPage() {
         status: attendance[s.id],
         keterangan: keterangan[s.id] ?? null,
       }));
-
-      const { error } = await supabase.from('presensis').insert(rows);
-      if (error) {
-        showToast('error', 'Gagal menyimpan presensi: ' + error.message);
+      const res = await offlineInsert('presensis', rows, {
+        userId: guru.id,
+        label: 'Presensi siswa (batch)',
+      });
+      if (res.queued) {
+        setHasExisting(true);
+        showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
       } else {
         showToast('success', 'Presensi jam pelajaran ini berhasil disimpan');
         setHasExisting(true);
       }
     }
-
+  } catch (err: any) {
+    showToast('error', 'Gagal menyimpan presensi: ' + (err?.message ?? err));
+  } finally {
     setSaving(false);
-  };
+  }
+};
 
   const summary = siswaList.reduce(
     (acc, s) => {
