@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Bell, Check, CheckCheck, Trash2, BellRing, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { requestNotificationPermission } from '@/lib/pushNotification';
+import { requestNotificationPermission } from '@/lib/notifications/pushNotification';
 import type { Notifikasi } from '@/types/database';
 
 interface NotificationBellProps {
