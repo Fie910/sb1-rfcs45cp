@@ -97,7 +97,7 @@ export function PiketPage() {
   const [selectedDate, setSelectedDate] = useState<string>(getWIBDateString());
   const [selectedJamKe, setSelectedJamKe] = useState<number>(0);
   const [jadwalKbmjpList, setJadwalKbmjpList] = useState<JadwalKBMJP[]>([]);
-  
+
   const [presensiMap, setPresensiMap] = useState<Record<number, StatusKehadiranGuru | null>>({});
   const [loadingKbm, setLoadingKbm] = useState(false);
   const [savingKbmId, setSavingKbmId] = useState<number | null>(null);
@@ -109,6 +109,9 @@ export function PiketPage() {
   // State untuk penanda item yang baru saja dicopy
   const [copiedId, setCopiedId] = useState<string | number | null>(null);
 
+  // ===========================================================================
+  // FETCH DATA
+  // ===========================================================================
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -242,35 +245,25 @@ export function PiketPage() {
     fetchKbmjpData();
   }, [selectedDate, selectedJamKe]);
 
-  const handleStatusKbmChange = async (item: JadwalKBMJP, newStatus: StatusKehadiranGuru) => {
+  // ===========================================================================
+  // HANDLER: Update status kehadiran guru per JP (OFFLINE-AWARE)
+  // ===========================================================================
+  const handleStatusKbmChange = async (
+    item: JadwalKBMJP,
+    newStatus: StatusKehadiranGuru
+  ) => {
     if (isHariLibur) {
       showToast('error', 'Tidak dapat memperbarui presensi pada hari libur');
       return;
     }
 
     setSavingKbmId(item.id);
+    // Optimistic UI
     setPresensiMap((prev) => ({ ...prev, [item.id]: newStatus }));
 
     try {
       const res = await offlineUpsert(
-  'presensi_guru_piket',
-  {
-    tanggal: selectedDate,
-    jadwal_kbmjp_id: item.id,
-    guru_id: item.guru_id,
-    status: newStatus,
-    piket_user_id: guru?.id || null,
-  },
-  'tanggal,jadwal_kbmjp_id',
-  { userId: guru?.id ?? '', label: 'Presensi guru per JP' }
-);
-if (res.queued) {
-  showToast('success', `Tersimpan lokal. Akan dikirim saat online.`);
-} else {
-  showToast('success', `Status presensi ${item.gurus?.nama_lengkap || 'Guru'} diperbarui`);
-}
-      
-      const { error } = await supabase.from('presensi_guru_piket').upsert(
+        'presensi_guru_piket',
         {
           tanggal: selectedDate,
           jadwal_kbmjp_id: item.id,
@@ -278,21 +271,28 @@ if (res.queued) {
           status: newStatus,
           piket_user_id: guru?.id || null,
         },
-        { onConflict: 'tanggal,jadwal_kbmjp_id' }
+        'tanggal,jadwal_kbmjp_id',
+        { userId: guru?.id ?? '', label: 'Presensi guru per JP' }
       );
 
-      if (error) throw error;
       const guruNama = item.gurus?.nama_lengkap || 'Guru';
-      showToast('success', `Status presensi ${guruNama} berhasil diperbarui`);
+      if (res.queued) {
+        showToast('success', `Tersimpan lokal (${guruNama}). Akan dikirim saat online.`);
+      } else {
+        showToast('success', `Status presensi ${guruNama} berhasil diperbarui`);
+      }
     } catch (err: any) {
-      showToast('error', 'Gagal menyimpan presensi: ' + err.message);
+      showToast('error', 'Gagal menyimpan presensi: ' + (err?.message ?? err));
+      // Rollback UI ke data server
       fetchKbmjpData();
     } finally {
       setSavingKbmId(null);
     }
   };
 
-  // Function untuk Copy Text Delegasi Tugas
+  // ===========================================================================
+  // HANDLER: Copy Text Delegasi Tugas
+  // ===========================================================================
   const handleCopyTask = (text: string, idKey: string | number) => {
     if (!text || text === 'Tidak ada titipan tugas') {
       showToast('error', 'Tidak ada teks tugas untuk disalin');
@@ -306,21 +306,26 @@ if (res.queued) {
     }, 2000);
   };
 
-  // Function untuk Print / Export PDF Lembar Tugas (Tanpa Alasan Izin)
+  // ===========================================================================
+  // HANDLER: Print / Export PDF Lembar Tugas
+  // ===========================================================================
   const handlePrintTask = (izin: IzinGuruPiketWithRelations) => {
     const guruNama = izin.gurus?.nama_lengkap ?? (izin as any).nama_guru ?? '-';
     const guruMapel = izin.mata_pelajarans?.nama_mapel ?? (izin as any).mata_pelajaran ?? '-';
     const kelasNama = izin.kelas?.nama_kelas ?? (izin as any).nama_kelas ?? '-';
     const tugasText = izin.titipan_tugas || 'Tidak ada titipan tugas';
     const fileUrl = (izin as any).url_file || (izin as any).link_tugas || (izin as any).file_url;
-    
-    const tglFormatted = new Date(`${izin.tanggal_izin}T12:00:00+07:00`).toLocaleDateString('id-ID', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'Asia/Jakarta',
-    });
+
+    const tglFormatted = new Date(`${izin.tanggal_izin}T12:00:00+07:00`).toLocaleDateString(
+      'id-ID',
+      {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Asia/Jakarta',
+      }
+    );
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -357,7 +362,7 @@ if (res.queued) {
           <h2>LEMBAR DELEGASI TUGAS SISWA</h2>
           <p>Hari / Tanggal: ${tglFormatted}</p>
         </div>
-        
+
         <table class="info-table">
           <tr>
             <td class="label">Nama Guru</td>
@@ -401,26 +406,40 @@ if (res.queued) {
     printWindow.document.close();
   };
 
+  // ===========================================================================
+  // COMPUTED VALUES
+  // ===========================================================================
   const isPiketToday = piketSchedule.some((p) => p.hari_piket === todayHari);
   const canEditPresensi = (isPiketToday || guru?.role === 'admin') && !isHariLibur;
   const todayDate = getWIBDateString();
   const todayIzinList = izinList.filter((i) => i.tanggal_izin === todayDate);
-  const belumDisampaikan = todayIzinList.filter((i) => i.status_penyampaian === 'Belum Disampaikan');
-  const sudahDisampaikan = todayIzinList.filter((i) => i.status_penyampaian === 'Sudah Disampaikan');
+  const belumDisampaikan = todayIzinList.filter(
+    (i) => i.status_penyampaian === 'Belum Disampaikan'
+  );
+  const sudahDisampaikan = todayIzinList.filter(
+    (i) => i.status_penyampaian === 'Sudah Disampaikan'
+  );
 
   // Ringkasan Statistik Presensi Hari Terpilih
   const totalKbm = isHariLibur ? 0 : jadwalKbmjpList.length;
-  const totalHadir = isHariLibur ? 0 : Object.values(presensiMap).filter((status) => status === 'hadir').length;
-  const totalIzinAbal = isHariLibur ? 0 : Object.values(presensiMap).filter(
-    (status) => status && status !== 'hadir'
-  ).length;
-  const totalBelumDiisi = isHariLibur ? 0 : totalKbm - Object.keys(presensiMap).length;
+  const totalHadir = isHariLibur
+    ? 0
+    : Object.values(presensiMap).filter((status) => status === 'hadir').length;
+  const totalIzinAbal = isHariLibur
+    ? 0
+    : Object.values(presensiMap).filter((status) => status && status !== 'hadir').length;
+  const totalBelumDiisi = isHariLibur
+    ? 0
+    : totalKbm - Object.keys(presensiMap).length;
 
   const openDetail = (izin: IzinGuruPiketWithRelations) => {
     setSelectedIzin(izin);
     setDetailModal(true);
   };
 
+  // ===========================================================================
+  // HANDLER: Toggle status penyampaian delegasi (OFFLINE-AWARE)
+  // ===========================================================================
   const handleTogglePenyampaian = async (izin: IzinGuruPiketWithRelations) => {
     const isSudah = izin.status_penyampaian === 'Sudah Disampaikan';
     const newStatusPenyampaian = isSudah ? 'Belum Disampaikan' : 'Sudah Disampaikan';
@@ -428,34 +447,66 @@ if (res.queued) {
     const newWaktu = isSudah ? null : new Date().toISOString();
     const newGuruPiket = isSudah ? null : guru?.id;
 
+    setSaving(true);
     try {
-  const res = await offlineUpdate(
-    'izin_guru_pikets',
-    { id: izin.id },
-    {
-      status_penyampaian: newStatusPenyampaian,
-      status_penanganan: newStatusPenanganan,
-      waktu_penyampaian: newWaktu,
-      guru_piket_id: newGuruPiket,
-    },
-    { userId: guru?.id ?? '', label: 'Status delegasi tugas' }
-  );
-  if (res.queued) {
-    showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
-    // Optimistic local update
-    setIzinList((prev) => prev.map((x) => x.id === izin.id
-      ? { ...x, status_penyampaian: newStatusPenyampaian, status_penanganan: newStatusPenanganan, waktu_penyampaian: newWaktu ?? undefined, guru_piket_id: newGuruPiket ?? undefined }
-      : x));
-  } else {
-    showToast('success', !isSudah ? 'Tugas ditandai selesai & diserahkan' : 'Status dikembalikan ke menunggu');
-    fetchData();
-  }
-} catch (err: any) {
-  showToast('error', 'Gagal memperbarui: ' + (err?.message ?? err));
-}
-setSaving(false);
+      const res = await offlineUpdate(
+        'izin_guru_pikets',
+        { id: izin.id },
+        {
+          status_penyampaian: newStatusPenyampaian,
+          status_penanganan: newStatusPenanganan,
+          waktu_penyampaian: newWaktu,
+          guru_piket_id: newGuruPiket,
+        },
+        { userId: guru?.id ?? '', label: 'Status delegasi tugas' }
+      );
+
+      if (res.queued) {
+        // Optimistic update ke state lokal
+        setIzinList((prev) =>
+          prev.map((x) =>
+            x.id === izin.id
+              ? {
+                  ...x,
+                  status_penyampaian: newStatusPenyampaian,
+                  status_penanganan: newStatusPenanganan,
+                  waktu_penyampaian: newWaktu ?? undefined,
+                  guru_piket_id: newGuruPiket ?? undefined,
+                }
+              : x
+          )
+        );
+        setSelectedIzin((prev) =>
+          prev && prev.id === izin.id
+            ? {
+                ...prev,
+                status_penyampaian: newStatusPenyampaian,
+                status_penanganan: newStatusPenanganan,
+                waktu_penyampaian: newWaktu ?? undefined,
+                guru_piket_id: newGuruPiket ?? undefined,
+              }
+            : prev
+        );
+        showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
+      } else {
+        showToast(
+          'success',
+          !isSudah
+            ? 'Tugas ditandai selesai & diserahkan'
+            : 'Status dikembalikan ke menunggu'
+        );
+        fetchData();
+      }
+    } catch (err: any) {
+      showToast('error', 'Gagal memperbarui: ' + (err?.message ?? err));
+    } finally {
+      setSaving(false);
+    }
   };
 
+  // ===========================================================================
+  // LOADING SCREEN
+  // ===========================================================================
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -464,6 +515,9 @@ setSaving(false);
     );
   }
 
+  // ===========================================================================
+  // RENDER: Card Izin Delegasi
+  // ===========================================================================
   const renderIzinCard = (izin: IzinGuruPiketWithRelations) => {
     const isSudah = izin.status_penyampaian === 'Sudah Disampaikan';
     const guruNama = izin.gurus?.nama_lengkap ?? (izin as any).nama_guru ?? 'Guru';
@@ -510,15 +564,21 @@ setSaving(false);
 
         <div className="space-y-2.5 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 min-w-20">Kelas:</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 min-w-20">
+              Kelas:
+            </span>
             <span className="text-slate-200 font-medium">{kelasNama}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 min-w-20">Mapel:</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 min-w-20">
+              Mapel:
+            </span>
             <span className="text-slate-200 font-medium">{guruMapel}</span>
           </div>
           <div className="flex items-start gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 min-w-20 pt-0.5">Alasan:</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 min-w-20 pt-0.5">
+              Alasan:
+            </span>
             <span className="text-slate-300">{alasan}</span>
           </div>
 
@@ -528,7 +588,6 @@ setSaving(false);
                 Delegasi Tugas:
               </p>
               <div className="flex items-center gap-1.5">
-                {/* Tombol Cetak / PDF */}
                 <button
                   type="button"
                   onClick={() => handlePrintTask(izin)}
@@ -539,7 +598,6 @@ setSaving(false);
                   <span>Cetak / PDF</span>
                 </button>
 
-                {/* Tombol Copy Text */}
                 {izin.titipan_tugas && (
                   <button
                     type="button"
@@ -567,7 +625,6 @@ setSaving(false);
             </p>
           </div>
 
-          {/* LINK FILE TUGAS / GDRIVE (JIKA ADA) */}
           {fileUrl && (
             <div className="pt-2">
               <a
@@ -576,7 +633,10 @@ setSaving(false);
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-3.5 py-2 rounded-xl transition-all cursor-pointer group/link"
               >
-                <LinkIcon size={14} className="text-indigo-400 group-hover/link:rotate-45 transition-transform" />
+                <LinkIcon
+                  size={14}
+                  className="text-indigo-400 group-hover/link:rotate-45 transition-transform"
+                />
                 <span>Buka Link File / Tugas</span>
                 <ExternalLink size={12} className="opacity-70" />
               </a>
@@ -586,7 +646,10 @@ setSaving(false);
           {isSudah && izin.waktu_penyampaian && (
             <p className="text-xs text-emerald-400 font-medium mt-2 flex items-center gap-1.5">
               <CheckCircle2 size={13} />
-              Disampaikan: {new Date(izin.waktu_penyampaian).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}
+              Disampaikan:{' '}
+              {new Date(izin.waktu_penyampaian).toLocaleString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+              })}
             </p>
           )}
         </div>
@@ -615,6 +678,9 @@ setSaving(false);
     );
   };
 
+  // ===========================================================================
+  // RENDER: Halaman
+  // ===========================================================================
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -649,11 +715,23 @@ setSaving(false);
                 <ShieldCheck size={26} />
               </div>
               <div>
-                <p className={`font-extrabold text-base ${isPiketToday ? 'text-emerald-300' : 'text-slate-200'}`}>
-                  {isPiketToday ? 'Anda Bertugas Piket Hari Ini' : 'Bukan Jadwal Piket Hari Ini'}
+                <p
+                  className={`font-extrabold text-base ${
+                    isPiketToday ? 'text-emerald-300' : 'text-slate-200'
+                  }`}
+                >
+                  {isPiketToday
+                    ? 'Anda Bertugas Piket Hari Ini'
+                    : 'Bukan Jadwal Piket Hari Ini'}
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Hari ini: <span className="text-slate-200 font-semibold">{todayHari}</span>, {new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' })}
+                  Hari ini: <span className="text-slate-200 font-semibold">{todayHari}</span>,{' '}
+                  {new Date().toLocaleDateString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
                 </p>
               </div>
             </div>
@@ -661,7 +739,8 @@ setSaving(false);
 
           <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl px-4 py-2.5 w-fit">
             <p className="text-xs font-bold text-slate-300">
-              <span className="text-amber-400">{belumDisampaikan.length}</span> tugas belum / <span className="text-emerald-400">{sudahDisampaikan.length}</span> disampaikan
+              <span className="text-amber-400">{belumDisampaikan.length}</span> tugas belum /{' '}
+              <span className="text-emerald-400">{sudahDisampaikan.length}</span> disampaikan
             </p>
           </div>
         </div>
@@ -700,14 +779,16 @@ setSaving(false);
         </div>
       </div>
 
-      {/* Ringkasan Statistik Kartu (Metric Cards) */}
+      {/* Ringkasan Statistik Kartu */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-lg flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
             <Users size={20} />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total KBM JP</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Total KBM JP
+            </p>
             <p className="text-xl font-extrabold text-slate-100">{totalKbm}</p>
           </div>
         </div>
@@ -727,7 +808,9 @@ setSaving(false);
             <UserX size={20} />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Izin / Halangan</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Izin / Halangan
+            </p>
             <p className="text-xl font-extrabold text-amber-400">{totalIzinAbal}</p>
           </div>
         </div>
@@ -737,7 +820,9 @@ setSaving(false);
             <FileText size={20} />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Belum Diisi</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Belum Diisi
+            </p>
             <p className="text-xl font-extrabold text-slate-300">{totalBelumDiisi}</p>
           </div>
         </div>
@@ -774,7 +859,7 @@ setSaving(false);
         </button>
       </div>
 
-      {/* Content Tab 1: Presensi KBM per JP */}
+      {/* =================== Content Tab 1: Presensi KBM per JP =================== */}
       {activeTab === 'presensi_jp' && (
         <div className="space-y-6">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -820,7 +905,6 @@ setSaving(false);
             </div>
           </div>
 
-          {/* Banner Peringatan jika Hari Libur */}
           {isHariLibur ? (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-10 text-center space-y-3 backdrop-blur-xl shadow-xl">
               <CalendarDays className="mx-auto text-amber-400" size={48} />
@@ -828,7 +912,8 @@ setSaving(false);
                 KBM Diliburkan ({keteranganLibur})
               </h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Tidak ada aktivitas jadwal Kegiatan Belajar Mengajar (KBM) pada tanggal yang dipilih. Pengisian presensi ditutup.
+                Tidak ada aktivitas jadwal Kegiatan Belajar Mengajar (KBM) pada tanggal yang
+                dipilih. Pengisian presensi ditutup.
               </p>
             </div>
           ) : (
@@ -840,12 +925,15 @@ setSaving(false);
                 </div>
               ) : jadwalKbmjpList.length === 0 ? (
                 <div className="text-center p-14 text-slate-500 text-sm">
-                  Tidak ada data jadwal KBM JP ditemukan pada <span className="text-slate-300 font-semibold">{getHariFromDate(selectedDate)}</span>
+                  Tidak ada data jadwal KBM JP ditemukan pada{' '}
+                  <span className="text-slate-300 font-semibold">
+                    {getHariFromDate(selectedDate)}
+                  </span>
                   {selectedJamKe > 0 ? `, Jam Ke-${selectedJamKe}` : ''}.
                 </div>
               ) : (
                 <>
-                  {/* Responsive View HP / Mobile */}
+                  {/* Mobile View */}
                   <div className="block md:hidden divide-y divide-slate-800/80 p-3 space-y-3">
                     {jadwalKbmjpList.map((item) => {
                       const currentStatus = presensiMap[item.id] ?? null;
@@ -855,18 +943,26 @@ setSaving(false);
                       const mapelNama = item.mata_pelajarans?.nama_mapel || '-';
 
                       return (
-                        <div key={item.id} className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4 space-y-3">
+                        <div
+                          key={item.id}
+                          className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4 space-y-3"
+                        >
                           <div className="flex items-center justify-between border-b border-slate-800/60 pb-2">
-                            <span className="font-extrabold text-slate-100 text-sm">{kelasNama}</span>
+                            <span className="font-extrabold text-slate-100 text-sm">
+                              {kelasNama}
+                            </span>
                             <span className="text-xs text-slate-400 flex items-center gap-1">
                               <Clock size={12} className="text-indigo-400" />
-                              {item.waktu_mulai?.slice(0, 5)} - {item.waktu_selesai?.slice(0, 5)} (JP {item.jam_ke})
+                              {item.waktu_mulai?.slice(0, 5)} - {item.waktu_selesai?.slice(0, 5)}{' '}
+                              (JP {item.jam_ke})
                             </span>
                           </div>
 
                           <div>
                             <p className="font-bold text-slate-100 text-sm">{guruNama}</p>
-                            {item.gurus?.nip && <p className="text-[11px] text-slate-500">NIP: {item.gurus.nip}</p>}
+                            {item.gurus?.nip && (
+                              <p className="text-[11px] text-slate-500">NIP: {item.gurus.nip}</p>
+                            )}
                             <p className="text-xs text-indigo-300 font-medium mt-1">{mapelNama}</p>
                           </div>
 
@@ -878,7 +974,10 @@ setSaving(false);
                               <select
                                 value={currentStatus ?? ''}
                                 onChange={(e) =>
-                                  handleStatusKbmChange(item, e.target.value as StatusKehadiranGuru)
+                                  handleStatusKbmChange(
+                                    item,
+                                    e.target.value as StatusKehadiranGuru
+                                  )
                                 }
                                 disabled={isSavingThis || !canEditPresensi}
                                 className={`w-full bg-slate-900 border text-xs rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 transition-all font-semibold ${
@@ -893,12 +992,21 @@ setSaving(false);
                                   -- Pilih Status --
                                 </option>
                                 {STATUS_OPTIONS.map((opt) => (
-                                  <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
+                                  <option
+                                    key={opt.value}
+                                    value={opt.value}
+                                    className="bg-slate-900 text-slate-200"
+                                  >
                                     {opt.label}
                                   </option>
                                 ))}
                               </select>
-                              {isSavingThis && <Loader2 size={16} className="animate-spin text-indigo-400 shrink-0" />}
+                              {isSavingThis && (
+                                <Loader2
+                                  size={16}
+                                  className="animate-spin text-indigo-400 shrink-0"
+                                />
+                              )}
                             </div>
                           </div>
                         </div>
@@ -906,7 +1014,7 @@ setSaving(false);
                     })}
                   </div>
 
-                  {/* Desktop/Tablet Table View */}
+                  {/* Desktop View */}
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -926,17 +1034,25 @@ setSaving(false);
                           const mapelNama = item.mata_pelajarans?.nama_mapel || '-';
 
                           return (
-                            <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
+                            <tr
+                              key={item.id}
+                              className="hover:bg-slate-800/30 transition-colors"
+                            >
                               <td className="p-4">
                                 <div className="font-bold text-slate-100">{kelasNama}</div>
                                 <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                                   <Clock size={12} className="text-indigo-400" />
-                                  {item.waktu_mulai?.slice(0, 5)} - {item.waktu_selesai?.slice(0, 5)} (JP {item.jam_ke})
+                                  {item.waktu_mulai?.slice(0, 5)} -{' '}
+                                  {item.waktu_selesai?.slice(0, 5)} (JP {item.jam_ke})
                                 </div>
                               </td>
                               <td className="p-4 text-slate-200">
                                 <div className="font-semibold">{guruNama}</div>
-                                {item.gurus?.nip && <div className="text-xs text-slate-500">NIP: {item.gurus.nip}</div>}
+                                {item.gurus?.nip && (
+                                  <div className="text-xs text-slate-500">
+                                    NIP: {item.gurus.nip}
+                                  </div>
+                                )}
                               </td>
                               <td className="p-4 text-slate-300 font-normal">{mapelNama}</td>
                               <td className="p-4">
@@ -944,7 +1060,10 @@ setSaving(false);
                                   <select
                                     value={currentStatus ?? ''}
                                     onChange={(e) =>
-                                      handleStatusKbmChange(item, e.target.value as StatusKehadiranGuru)
+                                      handleStatusKbmChange(
+                                        item,
+                                        e.target.value as StatusKehadiranGuru
+                                      )
                                     }
                                     disabled={isSavingThis || !canEditPresensi}
                                     className={`bg-slate-950 border text-xs rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 transition-all font-semibold w-60 ${
@@ -955,16 +1074,29 @@ setSaving(false);
                                         : 'border-slate-800 text-slate-200 cursor-pointer'
                                     }`}
                                   >
-                                    <option value="" disabled className="bg-slate-900 text-slate-500">
+                                    <option
+                                      value=""
+                                      disabled
+                                      className="bg-slate-900 text-slate-500"
+                                    >
                                       -- Pilih Status --
                                     </option>
                                     {STATUS_OPTIONS.map((opt) => (
-                                      <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
+                                      <option
+                                        key={opt.value}
+                                        value={opt.value}
+                                        className="bg-slate-900 text-slate-200"
+                                      >
                                         {opt.label}
                                       </option>
                                     ))}
                                   </select>
-                                  {isSavingThis && <Loader2 size={16} className="animate-spin text-indigo-400" />}
+                                  {isSavingThis && (
+                                    <Loader2
+                                      size={16}
+                                      className="animate-spin text-indigo-400"
+                                    />
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -980,22 +1112,29 @@ setSaving(false);
         </div>
       )}
 
-      {/* Content Tab 2: Delegasi Izin */}
+      {/* =================== Content Tab 2: Delegasi Izin =================== */}
       {activeTab === 'delegasi_izin' && (
         <>
           {!isPiketToday ? (
             <div className="bg-slate-900 rounded-3xl border border-slate-800/80 text-center py-20 px-4 text-slate-400 backdrop-blur-xl shadow-xl">
               <AlertCircle size={44} className="mx-auto mb-3 text-slate-600" />
-              <p className="font-bold text-slate-200 text-base">Anda tidak bertugas piket hari ini.</p>
+              <p className="font-bold text-slate-200 text-base">
+                Anda tidak bertugas piket hari ini.
+              </p>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                Daftar delegasi tugas dan izin guru hanya dapat diakses pada hari penugasan piket Anda.
+                Daftar delegasi tugas dan izin guru hanya dapat diakses pada hari penugasan
+                piket Anda.
               </p>
             </div>
           ) : todayIzinList.length === 0 ? (
             <div className="bg-slate-900 rounded-3xl border border-slate-800/80 text-center py-20 px-4 text-slate-400 backdrop-blur-xl shadow-xl">
               <CheckCircle2 size={44} className="mx-auto mb-3 text-emerald-500/50" />
-              <p className="font-bold text-slate-200 text-base">Tidak ada permohonan izin hari ini.</p>
-              <p className="text-xs text-slate-400 mt-1">Seluruh pengajar hadir sesuai jadwal kegiatan belajar mengajar.</p>
+              <p className="font-bold text-slate-200 text-base">
+                Tidak ada permohonan izin hari ini.
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Seluruh pengajar hadir sesuai jadwal kegiatan belajar mengajar.
+              </p>
             </div>
           ) : (
             <div className="space-y-8">
@@ -1004,7 +1143,9 @@ setSaving(false);
                   <h2 className="text-base font-bold text-slate-100 mb-4 flex items-center gap-2">
                     <Clock size={18} className="text-amber-400" />
                     Belum Disampaikan
-                    <span className="text-xs font-normal text-slate-500">({belumDisampaikan.length})</span>
+                    <span className="text-xs font-normal text-slate-500">
+                      ({belumDisampaikan.length})
+                    </span>
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {belumDisampaikan.map(renderIzinCard)}
@@ -1017,7 +1158,9 @@ setSaving(false);
                   <h2 className="text-base font-bold text-slate-100 mb-4 flex items-center gap-2">
                     <CheckCircle2 size={18} className="text-emerald-400" />
                     Sudah Disampaikan
-                    <span className="text-xs font-normal text-slate-500">({sudahDisampaikan.length})</span>
+                    <span className="text-xs font-normal text-slate-500">
+                      ({sudahDisampaikan.length})
+                    </span>
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {sudahDisampaikan.map(renderIzinCard)}
@@ -1029,7 +1172,7 @@ setSaving(false);
         </>
       )}
 
-      {/* Modal Detail Delegasi */}
+      {/* =================== Modal Detail Delegasi =================== */}
       <Modal
         open={detailModal}
         onClose={() => setDetailModal(false)}
@@ -1041,15 +1184,21 @@ setSaving(false);
             <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Guru Izin</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Guru Izin
+                  </p>
                   <p className="font-bold text-slate-100 mt-0.5">
                     {selectedIzin.gurus?.nama_lengkap ?? '-'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Tanggal</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Tanggal
+                  </p>
                   <p className="font-bold text-slate-100 mt-0.5">
-                    {new Date(`${selectedIzin.tanggal_izin}T12:00:00+07:00`).toLocaleDateString('id-ID', {
+                    {new Date(
+                      `${selectedIzin.tanggal_izin}T12:00:00+07:00`
+                    ).toLocaleDateString('id-ID', {
                       timeZone: 'Asia/Jakarta',
                       weekday: 'long',
                       day: 'numeric',
@@ -1059,30 +1208,43 @@ setSaving(false);
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Kelas</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Kelas
+                  </p>
                   <p className="font-bold text-slate-100 mt-0.5">
                     {selectedIzin.kelas?.nama_kelas ?? '-'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Mata Pelajaran</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Mata Pelajaran
+                  </p>
                   <p className="font-bold text-slate-100 mt-0.5">
-                    {selectedIzin.mata_pelajarans?.nama_mapel ?? (selectedIzin as any).mata_pelajaran ?? '-'}
+                    {selectedIzin.mata_pelajarans?.nama_mapel ??
+                      (selectedIzin as any).mata_pelajaran ??
+                      '-'}
                   </p>
                 </div>
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Alasan Izin</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Alasan Izin
+              </p>
               <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-3.5 text-sm text-slate-300">
-                {selectedIzin.keterangan_izin ?? selectedIzin.kategori_izin ?? (selectedIzin as any).alasan_izin ?? '-'}
+                {selectedIzin.keterangan_izin ??
+                  selectedIzin.kategori_izin ??
+                  (selectedIzin as any).alasan_izin ??
+                  '-'}
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Delegasi Tugas</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+                  Delegasi Tugas
+                </p>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -1097,7 +1259,9 @@ setSaving(false);
                   {selectedIzin.titipan_tugas && (
                     <button
                       type="button"
-                      onClick={() => handleCopyTask(selectedIzin.titipan_tugas, `modal-${selectedIzin.id}`)}
+                      onClick={() =>
+                        handleCopyTask(selectedIzin.titipan_tugas, `modal-${selectedIzin.id}`)
+                      }
                       className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-300 bg-slate-900 hover:bg-indigo-500/10 border border-slate-800 hover:border-indigo-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                       title="Salin Teks Tugas"
                     >
@@ -1121,17 +1285,27 @@ setSaving(false);
               </div>
             </div>
 
-            {/* LINK FILE TUGAS / GDRIVE DI MODAL (JIKA ADA) */}
-            {((selectedIzin as any).url_file || (selectedIzin as any).link_tugas || (selectedIzin as any).file_url) && (
+            {((selectedIzin as any).url_file ||
+              (selectedIzin as any).link_tugas ||
+              (selectedIzin as any).file_url) && (
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1.5">Link File / Tugas</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1.5">
+                  Link File / Tugas
+                </p>
                 <a
-                  href={(selectedIzin as any).url_file || (selectedIzin as any).link_tugas || (selectedIzin as any).file_url}
+                  href={
+                    (selectedIzin as any).url_file ||
+                    (selectedIzin as any).link_tugas ||
+                    (selectedIzin as any).file_url
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-3.5 py-2 rounded-xl transition-all cursor-pointer group/link"
                 >
-                  <LinkIcon size={14} className="text-indigo-400 group-hover/link:rotate-45 transition-transform" />
+                  <LinkIcon
+                    size={14}
+                    className="text-indigo-400 group-hover/link:rotate-45 transition-transform"
+                  />
                   <span>Buka Link File / Tugas</span>
                   <ExternalLink size={12} className="opacity-70" />
                 </a>
@@ -1141,7 +1315,10 @@ setSaving(false);
             {selectedIzin.waktu_penyampaian && (
               <p className="text-xs text-emerald-400 font-medium flex items-center gap-1.5">
                 <CheckCircle2 size={14} />
-                Disampaikan pada: {new Date(selectedIzin.waktu_penyampaian).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}
+                Disampaikan pada:{' '}
+                {new Date(selectedIzin.waktu_penyampaian).toLocaleString('id-ID', {
+                  timeZone: 'Asia/Jakarta',
+                })}
               </p>
             )}
 
