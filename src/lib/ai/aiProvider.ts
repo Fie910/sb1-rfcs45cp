@@ -18,11 +18,11 @@ export interface AIVisionRequest {
   prompt: string;
   systemPrompt?: string;
   imageBase64: string;
-  imageMimeType: string;      // 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf'
+  imageMimeType: string;
   temperature?: number;
   maxTokens?: number;
   jsonMode?: boolean;
-  skipProviders?: AIProviderId[];  // 🆕 untuk skip provider tertentu (mis. PDF → skip groq)
+  skipProviders?: AIProviderId[];
 }
 
 export interface AIResult {
@@ -47,34 +47,41 @@ const hasGemini = Boolean(GEMINI_KEY && GEMINI_KEY.length > 10);
 // ============================================================================
 // CONFIG — MODEL LIST
 // ============================================================================
+// ⚠️ CATATAN: Daftar model gratis OpenRouter sering berubah.
+// Cek model gratis terbaru di: https://openrouter.ai/models?max_price=0
+// Kalau ada yang 404, ganti dengan model dari link di atas.
+
+// Groq text — sesuai account Anda
 const GROQ_MODELS = [
   'openai/gpt-oss-120b',
   'openai/gpt-oss-20b',
 ];
 
-// Groq vision — hanya untuk GAMBAR (bukan PDF)
+// Groq vision — hanya untuk gambar (bukan PDF)
 const GROQ_VISION_MODELS = ['qwen/qwen3.8-27b'];
 
-// OpenRouter text — model gratis
+// OpenRouter text — 🔄 DIPERBARUI Des 2025
 const OPENROUTER_MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'google/gemini-2.0-flash-exp:free',
-  'deepseek/deepseek-chat-v3.1:free',
+  'qwen/qwen3-235b-a22b:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
+  'google/gemma-3-27b-it:free',
 ];
 
-// 🆕 OpenRouter vision — DIPERBARUI (yang lama sudah tidak ada)
+// OpenRouter vision — 🔄 DIPERBARUI Des 2025
 const OPENROUTER_VISION_MODELS = [
   'qwen/qwen2.5-vl-72b-instruct:free',
   'qwen/qwen2.5-vl-32b-instruct:free',
-  'nvidia/nemotron-nano-12b-v2-vl:free',
 ];
 
+// Gemini text
 const GEMINI_MODELS = [
   'gemini-3.8-flash',
   'gemini-3.5-flash',
   'gemini-3.5-flash-lite',
 ];
 
+// Gemini vision
 const GEMINI_VISION_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash'];
 
 // ============================================================================
@@ -169,7 +176,7 @@ async function callGroq(req: AITextRequest, model: string): Promise<string> {
 }
 
 // ============================================================================
-// GROQ — VISION (hanya gambar)
+// GROQ — VISION
 // ============================================================================
 async function callGroqVision(req: AIVisionRequest, model: string): Promise<string> {
   if (!hasGroq) throw new Error('Groq API key tidak valid');
@@ -364,7 +371,7 @@ async function callGemini(req: AITextRequest, model: string): Promise<string> {
 }
 
 // ============================================================================
-// GEMINI — VISION (gambar & PDF)
+// GEMINI — VISION
 // ============================================================================
 async function callGeminiVision(
   req: AIVisionRequest,
@@ -424,6 +431,7 @@ async function callGeminiVision(
 export async function generateText(req: AITextRequest): Promise<AIResult> {
   const attempts: string[] = [];
 
+  // 1. Groq
   if (hasGroq) {
     for (const model of GROQ_MODELS) {
       try {
@@ -436,6 +444,7 @@ export async function generateText(req: AITextRequest): Promise<AIResult> {
     }
   }
 
+  // 2. OpenRouter
   if (hasOpenRouter) {
     for (const model of OPENROUTER_MODELS) {
       try {
@@ -448,6 +457,7 @@ export async function generateText(req: AITextRequest): Promise<AIResult> {
     }
   }
 
+  // 3. Gemini
   if (hasGemini) {
     for (const model of GEMINI_MODELS) {
       try {
@@ -487,16 +497,14 @@ export async function generateJSON<T>(
 }
 
 // ============================================================================
-// PUBLIC API — VISION (PDF-aware)
+// PUBLIC API — VISION
 // ============================================================================
 export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
   const attempts: string[] = [];
   const skip = new Set(req.skipProviders ?? []);
-
-  // 🆕 Auto-detect PDF → skip Groq & OpenRouter (mereka tidak bisa baca PDF)
   const isPdf = req.imageMimeType === 'application/pdf';
 
-  // 1. Groq Vision (hanya kalau BUKAN PDF & tidak di-skip)
+  // 1. Groq Vision (hanya kalau bukan PDF)
   if (hasGroq && !isPdf && !skip.has('groq')) {
     for (const model of GROQ_VISION_MODELS) {
       try {
@@ -508,10 +516,10 @@ export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
       }
     }
   } else if (isPdf) {
-    console.info('[ai] 📄 PDF terdeteksi → skip Groq (hanya support gambar)');
+    console.info('[ai] 📄 PDF terdeteksi → skip Groq');
   }
 
-  // 2. OpenRouter Vision (hanya kalau BUKAN PDF & tidak di-skip)
+  // 2. OpenRouter Vision (hanya kalau bukan PDF)
   if (hasOpenRouter && !isPdf && !skip.has('openrouter')) {
     for (const model of OPENROUTER_VISION_MODELS) {
       try {
@@ -523,10 +531,10 @@ export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
       }
     }
   } else if (isPdf) {
-    console.info('[ai] 📄 PDF terdeteksi → skip OpenRouter (hanya support gambar)');
+    console.info('[ai] 📄 PDF terdeteksi → skip OpenRouter');
   }
 
-  // 3. Gemini Vision (handle gambar & PDF)
+  // 3. Gemini Vision (gambar & PDF)
   if (hasGemini && !skip.has('gemini')) {
     for (const model of GEMINI_VISION_MODELS) {
       try {
