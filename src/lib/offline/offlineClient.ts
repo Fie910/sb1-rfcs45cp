@@ -12,15 +12,21 @@ function isNetworkError(err: any): boolean {
 }
 
 /**
- * INSERT (single atau array) — idempotent via client_op_id.
- * Return { queued: true } jika disimpan offline.
+ * INSERT (single atau array) — idempotent.
+ * Default pakai `client_op_id` UNIQUE. Untuk tabel dengan PK uuid
+ * (mis. tahfidz_setoran), kirim `conflictTarget: 'id'`.
  */
 export async function offlineInsert(
   table: string,
   rows: Record<string, any> | Record<string, any>[],
-  opts: { userId: string; label?: string } = { userId: '' }
+  opts: {
+    userId: string;
+    label?: string;
+    conflictTarget?: string; // default 'client_op_id'
+  } = { userId: '' }
 ): Promise<{ ok: boolean; queued: boolean; data?: any }> {
   const arr = Array.isArray(rows) ? rows : [rows];
+  const conflictTarget = opts.conflictTarget ?? 'client_op_id';
   const payloads = arr.map((p) => ({
     ...p,
     client_op_id: p.client_op_id ?? crypto.randomUUID(),
@@ -28,11 +34,14 @@ export async function offlineInsert(
 
   if (navigator.onLine) {
     try {
-      const { data, error } = await supabase.from(table).insert(payloads).select();
+      const { data, error } = await supabase
+        .from(table)
+        .upsert(payloads, { onConflict: conflictTarget, ignoreDuplicates: true })
+        .select();
       if (error) throw error;
       return { ok: true, queued: false, data };
     } catch (err) {
-      if (!isNetworkError(err)) throw err; // error asli DB → jangan di-queue
+      if (!isNetworkError(err)) throw err;
     }
   }
 
@@ -40,15 +49,13 @@ export async function offlineInsert(
     table,
     action: 'insert',
     payload: payloads,
+    conflictTarget,
     userId: opts.userId,
     label: opts.label,
   });
   return { ok: true, queued: true };
 }
 
-/**
- * UPSERT — untuk pattern onConflict.
- */
 export async function offlineUpsert(
   table: string,
   row: Record<string, any>,
@@ -80,9 +87,6 @@ export async function offlineUpsert(
   return { ok: true, queued: true };
 }
 
-/**
- * UPDATE — mendukung compound match { siswa_id, tanggal, jadwal_kbm_id }.
- */
 export async function offlineUpdate(
   table: string,
   match: Record<string, any>,
