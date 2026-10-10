@@ -117,42 +117,48 @@ export function PiketPage() {
     try {
       setLoading(true);
 
-      let piketData: JadwalPiket[] = [];
-      if (guru?.id) {
-        const piketRes = await supabase
-          .from('jadwal_pikets')
-          .select('*')
-          .eq('guru_id', guru.id);
+      // Jadwal piket milik guru — cache per guru
+      const { data: piketData } = await cachedQuerySafe<JadwalPiket[]>(
+        `jadwal_pikets:guru:${guru?.id ?? 'x'}`,
+        async () => {
+          if (!guru?.id) return [];
+          const res = await supabase.from('jadwal_pikets').select('*').eq('guru_id', guru.id);
+          if (res.error) throw res.error;
+          return (res.data as JadwalPiket[]) ?? [];
+        },
+        []
+      );
 
-        if (!piketRes.error) {
-          piketData = (piketRes.data as JadwalPiket[]) ?? [];
-        }
-      }
+      // Izin guru piket — cache global (recent 500)
+      const { data: finalIzinData } = await cachedQuerySafe<TahfidzSetoranWithRelations[]>(
+        'izin_guru_pikets:recent',
+        async () => {
+          const izinRes = await supabase
+            .from('izin_guru_pikets')
+            .select(`
+              *,
+              gurus:guru_izin_id(id, nama_lengkap),
+              kelas:kelas_id(id, nama_kelas),
+              mata_pelajarans:mapel_id(id, nama_mapel),
+              guru_piket:guru_piket_id(id, nama_lengkap)
+            `)
+            .order('created_at', { ascending: false });
 
-      const izinRes = await supabase
-        .from('izin_guru_pikets')
-        .select(`
-          *,
-          gurus:guru_izin_id(id, nama_lengkap),
-          kelas:kelas_id(id, nama_kelas),
-          mata_pelajarans:mapel_id(id, nama_mapel),
-          guru_piket:guru_piket_id(id, nama_lengkap)
-        `)
-        .order('created_at', { ascending: false });
-
-      let finalIzinData: IzinGuruPiketWithRelations[] = [];
-      if (izinRes.error) {
-        const fallbackRes = await supabase
-          .from('izin_guru_pikets')
-          .select('*')
-          .order('created_at', { ascending: false });
-        finalIzinData = (fallbackRes.data as IzinGuruPiketWithRelations[]) ?? [];
-      } else {
-        finalIzinData = (izinRes.data as IzinGuruPiketWithRelations[]) ?? [];
-      }
+          if (izinRes.error) {
+            const fallbackRes = await supabase
+              .from('izin_guru_pikets')
+              .select('*')
+              .order('created_at', { ascending: false });
+            if (fallbackRes.error) throw fallbackRes.error;
+            return (fallbackRes.data as any[]) ?? [];
+          }
+          return (izinRes.data as any[]) ?? [];
+        },
+        []
+      );
 
       setPiketSchedule(piketData);
-      setIzinList(finalIzinData);
+      setIzinList(finalIzinData as any);
     } catch (err) {
       console.error('Error fetching piket data:', err);
     } finally {
