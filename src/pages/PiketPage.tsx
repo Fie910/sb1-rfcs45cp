@@ -183,13 +183,22 @@ export function PiketPage() {
     }
 
     try {
-      const { data: liburData, error: liburErr } = await supabase
-        .from('hari_libur')
-        .select('keterangan')
-        .eq('tanggal', selectedDate)
-        .maybeSingle();
+      // Cek hari libur — cache per tanggal
+      const { data: liburData } = await cachedQuerySafe<{ keterangan: string } | null>(
+        `hari_liburs:${selectedDate}`,
+        async () => {
+          const res = await supabase
+            .from('hari_libur')
+            .select('keterangan')
+            .eq('tanggal', selectedDate)
+            .maybeSingle();
+          if (res.error && res.error.code !== 'PGRST116') throw res.error;
+          return (res.data as { keterangan: string } | null) ?? null;
+        },
+        null
+      );
 
-      if (!liburErr && liburData) {
+      if (liburData) {
         setIsHariLibur(true);
         setKeteranganLibur(liburData.keterangan || 'Hari Libur Sekolah / Nasional');
         setJadwalKbmjpList([]);
@@ -198,41 +207,48 @@ export function PiketPage() {
         return;
       }
 
-      let query = supabase
-        .from('jadwal_kbmjps')
-        .select(`
-          id,
-          jam_ke,
-          hari,
-          waktu_mulai,
-          waktu_selesai,
-          guru_id,
-          kelas_id,
-          mapel_id,
-          gurus:guru_id ( id, nama_lengkap, nip ),
-          kelas:kelas_id ( id, nama_kelas ),
-          mata_pelajarans:mapel_id ( id, nama_mapel )
-        `)
-        .eq('hari', targetHari);
+      // Jadwal KBM JP — cache per hari + jam_ke
+      const { data: kbmData } = await cachedQuerySafe<JadwalKBMJP[]>(
+        `jadwal_kbmjps:hari:${targetHari}:jam:${selectedJamKe}`,
+        async () => {
+          let query = supabase
+            .from('jadwal_kbmjps')
+            .select(`
+              id, jam_ke, hari, waktu_mulai, waktu_selesai,
+              guru_id, kelas_id, mapel_id,
+              gurus:guru_id ( id, nama_lengkap, nip ),
+              kelas:kelas_id ( id, nama_kelas ),
+              mata_pelajarans:mapel_id ( id, nama_mapel )
+            `)
+            .eq('hari', targetHari);
+          if (selectedJamKe > 0) query = query.eq('jam_ke', selectedJamKe);
+          const res = await query;
+          if (res.error) throw res.error;
+          return (res.data as unknown as JadwalKBMJP[]) ?? [];
+        },
+        []
+      );
 
-      if (selectedJamKe > 0) {
-        query = query.eq('jam_ke', selectedJamKe);
-      }
+      setJadwalKbmjpList(kbmData);
 
-      const { data: kbmData, error: kbmErr } = await query;
-      if (kbmErr) throw kbmErr;
-
-      setJadwalKbmjpList((kbmData as unknown as JadwalKBMJP[]) || []);
-
-      const { data: presensiData, error: presensiErr } = await supabase
-        .from('presensi_guru_piket')
-        .select('jadwal_kbmjp_id, status')
-        .eq('tanggal', selectedDate);
-
-      if (presensiErr) throw presensiErr;
+      // Presensi guru piket — cache per tanggal
+      const { data: presensiData } = await cachedQuerySafe<
+        { jadwal_kbmjp_id: number; status: StatusKehadiranGuru }[]
+      >(
+        `presensi_guru_piket:tanggal:${selectedDate}`,
+        async () => {
+          const res = await supabase
+            .from('presensi_guru_piket')
+            .select('jadwal_kbmjp_id, status')
+            .eq('tanggal', selectedDate);
+          if (res.error) throw res.error;
+          return (res.data as any[]) ?? [];
+        },
+        []
+      );
 
       const map: Record<number, StatusKehadiranGuru | null> = {};
-      presensiData?.forEach((item: { jadwal_kbmjp_id: number; status: StatusKehadiranGuru }) => {
+      presensiData.forEach((item) => {
         map[item.jadwal_kbmjp_id] = item.status;
       });
       setPresensiMap(map);
