@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { offlineUpsert } from '@/lib/offline/offlineClient';
 import { showToast } from '@/components/Toast';
 import { getWibDateString } from '@/utils/date';
 import { haversineDistance } from '@/utils/geo';
