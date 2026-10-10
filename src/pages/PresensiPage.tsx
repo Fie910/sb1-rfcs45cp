@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { offlineInsert, offlineUpdate } from '@/lib/offline/offlineClient';
+import { cachedQuerySafe } from '@/lib/offline/cachedQuery';
 import { showToast } from '@/components/Toast';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import {
@@ -83,20 +84,14 @@ const STATUS_CONFIG: Record<
   },
 };
 
-// ============================================================================
-// KOMPONEN UTAMA
-// ============================================================================
-
 export function PresensiPage() {
   const { guru } = useAuth();
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
   const [selectedKelas, setSelectedKelas] = useState<number | ''>('');
   const [tanggal, setTanggal] = useState(() => getTodayDateWib());
 
-  // State Hari Libur
   const [hariLibur, setHariLibur] = useState<HariLibur | null>(null);
 
-  // Jadwal KBM Filter & State
   const [availableJadwal, setAvailableJadwal] = useState<JadwalKbmWithRelations[]>([]);
   const [selectedJadwalId, setSelectedJadwalId] = useState<number | ''>('');
   const [activeJadwal, setActiveJadwal] = useState<JadwalKbmWithRelations | null>(null);
@@ -110,46 +105,75 @@ export function PresensiPage() {
   const [keterangan, setKeterangan] = useState<Record<string, string>>({});
   const [hasExisting, setHasExisting] = useState(false);
 
-  // 1. Cek Apakah Tanggal Terpilih Adalah Hari Libur
+  // ==========================================================================
+  // 1. Cek Apakah Tanggal Terpilih Adalah Hari Libur (dengan cache)
+  // ==========================================================================
   useEffect(() => {
     (async () => {
       if (!tanggal) return;
 
-      const { data } = await supabase
-        .from('hari_liburs')
-        .select('*')
-        .eq('tanggal', tanggal)
-        .maybeSingle();
+      const { data } = await cachedQuerySafe<HariLibur | null>(
+        `hari_liburs:${tanggal}`,
+        async () => {
+          const { data, error } = await supabase
+            .from('hari_liburs')
+            .select('*')
+            .eq('tanggal', tanggal)
+            .maybeSingle();
+          if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+          return (data as HariLibur) ?? null;
+        },
+        null
+      );
 
-      setHariLibur(data as HariLibur | null);
+      setHariLibur(data);
     })();
   }, [tanggal]);
 
-  // 2. Inisialisasi Data Kelas & Jadwal Aktif
+  // ==========================================================================
+  // 2. Inisialisasi Data Kelas & Jadwal Aktif (dengan cache)
+  // ==========================================================================
   useEffect(() => {
     (async () => {
       setLoading(true);
 
-      const { data: kelasData } = await supabase
-        .from('kelas')
-        .select('*')
-        .order('nama_kelas');
-      const loadedKelas = (kelasData as Kelas[]) || [];
-      setKelasList(loadedKelas);
+      // Kelas — cache 'kelas:all'
+      const { data: kelasData } = await cachedQuerySafe<Kelas[]>(
+        'kelas:all',
+        async () => {
+          const { data, error } = await supabase
+            .from('kelas')
+            .select('*')
+            .order('nama_kelas');
+          if (error) throw error;
+          return (data as Kelas[]) ?? [];
+        },
+        []
+      );
+      setKelasList(kelasData);
 
       if (guru) {
         const todayWib = getTodayDateWib();
         const todayHari = getHariFromDateString(todayWib);
         const currentTime = getCurrentTimeStrWib();
 
-        const { data: jadwalData } = await supabase
-          .from('jadwal_kbms')
-          .select('*, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel)')
-          .eq('guru_id', guru.id)
-          .eq('hari', todayHari);
+        // Jadwal KBM milik guru untuk hari ini — cache per guru+hari
+        const { data: jadwalData } = await cachedQuerySafe<JadwalKbmWithRelations[]>(
+          `jadwal_kbms:guru:${guru.id}:hari:${todayHari}`,
+          async () => {
+            const { data, error } = await supabase
+              .from('jadwal_kbms')
+              .select('*, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel)')
+              .eq('guru_id', guru.id)
+              .eq('hari', todayHari);
+            if (error) throw error;
+            return (data as JadwalKbmWithRelations[]) ?? [];
+          },
+          []
+        );
 
         if (jadwalData && jadwalData.length > 0) {
-          const runningSchedule = (jadwalData as JadwalKbmWithRelations[]).find((j) => {
+          const runningSchedule = jadwalData.find((j) => {
             if (!j.waktu_mulai || !j.waktu_selesai) return false;
             const mulai = j.waktu_mulai.slice(0, 5);
             const selesai = j.waktu_selesai.slice(0, 5);
@@ -168,7 +192,9 @@ export function PresensiPage() {
     })();
   }, [guru]);
 
-  // 3. Load Jadwal KBM Sesuai Filter Kelas & Tanggal
+  // ==========================================================================
+  // 3. Load Jadwal KBM Sesuai Filter Kelas & Tanggal (dengan cache)
+  // ==========================================================================
   const fetchJadwalOptions = useCallback(async () => {
     if (selectedKelas === '' || !tanggal || hariLibur) {
       setAvailableJadwal([]);
@@ -179,19 +205,30 @@ export function PresensiPage() {
     setLoadingJadwal(true);
     const selectedHari = getHariFromDateString(tanggal);
 
-    let query = supabase
-      .from('jadwal_kbms')
-      .select('*, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel)')
-      .eq('kelas_id', selectedKelas)
-      .eq('hari', selectedHari)
-      .order('waktu_mulai', { ascending: true });
+    // Cache key mencakup guru, kelas, hari
+    const cacheKey = `jadwal_kbms:guru:${guru?.id ?? 'x'}:kelas:${selectedKelas}:hari:${selectedHari}`;
 
-    if (guru) {
-      query = query.eq('guru_id', guru.id);
-    }
+    const { data: list } = await cachedQuerySafe<JadwalKbmWithRelations[]>(
+      cacheKey,
+      async () => {
+        let query = supabase
+          .from('jadwal_kbms')
+          .select('*, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel)')
+          .eq('kelas_id', selectedKelas)
+          .eq('hari', selectedHari)
+          .order('waktu_mulai', { ascending: true });
 
-    const { data } = await query;
-    const list = (data as JadwalKbmWithRelations[]) || [];
+        if (guru) {
+          query = query.eq('guru_id', guru.id);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return (data as JadwalKbmWithRelations[]) ?? [];
+      },
+      []
+    );
+
     setAvailableJadwal(list);
 
     setSelectedJadwalId((prevSelected) => {
@@ -209,7 +246,9 @@ export function PresensiPage() {
     fetchJadwalOptions();
   }, [fetchJadwalOptions]);
 
-  // 4. Load Data Siswa & Presensi Eksisting
+  // ==========================================================================
+  // 4. Load Data Siswa & Presensi Eksisting (dengan cache)
+  // ==========================================================================
   useEffect(() => {
     if (!selectedKelas || !selectedJadwalId || hariLibur) {
       setSiswaList([]);
@@ -220,24 +259,40 @@ export function PresensiPage() {
     }
 
     (async () => {
-      const { data: siswaData } = await supabase
-        .from('siswas')
-        .select('*')
-        .eq('kelas_id', selectedKelas)
-        .order('nama_lengkap');
-      const siswas = (siswaData as Siswa[]) || [];
+      // Siswa per kelas — cache 'siswas:kelas:<id>'
+      const { data: siswas } = await cachedQuerySafe<Siswa[]>(
+        `siswas:kelas:${selectedKelas}`,
+        async () => {
+          const { data, error } = await supabase
+            .from('siswas')
+            .select('*')
+            .eq('kelas_id', selectedKelas)
+            .order('nama_lengkap');
+          if (error) throw error;
+          return (data as Siswa[]) ?? [];
+        },
+        []
+      );
+
       setSiswaList(siswas);
 
       const siswaIds = siswas.map((s) => s.id);
       if (siswaIds.length > 0) {
-        const { data: presensiData } = await supabase
-          .from('presensis')
-          .select('*, siswas(id, nama_lengkap, nisn, kelas(id, nama_kelas))')
-          .in('siswa_id', siswaIds)
-          .eq('tanggal', tanggal)
-          .eq('jadwal_kbm_id', selectedJadwalId);
-
-        const existing = (presensiData as PresensiWithSiswa[]) || [];
+        // Presensi existing — cache per jadwal+tanggal
+        const { data: existing } = await cachedQuerySafe<PresensiWithSiswa[]>(
+          `presensis:jadwal:${selectedJadwalId}:tanggal:${tanggal}`,
+          async () => {
+            const { data, error } = await supabase
+              .from('presensis')
+              .select('*, siswas(id, nama_lengkap, nisn, kelas(id, nama_kelas))')
+              .in('siswa_id', siswaIds)
+              .eq('tanggal', tanggal)
+              .eq('jadwal_kbm_id', selectedJadwalId);
+            if (error) throw error;
+            return (data as PresensiWithSiswa[]) ?? [];
+          },
+          []
+        );
 
         if (existing.length > 0) {
           setHasExisting(true);
@@ -280,74 +335,75 @@ export function PresensiPage() {
     showToast('info', 'Semua siswa ditandai Hadir');
   };
 
-const handleSave = async () => {
-  if (hariLibur) {
-    showToast('error', 'Tidak dapat menyimpan presensi di hari libur');
-    return;
-  }
-  if (!selectedKelas || !selectedJadwalId || siswaList.length === 0) {
-    showToast('error', 'Pilih kelas dan jam pelajaran terlebih dahulu');
-    return;
-  }
-  if (!guru) {
-    showToast('error', 'Sesi login guru tidak ditemukan');
-    return;
-  }
-  const unselectedSiswa = siswaList.filter((s) => !attendance[s.id]);
-  if (unselectedSiswa.length > 0) {
-    showToast('error', `Masih ada ${unselectedSiswa.length} siswa yang belum diabsen`);
-    return;
-  }
-
-  setSaving(true);
-  try {
-    if (hasExisting) {
-      // Update per siswa (compound match)
-      let queuedCount = 0;
-      for (const s of siswaList) {
-        const status = attendance[s.id];
-        const ket = keterangan[s.id] ?? null;
-        const res = await offlineUpdate(
-          'presensis',
-          { siswa_id: s.id, tanggal, jadwal_kbm_id: selectedJadwalId },
-          { status, keterangan: ket, guru_id: guru.id },
-          { userId: guru.id, label: 'Presensi siswa (update)' }
-        );
-        if (res.queued) queuedCount++;
-      }
-      if (queuedCount > 0) {
-        showToast('success', `Tersimpan lokal (${queuedCount} siswa). Akan dikirim saat online.`);
-      } else {
-        showToast('success', 'Presensi jam pelajaran ini berhasil diperbarui');
-      }
-    } else {
-      // Batch insert — satu queue entry
-      const rows = siswaList.map((s) => ({
-        siswa_id: s.id,
-        jadwal_kbm_id: selectedJadwalId,
-        guru_id: guru.id,
-        tanggal,
-        status: attendance[s.id],
-        keterangan: keterangan[s.id] ?? null,
-      }));
-      const res = await offlineInsert('presensis', rows, {
-        userId: guru.id,
-        label: 'Presensi siswa (batch)',
-      });
-      if (res.queued) {
-        setHasExisting(true);
-        showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
-      } else {
-        showToast('success', 'Presensi jam pelajaran ini berhasil disimpan');
-        setHasExisting(true);
-      }
+  const handleSave = async () => {
+    if (hariLibur) {
+      showToast('error', 'Tidak dapat menyimpan presensi di hari libur');
+      return;
     }
-  } catch (err: any) {
-    showToast('error', 'Gagal menyimpan presensi: ' + (err?.message ?? err));
-  } finally {
-    setSaving(false);
-  }
-};
+    if (!selectedKelas || !selectedJadwalId || siswaList.length === 0) {
+      showToast('error', 'Pilih kelas dan jam pelajaran terlebih dahulu');
+      return;
+    }
+    if (!guru) {
+      showToast('error', 'Sesi login guru tidak ditemukan');
+      return;
+    }
+    const unselectedSiswa = siswaList.filter((s) => !attendance[s.id]);
+    if (unselectedSiswa.length > 0) {
+      showToast('error', `Masih ada ${unselectedSiswa.length} siswa yang belum diabsen`);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (hasExisting) {
+        let queuedCount = 0;
+        for (const s of siswaList) {
+          const status = attendance[s.id];
+          const ket = keterangan[s.id] ?? null;
+          const res = await offlineUpdate(
+            'presensis',
+            { siswa_id: s.id, tanggal, jadwal_kbm_id: selectedJadwalId },
+            { status, keterangan: ket, guru_id: guru.id },
+            { userId: guru.id, label: 'Presensi siswa (update)' }
+          );
+          if (res.queued) queuedCount++;
+        }
+        if (queuedCount > 0) {
+          showToast(
+            'success',
+            `Tersimpan lokal (${queuedCount} siswa). Akan dikirim saat online.`
+          );
+        } else {
+          showToast('success', 'Presensi jam pelajaran ini berhasil diperbarui');
+        }
+      } else {
+        const rows = siswaList.map((s) => ({
+          siswa_id: s.id,
+          jadwal_kbm_id: selectedJadwalId,
+          guru_id: guru.id,
+          tanggal,
+          status: attendance[s.id],
+          keterangan: keterangan[s.id] ?? null,
+        }));
+        const res = await offlineInsert('presensis', rows, {
+          userId: guru.id,
+          label: 'Presensi siswa (batch)',
+        });
+        if (res.queued) {
+          setHasExisting(true);
+          showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
+        } else {
+          showToast('success', 'Presensi jam pelajaran ini berhasil disimpan');
+          setHasExisting(true);
+        }
+      }
+    } catch (err: any) {
+      showToast('error', 'Gagal menyimpan presensi: ' + (err?.message ?? err));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const summary = siswaList.reduce(
     (acc, s) => {
@@ -376,7 +432,7 @@ const handleSave = async () => {
 
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-      {/* HEADER PAGE */}
+      {/* HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight flex items-center gap-3">
@@ -389,7 +445,7 @@ const handleSave = async () => {
         </div>
       </div>
 
-      {/* BANNER NOTIFIKASI HARI LIBUR */}
+      {/* BANNER HARI LIBUR */}
       {hariLibur && (
         <div className="relative overflow-hidden bg-rose-950/40 border border-rose-500/30 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-xl">
           <div className="flex items-center gap-4">
@@ -413,7 +469,7 @@ const handleSave = async () => {
         </div>
       )}
 
-      {/* BANNER KBM SEDANG BERLANGSUNG */}
+      {/* BANNER KBM AKTIF */}
       {isCurrentClassActive && (
         <div className="relative overflow-hidden bg-slate-900 border border-indigo-500/30 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-xl">
           <div className="flex items-center justify-between flex-wrap gap-4 relative z-10">
@@ -442,10 +498,9 @@ const handleSave = async () => {
         </div>
       )}
 
-      {/* Controls / Filter Form */}
+      {/* FILTER */}
       <div className="relative overflow-hidden bg-slate-900 rounded-3xl border border-slate-800 p-6 shadow-xl backdrop-blur-xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Tanggal */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
               Tanggal
@@ -458,7 +513,6 @@ const handleSave = async () => {
             />
           </div>
 
-          {/* Kelas — SearchableSelect */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
               Kelas
@@ -470,14 +524,15 @@ const handleSave = async () => {
               }))}
               value={selectedKelas}
               onChange={(v) => setSelectedKelas(v ? Number(v) : '')}
-              placeholder="Pilih kelas..."
+              placeholder={
+                kelasList.length === 0 ? 'Memuat / tidak ada kelas' : 'Pilih kelas...'
+              }
               searchPlaceholder="Cari kelas..."
               emptyMessage="Kelas tidak ditemukan"
               disabled={!!hariLibur}
             />
           </div>
 
-          {/* Jam Pelajaran / Jadwal KBM — tetap native karena terfilter per kelas+hari */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
               <BookOpen size={16} className="text-indigo-400" />
@@ -518,7 +573,7 @@ const handleSave = async () => {
         </div>
       </div>
 
-      {/* Empty States & Form Rendering */}
+      {/* KONTEN */}
       {hariLibur ? null : !selectedKelas || !selectedJadwalId ? (
         <div className="bg-slate-900/60 rounded-3xl border border-slate-800/80 text-center py-20 px-6 backdrop-blur-xl">
           <div className="w-16 h-16 bg-slate-800/80 border border-slate-700/80 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
@@ -541,7 +596,7 @@ const handleSave = async () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Action Header & Summary */}
+          {/* SUMMARY */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
               {(Object.keys(STATUS_CONFIG) as Status[]).map((status) => {
@@ -581,7 +636,6 @@ const handleSave = async () => {
             </button>
           </div>
 
-          {/* Alert Indikator Belum Diabsen */}
           {unselectedCount > 0 && (
             <div className="bg-amber-950/40 border border-amber-500/30 text-amber-300 text-sm rounded-2xl p-4 flex items-center gap-3 backdrop-blur-sm">
               <AlertCircle size={18} className="shrink-0 text-amber-400" />
@@ -592,7 +646,6 @@ const handleSave = async () => {
             </div>
           )}
 
-          {/* Alert jika presensi sudah pernah disimpan */}
           {hasExisting && unselectedCount === 0 && (
             <div className="bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-sm rounded-2xl p-4 flex items-center gap-3 backdrop-blur-sm">
               <AlertCircle size={18} className="shrink-0 text-indigo-400" />
@@ -604,7 +657,7 @@ const handleSave = async () => {
             </div>
           )}
 
-          {/* TAMPILAN MOBILE: Card Layout */}
+          {/* MOBILE CARD */}
           <div className="md:hidden space-y-4">
             {siswaList.map((s) => {
               const status = attendance[s.id] ?? null;
@@ -679,7 +732,7 @@ const handleSave = async () => {
             })}
           </div>
 
-          {/* TAMPILAN DESKTOP: Table Layout */}
+          {/* DESKTOP TABLE */}
           <div className="hidden md:block bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-xl backdrop-blur-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -767,7 +820,7 @@ const handleSave = async () => {
             </div>
           </div>
 
-          {/* Button Simpan */}
+          {/* SIMPAN */}
           <div className="flex justify-end pt-2">
             <button
               onClick={handleSave}
