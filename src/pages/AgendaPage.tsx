@@ -1,4 +1,4 @@
-// AgendaPage.tsx
+// src/pages/AgendaPage.tsx
 import { useEffect, useState, useCallback } from 'react';
 import {
   BookHeart,
