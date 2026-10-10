@@ -12,7 +12,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { Modal } from '@/components/Modal';
 import { showToast } from '@/components/Toast';
-import { broadcastToAllGurus } from '@/lib/notification';
+import { broadcastToAllGurus } from '@/lib/notifications/notification';
 
 export interface RencanaKegiatan {
   id?: string;

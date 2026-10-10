@@ -8,7 +8,7 @@ import {
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
-import { AUDIT_MODUL } from '@/lib/audit';
+import { AUDIT_MODUL } from '@/utils/audit';
 import {
   INPUT_CLASS, getLevelPelanggaranIcon, KATEGORI_PELANGGARAN_LEVELS,
 } from './shared';

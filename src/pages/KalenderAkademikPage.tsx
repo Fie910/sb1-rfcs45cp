@@ -10,8 +10,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
-import { getTodayDateWib } from '@/lib/date';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { getTodayDateWib } from '@/utils/date';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
   detectKategori, mapRencanaToEvent, mapRapatToEvent, mapLiburToEvent,
   toDateStr, getEventsForDate,

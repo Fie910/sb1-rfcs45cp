@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Loader2, UserCog, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { Guru } from '@/types/database';
 
 type RoleItem = {

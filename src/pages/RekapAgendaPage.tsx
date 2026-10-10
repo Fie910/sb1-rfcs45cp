@@ -15,7 +15,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { getFirstDayOfMonthWib, getLastDayOfMonthWib } from '@/lib/date';
+import { getFirstDayOfMonthWib, getLastDayOfMonthWib } from '@/utils/date';
 import type { AgendaGuruWithRelations, Guru } from '@/types/database';
 
 interface RekapAgendaSummaryRow {

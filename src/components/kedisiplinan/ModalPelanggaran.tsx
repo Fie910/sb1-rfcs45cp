@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
   INPUT_CLASS,
   LABEL_CLASS,

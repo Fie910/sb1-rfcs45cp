@@ -12,7 +12,7 @@ import {
   downloadArsipQR,
   printArsipQR,
   buildArsipVerifyUrl,
-} from '@/lib/generateArsipQR';
+} from '@/lib/pdf/generateArsipQR';
 
 type Props = {
   verificationToken: string;

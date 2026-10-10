@@ -23,7 +23,7 @@ import {
   isAiAvailable,
   type AnalisaKehadiranAi,
   type RecordForAi,
-} from '@/lib/analisaKehadiranAi';
+} from '@/lib/ai/ai/analisaKehadiranAi';
 import type { Guru } from '@/types/database';
 import {
   exportColoredPdf,
@@ -32,7 +32,7 @@ import {
   PDF_COLORS,
   fetchKepalaSekolahData,
   type PdfColumn,
-} from '@/lib/pdfColoredExport';
+} from '@/lib/pdf/pdfColoredExport';
 
 // =============================================================================
 // TYPES

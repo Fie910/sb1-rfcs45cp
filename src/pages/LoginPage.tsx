@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { LayoutDashboard, Mail, Lock, User, Loader2, CreditCard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { Link } from 'react-router-dom';
 
 type Mode = 'signin' | 'signup';

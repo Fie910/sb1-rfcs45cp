@@ -10,8 +10,8 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
-import { notifyRapatCreated, notifyRapatUpdated } from '@/lib/rapatNotifications';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
+import { notifyRapatCreated, notifyRapatUpdated } from '@/lib/notifications/rapatNotifications';
 import {
   INPUT_CLASS, LABEL_CLASS,
   JENIS_RAPAT_OPTIONS, STATUS_RAPAT_OPTIONS,

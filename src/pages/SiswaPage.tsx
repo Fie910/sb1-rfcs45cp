@@ -19,7 +19,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { SiswaWithKelas, Kelas } from '@/types/database';
 
 const emptyForm = {

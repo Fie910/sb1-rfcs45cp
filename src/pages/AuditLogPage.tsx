@@ -24,8 +24,8 @@ import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { getTodayDateWib } from '@/lib/date';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { getTodayDateWib } from '@/utils/date';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { AuditLog } from '@/types/database';
 
 const PAGE_SIZE = 50;

@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalSerial } from './ModalSerial';
 import {
   getJenisSerialBadge, getJenisSerialIcon, isPustakawan,

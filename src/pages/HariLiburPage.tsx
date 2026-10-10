@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Modal } from '@/components/Modal';
-import { getTodayDateWib, getHariFromDateString, formatDateWibLong } from '@/lib/date';
+import { getTodayDateWib, getHariFromDateString, formatDateWibLong } from '@/utils/date';
 import type { HariLibur } from '@/types/database';
 
 const emptyForm = {

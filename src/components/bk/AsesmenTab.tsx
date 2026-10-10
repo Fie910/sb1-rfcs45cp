@@ -13,7 +13,7 @@ import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { formatDateShort, isBkManager, INPUT_CLASS, LABEL_CLASS } from './shared';
 import type {
   BkAsesmen, BkAsesmenWithRelations, Siswa, Guru, JenisAsesmen,

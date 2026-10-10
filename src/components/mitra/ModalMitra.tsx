@@ -8,7 +8,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
   INPUT_CLASS, LABEL_CLASS, formatFileSize,
 } from './shared';

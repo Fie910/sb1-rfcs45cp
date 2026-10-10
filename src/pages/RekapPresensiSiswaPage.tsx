@@ -21,7 +21,7 @@ import {
   PDF_COLORS,
   fetchKepalaSekolahData,
   type PdfColumn,
-} from '@/lib/pdfColoredExport';
+} from '@/lib/pdf/pdfColoredExport';
 
 // ✅ Note: ExportImportButtons DIHAPUS dari import karena sudah tidak dipakai
 // (diganti dengan tombol custom Ekspor Excel + Ekspor PDF)

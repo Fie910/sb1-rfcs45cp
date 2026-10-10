@@ -21,7 +21,7 @@ import {
   getTodayDateWib,
   getHariFromDateString,
   getCurrentTimeStrWib,
-} from '@/lib/date';
+} from '@/utils/date';
 import type {
   Kelas,
   Siswa,

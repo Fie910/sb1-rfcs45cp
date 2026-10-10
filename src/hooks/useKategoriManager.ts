@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
-import { logActivity } from '@/lib/audit';
+import { logActivity } from '@/utils/audit';
 
 // =============================================================================
 // TYPES

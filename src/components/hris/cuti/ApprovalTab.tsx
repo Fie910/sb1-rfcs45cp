@@ -10,9 +10,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { WhatsAppButton } from './WhatsAppButton';
-import { generateSuratIzinPDF } from '@/lib/generateSuratIzin';
+import { generateSuratIzinPDF } from '@/lib/pdf/generateSuratIzin';
 import {
   getStatusCutiBadge, getJenisCutiBadge,
   formatJumlahHari, formatDateShort,

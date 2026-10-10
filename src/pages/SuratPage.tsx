@@ -20,9 +20,9 @@ import { SearchableSelect } from '../components/SearchableSelect';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '../lib/supabase';
-import { logActivity, AUDIT_MODUL } from '../lib/audit';
+import { logActivity, AUDIT_MODUL } from '../utils/audit';
 import { ModalDetailSurat } from '@/components/surat/ModalDetailSurat';
-import { uploadSuratFile, formatCompressionInfo } from '@/lib/uploadSuratFile';
+import { uploadSuratFile, formatCompressionInfo } from '@/utils/uploadSuratFile';
 
 // =============================================================================
 // KONSTANTA

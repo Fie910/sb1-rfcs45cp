@@ -20,8 +20,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
-import { getWibDateString } from '@/lib/date';
-import { haversineDistance } from '@/lib/geo';
+import { getWibDateString } from '@/utils/date';
+import { haversineDistance } from '@/utils/geo';
 import type {
   PengaturanSekolah,
   JadwalPiketPenyambutan,

@@ -9,7 +9,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
   INPUT_CLASS, LABEL_CLASS,
   formatDateShort, hitungUmur,

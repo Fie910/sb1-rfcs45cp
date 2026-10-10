@@ -35,8 +35,8 @@ import {
   getFirstDayOfMonthWib,
   getCurrentTimeStrWib,
   isJadwalAktif,
-} from '@/lib/date';
-import { haversineDistance } from '@/lib/geo';
+} from '@/utils/date';
+import { haversineDistance } from '@/utils/geo';
 import type {
   JadwalKbmWithRelations,
   AgendaGuruWithRelations,

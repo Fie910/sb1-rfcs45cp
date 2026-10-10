@@ -13,7 +13,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { getTodayDateWib } from '@/lib/date';
+import { getTodayDateWib } from '@/utils/date';
 
 interface KelasItem {
   id: number;

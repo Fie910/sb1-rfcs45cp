@@ -25,7 +25,7 @@ import {
 } from 'recharts';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
-import { getTodayDateWib } from '@/lib/date';
+import { getTodayDateWib } from '@/utils/date';
 import {
   CHART_COLORS,
   AXIS_STYLE,
@@ -34,8 +34,8 @@ import {
   CHART_MARGIN,
   CHART_HEIGHT,
   formatShortDate,
-} from '@/lib/charts';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+} from '@/utils/charts';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { AuditLog } from '@/types/database';
 
 // =============================================================================

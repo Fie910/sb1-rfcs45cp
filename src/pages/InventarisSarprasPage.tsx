@@ -21,8 +21,8 @@ import { PemeliharaanTab } from '@/components/sarpras/PemeliharaanTab';
 import { PenghapusanTab } from '@/components/sarpras/PenghapusanTab';
 import { DashboardSarprasTab } from '@/components/sarpras/DashboardSarprasTab';
 import { isSarprasManager } from '@/components/sarpras/shared';
-import { exportSarprasReport } from '@/lib/exportSarprasReport';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { exportSarprasReport } from '@/lib/export/exportSarprasReport';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 
 type TabKey = 'dashboard' | 'aset' | 'peminjaman' | 'pemeliharaan' | 'penghapusan';
 

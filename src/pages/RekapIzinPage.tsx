@@ -14,7 +14,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { getTodayDateWib, getFirstDayOfMonthWib } from '@/lib/date';
+import { getTodayDateWib, getFirstDayOfMonthWib } from '@/utils/date';
 
 interface GuruOption {
   id: string;

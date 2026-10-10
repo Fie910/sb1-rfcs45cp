@@ -26,7 +26,7 @@ import {
   getTodayDateWib,
   getFirstDayOfMonthWib,
   formatDateWibLong,
-} from '@/lib/date';
+} from '@/utils/date';
 import {
   exportColoredPdf,
   getPersenWarna,
@@ -35,7 +35,7 @@ import {
   fetchKepalaSekolahData,
   type PdfColumn,
   type PdfStatBox,
-} from '@/lib/pdfColoredExport';
+} from '@/lib/pdf/pdfColoredExport';
 
 interface PresensiJoined {
   id: number;

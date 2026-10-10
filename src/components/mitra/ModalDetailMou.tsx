@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { WhatsAppButton } from '@/components/hris/cuti/WhatsAppButton';
-import { sendManualMouReminder } from '@/lib/mitraNotifications';
+import { sendManualMouReminder } from '@/lib/notifications/mitraNotifications';
 import {
   getStatusMouBadge, getExpiryStatusBadge, getExpiryStatusLabel,
   getJenisMitraBadge,

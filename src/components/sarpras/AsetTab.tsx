@@ -24,7 +24,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalAsetSarpras } from './ModalAsetSarpras';
 import { KategoriManagerModal } from './KategoriManagerModal';
 import { LokasiManagerModal } from './LokasiManagerModal';

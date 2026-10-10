@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isMitraManager } from '@/components/mitra/shared';
-import { checkMouRemindersThrottled } from '@/lib/mitraNotifications';
+import { checkMouRemindersThrottled } from '@/lib/notifications/mitraNotifications';
 import { showToast } from '@/components/Toast';
 import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { usePrefetchTabs } from '@/hooks/useLazyTabs';

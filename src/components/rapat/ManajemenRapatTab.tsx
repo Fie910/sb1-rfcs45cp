@@ -12,10 +12,10 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalRapat } from './ModalRapat';
-import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
-import { buildWaShareLinkRapat, notifyRapatCancelled } from '@/lib/rapatNotifications';
+import { generateNotulensiPDF } from '@/lib/pdf/generateNotulensiPDF';
+import { buildWaShareLinkRapat, notifyRapatCancelled } from '@/lib/notifications/rapatNotifications';
 import {
   getStatusRapatBadge, getJenisRapatBadge, getKehadiranBadge,
   formatTanggalRapat, formatWaktuRapat, formatTanggalPendek,

@@ -11,10 +11,10 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
-import { generateResumeNotulensi, checkAiAvailable } from '@/lib/ai';
-import { convertActionItemsToTodos, hasConvertibleItems } from '@/lib/rapatActions';
-import { notifyNotulensiFinal } from '@/lib/rapatNotifications';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
+import { generateResumeNotulensi, checkAiAvailable } from '@/lib/ai/ai';
+import { convertActionItemsToTodos, hasConvertibleItems } from '@/lib/ai/ai/rapatActions';
+import { notifyNotulensiFinal } from '@/lib/notifications/rapatNotifications';
 import { INPUT_CLASS, LABEL_CLASS, formatTanggalRapat } from './shared';
 import type {
   RapatWithRelations, RapatNotulensi, RapatPesertaWithGuru,

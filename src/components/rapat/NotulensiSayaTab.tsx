@@ -10,9 +10,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { ModalNotulensi } from './ModalNotulensi';
-import { generateNotulensiPDF } from '@/lib/generateNotulensiPDF';
-import { buildWaShareLinkNotulensi } from '@/lib/rapatNotifications';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+import { generateNotulensiPDF } from '@/lib/pdf/generateNotulensiPDF';
+import { buildWaShareLinkNotulensi } from '@/lib/notifications/rapatNotifications';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
   getJenisRapatBadge,
   formatWaktuRapat,

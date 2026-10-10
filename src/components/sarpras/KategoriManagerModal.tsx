@@ -4,7 +4,7 @@
 import { Loader2, Plus, Pencil, Trash2, CheckCircle2, X } from 'lucide-react';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { INPUT_CLASS, LABEL_CLASS } from './shared';
-import { AUDIT_MODUL } from '@/lib/audit';
+import { AUDIT_MODUL } from '@/utils/audit';
 import { useKategoriManager } from '@/hooks/useKategoriManager';
 import type { KategoriSarpras } from '@/types/database';
 

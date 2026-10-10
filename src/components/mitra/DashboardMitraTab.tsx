@@ -21,7 +21,7 @@ import {
 import type {
   MitraWithRelations, MouWithRelations, MitraAktivitasWithRelations,
 } from '@/types/database';
-import { checkAndSendMouReminders } from '@/lib/mitraNotifications';
+import { checkAndSendMouReminders } from '@/lib/notifications/mitraNotifications';
 
 export function DashboardMitraTab() {
   const [mitraList, setMitraList] = useState<MitraWithRelations[]>([]);

@@ -23,13 +23,13 @@ import {
   getTodayDateWib,
   formatDateWibShort,
   getHariFromDateString,
-} from '@/lib/date';
+} from '@/utils/date';
 import {
   sendNotification,
   getGuruIdsByRole,
   getGuruIdsPiketHari,
-} from '@/lib/notification';
-import { logActivity, AUDIT_MODUL } from '@/lib/audit';
+} from '@/lib/notifications/notification';
+import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type {
   Kelas,
   IzinGuruPiketWithRelations,

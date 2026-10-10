@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Upload, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
-import { exportToExcel, exportToPDF, importFromExcel } from '@/lib/exportImport';
+import { exportToExcel, exportToPDF, importFromExcel } from '@/lib/export/exportImport';
 import { showToast } from '@/components/Toast';
 
 type Props = {

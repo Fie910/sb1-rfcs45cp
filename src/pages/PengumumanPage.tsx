@@ -15,7 +15,7 @@ import { showToast } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { ModalTambahKegiatan } from '@/components/ModalTambahKegiatan';
 import { useAuth } from '@/context/AuthContext';
-import { broadcastToAllGurus } from '@/lib/notification';
+import { broadcastToAllGurus } from '@/lib/notifications/notification';
 import type { Pengumuman } from '@/types/database';
 
 const emptyForm = {
