@@ -37,7 +37,7 @@ import {
   getFirstDayOfMonthWib,
   getCurrentTimeStrWib,
   isJadwalAktif,
-} from '@/lib/date';
+} from '@/utils/date';
 import { haversineDistance } from '@/lib/geo';
 import { offlineInsert, offlineUpdate } from '@/lib/offline/offlineClient';
 import type {
