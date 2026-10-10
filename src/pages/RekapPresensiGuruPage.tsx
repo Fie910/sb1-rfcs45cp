@@ -285,7 +285,7 @@ export function RekapPresensiGuruPage() {
         supabase.from('gurus').select('*').order('nama_lengkap', { ascending: true }),
         supabase.from('hris_profil_pegawai').select('id, no_hp, no_hp_darurat'),
         supabase
-          .from('pengaturan_sekahah')
+          .from('pengaturan_sekolahs')
           .select('nama_sekolah')
           .limit(1)
           .maybeSingle(),
