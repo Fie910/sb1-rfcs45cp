@@ -245,7 +245,7 @@ useEffect(() => {
           halign: 'center',
           width: 'auto',
           bold: true,
-          colorize: (v) => {
+          colorize: (v: any) => {
             const pct = parseInt(String(v).replace('%', ''), 10);
             if (isNaN(pct)) return null;
             return getPersenWarna(pct);
@@ -286,7 +286,7 @@ useEffect(() => {
     } else {
       // ============ TAB DETAIL LOG ============
       const columns: PdfColumn[] = [
-        { header: 'Tanggal', halign: 'left', width: 25, format: (v) => formatTanggalPdf(v) },
+        { header: 'Tanggal', halign: 'left', width: 25, format: (v: any) => formatTanggalPdf(v) },
         { header: 'NISN', halign: 'left', width: 25 },
         { header: 'Nama Siswa', halign: 'left', width: 70 },
         { header: 'Kelas', halign: 'center', width: 25 },
@@ -295,7 +295,7 @@ useEffect(() => {
           halign: 'center',
           width: 25,
           bold: true,
-          colorize: (v) => {
+          colorize: (v: any) => {
             const status = String(v);
             if (status === 'Hadir')
               return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
@@ -308,7 +308,7 @@ useEffect(() => {
             return null;
           },
         },
-        { header: 'Keterangan', halign: 'left', width: 'auto', format: (v) => v || '-' },
+        { header: 'Keterangan', halign: 'left', width: 'auto', format: (v: any) => v || '-' },
       ];
 
       const rows = list.map((p) => ({

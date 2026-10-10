@@ -684,7 +684,7 @@ export function RekapPresensiGuruPage() {
         halign: 'center',
         width: 'auto',
         bold: true,
-        colorize: (v) => {
+        colorize: (v: any) => {
           const pct = parseInt(String(v).replace('%', ''), 10);
           if (isNaN(pct)) return null;
           return getPersenWarna(pct);

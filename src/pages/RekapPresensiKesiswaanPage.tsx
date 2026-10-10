@@ -328,7 +328,7 @@ export function RekapPresensiKesiswaanPage() {
       // TAB RIWAYAT
       // ============================================================
       const columns: PdfColumn[] = [
-        { header: 'Tanggal', halign: 'left', width: 22, format: (v) => formatTanggalPdf(v) },
+        { header: 'Tanggal', halign: 'left', width: 22, format: (v: any) => formatTanggalPdf(v) },
         { header: 'NISN', halign: 'left', width: 22 },
         { header: 'Nama Siswa', halign: 'left', width: 60 },
         { header: 'Kelas', halign: 'left', width: 20 },
@@ -338,7 +338,7 @@ export function RekapPresensiKesiswaanPage() {
           halign: 'center',
           width: 22,
           bold: true,
-          colorize: (v) => {
+          colorize: (v: any) => {
             const status = String(v);
             if (status === 'Hadir') return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
             if (status === 'Sakit') return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
@@ -347,7 +347,7 @@ export function RekapPresensiKesiswaanPage() {
             return null;
           },
         },
-        { header: 'Keterangan', halign: 'left', width: 'auto', format: (v) => v || '-' },
+        { header: 'Keterangan', halign: 'left', width: 'auto', format: (v: any) => v || '-' },
       ];
 
       const rows = filteredRiwayatList.map((item) => ({
@@ -398,7 +398,7 @@ export function RekapPresensiKesiswaanPage() {
           halign: 'center',
           width: 'auto',
           bold: true,
-          colorize: (v) => {
+          colorize: (v: any) => {
             const pct = parseInt(String(v).replace('%', ''), 10);
             if (isNaN(pct)) return null;
             return getPersenWarna(pct);

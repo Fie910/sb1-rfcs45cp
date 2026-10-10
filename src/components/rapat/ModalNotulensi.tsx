@@ -147,7 +147,7 @@ export function ModalNotulensi({
           .filter(Boolean),
       });
 
-      const mappedActions: ActionItemRapat[] = result.action_items.map((a) => {
+      const mappedActions: ActionItemRapat[] = result.action_items.map((a: any) => {
         const matched = pesertaList.find((p) =>
           p.guru?.nama_lengkap
             ?.toLowerCase()
