@@ -286,18 +286,30 @@ export function KehadiranPiketPenyambutanPage() {
       longitude: userCoords.lng,
     };
 
-    const { error } = await supabase
-      .from('kehadiran_pikets_penyambutan')
-      .upsert(payload, { onConflict: 'guru_id,tanggal' });
-
-    if (error) {
-      showToast('error', 'Gagal mencatat presensi: ' + error.message);
-    } else {
-      showToast('success', 'Berhasil melakukan presensi piket penyambutan!');
-      fetchDataHariIni();
-      fetchRiwayat();
-    }
-    setSubmitting(false);
+    try {
+  const res = await offlineUpsert(
+    'kehadiran_pikets_penyambutan',
+    payload,
+    'guru_id,tanggal',
+    { userId: guru.id, label: 'Presensi piket penyambutan' }
+  );
+  if (res.queued) {
+    showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
+    // Optimistic: set kehadiran state lokal (opsional)
+    setKehadiranHariIni({
+      ...(payload as any),
+      id: -Date.now(),
+    } as KehadiranPiketPenyambutan);
+  } else {
+    showToast('success', 'Berhasil melakukan presensi piket penyambutan!');
+    fetchDataHariIni();
+    fetchRiwayat();
+  }
+} catch (err: any) {
+  showToast('error', 'Gagal mencatat presensi: ' + (err?.message ?? err));
+} finally {
+  setSubmitting(false);
+}
   };
 
   const handleResetFilter = () => {
