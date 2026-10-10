@@ -1,9 +1,17 @@
 // src/lib/ai/aiProvider.ts
 // Multi-provider AI wrapper dengan failover otomatis.
-// Order text:   Groq → Cerebras → Gemini → OpenRouter
-// Order vision: OpenRouter → Gemini
+//
+// Urutan Text:   Groq → OpenRouter → Gemini
+// Urutan Vision: Groq → OpenRouter → Gemini
+//
+// Groq model disesuaikan dengan akun Anda:
+//   - Text:   openai/gpt-oss-120b, openai/gpt-oss-20b
+//   - Vision: qwen/qwen3.8-27b
+//
+// Cara test manual Groq:
+//   curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer gsk_xxx"
 
-export type AIProviderId = 'groq' | 'cerebras' | 'gemini' | 'openrouter';
+export type AIProviderId = 'groq' | 'openrouter' | 'gemini';
 
 export interface AITextRequest {
   prompt: string;
@@ -30,38 +38,60 @@ export interface AIResult {
 }
 
 // ============================================================================
-// CONFIG
+// CONFIG — API KEYS
 // ============================================================================
 const ENV = import.meta.env;
 
 const GROQ_KEY = ENV.VITE_GROQ_API_KEY as string | undefined;
-const CEREBRAS_KEY = ENV.VITE_CEREBRAS_API_KEY as string | undefined;
-const GEMINI_KEY = ENV.VITE_GEMINI_API_KEY as string | undefined;
 const OPENROUTER_KEY = ENV.VITE_OPENROUTER_API_KEY as string | undefined;
+const GEMINI_KEY = ENV.VITE_GEMINI_API_KEY as string | undefined;
 
-// Groq — model stabil (Llama 3.3 70B sangat konsisten)
-const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+// Validasi format key (hindari request sia-sia kalau key salah)
+const hasGroq = Boolean(GROQ_KEY && GROQ_KEY.startsWith('gsk_'));
+const hasOpenRouter = Boolean(OPENROUTER_KEY && OPENROUTER_KEY.startsWith('sk-or-'));
+const hasGemini = Boolean(GEMINI_KEY && GEMINI_KEY.length > 10);
 
-// Cerebras — cepat & stabil
-const CEREBRAS_MODELS = ['llama-3.3-70b', 'llama3.1-8b'];
+// ============================================================================
+// CONFIG — MODEL LIST
+// ============================================================================
+// Groq text — sesuai account Anda
+const GROQ_MODELS = [
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-20b',
+];
 
-// Gemini — pakai nama model yang sudah Anda pakai
-const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+// Groq vision — Qwen3.8 27B (input_modalities: text, image)
+const GROQ_VISION_MODELS = [
+  'qwen/qwen3.8-27b',
+];
 
-// OpenRouter — model gratis
+// OpenRouter text — model gratis
 const OPENROUTER_MODELS = [
   'meta-llama/llama-3.3-70b-instruct:free',
   'google/gemini-2.0-flash-exp:free',
+  'deepseek/deepseek-chat-v3.1:free',
 ];
 
-// Vision models (untuk scan surat)
-const OPENROUTER_VISION_MODELS = ['google/gemini-2.0-flash-exp:free'];
+// OpenRouter vision
+const OPENROUTER_VISION_MODELS = [
+  'google/gemini-2.0-flash-exp:free',
+  'meta-llama/llama-3.2-11b-vision-instruct:free',
+];
+
+// Gemini text
+const GEMINI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+];
+
+// Gemini vision
 const GEMINI_VISION_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash'];
 
 // ============================================================================
 // RETRY CONFIG
 // ============================================================================
-const MAX_RETRY_PER_MODEL = 1; // total 2 attempts per model
+const MAX_RETRY_PER_MODEL = 1;
 const RETRY_DELAY_MS = 1500;
 const RETRYABLE_STATUS = [429, 500, 502, 503, 504];
 
@@ -92,11 +122,26 @@ async function fetchWithRetry(
   throw lastErr ?? new Error('fetchWithRetry exhausted');
 }
 
+// Baca error body untuk log detail
+async function readErrorBody(res: Response): Promise<string> {
+  try {
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      return json?.error?.message || json?.message || text;
+    } catch {
+      return text;
+    }
+  } catch {
+    return '';
+  }
+}
+
 // ============================================================================
-// PROVIDER: GROQ (OpenAI-compatible)
+// PROVIDER: GROQ — TEXT
 // ============================================================================
 async function callGroq(req: AITextRequest, model: string): Promise<string> {
-  if (!GROQ_KEY) throw new Error('Groq API key tidak diset');
+  if (!hasGroq) throw new Error('Groq API key tidak valid / tidak diset');
 
   const messages: any[] = [];
   if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
@@ -124,7 +169,8 @@ async function callGroq(req: AITextRequest, model: string): Promise<string> {
   );
 
   if (!res.ok) {
-    const err = await res.text().catch(() => '');
+    const err = await readErrorBody(res);
+    console.error(`[ai] Groq ${model} HTTP ${res.status}:`, err);
     throw new Error(`Groq ${model} HTTP ${res.status}: ${err.slice(0, 200)}`);
   }
 
@@ -135,14 +181,25 @@ async function callGroq(req: AITextRequest, model: string): Promise<string> {
 }
 
 // ============================================================================
-// PROVIDER: CEREBRAS (OpenAI-compatible)
+// PROVIDER: GROQ — VISION (Qwen3.8 27B)
 // ============================================================================
-async function callCerebras(req: AITextRequest, model: string): Promise<string> {
-  if (!CEREBRAS_KEY) throw new Error('Cerebras API key tidak diset');
+async function callGroqVision(
+  req: AIVisionRequest,
+  model: string
+): Promise<string> {
+  if (!hasGroq) throw new Error('Groq API key tidak valid');
+
+  const userContent: any[] = [
+    { type: 'text', text: req.prompt },
+    {
+      type: 'image_url',
+      image_url: { url: `data:${req.imageMimeType};base64,${req.imageBase64}` },
+    },
+  ];
 
   const messages: any[] = [];
   if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
-  messages.push({ role: 'user', content: req.prompt });
+  messages.push({ role: 'user', content: userContent });
 
   const body: any = {
     model,
@@ -150,15 +207,14 @@ async function callCerebras(req: AITextRequest, model: string): Promise<string> 
     temperature: req.temperature ?? 0.3,
     max_tokens: req.maxTokens ?? 4096,
   };
-  if (req.jsonMode) body.response_format = { type: 'json_object' };
 
   const res = await fetchWithRetry(
-    'https://api.cerebras.ai/v1/chat/completions',
+    'https://api.groq.com/openai/v1/chat/completions',
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${CEREBRAS_KEY}`,
+        Authorization: `Bearer ${GROQ_KEY}`,
       },
       body: JSON.stringify(body),
     },
@@ -166,21 +222,24 @@ async function callCerebras(req: AITextRequest, model: string): Promise<string> 
   );
 
   if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Cerebras ${model} HTTP ${res.status}: ${err.slice(0, 200)}`);
+    const err = await readErrorBody(res);
+    console.error(`[ai] Groq Vision ${model} HTTP ${res.status}:`, err);
+    throw new Error(
+      `Groq Vision ${model} HTTP ${res.status}: ${err.slice(0, 200)}`
+    );
   }
 
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error(`Cerebras ${model} tidak mengembalikan teks`);
+  if (!text) throw new Error(`Groq Vision ${model} tidak mengembalikan teks`);
   return text;
 }
 
 // ============================================================================
-// PROVIDER: OPENROUTER (OpenAI-compatible)
+// PROVIDER: OPENROUTER — TEXT
 // ============================================================================
 async function callOpenRouter(req: AITextRequest, model: string): Promise<string> {
-  if (!OPENROUTER_KEY) throw new Error('OpenRouter API key tidak diset');
+  if (!hasOpenRouter) throw new Error('OpenRouter API key tidak valid / tidak diset');
 
   const messages: any[] = [];
   if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
@@ -201,7 +260,8 @@ async function callOpenRouter(req: AITextRequest, model: string): Promise<string
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${OPENROUTER_KEY}`,
-        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
+        'HTTP-Referer':
+          typeof window !== 'undefined' ? window.location.origin : '',
         'X-Title': 'SISFO SMK',
       },
       body: JSON.stringify(body),
@@ -210,8 +270,11 @@ async function callOpenRouter(req: AITextRequest, model: string): Promise<string
   );
 
   if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`OpenRouter ${model} HTTP ${res.status}: ${err.slice(0, 200)}`);
+    const err = await readErrorBody(res);
+    console.error(`[ai] OpenRouter ${model} HTTP ${res.status}:`, err);
+    throw new Error(
+      `OpenRouter ${model} HTTP ${res.status}: ${err.slice(0, 200)}`
+    );
   }
 
   const data = await res.json();
@@ -221,10 +284,68 @@ async function callOpenRouter(req: AITextRequest, model: string): Promise<string
 }
 
 // ============================================================================
-// PROVIDER: GEMINI (native)
+// PROVIDER: OPENROUTER — VISION
+// ============================================================================
+async function callOpenRouterVision(
+  req: AIVisionRequest,
+  model: string
+): Promise<string> {
+  if (!hasOpenRouter) throw new Error('OpenRouter API key tidak valid');
+
+  const userContent: any[] = [
+    { type: 'text', text: req.prompt },
+    {
+      type: 'image_url',
+      image_url: { url: `data:${req.imageMimeType};base64,${req.imageBase64}` },
+    },
+  ];
+
+  const messages: any[] = [];
+  if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
+  messages.push({ role: 'user', content: userContent });
+
+  const body: any = {
+    model,
+    messages,
+    temperature: req.temperature ?? 0.3,
+    max_tokens: req.maxTokens ?? 4096,
+  };
+
+  const res = await fetchWithRetry(
+    'https://openrouter.ai/api/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENROUTER_KEY}`,
+        'HTTP-Referer':
+          typeof window !== 'undefined' ? window.location.origin : '',
+        'X-Title': 'SISFO SMK',
+      },
+      body: JSON.stringify(body),
+    },
+    model
+  );
+
+  if (!res.ok) {
+    const err = await readErrorBody(res);
+    console.error(`[ai] OpenRouter Vision ${model} HTTP ${res.status}:`, err);
+    throw new Error(
+      `OpenRouter Vision ${model} HTTP ${res.status}: ${err.slice(0, 200)}`
+    );
+  }
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error(`OpenRouter Vision ${model} tidak mengembalikan teks`);
+  return text;
+}
+
+// ============================================================================
+// PROVIDER: GEMINI — TEXT
 // ============================================================================
 async function callGemini(req: AITextRequest, model: string): Promise<string> {
-  if (!GEMINI_KEY) throw new Error('Gemini API key tidak diset');
+  if (!hasGemini) throw new Error('Gemini API key tidak valid / tidak diset');
 
   const payload: any = {
     contents: [{ parts: [{ text: req.prompt }] }],
@@ -252,7 +373,8 @@ async function callGemini(req: AITextRequest, model: string): Promise<string> {
   );
 
   if (!res.ok) {
-    const err = await res.text().catch(() => '');
+    const err = await readErrorBody(res);
+    console.error(`[ai] Gemini ${model} HTTP ${res.status}:`, err);
     throw new Error(`Gemini ${model} HTTP ${res.status}: ${err.slice(0, 200)}`);
   }
 
@@ -263,10 +385,13 @@ async function callGemini(req: AITextRequest, model: string): Promise<string> {
 }
 
 // ============================================================================
-// VISION PROVIDERS
+// PROVIDER: GEMINI — VISION
 // ============================================================================
-async function callGeminiVision(req: AIVisionRequest, model: string): Promise<string> {
-  if (!GEMINI_KEY) throw new Error('Gemini API key tidak diset');
+async function callGeminiVision(
+  req: AIVisionRequest,
+  model: string
+): Promise<string> {
+  if (!hasGemini) throw new Error('Gemini API key tidak valid');
 
   const payload: any = {
     contents: [
@@ -301,8 +426,10 @@ async function callGeminiVision(req: AIVisionRequest, model: string): Promise<st
   );
 
   if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Gemini Vision ${model} HTTP ${res.status}: ${err.slice(0, 200)}`);
+    const err = await readErrorBody(res);
+    throw new Error(
+      `Gemini Vision ${model} HTTP ${res.status}: ${err.slice(0, 200)}`
+    );
   }
 
   const data = await res.json();
@@ -311,119 +438,59 @@ async function callGeminiVision(req: AIVisionRequest, model: string): Promise<st
   return text;
 }
 
-async function callOpenRouterVision(
-  req: AIVisionRequest,
-  model: string
-): Promise<string> {
-  if (!OPENROUTER_KEY) throw new Error('OpenRouter API key tidak diset');
-
-  const userContent: any[] = [
-    { type: 'text', text: req.prompt },
-    {
-      type: 'image_url',
-      image_url: { url: `data:${req.imageMimeType};base64,${req.imageBase64}` },
-    },
-  ];
-
-  const messages: any[] = [];
-  if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
-  messages.push({ role: 'user', content: userContent });
-
-  const body: any = {
-    model,
-    messages,
-    temperature: req.temperature ?? 0.3,
-    max_tokens: req.maxTokens ?? 4096,
-  };
-
-  const res = await fetchWithRetry(
-    'https://openrouter.ai/api/v1/chat/completions',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENROUTER_KEY}`,
-        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-        'X-Title': 'SISFO SMK',
-      },
-      body: JSON.stringify(body),
-    },
-    model
-  );
-
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(
-      `OpenRouter Vision ${model} HTTP ${res.status}: ${err.slice(0, 200)}`
-    );
-  }
-
-  const data = await res.json();
-  const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error(`OpenRouter Vision ${model} tidak mengembalikan teks`);
-  return text;
-}
-
 // ============================================================================
-// PUBLIC API
+// PUBLIC API — TEXT
 // ============================================================================
 export async function generateText(req: AITextRequest): Promise<AIResult> {
   const attempts: string[] = [];
 
   // 1. Groq
-  if (GROQ_KEY) {
+  if (hasGroq) {
     for (const model of GROQ_MODELS) {
       try {
         const text = await callGroq(req, model);
         console.info(`[ai] ✅ ${model} (groq)`);
         return { text, provider: 'groq', model };
       } catch (e: any) {
-        attempts.push(`groq:${model}:${e.message}`);
+        attempts.push(`groq:${model}:${e.message.slice(0, 80)}`);
       }
     }
+  } else if (GROQ_KEY) {
+    console.warn('[ai] Groq key ada tapi format tidak valid (harus gsk_...)');
   }
 
-  // 2. Cerebras
-  if (CEREBRAS_KEY) {
-    for (const model of CEREBRAS_MODELS) {
-      try {
-        const text = await callCerebras(req, model);
-        console.info(`[ai] ✅ ${model} (cerebras)`);
-        return { text, provider: 'cerebras', model };
-      } catch (e: any) {
-        attempts.push(`cerebras:${model}:${e.message}`);
-      }
-    }
-  }
-
-  // 3. Gemini
-  if (GEMINI_KEY) {
-    for (const model of GEMINI_MODELS) {
-      try {
-        const text = await callGemini(req, model);
-        console.info(`[ai] ✅ ${model} (gemini)`);
-        return { text, provider: 'gemini', model };
-      } catch (e: any) {
-        attempts.push(`gemini:${model}:${e.message}`);
-      }
-    }
-  }
-
-  // 4. OpenRouter
-  if (OPENROUTER_KEY) {
+  // 2. OpenRouter
+  if (hasOpenRouter) {
     for (const model of OPENROUTER_MODELS) {
       try {
         const text = await callOpenRouter(req, model);
         console.info(`[ai] ✅ ${model} (openrouter)`);
         return { text, provider: 'openrouter', model };
       } catch (e: any) {
-        attempts.push(`openrouter:${model}:${e.message}`);
+        attempts.push(`openrouter:${model}:${e.message.slice(0, 80)}`);
+      }
+    }
+  } else if (OPENROUTER_KEY) {
+    console.warn('[ai] OpenRouter key ada tapi format tidak valid (harus sk-or-...)');
+  }
+
+  // 3. Gemini
+  if (hasGemini) {
+    for (const model of GEMINI_MODELS) {
+      try {
+        const text = await callGemini(req, model);
+        console.info(`[ai] ✅ ${model} (gemini)`);
+        return { text, provider: 'gemini', model };
+      } catch (e: any) {
+        attempts.push(`gemini:${model}:${e.message.slice(0, 80)}`);
       }
     }
   }
 
   console.error('[ai] semua provider gagal:', attempts);
-  throw new Error('Semua provider AI gagal merespons. Cek koneksi atau hubungi admin.');
+  throw new Error(
+    'Semua provider AI gagal merespons. Cek konfigurasi API key atau hubungi admin.'
+  );
 }
 
 export async function generateJSON<T>(
@@ -446,30 +513,47 @@ export async function generateJSON<T>(
   }
 }
 
+// ============================================================================
+// PUBLIC API — VISION
+// ============================================================================
 export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
   const attempts: string[] = [];
 
-  // Vision: OpenRouter dulu (gratis), lalu Gemini
-  if (OPENROUTER_KEY) {
+  // 1. Groq Vision (Qwen3.8 27B)
+  if (hasGroq) {
+    for (const model of GROQ_VISION_MODELS) {
+      try {
+        const text = await callGroqVision(req, model);
+        console.info(`[ai] ✅ ${model} (groq vision)`);
+        return { text, provider: 'groq', model };
+      } catch (e: any) {
+        attempts.push(`groq:${model}:${e.message.slice(0, 80)}`);
+      }
+    }
+  }
+
+  // 2. OpenRouter Vision
+  if (hasOpenRouter) {
     for (const model of OPENROUTER_VISION_MODELS) {
       try {
         const text = await callOpenRouterVision(req, model);
         console.info(`[ai] ✅ ${model} (openrouter vision)`);
         return { text, provider: 'openrouter', model };
       } catch (e: any) {
-        attempts.push(`openrouter:${model}:${e.message}`);
+        attempts.push(`openrouter:${model}:${e.message.slice(0, 80)}`);
       }
     }
   }
 
-  if (GEMINI_KEY) {
+  // 3. Gemini Vision
+  if (hasGemini) {
     for (const model of GEMINI_VISION_MODELS) {
       try {
         const text = await callGeminiVision(req, model);
         console.info(`[ai] ✅ ${model} (gemini vision)`);
         return { text, provider: 'gemini', model };
       } catch (e: any) {
-        attempts.push(`gemini:${model}:${e.message}`);
+        attempts.push(`gemini:${model}:${e.message.slice(0, 80)}`);
       }
     }
   }
@@ -493,7 +577,12 @@ export async function generateJSONVision<T>(
     const data = JSON.parse(cleaned) as T;
     return { data, provider, model };
   } catch (e) {
-    console.error('[ai] parse JSON vision gagal dari', provider, ':', cleaned.slice(0, 300));
+    console.error(
+      '[ai] parse JSON vision gagal dari',
+      provider,
+      ':',
+      cleaned.slice(0, 300)
+    );
     throw new Error('AI vision mengembalikan format tidak valid. Coba lagi.');
   }
 }
@@ -502,15 +591,14 @@ export async function generateJSONVision<T>(
 // HEALTH CHECK
 // ============================================================================
 export function hasAnyProvider(): boolean {
-  return Boolean(GROQ_KEY || CEREBRAS_KEY || GEMINI_KEY || OPENROUTER_KEY);
+  return hasGroq || hasOpenRouter || hasGemini;
 }
 
 export function getAvailableProviders(): AIProviderId[] {
   const list: AIProviderId[] = [];
-  if (GROQ_KEY) list.push('groq');
-  if (CEREBRAS_KEY) list.push('cerebras');
-  if (GEMINI_KEY) list.push('gemini');
-  if (OPENROUTER_KEY) list.push('openrouter');
+  if (hasGroq) list.push('groq');
+  if (hasOpenRouter) list.push('openrouter');
+  if (hasGemini) list.push('gemini');
   return list;
 }
 
