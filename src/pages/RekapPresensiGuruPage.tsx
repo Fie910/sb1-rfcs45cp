@@ -23,7 +23,7 @@ import {
   isAiAvailable,
   type AnalisaKehadiranAi,
   type RecordForAi,
-} from '@/lib/ai/ai/analisaKehadiranAi';
+} from '@/lib/ai/analisaKehadiranAi';
 import type { Guru } from '@/types/database';
 import {
   exportColoredPdf,
