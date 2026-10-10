@@ -1,4 +1,5 @@
 //src/lib/offline/db.ts
+
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
 export interface PendingOp {
