@@ -49,7 +49,6 @@ function loadCollapsedState(current: PageKey): Set<string> {
     /* ignore */
   }
 
-  // First visit — collapse semua kecuali grup yang mengandung halaman aktif
   const activeGroup = NAVIGATION_CONFIG.find((g) =>
     g.items.some((i) => i.key === current)
   );
@@ -66,12 +65,10 @@ function loadCollapsedState(current: PageKey): Set<string> {
 export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: SidebarProps) {
   const { guru, role, namaRole, signOut, hasAccess } = useAuth();
 
-  // State collapsed
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() =>
     loadCollapsedState(current)
   );
 
-  // Persist ke localStorage
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -83,7 +80,6 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
     }
   }, [collapsedGroups]);
 
-  // Auto-expand grup yang mengandung halaman aktif
   useEffect(() => {
     const activeGroup = NAVIGATION_CONFIG.find((g) =>
       g.items.some((i) => i.key === current)
@@ -98,31 +94,19 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
     });
   }, [current]);
 
-  // ==========================================================================
-  // Visible groups (filter akses)
-  // ==========================================================================
-const visibleGroups = useMemo(() => {
-  return NAVIGATION_CONFIG
-    .map((group) => ({
+  const visibleGroups = useMemo(() => {
+    return NAVIGATION_CONFIG.map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        // 1. Cek hak akses (existing)
         if (!hasAccess(item.key)) return false;
-
-        // 2. Cek customAccess — tahfidz hanya untuk guru tahfidz
         if (item.customAccess === 'tahfidz' && !canAccessTahfidz(guru)) {
           return false;
         }
-
         return true;
       }),
-    }))
-    .filter((group) => group.items.length > 0);
-}, [hasAccess, guru]);   // ← tambah `guru` ke deps
+    })).filter((group) => group.items.length > 0);
+  }, [hasAccess, guru]);
 
-  // ==========================================================================
-  // HANDLERS
-  // ==========================================================================
   const toggleGroup = (title: string) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
@@ -144,9 +128,6 @@ const visibleGroups = useMemo(() => {
     visibleGroups.length > 0 &&
     visibleGroups.every((g) => collapsedGroups.has(g.groupTitle));
 
-  // ==========================================================================
-  // RENDER
-  // ==========================================================================
   return (
     <aside
       className={`fixed lg:sticky top-0 left-0 h-screen h-dvh w-72 bg-slate-900 border-r border-slate-800 z-40 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl ${
@@ -189,7 +170,6 @@ const visibleGroups = useMemo(() => {
         {visibleGroups.map((group) => {
           const isCollapsed = collapsedGroups.has(group.groupTitle);
 
-          // Aggregate badge count (hanya hitung dari item yang visible)
           const aggregateBadge = group.items.reduce(
             (sum, item) => sum + (badgeCounts?.[item.key] ?? 0),
             0
@@ -197,7 +177,6 @@ const visibleGroups = useMemo(() => {
 
           return (
             <div key={group.groupTitle}>
-              {/* GROUP HEADER — clickable toggle */}
               <button
                 type="button"
                 onClick={() => toggleGroup(group.groupTitle)}
@@ -214,14 +193,12 @@ const visibleGroups = useMemo(() => {
                   {group.groupTitle}
                 </span>
 
-                {/* Item count — hanya tampil saat collapsed */}
                 {isCollapsed && (
                   <span className="text-[10px] font-mono text-slate-600 shrink-0">
                     {group.items.length}
                   </span>
                 )}
 
-                {/* Aggregate badge — hanya tampil saat collapsed */}
                 {isCollapsed && aggregateBadge > 0 && (
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500 text-white shadow-sm shrink-0">
                     {aggregateBadge > 99 ? '99+' : aggregateBadge}
@@ -229,7 +206,6 @@ const visibleGroups = useMemo(() => {
                 )}
               </button>
 
-              {/* GROUP ITEMS */}
               {!isCollapsed && (
                 <div className="mt-0.5 space-y-0.5 pl-2">
                   {group.items.map((item) => {
@@ -257,7 +233,6 @@ const visibleGroups = useMemo(() => {
                           <span className="truncate">{item.label}</span>
                         </div>
 
-                        {/* Lencana Notifikasi */}
                         {count > 0 && (
                           <span
                             className={`ml-2 px-2 py-0.5 text-[11px] font-bold rounded-full transition-all shrink-0 ${
@@ -285,7 +260,7 @@ const visibleGroups = useMemo(() => {
           <p className="text-sm font-semibold text-slate-200 truncate">
             {guru?.nama_lengkap ?? 'Guru'}
           </p>
-          <p className="text-xs text-slate-500 truncate mt-0.5">{guru?.email}</p>
+          <p className="text-xs text-slate-500 truncate mt-0.5">{guru?.email ?? ''}</p>
           <div className="flex items-center gap-2 mt-3">
             {role && (
               <span
