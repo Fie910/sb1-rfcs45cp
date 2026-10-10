@@ -1,4 +1,5 @@
-src/lib/offline/syncQueue.ts
+//src/lib/offline/syncQueue.ts
+
 import { getDB, type PendingOp } from './db';
 import { supabase } from '../supabase';
 
