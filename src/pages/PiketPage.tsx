@@ -173,15 +173,6 @@ export function PiketPage() {
 
     const targetHari = getHariFromDate(selectedDate);
 
-    if (targetHari === 'Minggu') {
-      setIsHariLibur(true);
-      setKeteranganLibur('Hari Minggu (Libur Akhir Pekan)');
-      setJadwalKbmjpList([]);
-      setPresensiMap({});
-      setLoadingKbm(false);
-      return;
-    }
-
     try {
       // Cek hari libur — cache per tanggal
       const { data: liburData } = await cachedQuerySafe<{ keterangan: string } | null>(
