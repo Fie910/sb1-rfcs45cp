@@ -40,6 +40,7 @@ import {
 } from '@/utils/date';
 import { haversineDistance } from '@/utils/geo';
 import { offlineInsert, offlineUpdate } from '@/lib/offline/offlineClient';
+import { cachedQuerySafe } from '@/lib/offline/cachedQuery';
 import type {
   JadwalKbmWithRelations,
   AgendaGuruWithRelations,
