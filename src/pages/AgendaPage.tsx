@@ -223,57 +223,92 @@ export function AgendaPage() {
     if (!guru) { setLoading(false); return; }
     setLoading(true);
     try {
-      const [jadwalRes, agendaRes, riwayatRes, sekolahRes] = await Promise.all([
-        supabase
-          .from('jadwal_kbms')
-          .select('*, kelas(id, nama_kelas), gurus(id, nama_lengkap), mata_pelajarans(id, nama_mapel)')
-          .eq('guru_id', guru.id),
-        supabase
-          .from('agenda_gurus')
-          .select('*, jadwal_kbms(id, waktu_mulai, waktu_selesai, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel))')
-          .eq('guru_id', guru.id)
-          .eq('tanggal', todayDate)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('agenda_gurus')
-          .select('*, jadwal_kbms(id, waktu_mulai, waktu_selesai, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel))')
-          .eq('guru_id', guru.id)
-          .order('tanggal', { ascending: false })
-          .order('created_at', { ascending: false }),
-        supabase.from('pengaturan_sekolahs').select('*').maybeSingle(),
-      ]);
-
-      if (jadwalRes.error) console.error('Jadwal Error:', jadwalRes.error);
-      if (agendaRes.error) console.error('Agenda Today Error:', agendaRes.error);
-      if (riwayatRes.error) console.error('Riwayat Error:', riwayatRes.error);
-
-      const fetchedJadwal = (jadwalRes.data as JadwalKbmWithRelations[]) || [];
+      // 1. Jadwal KBM milik guru (semua hari)
+      const { data: fetchedJadwal } = await cachedQuerySafe<JadwalKbmWithRelations[]>(
+        `jadwal_kbms:guru:${guru.id}:all`,
+        async () => {
+          const res = await supabase
+            .from('jadwal_kbms')
+            .select('*, kelas(id, nama_kelas), gurus(id, nama_lengkap), mata_pelajarans(id, nama_mapel)')
+            .eq('guru_id', guru.id);
+          if (res.error) throw res.error;
+          return (res.data as JadwalKbmWithRelations[]) ?? [];
+        },
+        []
+      );
       setJadwalList(fetchedJadwal);
-      setAgendaList((agendaRes.data as AgendaGuruWithRelations[]) || []);
-      setRiwayatList((riwayatRes.data as AgendaGuruWithRelations[]) || []);
 
-      // Sekolah config: kalau berhasil → cache; kalau gagal (offline) → pakai cache
-      if (sekolahRes.data) {
-        const cfg = sekolahRes.data as PengaturanSekolah;
-        setSekolahConfig(cfg);
-        saveCachedSekolah(cfg);
+      // 2. Agenda hari ini
+      const { data: agendaToday } = await cachedQuerySafe<AgendaGuruWithRelations[]>(
+        `agenda_gurus:guru:${guru.id}:tanggal:${todayDate}`,
+        async () => {
+          const res = await supabase
+            .from('agenda_gurus')
+            .select('*, jadwal_kbms(id, waktu_mulai, waktu_selesai, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel))')
+            .eq('guru_id', guru.id)
+            .eq('tanggal', todayDate)
+            .order('created_at', { ascending: false });
+          if (res.error) throw res.error;
+          return (res.data as AgendaGuruWithRelations[]) ?? [];
+        },
+        []
+      );
+      setAgendaList(agendaToday);
+
+      // 3. Riwayat agenda (recent)
+      const { data: riwayatData } = await cachedQuerySafe<AgendaGuruWithRelations[]>(
+        `agenda_gurus:guru:${guru.id}:riwayat`,
+        async () => {
+          const res = await supabase
+            .from('agenda_gurus')
+            .select('*, jadwal_kbms(id, waktu_mulai, waktu_selesai, kelas(id, nama_kelas), mata_pelajarans(id, nama_mapel))')
+            .eq('guru_id', guru.id)
+            .order('tanggal', { ascending: false })
+            .order('created_at', { ascending: false });
+          if (res.error) throw res.error;
+          return (res.data as AgendaGuruWithRelations[]) ?? [];
+        },
+        []
+      );
+      setRiwayatList(riwayatData);
+
+      // 4. Pengaturan sekolah (juga tetap di-cache ke localStorage oleh saveCachedSekolah)
+      const { data: sekolahData } = await cachedQuerySafe<PengaturanSekolah | null>(
+        'pengaturan_sekolahs:current',
+        async () => {
+          const res = await supabase.from('pengaturan_sekolahs').select('*').maybeSingle();
+          if (res.error && res.error.code !== 'PGRST116') throw res.error;
+          return (res.data as PengaturanSekolah | null) ?? null;
+        },
+        null
+      );
+      if (sekolahData) {
+        setSekolahConfig(sekolahData);
+        saveCachedSekolah(sekolahData);
       } else {
         const cached = loadCachedSekolah();
         if (cached) setSekolahConfig(cached);
       }
 
+      // 5. Presensi siswa untuk jadwal guru (semua jadwal) — untuk tampilan riwayat
       const jadwalIds = fetchedJadwal.map((j) => j.id);
       if (jadwalIds.length > 0) {
-        const { data: presensiData, error: presensiError } = await supabase
-          .from('presensis')
-          .select('*, siswas(id, nama_lengkap)')
-          .in('jadwal_kbm_id', jadwalIds);
-        if (presensiError) console.error('Presensi Siswa Error:', presensiError);
-        else setPresensiList((presensiData as PresensiWithSiswa[]) || []);
+        const { data: presensiData } = await cachedQuerySafe<PresensiWithSiswa[]>(
+          `presensis:jadwal_guru:${guru.id}`,
+          async () => {
+            const res = await supabase
+              .from('presensis')
+              .select('*, siswas(id, nama_lengkap)')
+              .in('jadwal_kbm_id', jadwalIds);
+            if (res.error) throw res.error;
+            return (res.data as PresensiWithSiswa[]) ?? [];
+          },
+          []
+        );
+        setPresensiList(presensiData);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
-      // Fallback sekolah config dari cache bila fetch gagal total
       const cached = loadCachedSekolah();
       if (cached) setSekolahConfig(cached);
     } finally {
