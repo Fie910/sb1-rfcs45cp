@@ -169,6 +169,8 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       {/* Install PWA Banner (muncul otomatis di bottom-right) */}
       <InstallPWA />
+      {/* 🆕 Badge status offline/sinkronisasi */}
+      <SyncStatusBadge />
     </div>
   );
 }
