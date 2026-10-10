@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
-import { ringkasSurat, isAiAvailable } from '@/lib/ai/ai/suratAi';
+import { ringkasSurat, isAiAvailable } from '@/lib/ai/suratAi';
 import type { RingkasanSuratAI } from '@/types/database';
 
 // =============================================================================
