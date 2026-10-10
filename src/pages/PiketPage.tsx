@@ -31,6 +31,7 @@ import type {
   HariMinggu,
 } from '@/types/database';
 import { STATUS_OPTIONS, type StatusKehadiranGuru } from '@/constants/piket';
+import { cachedQuerySafe } from '@/lib/offline/cachedQuery';
 
 export interface OptionStatus {
   value: StatusKehadiranGuru;
