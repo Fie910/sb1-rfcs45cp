@@ -38,7 +38,7 @@ import {
   getCurrentTimeStrWib,
   isJadwalAktif,
 } from '@/utils/date';
-import { haversineDistance } from '@/lib/geo';
+import { haversineDistance } from '@/utils/geo';
 import { offlineInsert, offlineUpdate } from '@/lib/offline/offlineClient';
 import type {
   JadwalKbmWithRelations,
