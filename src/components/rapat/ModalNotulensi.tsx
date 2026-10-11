@@ -431,15 +431,17 @@ export function ModalNotulensi({
         </div>
 
         <SpeechToText
-  onTranscript={(text) =>
-        setForm((prev) => ({
-      ...prev,
-      pembahasan: prev.pembahasan
-        ? prev.pembahasan + '\n\n' + text
-        : text,}))    
-  }
-  contextPrompt="Rapat di SMK KH. A. Wahab Muhsin. Nama guru dan istilah teknis mungkin disebutkan."
-  insertLabel="Sisipkan ke Catatan Rapat"
+          enableSpeakerMode
+          defaultSpeakerMode="rapat"
+          onTranscript={(text) =>
+                setForm((prev) => ({
+              ...prev,
+              pembahasan: prev.pembahasan
+                ? prev.pembahasan + '\n\n' + text
+                : text,}))    
+          }
+          contextPrompt="Rapat Dinas di SMK KH. A. Wahab Muhsin."
+          insertLabel="Sisipkan ke Catatan Rapat"
 />
 
         {/* RINGKASAN */}
