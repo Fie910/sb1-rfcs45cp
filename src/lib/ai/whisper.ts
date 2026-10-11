@@ -1,32 +1,34 @@
 // src/lib/ai/whisper.ts
 // Speech-to-Text via Groq Whisper Large V3 Turbo.
-// Support Bahasa Indonesia. Input: audio Blob dari MediaRecorder.
-// Max 25 MB per request (≈ 40 menit rekaman).
+// Support Bahasa Indonesia. Sekarang juga mengembalikan SEGMENTS (timestamp).
 
 const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
 
-// Model alternatif (kalau perlu akurasi maksimal, ~2x lebih lambat):
-//   'whisper-large-v3'      → akurasi tertinggi
-//   'whisper-large-v3-turbo' → cepat & tetap akurat (default kita)
 const WHISPER_MODEL = 'whisper-large-v3-turbo';
+
+export interface TranscribedSegment {
+  id: number;
+  start: number;  // detik
+  end: number;    // detik
+  text: string;
+}
 
 export interface TranscribeOptions {
   /** Kode bahasa ISO-639-1. 'id' = Bahasa Indonesia. Default: 'id' */
   language?: string;
   /** Prompt konteks untuk bantu Whisper (nama, istilah khusus, dll). */
   prompt?: string;
+  /** Minta Whisper mengembalikan segment timestamps (untuk speaker diarization). */
+  includeSegments?: boolean;
 }
 
 export interface TranscribeResult {
   text: string;
   duration?: number;
   language?: string;
+  segments?: TranscribedSegment[];
 }
 
-/**
- * Transkripsi audio Blob → teks.
- * Audio dari MediaRecorder biasanya format WebM/Opus — didukung Groq.
- */
 export async function transcribeAudio(
   audioBlob: Blob,
   opts: TranscribeOptions = {}
@@ -35,13 +37,11 @@ export async function transcribeAudio(
     throw new Error('Groq API key tidak valid / belum diset.');
   }
 
-  // Cek ukuran (Groq limit 25 MB)
   const MAX_MB = 25;
   const sizeMb = audioBlob.size / (1024 * 1024);
   if (sizeMb > MAX_MB) {
     throw new Error(
-      `Rekaman terlalu besar (${sizeMb.toFixed(1)} MB). ` +
-      `Maksimal ${MAX_MB} MB (~40 menit). Coba rekam lebih pendek atau bagi menjadi beberapa sesi.`
+      `Rekaman terlalu besar (${sizeMb.toFixed(1)} MB). Maksimal ${MAX_MB} MB (~40 menit).`
     );
   }
 
@@ -51,6 +51,12 @@ export async function transcribeAudio(
   formData.append('language', opts.language ?? 'id');
   formData.append('response_format', 'verbose_json');
   formData.append('temperature', '0');
+
+  // 🆕 Minta segment timestamps kalau perlu
+  if (opts.includeSegments) {
+    formData.append('timestamp_granularities[]', 'segment');
+  }
+
   if (opts.prompt) {
     formData.append('prompt', opts.prompt.slice(0, 900));
   }
@@ -59,7 +65,6 @@ export async function transcribeAudio(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${GROQ_KEY}`,
-      // JANGAN set Content-Type — biar browser yang set multipart boundary
     },
     body: formData,
   });
@@ -67,23 +72,29 @@ export async function transcribeAudio(
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
     console.error('[whisper] Groq error:', res.status, errText);
-    if (res.status === 413) {
-      throw new Error('Rekaman terlalu besar untuk Groq (max 25 MB).');
-    }
-    if (res.status === 401) {
-      throw new Error('Groq API key tidak valid atau expired.');
-    }
-    if (res.status === 429) {
-      throw new Error('Kuota Groq habis. Coba lagi nanti atau pakai mode Live.');
-    }
+    if (res.status === 413) throw new Error('Rekaman terlalu besar untuk Groq (max 25 MB).');
+    if (res.status === 401) throw new Error('Groq API key tidak valid atau expired.');
+    if (res.status === 429) throw new Error('Kuota Groq habis. Coba lagi nanti atau pakai mode Live.');
     throw new Error(`Gagal transkripsi (HTTP ${res.status}): ${errText.slice(0, 200)}`);
   }
 
   const data = await res.json();
+
+  // Normalisasi segments (id bisa datang sebagai angka, kadang string)
+  const segments: TranscribedSegment[] | undefined = Array.isArray(data.segments)
+    ? data.segments.map((s: any, i: number) => ({
+        id: typeof s.id === 'number' ? s.id : i,
+        start: Number(s.start ?? 0),
+        end: Number(s.end ?? 0),
+        text: String(s.text ?? '').trim(),
+      }))
+    : undefined;
+
   return {
     text: (data.text ?? '').trim(),
     duration: data.duration,
     language: data.language,
+    segments,
   };
 }
 
