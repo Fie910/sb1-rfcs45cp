@@ -459,7 +459,7 @@ export function PiketPage() {
     const newStatusPenyampaian = isSudah ? 'Belum Disampaikan' : 'Sudah Disampaikan';
     const newStatusPenanganan = isSudah ? 'Menunggu' : 'Selesai';
     const newWaktu = isSudah ? null : new Date().toISOString();
-    const newGuruPiket = isSudah ? null : guru?.id;
+    const newGuruPiket = isSudah ? null : (guru?.id ?? null);
 
     setSaving(true);
     try {
