@@ -434,8 +434,8 @@ export function ModalNotulensi({
   onTranscript={(text) =>
         setForm((prev) => ({
       ...prev,
-      pembahasan_mentah: prev.pembahasan_mentah
-        ? prev.pembahasan_mentah + '\n\n' + text
+      pembahasan: prev.pembahasan
+        ? prev.pembahasan + '\n\n' + text
         : text,}))    
   }
   contextPrompt="Rapat di SMK KH. A. Wahab Muhsin. Nama guru dan istilah teknis mungkin disebutkan."
