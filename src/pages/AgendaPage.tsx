@@ -627,7 +627,7 @@ export function AgendaPage() {
       const statusKehadiran = menitTerlambat > 0 ? 'Terlambat' : 'Hadir Mengajar';
       let queuedCount = 0;
       const syntheticRows: AgendaGuruWithRelations[] = [];
-      const serverPatch: Array<{ id: number; patch: any }> = [];
+      const serverPatch: Array<{ id: string | number; patch: any }> = [];
 
       for (const jadwal of activeJadwalGroup.jadwalList) {
         const existing = getAgendaForJadwal(jadwal.id);
