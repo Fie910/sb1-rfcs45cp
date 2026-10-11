@@ -34,6 +34,7 @@ import type {
   TipeKonseling,
   StatusKonseling,
 } from '@/types/database';
+import { SpeechToText } from '@/components/SpeechToText';
 
 // =============================================================================
 // TYPES
