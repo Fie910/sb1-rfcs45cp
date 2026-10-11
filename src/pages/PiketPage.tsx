@@ -484,8 +484,8 @@ export function PiketPage() {
                   ...x,
                   status_penyampaian: newStatusPenyampaian,
                   status_penanganan: newStatusPenanganan,
-                  waktu_penyampaian: newWaktu ?? undefined,
-                  guru_piket_id: newGuruPiket ?? undefined,
+                  waktu_penyampaian: newWaktu,
+                  guru_piket_id: newGuruPiket,
                 }
               : x
           )
@@ -496,8 +496,8 @@ export function PiketPage() {
                 ...prev,
                 status_penyampaian: newStatusPenyampaian,
                 status_penanganan: newStatusPenanganan,
-                waktu_penyampaian: newWaktu ?? undefined,
-                guru_piket_id: newGuruPiket ?? undefined,
+                waktu_penyampaian: newWaktu,
+                guru_piket_id: newGuruPiket,
               }
             : prev
         );
