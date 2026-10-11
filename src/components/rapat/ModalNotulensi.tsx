@@ -432,7 +432,11 @@ export function ModalNotulensi({
 
         <SpeechToText
   onTranscript={(text) =>
-    setCatatanMentah((prev) => (prev ? prev + '\n\n' + text : text))
+        setForm((prev) => ({
+      ...prev,
+      pembahasan_mentah: prev.pembahasan_mentah
+        ? prev.pembahasan_mentah + '\n\n' + text
+        : text,}))    
   }
   contextPrompt="Rapat di SMK KH. A. Wahab Muhsin. Nama guru dan istilah teknis mungkin disebutkan."
   insertLabel="Sisipkan ke Catatan Rapat"
