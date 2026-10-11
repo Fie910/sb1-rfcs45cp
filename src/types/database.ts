@@ -203,7 +203,7 @@ export type IzinGuruPiket = {
   kelas_id: number;
   mata_pelajaran: string;
   mapel_id: number | null;
-  status_penanganan: 'Menunggu' | 'Ditangani';
+  status_penanganan: 'Menunggu' | 'Diproses Piket' | 'Selesai';
   guru_piket_id: string | null;
   status_penyampaian: 'Belum Disampaikan' | 'Sudah Disampaikan';
   waktu_penyampaian: string | null;
