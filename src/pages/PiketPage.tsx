@@ -476,29 +476,25 @@ export function PiketPage() {
       );
 
       if (res.queued) {
-        // Optimistic update ke state lokal
+        // Optimistic update ke state lokal (cast untuk handle nilai status
+        // yang lebih baru dari TS type definition)
+        const patchedFields: Partial<IzinGuruPiketWithRelations> = {
+          status_penyampaian: newStatusPenyampaian,
+          status_penanganan: newStatusPenanganan as any,
+          waktu_penyampaian: (newWaktu ?? undefined) as any,
+          guru_piket_id: (newGuruPiket ?? undefined) as any,
+        };
+
         setIzinList((prev) =>
           prev.map((x) =>
             x.id === izin.id
-              ? {
-                  ...x,
-                  status_penyampaian: newStatusPenyampaian,
-                  status_penanganan: newStatusPenanganan,
-                  waktu_penyampaian: newWaktu ?? undefined,
-                  guru_piket_id: newGuruPiket ?? undefined,
-                }
+              ? ({ ...x, ...patchedFields } as IzinGuruPiketWithRelations)
               : x
           )
         );
         setSelectedIzin((prev) =>
           prev && prev.id === izin.id
-            ? {
-                ...prev,
-                status_penyampaian: newStatusPenyampaian,
-                status_penanganan: newStatusPenanganan,
-                waktu_penyampaian: newWaktu ?? undefined,
-                guru_piket_id: newGuruPiket ?? undefined,
-              }
+            ? ({ ...prev, ...patchedFields } as IzinGuruPiketWithRelations)
             : prev
         );
         showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
