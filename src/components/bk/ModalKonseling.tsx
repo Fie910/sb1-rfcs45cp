@@ -569,8 +569,8 @@ export function ModalKonseling({
           onTranscript={(text) =>
             setForm((prev) => ({
             ...prev,
-            pembahasan_mentah: prev.pembahasan_mentah
-              ? prev.pembahasan_mentah + '\n\n' + text
+            catatan_rahasia: prev.catatan_rahasia
+              ? prev.catatan_rahasia + '\n\n' + text
               : text,
           }))
           }
