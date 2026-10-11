@@ -130,7 +130,7 @@ export function PiketPage() {
       );
 
       // Izin guru piket — cache global (recent 500)
-      const { data: finalIzinData } = await cachedQuerySafe<TahfidzSetoranWithRelations[]>(
+      const { data: finalIzinData } = await cachedQuerySafe<IzinGuruPiketWithRelations[]>(
         'izin_guru_pikets:recent',
         async () => {
           const izinRes = await supabase
