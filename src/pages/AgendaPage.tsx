@@ -567,7 +567,7 @@ export function AgendaPage() {
         if (serverPatch.length > 0) {
           setAgendaList((prev) =>
             prev.map((a) => {
-              const p = serverPatch.find((s) => s.id === a.id);
+              const p = serverPatch.find((s) => String(s.id) === String(a.id));
               return p ? { ...a, ...p.patch } : a;
             })
           );
