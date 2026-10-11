@@ -562,6 +562,21 @@ export function ModalKonseling({
             className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-amber-500/30 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
           />
         </div>
+        
+        <SpeechToText
+          enableSpeakerMode
+          defaultSpeakerMode="konseling"
+          onTranscript={(text) =>
+            setForm((prev) => ({
+            ...prev,
+            pembahasan_mentah: prev.pembahasan_mentah
+              ? prev.pembahasan_mentah + '\n\n' + text
+              : text,
+          }))
+          }
+          contextPrompt="Sesi konseling BK antara guru BK dan siswa."
+          insertLabel="Sisipkan Dialog ke Catatan Konseling"
+        />
 
         {/* HASIL & TINDAK LANJUT */}
         <div>
