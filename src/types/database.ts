@@ -152,7 +152,7 @@ export type JadwalKbmWithRelations = JadwalKbm & {
 };
 
 export type AgendaGuru = {
-  id: string;
+  id: number;
   guru_id: string;
   jadwal_kbm_id: number | null;
   tanggal: string;
