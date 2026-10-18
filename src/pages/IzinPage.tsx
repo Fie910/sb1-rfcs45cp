@@ -259,24 +259,7 @@ const kepalaIds = kepalaArrays.flat();
     setSaving(false);
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-
-    const penanganan = (deleteTarget.status_penanganan || '').toLowerCase();
-    const penyampaian = ((deleteTarget as any).status_penyampaian || '').toLowerCase();
-    const isSelesai =
-      penanganan === 'selesai' ||
-      penanganan === 'ditangani' ||
-      penyampaian === 'sudah disampaikan' ||
-      penyampaian === 'selesai';
-
-    if (isSelesai) {
-      showToast('error', 'Izin yang sudah disampaikan tidak dapat dihapus');
-      setDeleteTarget(null);
-      return;
-    }
-
-  // ============================================================================
+    // ============================================================================
   // WHATSAPP HANDLERS
   // ============================================================================
   const handleKirimWAGuruPiket = (izin: IzinGuruPiketWithRelations) => {
@@ -313,6 +296,23 @@ const kepalaIds = kepalaArrays.flat();
     if (ok) showToast('success', 'Pesan disalin — paste di WhatsApp');
     else showToast('error', 'Gagal menyalin');
   };    
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    const penanganan = (deleteTarget.status_penanganan || '').toLowerCase();
+    const penyampaian = ((deleteTarget as any).status_penyampaian || '').toLowerCase();
+    const isSelesai =
+      penanganan === 'selesai' ||
+      penanganan === 'ditangani' ||
+      penyampaian === 'sudah disampaikan' ||
+      penyampaian === 'selesai';
+
+    if (isSelesai) {
+      showToast('error', 'Izin yang sudah disampaikan tidak dapat dihapus');
+      setDeleteTarget(null);
+      return;
+    }
 
     // Simpan info untuk log sebelum dihapus
     const infoIzin = {
