@@ -107,8 +107,8 @@ export function PengumumanPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Pengumuman | null>(null);
-  const [generatingSummary, setGeneratingSummary] = useState<number | null>(null);
-  const [summaryCache, setSummaryCache] = useState<Record<number, RingkasanPengumumanAI>>({});
+  const [generatingSummary, setGeneratingSummary] = useState<string | null>(null);
+  const [summaryCache, setSummaryCache] = useState<Record<string, RingkasanPengumumanAI>>({});
 
   // State khusus Upload Gambar
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
