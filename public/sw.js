@@ -1,10 +1,110 @@
 // Service Worker — SMK KH. A. Wahab Muhsin Sukahideng
-// Menangani push notification & klik notifikasi.
-// (Fetch handler sengaja tidak dipasang — tidak ada strategi caching saat ini.)
+// ✅ App Shell Cache + Push Notification Handler
 
-// ==========================================
-// 1. Event Listener Push (Menangkap Notifikasi Masuk)
-// ==========================================
+const APP_SHELL_CACHE = 'smk-app-shell-v1';
+const APP_SHELL_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/badge-72.png',
+];
+
+// ============================================================================
+// INSTALL — Cache app shell
+// ============================================================================
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(APP_SHELL_CACHE).then((cache) => {
+      return cache.addAll(APP_SHELL_URLS).catch((err) => {
+        console.warn('[sw] sebagian aset app shell gagal di-cache:', err);
+      });
+    })
+  );
+  self.skipWaiting();
+});
+
+// ============================================================================
+// ACTIVATE — Bersihkan cache lama
+// ============================================================================
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys
+          .filter((key) => key.startsWith('smk-') && key !== APP_SHELL_CACHE)
+          .map((key) => caches.delete(key))
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// ============================================================================
+// FETCH — Strategy: network-first untuk API, cache-first untuk aset statis
+// ============================================================================
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Skip non-GET
+  if (event.request.method !== 'GET') return;
+
+  // Skip Supabase & AI & eksternal — biar app yang handle
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('groq.com') ||
+    url.hostname.includes('openrouter.ai') ||
+    url.hostname.includes('generativelanguage.googleapis.com') ||
+    url.hostname.includes('fonts.googleapis.com') ||
+    url.hostname.includes('fonts.gstatic.com')
+  ) {
+    return;
+  }
+
+  // Navigasi HTML → network-first, fallback ke cache
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(APP_SHELL_CACHE).then((cache) => cache.put('/', clone));
+          return response;
+        })
+        .catch(() => caches.match('/') || caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Aset statis (JS/CSS/img) → cache-first
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname.endsWith('.js') ||
+      url.pathname.endsWith('.css') ||
+      url.pathname.endsWith('.png') ||
+      url.pathname.endsWith('.jpg') ||
+      url.pathname.endsWith('.svg') ||
+      url.pathname.endsWith('.webp') ||
+      url.pathname.endsWith('.woff2'))
+  ) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(APP_SHELL_CACHE).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+  }
+});
+
+// ============================================================================
+// PUSH NOTIFICATION
+// ============================================================================
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
@@ -19,9 +119,7 @@ self.addEventListener('push', (event) => {
     body: data.body || 'Ada pemberitahuan baru',
     icon: '/icon-192.png',
     badge: '/badge-72.png',
-    data: {
-      url: data.url || '/',
-    },
+    data: { url: data.url || '/' },
   };
 
   event.waitUntil(
@@ -29,9 +127,9 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// ==========================================
-// 2. Event Listener Notification Click (Aksi Saat Klik Notifikasi)
-// ==========================================
+// ============================================================================
+// NOTIFICATION CLICK
+// ============================================================================
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
@@ -42,13 +140,11 @@ self.addEventListener('notificationclick', (event) => {
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
-        // Kalau ada tab yang sudah buka aplikasi ini → fokus
         for (const client of windowClients) {
           if (client.url === fullUrl && 'focus' in client) {
             return client.focus();
           }
         }
-        // Kalau tidak ada → buka tab baru
         if (clients.openWindow) {
           return clients.openWindow(fullUrl);
         }
