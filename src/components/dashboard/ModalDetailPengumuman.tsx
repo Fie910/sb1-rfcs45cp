@@ -24,6 +24,7 @@ type PengumumanData = {
   url?: string | null;
   prioritas?: string | null;
   created_at?: string;
+  ringkasan_ai?: string | null;
 };
 
 type Props = {
