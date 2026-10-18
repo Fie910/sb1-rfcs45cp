@@ -276,6 +276,44 @@ const kepalaIds = kepalaArrays.flat();
       return;
     }
 
+  // ============================================================================
+  // WHATSAPP HANDLERS
+  // ============================================================================
+  const handleKirimWAGuruPiket = (izin: IzinGuruPiketWithRelations) => {
+    const message = buildDelegasiTugasMessage({
+      guru_izin_nama: izin.gurus?.nama_lengkap ?? '-',
+      guru_piket_nama: 'Guru Piket',
+      tanggal_izin: formatDateWibShort(izin.tanggal_izin),
+      kategori_izin: izin.kategori_izin ?? '-',
+      keterangan_izin: izin.keterangan_izin,
+      kelas_nama: izin.kelas?.nama_kelas ?? '-',
+      mapel_nama: izin.mata_pelajarans?.nama_mapel ?? '-',
+      titipan_tugas: izin.titipan_tugas || '-',
+      url_file: (izin as any).url_file,
+    });
+
+    openWhatsAppGroup(message);
+    showToast('success', 'WhatsApp terbuka — pilih guru piket lalu kirim');
+  };
+
+  const handleCopyWAGuruPiket = async (izin: IzinGuruPiketWithRelations) => {
+    const message = buildDelegasiTugasMessage({
+      guru_izin_nama: izin.gurus?.nama_lengkap ?? '-',
+      guru_piket_nama: 'Guru Piket',
+      tanggal_izin: formatDateWibShort(izin.tanggal_izin),
+      kategori_izin: izin.kategori_izin ?? '-',
+      keterangan_izin: izin.keterangan_izin,
+      kelas_nama: izin.kelas?.nama_kelas ?? '-',
+      mapel_nama: izin.mata_pelajarans?.nama_mapel ?? '-',
+      titipan_tugas: izin.titipan_tugas || '-',
+      url_file: (izin as any).url_file,
+    });
+
+    const ok = await copyWhatsAppMessage(message);
+    if (ok) showToast('success', 'Pesan disalin — paste di WhatsApp');
+    else showToast('error', 'Gagal menyalin');
+  };    
+
     // Simpan info untuk log sebelum dihapus
     const infoIzin = {
       id: deleteTarget.id,
