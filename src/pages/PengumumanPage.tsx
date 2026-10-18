@@ -19,7 +19,10 @@ import { useAuth } from '@/context/AuthContext';
 import { broadcastToAllGurus } from '@/lib/notifications/notification';
 import type { Pengumuman } from '@/types/database';
 import { Sparkles, Wand2 } from 'lucide-react';
-import { generateRingkasanPengumuman } from '@/lib/ai/pengumumanAi';
+import {
+  generateRingkasanPengumuman,
+  type RingkasanPengumumanAI,
+} from '@/lib/ai/pengumumanAi';
 
 const emptyForm = {
   judul: '',
