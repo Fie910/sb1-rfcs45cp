@@ -3,14 +3,17 @@
   "name": "SMK KH. A. Wahab Muhsin Sukahideng",
   "short_name": "SMK Sukahideng",
   "description": "Sistem Informasi Pemuliaan Murid SMK KH. A. Wahab Muhsin Sukahideng",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#f8f5ea",
+  "background_color": "#0f172a",
   "theme_color": "#155254",
-  "categories": ["education"],
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["education", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -35,6 +38,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Presensi Hari Ini",
+      "short_name": "Presensi",
+      "description": "Buka halaman presensi",
+      "url": "/presensi?source=shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Agenda Mengajar",
+      "short_name": "Agenda",
+      "description": "Buka halaman agenda",
+      "url": "/agenda?source=shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pengumuman",
+      "short_name": "Pengumuman",
+      "description": "Lihat pengumuman terbaru",
+      "url": "/pengumuman?source=shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
