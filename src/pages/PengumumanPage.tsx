@@ -31,6 +31,9 @@ const emptyForm = {
   is_aktif: true,
 };
 
+  const [generatingSummary, setGeneratingSummary] = useState<number | null>(null);
+  const [summaryCache, setSummaryCache] = useState<Record<number, RingkasanPengumumanAI>>({});
+
 // Helper format tanggal ke WIB (Asia/Jakarta)
 const formatDateWIB = (dateString: string) => {
   if (!dateString) return '-';
