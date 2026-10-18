@@ -5,6 +5,7 @@
 
 import type { RingkasanSuratAI } from '@/types/database';
 import { generateJSONVision, hasAnyProvider } from './aiProvider';
+import { buildSuratPrompt } from './prompts/surat';
 
 const MAX_INLINE_SIZE = 15 * 1024 * 1024; // 15 MB
 
