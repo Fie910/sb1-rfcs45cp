@@ -445,7 +445,21 @@ export function PengumumanPage() {
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-slate-800/80">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateRingkasan(item)}
+                    disabled={generatingSummary === item.id}
+                    className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-purple-500/30 text-purple-300 hover:bg-purple-500/10 transition-all cursor-pointer disabled:opacity-50"
+                    title="Ringkas dengan AI (Groq/Gemini)"
+                  >
+                    {generatingSummary === item.id ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={13} />
+                    )}
+                    {generatingSummary === item.id ? 'Meringkas...' : 'Ringkas AI'}
+                  </button>
                   <button
                     type="button"
                     onClick={() => openEdit(item)}
