@@ -1,6 +1,6 @@
-// src/lib/pdfColoredExport.ts
+// src/lib/pdf/pdfColoredExport.ts
 // Helper terpusat untuk export PDF berwarna — mirror tampilan aplikasi.
-// ✅ Sekarang support tanda tangan kepala sekolah + titimangsa otomatis.
+// ✅ Sekarang support LOGO sekolah + auto-fetch dari pengaturan_sekolahs.
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -28,15 +28,10 @@ export type PdfStatBox = {
 };
 
 type PdfSignature = {
-  /** Nama lengkap kepala sekolah (wajib) */
   nama: string;
-  /** NIP kepala sekolah (opsional) */
   nip?: string | null;
-  /** Jabatan — default: 'Kepala Sekolah' */
   jabatan?: string;
-  /** Kota titimangsa — default: 'Sukahideng' */
   kota?: string;
-  /** Tanggal titimangsa (YYYY-MM-DD) — default: hari ini */
   tanggal?: string;
 };
 
@@ -46,12 +41,13 @@ export type PdfExportOptions = {
   subtitle?: string;
   schoolName?: string;
   schoolAddress?: string;
+  schoolLogoUrl?: string | null;      // 🆕 logo dataUrl atau public URL
+  schoolContact?: string | null;      // 🆕 telp · email
   stats?: PdfStatBox[];
   columns: PdfColumn[];
   rows: any[];
   orientation?: 'p' | 'l';
   footerNote?: string;
-  /** ✅ Tanda tangan kepala sekolah */
   signature?: PdfSignature;
 };
 
@@ -90,18 +86,14 @@ export const PDF_COLORS: Record<string, RGB> = {
 };
 
 // =============================================================================
-// HELPER — Warna Badge Persentase
+// HELPER — Warna Badge
 // =============================================================================
 export function getPersenWarna(pct: number): { bg: RGB; text: RGB } {
-  if (pct >= 85)
-    return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
+  if (pct >= 85) return { bg: PDF_COLORS.emeraldLight, text: PDF_COLORS.emeraldDark };
   if (pct >= 75) return { bg: PDF_COLORS.amberLight, text: PDF_COLORS.amberDark };
   return { bg: PDF_COLORS.roseLight, text: PDF_COLORS.roseDark };
 }
 
-// =============================================================================
-// HELPER — Format Tanggal
-// =============================================================================
 export function formatTanggalPdf(d: string): string {
   const date = new Date(`${d}T12:00:00+07:00`);
   return date.toLocaleDateString('id-ID', {
@@ -123,18 +115,13 @@ function formatTanggalPanjangPdf(d: string): string {
 }
 
 // =============================================================================
-// ✅ HELPER — Fetch Kepala Sekolah
+// HELPER — Fetch Kepala Sekolah
 // =============================================================================
-/**
- * Ambil data kepala sekolah dari DB.
- * Prioritas: pengaturan_sekolahs.nama_kepsek → gurus WHERE role='kepala'.
- */
 export async function fetchKepalaSekolahData(): Promise<{
   nama: string;
   nip: string | null;
 } | null> {
   try {
-    // 1. Coba dari pengaturan_sekolahs
     const { data: setting } = await supabase
       .from('pengaturan_sekolahs')
       .select('nama_kepsek, nip_kepsek')
@@ -142,13 +129,9 @@ export async function fetchKepalaSekolahData(): Promise<{
       .maybeSingle();
 
     if (setting?.nama_kepsek) {
-      return {
-        nama: setting.nama_kepsek,
-        nip: setting.nip_kepsek ?? null,
-      };
+      return { nama: setting.nama_kepsek, nip: setting.nip_kepsek ?? null };
     }
 
-    // 2. Fallback: dari tabel gurus
     const { data: guru } = await supabase
       .from('gurus')
       .select('nama_lengkap, nip')
@@ -156,10 +139,7 @@ export async function fetchKepalaSekolahData(): Promise<{
       .maybeSingle();
 
     if (guru?.nama_lengkap) {
-      return {
-        nama: guru.nama_lengkap,
-        nip: guru.nip ?? null,
-      };
+      return { nama: guru.nama_lengkap, nip: guru.nip ?? null };
     }
 
     return null;
@@ -170,7 +150,26 @@ export async function fetchKepalaSekolahData(): Promise<{
 }
 
 // =============================================================================
-// INTERNAL — Draw Kotak Statistik
+// HELPER — Load Image as DataURL
+// =============================================================================
+async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+// =============================================================================
+// INTERNAL — Draw Stat Box
 // =============================================================================
 function drawStatBox(
   doc: jsPDF,
@@ -209,7 +208,7 @@ function drawStatBox(
 }
 
 // =============================================================================
-// ✅ INTERNAL — Draw Blok Tanda Tangan
+// INTERNAL — Draw Signature
 // =============================================================================
 function drawSignatureBlock(
   doc: jsPDF,
@@ -224,13 +223,11 @@ function drawSignatureBlock(
   const kota = signature.kota ?? 'Sukahideng';
   const tanggal = signature.tanggal ?? new Date().toISOString().slice(0, 10);
 
-  // Posisi baseline (dari bawah)
   const nipY = pageHeight - 20;
   const namaY = pageHeight - 25;
   const jabatanY = pageHeight - 50;
   const titimangsaY = pageHeight - 55;
 
-  // 1. Titimangsa
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(
@@ -242,17 +239,12 @@ function drawSignatureBlock(
     align: 'right',
   });
 
-  // 2. Jabatan
   doc.text(`${jabatan},`, rightX, jabatanY, { align: 'right' });
 
-  // 3. Ruang kosong untuk tanda tangan (25mm) — tidak digambar, hanya spacing
-
-  // 4. Nama Kepala Sekolah (bold)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.text(signature.nama, rightX, namaY, { align: 'right' });
 
-  // 5. NIP (kalau ada)
   if (signature.nip) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -270,6 +262,8 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     subtitle,
     schoolName = 'SMK KH. A. WAHAB MUHSIN SUKAHIDENG',
     schoolAddress = 'Jl. Pahlawan KHZ Musthafa Sukarapih Sukarame Tasikmalaya Jawa Barat',
+    schoolLogoUrl,
+    schoolContact,
     stats,
     columns,
     rows,
@@ -285,8 +279,25 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   const contentWidth = pageWidth - marginX * 2;
 
   // ══════════════════════════════════════════════
-  // 1. KOP SURAT
+  // 1. KOP SURAT + LOGO
   // ══════════════════════════════════════════════
+  const hasLogo = Boolean(schoolLogoUrl);
+  const logoSize = 18;
+  const logoX = hasLogo ? marginX + 2 : 0;
+  const logoY = 8;
+
+  if (hasLogo && schoolLogoUrl) {
+    try {
+      doc.addImage(schoolLogoUrl, 'PNG', logoX, logoY, logoSize, logoSize);
+    } catch {
+      /* skip logo if failed */
+    }
+  }
+
+  const textCenter = hasLogo
+    ? marginX + (contentWidth + logoSize + 4) / 2
+    : pageWidth / 2;
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
   doc.setTextColor(
@@ -294,7 +305,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     PDF_COLORS.slate900[1],
     PDF_COLORS.slate900[2]
   );
-  doc.text(schoolName, pageWidth / 2, 13, { align: 'center' });
+  doc.text(schoolName, textCenter, 13, { align: 'center' });
 
   if (schoolAddress) {
     doc.setFont('helvetica', 'normal');
@@ -304,7 +315,12 @@ export function exportColoredPdf(options: PdfExportOptions): void {
       PDF_COLORS.slate500[1],
       PDF_COLORS.slate500[2]
     );
-    doc.text(schoolAddress, pageWidth / 2, 18, { align: 'center' });
+    doc.text(schoolAddress, textCenter, 18, { align: 'center' });
+  }
+
+  if (schoolContact) {
+    doc.setFontSize(8);
+    doc.text(schoolContact, textCenter, 22, { align: 'center' });
   }
 
   doc.setDrawColor(
@@ -313,7 +329,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     PDF_COLORS.indigo[2]
   );
   doc.setLineWidth(0.8);
-  doc.line(marginX, 21, pageWidth - marginX, 21);
+  doc.line(marginX, 25, pageWidth - marginX, 25);
 
   // ══════════════════════════════════════════════
   // 2. JUDUL
@@ -325,9 +341,9 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     PDF_COLORS.slate900[1],
     PDF_COLORS.slate900[2]
   );
-  doc.text(title, pageWidth / 2, 29, { align: 'center' });
+  doc.text(title, pageWidth / 2, 33, { align: 'center' });
 
-  let cursorY = 34;
+  let cursorY = 38;
 
   if (subtitle) {
     doc.setFont('helvetica', 'normal');
@@ -379,9 +395,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
       cellWidth: col.width ?? 'auto',
       fontStyle: col.bold ? 'bold' : 'normal',
     };
-    if (col.textColor) {
-      columnStyles[i].textColor = col.textColor;
-    }
+    if (col.textColor) columnStyles[i].textColor = col.textColor;
   });
 
   autoTable(doc, {
@@ -425,25 +439,22 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   });
 
   // ══════════════════════════════════════════════
-  // 5. ✅ TANDA TANGAN KEPALA SEKOLAH
+  // 5. SIGNATURE
   // ══════════════════════════════════════════════
   if (signature) {
     const lastTableY = (doc as any).lastAutoTable?.finalY ?? 0;
-    // Blok tanda tangan butuh space ~60mm dari bawah
     const needY = pageHeight - 65;
 
-    // Kalau tabel terlalu panjang, pindah halaman baru
     if (lastTableY > needY) {
       doc.addPage();
     }
 
-    // Gambar di halaman aktif (last page)
     const currentPageHeight = doc.internal.pageSize.getHeight();
     drawSignatureBlock(doc, pageWidth, currentPageHeight, signature);
   }
 
   // ══════════════════════════════════════════════
-  // 6. FOOTER DI SETIAP HALAMAN
+  // 6. FOOTER
   // ══════════════════════════════════════════════
   const pageCount = doc.getNumberOfPages();
   const cetakTanggal = new Date().toLocaleDateString('id-ID', {
@@ -480,4 +491,69 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     ? filename
     : `${filename}.pdf`;
   doc.save(finalName);
+}
+
+// =============================================================================
+// 🆕 ASYNC WRAPPER — Auto-fetch pengaturan + logo + kepsek
+// =============================================================================
+export async function exportColoredPdfBranded(
+  options: Omit<PdfExportOptions, 'schoolName' | 'schoolAddress' | 'schoolLogoUrl' | 'schoolContact' | 'signature'> & {
+    includeSignature?: boolean;
+  }
+): Promise<void> {
+  // Fetch pengaturan sekolah
+  let schoolName = 'SMK KH. A. WAHAB MUHSIN SUKAHIDENG';
+  let schoolAddress = 'Jl. Pahlawan KHZ Musthafa Sukarapih Sukarame Tasikmalaya Jawa Barat';
+  let schoolLogoUrl: string | null = null;
+  let schoolContact: string | null = null;
+
+  try {
+    const { data } = await supabase
+      .from('pengaturan_seolahs') // ⚠️ cek nama tabel — seharusnya 'pengaturan_sekolahs'
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      schoolName = data.nama_sekolah?.toUpperCase() ?? schoolName;
+      schoolAddress = data.alamat ?? schoolAddress;
+
+      // Contact
+      const contactParts: string[] = [];
+      if (data.telepon) contactParts.push(`Telp: ${data.telepon}`);
+      if (data.email) contactParts.push(`Email: ${data.email}`);
+      if (data.website) contactParts.push(data.website);
+      schoolContact = contactParts.length > 0 ? contactParts.join(' · ') : null;
+
+      // Logo → dataUrl
+      if (data.logo_url) {
+        schoolLogoUrl = await loadImageAsDataUrl(data.logo_url);
+      }
+    }
+  } catch (err) {
+    console.warn('[pdfColoredExport] Gagal fetch pengaturan:', err);
+  }
+
+  // Signature (kalau diminta)
+  let signature: PdfSignature | undefined;
+  if (options.includeSignature !== false) {
+    const kepsek = await fetchKepalaSekolahData();
+    if (kepsek) {
+      signature = {
+        nama: kepsek.nama,
+        nip: kepsek.nip,
+        jabatan: 'Kepala Sekolah',
+        kota: 'Sukahideng',
+      };
+    }
+  }
+
+  exportColoredPdf({
+    ...options,
+    schoolName,
+    schoolAddress,
+    schoolLogoUrl,
+    schoolContact,
+    signature,
+  });
 }
