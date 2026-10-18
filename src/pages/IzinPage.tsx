@@ -13,6 +13,7 @@ import {
   Edit3,
   Link as LinkIcon,
   ExternalLink,
+  MessageCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -36,6 +37,12 @@ import type {
   MataPelajaran,
   KategoriIzin,
 } from '@/types/database';
+import {
+  buildDelegasiTugasMessage,
+  openWhatsAppChat,
+  openWhatsAppGroup,
+  copyWhatsAppMessage,
+} from '@/lib/notifications/whatsapp';
 
 // Role kepala divisi yang perlu tahu semua pengajuan izin.
 const ROLE_KEPALA_KEPEGAWAIAN = ['admin', 'kepala', 'takola'];
