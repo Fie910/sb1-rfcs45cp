@@ -47,37 +47,13 @@ export async function ringkasSurat(fileUrl: string): Promise<RingkasanSuratAI> {
   const base64 = await blobToBase64(blob);
 
   // 4. Prompt
-  const systemPrompt = `Anda adalah asisten administrasi sekolah di Indonesia. Tugas Anda membaca surat (gambar/PDF) dan memberikan ringkasan terstruktur. Output WAJIB JSON valid tanpa penjelasan tambahan.`;
-
-  const userPrompt = `Baca surat pada gambar/PDF terlampir dan berikan ringkasan terstruktur.
-
-INSTRUKSI OUTPUT:
-Kembalikan HANYA JSON valid dengan struktur:
-
-{
-  "inti": "Ringkasan 2-3 paragraf tentang isi utama surat (100-200 kata)",
-  "poin_penting": [
-    "Poin penting 1 (tanggal, tempat, syarat)",
-    "Poin penting 2",
-    "Poin penting 3"
-  ],
-  "tindak_lanjut": "Rekomendasi langkah yang perlu dilakukan pihak sekolah",
-  "klasifikasi": "Undangan|Pemberitahuan|Permohonan|Tugas|Lainnya",
-  "prioritas": "Tinggi|Sedang|Rendah"
-}
-
-ATURAN PENTING:
-1. JANGAN mengarang informasi yang tidak ada di surat.
-2. Kalau informasi tidak disebutkan, tulis "Tidak disebutkan".
-3. Bahasa Indonesia formal dan profesional.
-4. Pertahankan istilah teknis, nomor surat, nama instansi, dan nama orang apa adanya.
-5. Output HARUS valid JSON — jangan tambahkan penjelasan di luar JSON.
-6. Prioritas: "Tinggi" jika deadline <7 hari atau mendesak; "Sedang" jika 7-30 hari; "Rendah" jika hanya pemberitahuan.`;
+  const { systemPrompt, examples, userPrompt } = buildSuratPrompt();
 
   try {
     const { data, provider, model } = await generateJSONVision<RingkasanSuratAI>({
       prompt: userPrompt,
       systemPrompt,
+      examples,
       imageBase64: base64,
       imageMimeType: mimeType,
       temperature: 0.3,
