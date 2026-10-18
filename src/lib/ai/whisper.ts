@@ -29,6 +29,13 @@ export interface TranscribeResult {
   segments?: TranscribedSegment[];
 }
 
+const SUNDANESE_VOCAB_PROMPT = 
+  'Rekaman di sekolah Jawa Barat. Campuran Bahasa Indonesia dan Sunda. ' +
+  'Kata Sunda yang sering muncul: kumaha, sae, henteu, atos, pami, margi, ' +
+  'bade, nuju, tiasa, moal, sanes, abdi, urang, anjeun, aya, teu, geus, ' +
+  'rek, can, bisi, meureun, komo, lain, kitu, kieu, ari, mun, sabab, ' +
+  'matak, sanggeus, samemeh, enya, muhun, kedah, sapertos.';
+
 export async function transcribeAudio(
   audioBlob: Blob,
   opts: TranscribeOptions = {}
