@@ -64,6 +64,15 @@ export async function transcribeAudio(
     formData.append('timestamp_granularities[]', 'segment');
   }
 
+  // ✅ Gabungkan prompt user + prompt Sunda default
+  const userPrompt = opts.prompt?.trim() ?? '';
+  const combinedPrompt = userPrompt
+    ? `${SUNDANESE_VOCAB_PROMPT} ${userPrompt}`
+    : SUNDANESE_VOCAB_PROMPT;
+  
+  // Batasi 900 karakter (limit Whisper ~224 token)
+  formData.append('prompt', combinedPrompt.slice(0, 900));
+  
   if (opts.prompt) {
     formData.append('prompt', opts.prompt.slice(0, 900));
   }
