@@ -12,6 +12,7 @@ export type AIProviderId = 'groq' | 'gemini';
 export interface AITextRequest {
   prompt: string;
   systemPrompt?: string;
+  examples?: { input: string; output: string }[];
   temperature?: number;
   maxTokens?: number;
   jsonMode?: boolean;
