@@ -422,6 +422,20 @@ const kepalaIds = kepalaArrays.flat();
             {isMine && !isSelesai && (
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
+                  onClick={() => handleKirimWAGuruPiket(izin)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                  title="Kirim via WhatsApp"
+                >
+                  <MessageCircle size={16} />
+                </button>
+                <button
+                  onClick={() => handleCopyWAGuruPiket(izin)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
+                  title="Salin pesan WA"
+                >
+                  <FileText size={16} />
+                </button>
+                <button
                   onClick={() => openModalForEdit(izin)}
                   className="p-2 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
                   title="Edit pengajuan"
