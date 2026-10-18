@@ -285,15 +285,18 @@ async function callGeminiVision(
 ): Promise<string> {
   if (!hasGemini) throw new Error('Gemini API key tidak valid');
 
+  const contents: any[] = [];
+  // 🆕 Few-shot examples → multi-turn contents
+  if (req.examples && req.examples.length > 0) {
+    for (const ex of req.examples) {
+      contents.push({ role: 'user', parts: [{ text: ex.input }] });
+      contents.push({ role: 'model', parts: [{ text: ex.output }] });
+    }
+  }
+  contents.push({ role: 'user', parts: [{ text: req.prompt }] });
+  
   const payload: any = {
-    contents: [
-      {
-        parts: [
-          { text: req.prompt },
-          { inlineData: { mimeType: req.imageMimeType, data: req.imageBase64 } },
-        ],
-      },
-    ],
+    contents,
     generationConfig: {
       temperature: req.temperature ?? 0.3,
       maxOutputTokens: req.maxTokens ?? 4096,
