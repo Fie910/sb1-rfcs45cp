@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Modal } from '@/components/Modal';
+import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 // =============================================================================
 // TYPES
