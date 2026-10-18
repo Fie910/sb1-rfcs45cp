@@ -81,6 +81,47 @@ function getPrioritasConfig(prioritas: string | null | undefined) {
 // KOMPONEN
 // =============================================================================
 export function ModalDetailPengumuman({ open, onClose, pengumuman }: Props) {
+  const [ringkasanData, setRingkasanData] = useState<{
+    ringkasan: string;
+    poin_aksi: string[];
+  } | null>(null);
+
+  // Fetch ringkasan_ai saat modal dibuka
+  useEffect(() => {
+    if (!open || !pengumuman) {
+      setRingkasanData(null);
+      return;
+    }
+
+    // Kalau data pengumuman sudah punya ringkasan_ai (dari parent)
+    const inlineRingkasan = (pengumuman as any).ringkasan_ai;
+    if (inlineRingkasan) {
+      try {
+        setRingkasanData(JSON.parse(inlineRingkasan));
+        return;
+      } catch {
+        /* fallthrough */
+      }
+    }
+
+    // Kalau tidak ada, fetch
+    (async () => {
+      const { data } = await supabase
+        .from('pengumumans')
+        .select('ringkasan_ai')
+        .eq('id', pengumuman.id)
+        .maybeSingle();
+
+      if (data?.ringkasan_ai) {
+        try {
+          setRingkasanData(JSON.parse(data.ringkasan_ai));
+        } catch {
+          setRingkasanData(null);
+        }
+      }
+    })();
+  }, [open, pengumuman]);
+
   if (!pengumuman) return null;
 
   const cfg = getPrioritasConfig(pengumuman.prioritas);
