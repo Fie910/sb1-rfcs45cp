@@ -21,6 +21,7 @@ export interface AITextRequest {
 export interface AIVisionRequest {
   prompt: string;
   systemPrompt?: string;
+  examples?: { input: string; output: string }[];
   imageBase64: string;
   imageMimeType: string;
   temperature?: number;
