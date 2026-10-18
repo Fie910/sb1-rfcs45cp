@@ -31,7 +31,6 @@ import {
   getGuruIdsPiketHari,
 } from '@/lib/notifications/notification';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
-import { MessageCircle } from 'lucide-react';
 import {
   buildDelegasiTugasMessage,
   openWhatsAppGroup,
