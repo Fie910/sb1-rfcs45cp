@@ -124,6 +124,13 @@ async function callGroq(req: AITextRequest, model: string): Promise<string> {
 
   const messages: any[] = [];
   if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
+  // 🆕 Few-shot examples
+  if (req.examples && req.examples.length > 0) {
+    for (const ex of req.examples) {
+      messages.push({ role: 'user', content: ex.input });
+      messages.push({ role: 'assistant', content: ex.output });
+    }
+  }
   messages.push({ role: 'user', content: req.prompt });
 
   const body: any = {
