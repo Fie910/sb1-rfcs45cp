@@ -186,6 +186,40 @@ export function ModalDetailPengumuman({ open, onClose, pengumuman }: Props) {
           </div>
         )}
 
+        {/* 🆕 RINGKASAN AI */}
+        {ringkasanData && (
+          <div className="bg-gradient-to-br from-purple-950/40 via-slate-950 to-slate-950 border border-purple-500/30 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center">
+                <Sparkles size={14} />
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-purple-300">
+                Ringkasan AI
+              </p>
+            </div>
+
+            <p className="text-sm text-slate-200 leading-relaxed mb-3">
+              {ringkasanData.ringkasan}
+            </p>
+
+            {ringkasanData.poin_aksi.length > 0 && (
+              <div className="pt-3 border-t border-slate-800/60">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  Poin Penting:
+                </p>
+                <ul className="space-y-1.5">
+                  {ringkasanData.poin_aksi.map((poin, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0 mt-0.5" />
+                      <span>{poin}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+     
         {/* ISI LENGKAP */}
         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
           <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">
