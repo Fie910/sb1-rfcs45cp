@@ -31,9 +31,6 @@ const emptyForm = {
   is_aktif: true,
 };
 
-  const [generatingSummary, setGeneratingSummary] = useState<number | null>(null);
-  const [summaryCache, setSummaryCache] = useState<Record<number, RingkasanPengumumanAI>>({});
-
 // Helper format tanggal ke WIB (Asia/Jakarta)
 const formatDateWIB = (dateString: string) => {
   if (!dateString) return '-';
@@ -107,6 +104,8 @@ export function PengumumanPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Pengumuman | null>(null);
+  const [generatingSummary, setGeneratingSummary] = useState<number | null>(null);
+  const [summaryCache, setSummaryCache] = useState<Record<number, RingkasanPengumumanAI>>({});
 
   // State khusus Upload Gambar
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -213,6 +212,35 @@ export function PengumumanPage() {
     } catch (err) {
       showToast('error', 'Gagal memproses gambar: ' + (err as Error).message);
       return null;
+    }
+  };
+
+  const handleGenerateRingkasan = async (item: Pengumuman) => {
+    setGeneratingSummary(item.id);
+    try {
+      const result = await generateRingkasanPengumuman({
+        judul: item.judul,
+        isi: item.isi,
+        prioritas: (item as any).prioritas,
+      });
+
+      // Simpan ke DB
+      const { error } = await supabase
+        .from('pengumumans')
+        .update({
+          ringkasan_ai: JSON.stringify(result),
+          ai_processed_at: new Date().toISOString(),
+        })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      setSummaryCache((prev) => ({ ...prev, [item.id]: result }));
+      showToast('success', 'Ringkasan AI berhasil dibuat');
+    } catch (err: any) {
+      showToast('error', err.message || 'Gagal membuat ringkasan');
+    } finally {
+      setGeneratingSummary(null);
     }
   };
 
