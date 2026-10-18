@@ -2,6 +2,7 @@
 // AI analisa kehadiran guru — pakai multi-provider failover.
 
 import { generateJSON, hasAnyProvider } from './aiProvider';
+import { buildAnalisaKehadiranPrompt } from './prompts/analisaKehadiran';
 
 // =============================================================================
 // TYPES
