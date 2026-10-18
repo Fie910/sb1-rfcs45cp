@@ -3,6 +3,7 @@
 // Multi-provider failover: Groq → Cerebras → Gemini → OpenRouter.
 
 import { generateJSON } from './aiProvider';
+import { buildNotulensiPrompt } from './prompts/notulensi';
 
 // =============================================================================
 // TYPES
