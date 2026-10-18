@@ -2,7 +2,7 @@
   "id": "/",
   "name": "SMK KH. A. Wahab Muhsin Sukahideng",
   "short_name": "SMK Sukahideng",
-  "description": "Sistem Informasi Pemuliaan Murid SMK KH. A. Wahab Muhsin Sukahideng",
+  "description": "Sistem Informasi SMK KH. A. Wahab Muhsin Sukahideng",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
