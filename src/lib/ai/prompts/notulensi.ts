@@ -46,7 +46,7 @@ Keputusan Awal:
 - Tanggal: 2025-06-20
 
 Catatan Mentah:
-rapat evaluasi semester ganjil. bahas nilai siswa menurun di matematika. bu rina usul tambah jam remedial. pak joko cek penyebab, ternyata jadwal bentrok. keputusan: remedial sabtu, jadwal diubah.`
+rapat evaluasi semester ganjil. bahas nilai siswa menurun di matematika. bu rina usul tambah jam remedial. pak joko cek penyebab, ternyata jadwal bentrok. keputusan: remedial sabtu, jadwal diubah.`,
 
       output: JSON.stringify({
         ringkasan_eksekutif: 'Rapat evaluasi semester ganjil menyoroti penurunan nilai matematika. Ditemukan penyebab berupa bentrok jadwal. Disepakati solusi berupa penambahan jam remedial di hari Sabtu dan penyesuaian jadwal.',
