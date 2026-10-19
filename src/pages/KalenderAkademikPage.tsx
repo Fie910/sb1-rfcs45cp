@@ -20,6 +20,7 @@ import {
   relativeDay,
   WARNA_BG, WARNA_DOT, WARNA_BORDER_LEFT,
   NAMA_BULAN, NAMA_HARI_SINGKAT,
+  canManageRecurringEvent,
 } from '@/components/kalender/shared';
 import { ModalRecurringEvent } from '@/components/kalender/ModalRecurringEvent';
 import { downloadIcsFile } from '@/lib/kalenderUtils';
