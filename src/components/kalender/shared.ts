@@ -240,3 +240,26 @@ export const NAMA_BULAN = [
 ];
 
 export const NAMA_HARI_SINGKAT = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+// =============================================================================
+// AKSES — Recurring Event
+// =============================================================================
+
+/**
+ * Roles yang boleh membuat event recurring.
+ * Admin, Kepala, Wakil, Takola (Tata Kelola Kalender).
+ */
+export const KALENDER_MANAGER_ROLES = [
+  'admin',
+  'kepala',
+  'wakil_kepala',
+  'takola',
+  'staf_takola',
+];
+
+export function canManageRecurringEvent(
+  role: string | null | undefined
+): boolean {
+  if (!role) return false;
+  return KALENDER_MANAGER_ROLES.includes(role.toLowerCase());
+}
