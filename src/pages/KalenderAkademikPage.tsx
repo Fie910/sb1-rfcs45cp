@@ -309,6 +309,7 @@ export function KalenderAkademikPage() {
 
         {/* ✅ Tombol Actions */}
         <div className="flex items-center gap-2">
+          {/* Export — semua user yang bisa akses kalender boleh export */}
           <button
             onClick={handleExportIcs}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition cursor-pointer"
