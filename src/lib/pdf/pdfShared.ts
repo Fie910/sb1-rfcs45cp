@@ -1,15 +1,14 @@
 // src/lib/pdfShared.ts
 // Shared helper untuk semua generator PDF (notulensi, surat izin, QR arsip).
-// Mengurangi duplikasi KOP surat, footer, QR, formatter, dan fetch pengaturan.
+// ✅ Tema warna: Navy Blue & Gold (sesuai logo sekolah)
 
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { supabase } from '@/lib/supabase';
 
 // =============================================================================
-// TYPES
+// TYPES & KONSTANTA WARNA
 // =============================================================================
-
 export type PengaturanSekolah = {
   nama_sekolah: string;
   alamat: string | null;
@@ -35,11 +34,20 @@ export const A4_LAYOUT: PdfLayoutConstants = {
   contentWidth: 170, // 210 - 20*2
 };
 
+// Palet Warna (RGB)
+export const PDF_THEME = {
+  navy: [15, 41, 82],       // Biru Dongker (dari logo)
+  gold: [197, 155, 77],     // Emas (dari logo)
+  slate900: [15, 23, 42],
+  slate600: [71, 85, 105],
+  slate100: [241, 245, 249],
+  white: [255, 255, 255],
+  black: [0, 0, 0],
+};
+
 // =============================================================================
 // FORMATTERS
 // =============================================================================
-
-/** Format "2026-10-05" → "Senin, 5 Oktober 2026" */
 export function formatTanggalPanjang(dateStr: string): string {
   if (!dateStr) return '-';
   const d = new Date(`${dateStr.split('T')[0]}T00:00:00+07:00`);
@@ -52,13 +60,11 @@ export function formatTanggalPanjang(dateStr: string): string {
   });
 }
 
-/** Format jam "07:30:00" → "07:30" */
 export function formatJam(t: string | null | undefined): string {
   if (!t) return '-';
   return t.slice(0, 5);
 }
 
-/** Tanggal hari ini dalam format "5 Oktober 2026" (untuk tanda tangan). */
 export function tanggalHariIni(): string {
   return new Date().toLocaleDateString('id-ID', {
     timeZone: 'Asia/Jakarta',
@@ -69,12 +75,8 @@ export function tanggalHariIni(): string {
 }
 
 // =============================================================================
-// SUPABASE
+// SUPABASE & IMAGE
 // =============================================================================
-
-/**
- * Ambil pengaturan sekolah. Kalau includeKepsek = true, juga fetch nama & NIP kepsek dari gurus.
- */
 export async function fetchPengaturan(includeKepsek = false): Promise<PengaturanSekolah> {
   const { data } = await supabase
     .from('pengaturan_sekolahs')
@@ -107,11 +109,6 @@ export async function fetchPengaturan(includeKepsek = false): Promise<Pengaturan
   };
 }
 
-// =============================================================================
-// IMAGE & QR
-// =============================================================================
-
-/** Fetch gambar dari URL → data URL (base64). Berguna untuk jsPDF.addImage(). */
 export async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url);
@@ -127,7 +124,6 @@ export async function loadImageAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
-/** Generate QR code → data URL (PNG base64). */
 export async function generateQrDataUrl(text: string, size = 300): Promise<string> {
   return QRCode.toDataURL(text, {
     width: size,
@@ -140,10 +136,8 @@ export async function generateQrDataUrl(text: string, size = 300): Promise<strin
 // =============================================================================
 // VERIFICATION URL
 // =============================================================================
-
 export type VerifikasiType = 'arsip' | 'notulensi' | 'surat';
 
-/** Build URL verifikasi dengan opsi hash short (untuk deteksi perubahan). */
 export function buildVerifyUrl(
   type: VerifikasiType,
   token: string,
@@ -157,76 +151,73 @@ export function buildVerifyUrl(
 }
 
 // =============================================================================
-// PDF: KOP SURAT
+// PDF: KOP SURAT (Tema Navy & Gold)
 // =============================================================================
-
-/**
- * Gambar KOP surat (logo + nama sekolah + alamat + kontak + garis).
- * Return nilai Y setelah KOP selesai (siap untuk konten berikutnya).
- */
 export async function drawKopSurat(
   doc: jsPDF,
   pengaturan: PengaturanSekolah,
   layout: PdfLayoutConstants = A4_LAYOUT
 ): Promise<number> {
-  const { pageWidth, marginX, contentWidth } = layout;
-  let y = 15;
+  const { pageWidth, marginX } = layout;
+  let y = 12;
 
-  // Logo
+  // 1. Logo di Kiri (Proporsional 24x24 mm)
   if (pengaturan.logo_url) {
     const logoData = await loadImageAsDataUrl(pengaturan.logo_url);
     if (logoData) {
       try {
-        doc.addImage(logoData, 'PNG', marginX, y, 22, 22);
+        doc.addImage(logoData, 'PNG', marginX, y, 24, 24);
       } catch {
-        // ignore logo invalid
+        /* ignore */
       }
     }
   }
 
-  // Nama sekolah
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(pengaturan.nama_sekolah.toUpperCase(), pageWidth / 2, y + 6, {
+  // 2. Nama Sekolah (Navy, Bold, Times New Roman)
+  doc.setFont('times', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+  doc.text(pengaturan.nama_sekolah.toUpperCase(), pageWidth / 2, y + 7, {
     align: 'center',
   });
 
-  // Alamat
+  // 3. Alamat
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
+  doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
   if (pengaturan.alamat) {
-    const alamatLines = doc.splitTextToSize(pengaturan.alamat, contentWidth - 40);
-    doc.text(alamatLines, pageWidth / 2, y + 12, { align: 'center' });
-    y += alamatLines.length * 4;
+    doc.text(pengaturan.alamat, pageWidth / 2, y + 13, { align: 'center' });
   }
 
-  // Kontak
+  // 4. Kontak
   const kontakParts: string[] = [];
   if (pengaturan.telepon) kontakParts.push(`Telp: ${pengaturan.telepon}`);
   if (pengaturan.email) kontakParts.push(`Email: ${pengaturan.email}`);
   if (pengaturan.website) kontakParts.push(pengaturan.website);
+  
   if (kontakParts.length > 0) {
     doc.setFontSize(8);
-    doc.text(kontakParts.join(' · '), pageWidth / 2, y + 14, { align: 'center' });
+    doc.text(kontakParts.join(' · '), pageWidth / 2, y + 17, { align: 'center' });
   }
 
-  // Garis pembatas tebal + tipis
-  y = 38;
-  doc.setLineWidth(1);
+  // 5. Garis Ganda (Navy Tebal + Gold Tipis)
+  y = 40;
+  doc.setDrawColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+  doc.setLineWidth(1.2);
   doc.line(marginX, y, pageWidth - marginX, y);
-  doc.setLineWidth(0.3);
-  doc.line(marginX, y + 1.2, pageWidth - marginX, y + 1.2);
+  
+  doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y + 1.5, pageWidth - marginX, y + 1.5);
 
+  // Reset warna ke hitam untuk konten selanjutnya
+  doc.setTextColor(0);
   return y;
 }
 
 // =============================================================================
 // PDF: FOOTER
 // =============================================================================
-
-/**
- * Gambar footer di semua halaman.
- */
 export function drawFooter(
   doc: jsPDF,
   pengaturan: PengaturanSekolah,
@@ -238,8 +229,9 @@ export function drawFooter(
 
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
-    doc.setTextColor(150);
+    doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
     const message =
       customMessage ??
       `Dokumen ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}.`;
@@ -256,10 +248,6 @@ export function drawFooter(
 // =============================================================================
 // PDF: QR VERIFIKASI
 // =============================================================================
-
-/**
- * Gambar QR code verifikasi + caption di posisi (x, y).
- */
 export async function drawQrVerifikasi(
   doc: jsPDF,
   verifyUrl: string,
@@ -272,14 +260,14 @@ export async function drawQrVerifikasi(
     const qrDataUrl = await generateQrDataUrl(verifyUrl, size * 8);
     doc.addImage(qrDataUrl, 'PNG', x, y, size, size);
 
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
-    doc.setTextColor(120);
+    doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
     captions.forEach((line, i) => {
       doc.text(line, x + size / 2, y + size + 2.5 + i * 2.5, { align: 'center' });
     });
     doc.setTextColor(0);
   } catch {
-    // Fallback: kotak placeholder
     doc.setDrawColor(200);
     doc.rect(x, y, size, size);
   }
