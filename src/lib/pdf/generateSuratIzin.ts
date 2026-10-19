@@ -11,7 +11,7 @@ import {
   formatTanggalPanjang,
   tanggalHariIni,
   PDF_THEME, // 🆕
-} from './pdf/pdfShared';
+} from './pdfShared';
 
 export type SuratIzinData = {
   nomor_pengajuan: string;
