@@ -102,6 +102,15 @@ export function KalenderAkademikPage() {
   // ✅ Recurring modal
   const [recurringModalOpen, setRecurringModalOpen] = useState(false);
 
+    // ✅ Handler dengan guard
+  const handleOpenRecurring = () => {
+    if (!canManageRecurringEvent(guru?.role)) {
+      showToast('error', 'Anda tidak memiliki akses untuk membuat event recurring');
+      return;
+    }
+    setRecurringModalOpen(true);
+  };
+
   // =========================================================================
   // FETCH
   // =========================================================================
