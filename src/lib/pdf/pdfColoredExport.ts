@@ -1,16 +1,14 @@
 // src/lib/pdf/pdfColoredExport.ts
-// Helper terpusat untuk export PDF berwarna — mirror tampilan aplikasi.
-// ✅ Tema: Navy & Gold (Konsisten dengan logo dan kop surat)
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/lib/supabase';
-import { PDF_THEME, loadImageAsDataUrl } from './pdfShared'; // 🆕 Import dari pdfShared
+import { PDF_THEME, loadImageAsDataUrl, type RGB } from './pdfShared'; // 🆕 Import RGB dari pdfShared
 
 // =============================================================================
 // TYPES
 // =============================================================================
-export type RGB = [number, number, number];
+// export type RGB = [number, number, number]; // Dihapus, pakai dari pdfShared
 
 export type PdfColumn = {
   header: string;
@@ -53,14 +51,11 @@ export type PdfExportOptions = {
 };
 
 // =============================================================================
-// COLOR PALETTE (Disesuaikan dengan Tema)
+// COLOR PALETTE
 // =============================================================================
 export const PDF_COLORS: Record<string, RGB> = {
-  // Warna utama menggunakan Navy
   indigo: PDF_THEME.navy,
   indigoLight: [238, 242, 255],
-  
-  // Warna status tabel tetap dipertahankan
   emerald: [16, 185, 129],
   emeraldLight: [209, 250, 229],
   emeraldDark: [6, 95, 70],
@@ -80,7 +75,6 @@ export const PDF_COLORS: Record<string, RGB> = {
   tealLight: [204, 251, 241],
   tealDark: [15, 118, 110],
   
-  // Slate / Netral
   slate900: PDF_THEME.slate900,
   slate700: [51, 65, 85],
   slate500: PDF_THEME.slate600,
@@ -266,7 +260,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   const contentWidth = pageWidth - marginX * 2;
 
   // ══════════════════════════════════════════════
-  // 1. KOP SURAT + LOGO (Tema Navy & Gold)
+  // 1. KOP SURAT + LOGO
   // ══════════════════════════════════════════════
   const hasLogo = Boolean(schoolLogoUrl);
   const logoSize = 18;
@@ -276,22 +270,18 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   if (hasLogo && schoolLogoUrl) {
     try {
       doc.addImage(schoolLogoUrl, 'PNG', logoX, logoY, logoSize, logoSize);
-    } catch {
-      /* skip logo if failed */
-    }
+    } catch {}
   }
 
   const textCenter = hasLogo
     ? marginX + (contentWidth + logoSize + 4) / 2
     : pageWidth / 2;
 
-  // Nama Sekolah
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text(schoolName, textCenter, 13, { align: 'center' });
 
-  // Alamat
   if (schoolAddress) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -299,13 +289,12 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     doc.text(schoolAddress, textCenter, 18, { align: 'center' });
   }
 
-  // Kontak
   if (schoolContact) {
     doc.setFontSize(8);
     doc.text(schoolContact, textCenter, 22, { align: 'center' });
   }
 
-  // Garis Ganda (Navy + Gold)
+  // Garis Ganda
   doc.setDrawColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.setLineWidth(1.2);
   doc.line(marginX, 25, pageWidth - marginX, 25);
@@ -472,14 +461,12 @@ export async function exportColoredPdfBranded(
     includeSignature?: boolean;
   }
 ): Promise<void> {
-  // Fetch pengaturan sekolah
   let schoolName = 'SMK KH. A. WAHAB MUHSIN SUKAHIDENG';
   let schoolAddress = 'Jl. Pahlawan KHZ Musthafa Sukarapih Sukarame Tasikmalaya Jawa Barat';
   let schoolLogoUrl: string | null = null;
   let schoolContact: string | null = null;
 
   try {
-    // ✅ FIX: Typo 'seolahs' -> 'sekolahs'
     const { data } = await supabase
       .from('pengaturan_sekolahs') 
       .select('*')
@@ -490,14 +477,12 @@ export async function exportColoredPdfBranded(
       schoolName = data.nama_sekolah?.toUpperCase() ?? schoolName;
       schoolAddress = data.alamat ?? schoolAddress;
 
-      // Contact
       const contactParts: string[] = [];
       if (data.telepon) contactParts.push(`Telp: ${data.telepon}`);
       if (data.email) contactParts.push(`Email: ${data.email}`);
       if (data.website) contactParts.push(data.website);
       schoolContact = contactParts.length > 0 ? contactParts.join(' · ') : null;
 
-      // Logo → dataUrl
       if (data.logo_url) {
         schoolLogoUrl = await loadImageAsDataUrl(data.logo_url);
       }
@@ -506,7 +491,6 @@ export async function exportColoredPdfBranded(
     console.warn('[pdfColoredExport] Gagal fetch pengaturan:', err);
   }
 
-  // Signature (kalau diminta)
   let signature: PdfSignature | undefined;
   if (options.includeSignature !== false) {
     const kepsek = await fetchKepalaSekolahData();
