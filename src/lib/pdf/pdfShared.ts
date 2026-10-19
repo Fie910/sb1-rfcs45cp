@@ -1,4 +1,4 @@
-// src/lib/pdfShared.ts
+// src/lib/pdf/pdfShared.ts
 // Shared helper untuk semua generator PDF (notulensi, surat izin, QR arsip).
 // ✅ Tema warna: Navy Blue & Gold (sesuai logo sekolah)
 
