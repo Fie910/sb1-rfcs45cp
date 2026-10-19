@@ -815,6 +815,36 @@ export function DashboardKepsekPage() {
     [topSiswaAlpa]
   );
 
+  // ✅ AI Insight Input
+  const aiInsightInput: DashboardInsightInput | null = useMemo(() => {
+    if (!modulKpi) return null;
+    return {
+      stats: {
+        guruHadir: snapshot.guruHadir,
+        guruTotal: snapshot.guruTotal,
+        siswaHadir: snapshot.siswaHadir,
+        siswaTotal: snapshot.siswaTotal,
+        izinPending: snapshot.izinPending,
+        disposisiPending: snapshot.disposisiPending,
+        tahfidzSetoran: modulKpi.tahfidz.totalSetoran,
+        tahfidzSiswaAktif: modulKpi.tahfidz.siswaAktif,
+        tahfidzMilestone: modulKpi.tahfidz.milestone,
+        pelanggaranBulanIni: modulKpi.kedisiplinan.pelanggaran,
+        spAktif: modulKpi.kedisiplinan.spAktif,
+        prestasiBulanIni: modulKpi.kedisiplinan.prestasi,
+        cutiPending: modulKpi.hris.cutiPending,
+        dokumenExpired: modulKpi.hris.dokumenExpired,
+        rapatBulanIni: modulKpi.rapat.bulanIni,
+        actionItemPending: modulKpi.rapat.actionItemPending,
+      },
+      alerts: alerts.map((a) => ({
+        level: a.level,
+        judul: a.judul,
+        pesan: a.pesan,
+      })),
+    };
+  }, [snapshot, modulKpi, alerts]);  
+
   // =========================================================================
   // RENDER — LOADING STATE
   // =========================================================================
