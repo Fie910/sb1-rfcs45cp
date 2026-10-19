@@ -292,6 +292,25 @@ export function KalenderAkademikPage() {
             </p>
           </div>
         </div>
+
+        {/* ✅ Tombol Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportIcs}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition cursor-pointer"
+            title="Export kalender bulan ini ke Google Calendar"
+          >
+            <Download size={14} />
+            Export ICS
+          </button>
+          <button
+            onClick={() => setRecurringModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer"
+          >
+            <Repeat size={14} />
+            Buat Recurring
+          </button>
+        </div>
       </div>
 
       {/* FILTER CHIPS */}
