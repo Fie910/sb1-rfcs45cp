@@ -1,6 +1,4 @@
 // src/lib/pdf/pdfShared.ts
-// Shared helper untuk semua generator PDF (notulensi, surat izin, QR arsip).
-// ✅ Tema warna: Navy Blue & Gold (sesuai logo sekolah)
 
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
@@ -9,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 // =============================================================================
 // TYPES & KONSTANTA WARNA
 // =============================================================================
+export type RGB = [number, number, number]; // 🆕 Tambah tipe RGB
+
 export type PengaturanSekolah = {
   nama_sekolah: string;
   alamat: string | null;
@@ -31,15 +31,16 @@ export const A4_LAYOUT: PdfLayoutConstants = {
   pageWidth: 210,
   pageHeight: 297,
   marginX: 20,
-  contentWidth: 170, // 210 - 20*2
+  contentWidth: 170,
 };
 
-// Palet Warna (RGB)
-export const PDF_THEME = {
-  navy: [15, 41, 82],       // Biru Dongker (dari logo)
-  gold: [197, 155, 77],     // Emas (dari logo)
+// 🆕 Palet Warna (Dengan tipe RGB yang tegas & tambahan slate200)
+export const PDF_THEME: Record<'navy' | 'gold' | 'slate900' | 'slate600' | 'slate200' | 'slate100' | 'white' | 'black', RGB> = {
+  navy: [15, 41, 82],       
+  gold: [197, 155, 77],     
   slate900: [15, 23, 42],
   slate600: [71, 85, 105],
+  slate200: [226, 232, 240], // 🆕 Tambahan slate200 (untuk garis tabel)
   slate100: [241, 245, 249],
   white: [255, 255, 255],
   black: [0, 0, 0],
@@ -151,7 +152,7 @@ export function buildVerifyUrl(
 }
 
 // =============================================================================
-// PDF: KOP SURAT (Tema Navy & Gold)
+// PDF: KOP SURAT
 // =============================================================================
 export async function drawKopSurat(
   doc: jsPDF,
@@ -161,19 +162,15 @@ export async function drawKopSurat(
   const { pageWidth, marginX } = layout;
   let y = 12;
 
-  // 1. Logo di Kiri (Proporsional 24x24 mm)
   if (pengaturan.logo_url) {
     const logoData = await loadImageAsDataUrl(pengaturan.logo_url);
     if (logoData) {
       try {
         doc.addImage(logoData, 'PNG', marginX, y, 24, 24);
-      } catch {
-        /* ignore */
-      }
+      } catch {}
     }
   }
 
-  // 2. Nama Sekolah (Navy, Bold, Times New Roman)
   doc.setFont('times', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
@@ -181,7 +178,6 @@ export async function drawKopSurat(
     align: 'center',
   });
 
-  // 3. Alamat
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
@@ -189,7 +185,6 @@ export async function drawKopSurat(
     doc.text(pengaturan.alamat, pageWidth / 2, y + 13, { align: 'center' });
   }
 
-  // 4. Kontak
   const kontakParts: string[] = [];
   if (pengaturan.telepon) kontakParts.push(`Telp: ${pengaturan.telepon}`);
   if (pengaturan.email) kontakParts.push(`Email: ${pengaturan.email}`);
@@ -200,7 +195,6 @@ export async function drawKopSurat(
     doc.text(kontakParts.join(' · '), pageWidth / 2, y + 17, { align: 'center' });
   }
 
-  // 5. Garis Ganda (Navy Tebal + Gold Tipis)
   y = 40;
   doc.setDrawColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.setLineWidth(1.2);
@@ -210,7 +204,6 @@ export async function drawKopSurat(
   doc.setLineWidth(0.5);
   doc.line(marginX, y + 1.5, pageWidth - marginX, y + 1.5);
 
-  // Reset warna ke hitam untuk konten selanjutnya
   doc.setTextColor(0);
   return y;
 }
