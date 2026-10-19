@@ -304,6 +304,11 @@ export function DashboardKepsekPage() {
   // Activity feed
   const [activity, setActivity] = useState<AuditLog[]>([]);
 
+  // ✅ Modul KPI + Alerts
+  const [modulKpi, setModulKpi] = useState<ModulKpiData | null>(null);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [modulLoading, setModulLoading] = useState(true);
+
   // =========================================================================
   // FETCH SNAPSHOT — hari ini
   // =========================================================================
