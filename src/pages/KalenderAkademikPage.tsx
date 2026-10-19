@@ -242,6 +242,37 @@ export function KalenderAkademikPage() {
   };
 
   // =========================================================================
+  // EXPORT ICS
+  // =========================================================================
+  const handleExportIcs = () => {
+    const eventsToExport = filteredEvents.filter((e) => {
+      // Filter: hanya event bulan ini
+      const bulan = e.tanggal_mulai.slice(0, 7);
+      const bulanIni = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+      return bulan === bulanIni;
+    });
+
+    if (eventsToExport.length === 0) {
+      showToast('error', 'Tidak ada event di bulan ini untuk di-export');
+      return;
+    }
+
+    const icsEvents = eventsToExport.map((e) => ({
+      uid: `${e.id}@smk-khawm.app`,
+      summary: e.judul,
+      description: e.deskripsi ?? undefined,
+      location: e.lokasi ?? undefined,
+      dtstart: e.tanggal_mulai,
+      dtend: e.tanggal_selesai !== e.tanggal_mulai ? e.tanggal_selesai : undefined,
+      allday: !e.waktu_mulai,
+    }));
+
+    const namaBulan = NAMA_BULAN[currentMonth].toLowerCase();
+    downloadIcsFile(icsEvents, `kalender-${namaBulan}-${currentYear}.ics`);
+    showToast('success', `${icsEvents.length} event berhasil di-export`);
+  };
+  
+  // =========================================================================
   // RENDER
   // =========================================================================
   return (
