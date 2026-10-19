@@ -79,6 +79,9 @@ function generateCalendarCells(year: number, month: number): CalendarCell[] {
 // KOMPONEN UTAMA
 // =============================================================================
 export function KalenderAkademikPage() {
+  const { guru } = useAuth();
+  const canManageRecurring = canManageRecurringEvent(guru?.role);
+  
   const today = getTodayDateWib();
   const todayDate = new Date(`${today}T12:00:00+07:00`);
 
