@@ -1,10 +1,11 @@
 // src/lib/pdf/pdfColoredExport.ts
 // Helper terpusat untuk export PDF berwarna — mirror tampilan aplikasi.
-// ✅ Sekarang support LOGO sekolah + auto-fetch dari pengaturan_sekolahs.
+// ✅ Tema: Navy & Gold (Konsisten dengan logo dan kop surat)
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/lib/supabase';
+import { PDF_THEME, loadImageAsDataUrl } from './pdfShared'; // 🆕 Import dari pdfShared
 
 // =============================================================================
 // TYPES
@@ -41,8 +42,8 @@ export type PdfExportOptions = {
   subtitle?: string;
   schoolName?: string;
   schoolAddress?: string;
-  schoolLogoUrl?: string | null;      // 🆕 logo dataUrl atau public URL
-  schoolContact?: string | null;      // 🆕 telp · email
+  schoolLogoUrl?: string | null;
+  schoolContact?: string | null;
   stats?: PdfStatBox[];
   columns: PdfColumn[];
   rows: any[];
@@ -52,11 +53,14 @@ export type PdfExportOptions = {
 };
 
 // =============================================================================
-// COLOR PALETTE
+// COLOR PALETTE (Disesuaikan dengan Tema)
 // =============================================================================
 export const PDF_COLORS: Record<string, RGB> = {
-  indigo: [79, 70, 229],
+  // Warna utama menggunakan Navy
+  indigo: PDF_THEME.navy,
   indigoLight: [238, 242, 255],
+  
+  // Warna status tabel tetap dipertahankan
   emerald: [16, 185, 129],
   emeraldLight: [209, 250, 229],
   emeraldDark: [6, 95, 70],
@@ -75,11 +79,13 @@ export const PDF_COLORS: Record<string, RGB> = {
   teal: [20, 184, 166],
   tealLight: [204, 251, 241],
   tealDark: [15, 118, 110],
-  slate900: [15, 23, 42],
+  
+  // Slate / Netral
+  slate900: PDF_THEME.slate900,
   slate700: [51, 65, 85],
-  slate500: [100, 116, 139],
+  slate500: PDF_THEME.slate600,
   slate300: [203, 213, 225],
-  slate100: [241, 245, 249],
+  slate100: PDF_THEME.slate100,
   slate50: [248, 250, 252],
   white: [255, 255, 255],
   black: [0, 0, 0],
@@ -150,25 +156,6 @@ export async function fetchKepalaSekolahData(): Promise<{
 }
 
 // =============================================================================
-// HELPER — Load Image as DataURL
-// =============================================================================
-async function loadImageAsDataUrl(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
-
-// =============================================================================
 // INTERNAL — Draw Stat Box
 // =============================================================================
 function drawStatBox(
@@ -200,9 +187,9 @@ function drawStatBox(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(
-    PDF_COLORS.slate500[0],
-    PDF_COLORS.slate500[1],
-    PDF_COLORS.slate500[2]
+    PDF_THEME.slate600[0],
+    PDF_THEME.slate600[1],
+    PDF_THEME.slate600[2]
   );
   doc.text(label, x + w / 2, y + h - 2.5, { align: 'center' });
 }
@@ -231,9 +218,9 @@ function drawSignatureBlock(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(
-    PDF_COLORS.slate900[0],
-    PDF_COLORS.slate900[1],
-    PDF_COLORS.slate900[2]
+    PDF_THEME.slate900[0],
+    PDF_THEME.slate900[1],
+    PDF_THEME.slate900[2]
   );
   doc.text(`${kota}, ${formatTanggalPanjangPdf(tanggal)}`, rightX, titimangsaY, {
     align: 'right',
@@ -279,7 +266,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
   const contentWidth = pageWidth - marginX * 2;
 
   // ══════════════════════════════════════════════
-  // 1. KOP SURAT + LOGO
+  // 1. KOP SURAT + LOGO (Tema Navy & Gold)
   // ══════════════════════════════════════════════
   const hasLogo = Boolean(schoolLogoUrl);
   const logoSize = 18;
@@ -298,61 +285,49 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     ? marginX + (contentWidth + logoSize + 4) / 2
     : pageWidth / 2;
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.setTextColor(
-    PDF_COLORS.slate900[0],
-    PDF_COLORS.slate900[1],
-    PDF_COLORS.slate900[2]
-  );
+  // Nama Sekolah
+  doc.setFont('times', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text(schoolName, textCenter, 13, { align: 'center' });
 
+  // Alamat
   if (schoolAddress) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(
-      PDF_COLORS.slate500[0],
-      PDF_COLORS.slate500[1],
-      PDF_COLORS.slate500[2]
-    );
+    doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
     doc.text(schoolAddress, textCenter, 18, { align: 'center' });
   }
 
+  // Kontak
   if (schoolContact) {
     doc.setFontSize(8);
     doc.text(schoolContact, textCenter, 22, { align: 'center' });
   }
 
-  doc.setDrawColor(
-    PDF_COLORS.indigo[0],
-    PDF_COLORS.indigo[1],
-    PDF_COLORS.indigo[2]
-  );
-  doc.setLineWidth(0.8);
+  // Garis Ganda (Navy + Gold)
+  doc.setDrawColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+  doc.setLineWidth(1.2);
   doc.line(marginX, 25, pageWidth - marginX, 25);
+  
+  doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, 26.5, pageWidth - marginX, 26.5);
 
   // ══════════════════════════════════════════════
   // 2. JUDUL
   // ══════════════════════════════════════════════
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(
-    PDF_COLORS.slate900[0],
-    PDF_COLORS.slate900[1],
-    PDF_COLORS.slate900[2]
-  );
-  doc.text(title, pageWidth / 2, 33, { align: 'center' });
+  doc.setFont('times', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+  doc.text(title, pageWidth / 2, 35, { align: 'center' });
 
-  let cursorY = 38;
+  let cursorY = 40;
 
   if (subtitle) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(
-      PDF_COLORS.slate500[0],
-      PDF_COLORS.slate500[1],
-      PDF_COLORS.slate500[2]
-    );
+    doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
     doc.text(subtitle, pageWidth / 2, cursorY, { align: 'center' });
     cursorY += 5;
   }
@@ -409,10 +384,10 @@ export function exportColoredPdf(options: PdfExportOptions): void {
       lineWidth: 0.1,
       valign: 'middle',
       overflow: 'linebreak',
-      textColor: PDF_COLORS.slate900,
+      textColor: PDF_THEME.slate900,
     },
     headStyles: {
-      fillColor: PDF_COLORS.indigo,
+      fillColor: PDF_THEME.navy,
       textColor: PDF_COLORS.white,
       fontStyle: 'bold',
       halign: 'center',
@@ -468,11 +443,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     doc.setPage(i);
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(
-      PDF_COLORS.slate500[0],
-      PDF_COLORS.slate500[1],
-      PDF_COLORS.slate500[2]
-    );
+    doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
 
     const leftText = footerNote
       ? `${footerNote} · Dicetak: ${cetakTanggal}`
@@ -508,8 +479,9 @@ export async function exportColoredPdfBranded(
   let schoolContact: string | null = null;
 
   try {
+    // ✅ FIX: Typo 'seolahs' -> 'sekolahs'
     const { data } = await supabase
-      .from('pengaturan_seolahs') // ⚠️ cek nama tabel — seharusnya 'pengaturan_sekolahs'
+      .from('pengaturan_sekolahs') 
       .select('*')
       .limit(1)
       .maybeSingle();
