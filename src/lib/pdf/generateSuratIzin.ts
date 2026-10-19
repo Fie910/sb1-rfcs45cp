@@ -1,4 +1,4 @@
-// src/lib/generateSuratIzin.ts
+// src/lib/pdf/generateSuratIzin.ts
 import jsPDF from 'jspdf';
 import { supabase } from '@/lib/supabase';
 import {
@@ -11,7 +11,7 @@ import {
   formatTanggalPanjang,
   tanggalHariIni,
   PDF_THEME, // 🆕
-} from './pdf/pdfShared'; // Sesuaikan path
+} from './pdf/pdfShared';
 
 export type SuratIzinData = {
   nomor_pengajuan: string;
