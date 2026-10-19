@@ -634,6 +634,16 @@ export function KalenderAkademikPage() {
           )}
         </div>
       )}
+
+      {/* ✅ Modal Recurring Event */}
+      <ModalRecurringEvent
+        open={recurringModalOpen}
+        onClose={() => setRecurringModalOpen(false)}
+        onSaved={() => {
+          setRecurringModalOpen(false);
+          fetchData();
+        }}
+      />      
     </div>
   );
 }
