@@ -752,7 +752,7 @@ export function DashboardKepsekPage() {
         setRefreshing(false);
       }
     },
-    [period, fetchSnapshot, fetchTrend, fetchTopBottom, fetchActivity]
+    [period, fetchSnapshot, fetchTrend, fetchTopBottom, fetchActivity, fetchModulKpi]
   );
 
   // Initial load
