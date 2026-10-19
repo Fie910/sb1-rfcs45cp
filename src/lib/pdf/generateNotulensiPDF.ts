@@ -1,4 +1,4 @@
-// src/lib/generateNotulensiPDF.ts
+// src/lib/pdf/generateNotulensiPDF.ts
 import jsPDF from 'jspdf';
 import { supabase } from '@/lib/supabase';
 import {
