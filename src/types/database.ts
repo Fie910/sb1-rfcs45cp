@@ -862,6 +862,10 @@ export type KesiswaanSuratPeringatan = {
   catatan: string | null;
   created_at: string;
   updated_at: string;
+  verification_token?: string | null;
+  content_hash?: string | null;
+  pdf_generated_at?: string | null;
+  pdf_generated_by?: string | null;
 };
 
 export type KesiswaanSuratPeringatanWithRelations = KesiswaanSuratPeringatan & {
