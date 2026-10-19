@@ -328,6 +328,7 @@ export function KalenderAkademikPage() {
             <Repeat size={14} />
             Buat Recurring
           </button>
+          )}
         </div>
       </div>
 
