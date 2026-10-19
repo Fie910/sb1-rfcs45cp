@@ -38,6 +38,11 @@ import {
 } from '@/utils/charts';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { AuditLog } from '@/types/database';
+import { ModulKpiSection, type ModulKpiData } from '@/components/dashboard-kepsek/ModulKpiSection';
+import { AlertSection, type AlertItem, type AlertLevel } from '@/components/dashboard-kepsek/AlertSection';
+import { AiInsightSection } from '@/components/dashboard-kepsek/AiInsightSection';
+import type { DashboardInsightInput } from '@/lib/ai/dashboardInsight';
+import { getSemesterDateRange, type SemesterType } from '@/lib/tahfidz/semester';
 
 // =============================================================================
 // TIPE DATA
