@@ -742,6 +742,7 @@ export function DashboardKepsekPage() {
           fetchTrend(period),
           fetchTopBottom(),
           fetchActivity(),
+          fetchModulKpi(),
         ]);
       } catch (err) {
         console.error('Gagal fetch dashboard kepsek:', err);
