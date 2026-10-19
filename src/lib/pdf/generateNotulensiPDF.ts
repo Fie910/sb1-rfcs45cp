@@ -1,6 +1,4 @@
 // src/lib/generateNotulensiPDF.ts
-// Generate PDF Notulensi Rapat dengan QR anti-forgery.
-
 import jsPDF from 'jspdf';
 import { supabase } from '@/lib/supabase';
 import {
@@ -13,12 +11,10 @@ import {
   formatJam,
   formatTanggalPanjang,
   tanggalHariIni,
-} from './pdfShared';
+  PDF_THEME, // 🆕 Import Tema
+} from './pdf/pdfShared'; // Sesuaikan path jika perlu
 import type { ActionItemRapat } from '@/types/database';
 
-// =============================================================================
-// TYPES
-// =============================================================================
 export type NotulensiPDFData = {
   nomor_rapat: string;
   judul_rapat: string;
@@ -47,9 +43,6 @@ export type NotulensiPDFData = {
   content_hash: string | null;
 };
 
-// =============================================================================
-// MAIN
-// =============================================================================
 export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
@@ -57,39 +50,43 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
 
   const pengaturan = await fetchPengaturan();
 
-  // ==========================================================================
   // 1. KOP SURAT
-  // ==========================================================================
   y = await drawKopSurat(doc, pengaturan);
 
-  // ==========================================================================
-  // 2. JUDUL
-  // ==========================================================================
+  // 2. JUDUL (Times New Roman, Navy)
   y += 12;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
+  doc.setFont('times', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text('NOTULENSI RAPAT', pageWidth / 2, y, { align: 'center' });
 
-  y += 5.5;
+  // Garis Emas di bawah judul
+  y += 2;
+  doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
+  doc.setLineWidth(0.5);
+  doc.line(pageWidth / 2 - 30, y, pageWidth / 2 + 30, y);
+
+  y += 5;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(10);
+  doc.setTextColor(0);
   doc.text(`Nomor: ${data.nomor_rapat}`, pageWidth / 2, y, { align: 'center' });
 
   y += 4.5;
   doc.setFontSize(8);
-  doc.setTextColor(100);
+  doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
   doc.text(`Jenis: ${data.jenis_rapat}`, pageWidth / 2, y, { align: 'center' });
   doc.setTextColor(0);
 
-  // ==========================================================================
   // 3. IDENTITAS RAPAT
-  // ==========================================================================
   y += 10;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFont('times', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text('I. IDENTITAS RAPAT', marginX, y);
-  y += 5;
-
+  doc.setTextColor(0);
+  
+  y += 6;
   const durasi = data.waktu_selesai
     ? `${formatJam(data.waktu_mulai)} — ${formatJam(data.waktu_selesai)} WIB`
     : `${formatJam(data.waktu_mulai)} WIB`;
@@ -116,14 +113,14 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
     y += Math.max(5, valLines.length * 4.5);
   });
 
-  // ==========================================================================
   // 4. DAFTAR PESERTA
-  // ==========================================================================
   y += 4;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFont('times', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text('II. DAFTAR PESERTA', marginX, y);
-  y += 5;
+  doc.setTextColor(0);
+  y += 6;
 
   if (data.peserta.length === 0) {
     doc.setFont('helvetica', 'normal');
@@ -134,15 +131,18 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
     const colX = [marginX + 3, marginX + 12, marginX + 90, marginX + 130];
     const colLabels = ['No', 'Nama', 'Jabatan', 'Kehadiran'];
 
+    // Header Tabel (Navy bg, White text)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(marginX + 2, y - 3.5, contentWidth - 4, 5, 'F');
-    colLabels.forEach((lbl, i) => doc.text(lbl, colX[i], y));
+    doc.setFillColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+    doc.rect(marginX + 2, y - 3.5, contentWidth - 4, 6, 'F');
+    doc.setTextColor(255, 255, 255);
+    colLabels.forEach((lbl, i) => doc.text(lbl, colX[i], y + 0.5));
+    doc.setTextColor(0);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    y += 5;
+    y += 5.5;
 
     data.peserta.forEach((p, idx) => {
       if (y > pageHeight - 30) {
@@ -155,140 +155,73 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
       doc.text(p.kehadiran, colX[3], y);
       y += 4.5;
 
-      doc.setDrawColor(230, 230, 230);
+      doc.setDrawColor(PDF_THEME.slate200[0], PDF_THEME.slate200[1], PDF_THEME.slate200[2]);
       doc.setLineWidth(0.1);
       doc.line(marginX + 2, y - 2.5, pageWidth - marginX - 2, y - 2.5);
     });
   }
 
-  // ==========================================================================
-  // 5. RINGKASAN
-  // ==========================================================================
-  y += 4;
-  if (y > pageHeight - 40) {
-    doc.addPage();
-    y = 20;
-  }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.text('III. RINGKASAN', marginX, y);
-  y += 5;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  if (data.ringkasan) {
-    const lines = doc.splitTextToSize(data.ringkasan, contentWidth - 6);
-    doc.text(lines, marginX + 3, y);
-    y += lines.length * 4.5 + 3;
-  } else {
-    doc.setFontSize(9);
-    doc.setTextColor(150);
-    doc.text('(Belum ada ringkasan)', marginX + 3, y);
+  // Fungsi bantuan untuk section text panjang
+  const renderSection = (roman: string, title: string, content: string | null) => {
+    if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+    doc.setFont('times', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+    doc.text(`${roman}. ${title}`, marginX, y);
     doc.setTextColor(0);
-    y += 5;
-  }
+    y += 6;
 
-  // ==========================================================================
-  // 6. PEMBAHASAN
-  // ==========================================================================
-  if (y > pageHeight - 40) {
-    doc.addPage();
-    y = 20;
-  }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.text('IV. PEMBAHASAN', marginX, y);
-  y += 5;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  if (data.pembahasan) {
-    const lines = doc.splitTextToSize(data.pembahasan, contentWidth - 6);
-    lines.forEach((line: string) => {
-      if (y > pageHeight - 25) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(line, marginX + 3, y);
-      y += 4.5;
-    });
-    y += 3;
-  } else {
-    doc.setFontSize(9);
-    doc.setTextColor(150);
-    doc.text('(Belum ada pembahasan)', marginX + 3, y);
-    doc.setTextColor(0);
-    y += 5;
-  }
-
-  // ==========================================================================
-  // 7. KEPUTUSAN
-  // ==========================================================================
-  if (y > pageHeight - 40) {
-    doc.addPage();
-    y = 20;
-  }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.text('V. KEPUTUSAN', marginX, y);
-  y += 5;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  if (data.keputusan) {
-    const lines = doc.splitTextToSize(data.keputusan, contentWidth - 6);
-    lines.forEach((line: string) => {
-      if (y > pageHeight - 25) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(line, marginX + 3, y);
-      y += 4.5;
-    });
-    y += 3;
-  } else {
-    doc.setFontSize(9);
-    doc.setTextColor(150);
-    doc.text('(Belum ada keputusan)', marginX + 3, y);
-    doc.setTextColor(0);
-    y += 5;
-  }
-
-  // ==========================================================================
-  // 8. ACTION ITEMS
-  // ==========================================================================
-  if (data.action_items.length > 0) {
-    if (y > pageHeight - 45) {
-      doc.addPage();
-      y = 20;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    if (content) {
+      const lines = doc.splitTextToSize(content, contentWidth - 6);
+      lines.forEach((line: string) => {
+        if (y > pageHeight - 25) { doc.addPage(); y = 20; }
+        doc.text(line, marginX + 3, y);
+        y += 4.5;
+      });
+      y += 3;
+    } else {
+      doc.setFontSize(9);
+      doc.setTextColor(150);
+      doc.text(`(Belum ada ${title.toLowerCase()})`, marginX + 3, y);
+      doc.setTextColor(0);
+      y += 5;
     }
+  };
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
+  renderSection('III', 'RINGKASAN', data.ringkasan);
+  renderSection('IV', 'PEMBAHASAN', data.pembahasan);
+  renderSection('V', 'KEPUTUSAN', data.keputusan);
+
+  // 6. ACTION ITEMS
+  if (data.action_items.length > 0) {
+    if (y > pageHeight - 45) { doc.addPage(); y = 20; }
+
+    doc.setFont('times', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
     doc.text('VI. ACTION ITEMS', marginX, y);
-    y += 5;
+    doc.setTextColor(0);
+    y += 6;
 
     const aX = [marginX + 3, marginX + 12, marginX + 90, marginX + 130];
     const aLabels = ['No', 'Tugas', 'PIC', 'Deadline'];
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(marginX + 2, y - 3.5, contentWidth - 4, 5, 'F');
-    aLabels.forEach((lbl, i) => doc.text(lbl, aX[i], y));
+    doc.setFillColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+    doc.rect(marginX + 2, y - 3.5, contentWidth - 4, 6, 'F');
+    doc.setTextColor(255, 255, 255);
+    aLabels.forEach((lbl, i) => doc.text(lbl, aX[i], y + 0.5));
+    doc.setTextColor(0);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    y += 5;
+    y += 5.5;
 
     data.action_items.forEach((a, idx) => {
-      if (y > pageHeight - 25) {
-        doc.addPage();
-        y = 20;
-      }
+      if (y > pageHeight - 25) { doc.addPage(); y = 20; }
 
       const descLines = doc.splitTextToSize(a.deskripsi, 75);
       doc.text(`${idx + 1}`, aX[0], y);
@@ -299,28 +232,19 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
 
       if (descLines.length > 1) {
         for (let i = 1; i < descLines.length; i++) {
-          if (y > pageHeight - 25) {
-            doc.addPage();
-            y = 20;
-          }
+          if (y > pageHeight - 25) { doc.addPage(); y = 20; }
           doc.text(descLines[i], aX[1], y);
           y += 4.5;
         }
       }
-
       doc.setDrawColor(230, 230, 230);
       doc.setLineWidth(0.1);
       doc.line(marginX + 2, y - 2.5, pageWidth - marginX - 2, y - 2.5);
     });
   }
 
-  // ==========================================================================
-  // 9. TANDA TANGAN + QR
-  // ==========================================================================
-  if (y > pageHeight - 80) {
-    doc.addPage();
-    y = 30;
-  }
+  // 7. TANDA TANGAN
+  if (y > pageHeight - 80) { doc.addPage(); y = 30; }
   y += 10;
 
   const rightX = pageWidth - marginX - 60;
@@ -344,47 +268,22 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
   if (data.notulis_nip) doc.text(`NIP. ${data.notulis_nip}`, marginX, y);
   if (data.pemimpin_nip) doc.text(`NIP. ${data.pemimpin_nip}`, rightX, y);
 
-  // QR di kiri bawah
   const qrSize = 25;
   const verifyUrl = buildVerifyUrl('notulensi', data.verification_token, data.content_hash);
-  await drawQrVerifikasi(doc, verifyUrl, marginX, y - 30, qrSize, [
-    'Scan untuk verifikasi',
-    'keaslian notulensi',
-  ]);
+  await drawQrVerifikasi(doc, verifyUrl, marginX, y - 30, qrSize, ['Scan untuk verifikasi', 'keaslian notulensi']);
 
-  // ==========================================================================
-  // 10. FOOTER
-  // ==========================================================================
-  drawFooter(
-    doc,
-    pengaturan,
-    A4_LAYOUT,
-    `Notulensi ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}.`
-  );
+  drawFooter(doc, pengaturan, A4_LAYOUT, `Notulensi ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}.`);
 
-  // ==========================================================================
-  // 11. SAVE
-  // ==========================================================================
   const fileName = `Notulensi_${data.nomor_rapat}_${data.judul_rapat.slice(0, 40).replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
   doc.save(fileName);
 
-  // ==========================================================================
-  // 12. UPDATE pdf_generated_at
-  // ==========================================================================
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      await supabase
-        .from('rapat_notulensi')
-        .update({
-          pdf_generated_at: new Date().toISOString(),
-          pdf_generated_by: session.user.id,
-        })
-        .eq('verification_token', data.verification_token);
+      await supabase.from('rapat_notulensi').update({
+        pdf_generated_at: new Date().toISOString(),
+        pdf_generated_by: session.user.id,
+      }).eq('verification_token', data.verification_token);
     }
-  } catch {
-    /* silent */
-  }
+  } catch { /* silent */ }
 }
