@@ -891,6 +891,18 @@ export function DashboardKepsekPage() {
         </button>
       </div>
 
+      {/* ✅ BAGIAN NEW — AI INSIGHT */}
+      <AiInsightSection
+        input={aiInsightInput}
+        ready={!modulLoading && modulKpi !== null}
+      />
+
+      {/* ✅ BAGIAN NEW — KPI MODUL KHUSUS */}
+      <ModulKpiSection data={modulKpi} loading={modulLoading} />
+
+      {/* ✅ BAGIAN NEW — ALERTS */}
+      <AlertSection alerts={alerts} loading={modulLoading} />
+
       {/* BAGIAN A — SNAPSHOT 4 KARTU */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SnapshotCard
