@@ -94,6 +94,9 @@ export function KalenderAkademikPage() {
   // Selected date detail
   const [selectedDate, setSelectedDate] = useState<string | null>(today);
 
+  // ✅ Recurring modal
+  const [recurringModalOpen, setRecurringModalOpen] = useState(false);
+
   // =========================================================================
   // FETCH
   // =========================================================================
