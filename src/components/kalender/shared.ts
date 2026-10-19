@@ -254,7 +254,10 @@ export const KALENDER_MANAGER_ROLES = [
   'kepala',
   'wakil_kepala',
   'takola',
-  'staf_takola',
+  'akademik',
+  'kesiswaan',
+  'sarpras',
+  'keuangan',
 ];
 
 export function canManageRecurringEvent(
