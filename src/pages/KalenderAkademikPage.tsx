@@ -1,6 +1,7 @@
 // src/pages/KalenderAkademikPage.tsx
 // Kalender Akademik — kalender bulanan + linimasa agenda (rapat + kegiatan + libur).
 
+import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   CalendarRange, ChevronLeft, ChevronRight, Loader2, Calendar,
