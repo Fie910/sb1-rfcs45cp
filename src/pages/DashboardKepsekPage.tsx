@@ -546,6 +546,189 @@ export function DashboardKepsekPage() {
   }, []);
 
   // =========================================================================
+  // FETCH MODUL KPI + ALERTS
+  // =========================================================================
+  const fetchModulKpi = useCallback(async () => {
+    setModulLoading(true);
+    try {
+      const today = getTodayDateWib();
+      const { start: monthStart, end: monthEnd } = getCurrentMonthRange();
+
+      // Get semester range
+      const { data: tahunAktif } = await supabase
+        .from('tahun_ajarans')
+        .select('tahun, semester')
+        .eq('is_aktif', true)
+        .maybeSingle();
+
+      let semesterStart = monthStart;
+      let semesterEnd = monthEnd;
+      if (tahunAktif) {
+        const range = getSemesterDateRange(
+          tahunAktif.tahun,
+          tahunAktif.semester as SemesterType
+        );
+        semesterStart = range.start;
+        semesterEnd = range.end;
+      }
+
+      const next30Days = addDays(today, 30);
+
+      // Parallel queries
+      const [
+        setoranRes,
+        pelanggaranRes,
+        spRes,
+        prestasiRes,
+        cutiRes,
+        dokRes,
+        rapatRes,
+        notulensiRes,
+        milestoneRes,
+      ] = await Promise.all([
+        supabase
+          .from('tahfidz_setoran')
+          .select('siswa_id')
+          .gte('tanggal', semesterStart)
+          .lte('tanggal', semesterEnd),
+        supabase
+          .from('kesiswaan_pelanggaran')
+          .select('*', { count: 'exact', head: true })
+          .gte('tanggal', monthStart)
+          .lte('tanggal', monthEnd),
+        supabase
+          .from('kesiswaan_surat_peringatan')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'Aktif'),
+        supabase
+          .from('kesiswaan_prestasi')
+          .select('*', { count: 'exact', head: true })
+          .gte('tanggal', monthStart)
+          .lte('tanggal', monthEnd),
+        supabase
+          .from('hris_cuti')
+          .select('*', { count: 'exact', head: true })
+          .in('status', ['Diajukan', 'Disetujui Atasan', 'Disetujui HR']),
+        supabase
+          .from('hris_dokumen')
+          .select('*', { count: 'exact', head: true })
+          .gte('tanggal_expired', today)
+          .lte('tanggal_expired', next30Days),
+        supabase
+          .from('rapat')
+          .select('*', { count: 'exact', head: true })
+          .gte('tanggal', monthStart)
+          .lte('tanggal', monthEnd),
+        supabase
+          .from('rapat_notulensi')
+          .select('action_items')
+          .eq('status', 'Final'),
+        tahunAktif
+          ? supabase
+              .from('tahfidz_milestone_tercapai')
+              .select('*', { count: 'exact', head: true })
+              .eq('semester', tahunAktif.semester)
+          : Promise.resolve({ count: 0 } as any),
+      ]);
+
+      // Aggregate
+      const uniqueSiswa = new Set(
+        (setoranRes.data ?? []).map((s: any) => s.siswa_id)
+      );
+
+      let actionItemPending = 0;
+      (notulensiRes.data ?? []).forEach((n: any) => {
+        const items = Array.isArray(n.action_items) ? n.action_items : [];
+        actionItemPending += items.filter(
+          (a: any) => !a.selesai && !a.done
+        ).length;
+      });
+
+      setModulKpi({
+        tahfidz: {
+          totalSetoran: setoranRes.data?.length ?? 0,
+          siswaAktif: uniqueSiswa.size,
+          milestone: milestoneRes.count ?? 0,
+        },
+        kedisiplinan: {
+          pelanggaran: pelanggaranRes.count ?? 0,
+          spAktif: spRes.count ?? 0,
+          prestasi: prestasiRes.count ?? 0,
+        },
+        hris: {
+          cutiPending: cutiRes.count ?? 0,
+          dokumenExpired: dokRes.count ?? 0,
+        },
+        rapat: {
+          bulanIni: rapatRes.count ?? 0,
+          actionItemPending,
+        },
+      });
+
+      // Build alerts
+      const newAlerts: AlertItem[] = [];
+
+      if ((dokRes.count ?? 0) > 0) {
+        newAlerts.push({
+          id: 'dokumen-expired',
+          level: (dokRes.count ?? 0) > 5 ? 'Tinggi' : 'Sedang',
+          judul: 'Dokumen HRIS Expired',
+          pesan: `${dokRes.count} dokumen akan expired dalam 30 hari ke depan`,
+          link: '/hris',
+          icon: 'dokumen',
+        });
+      }
+
+      if ((spRes.count ?? 0) > 0) {
+        newAlerts.push({
+          id: 'sp-aktif',
+          level: (spRes.count ?? 0) > 5 ? 'Tinggi' : 'Sedang',
+          judul: 'Surat Peringatan Aktif',
+          pesan: `${spRes.count} siswa memiliki SP Aktif yang perlu ditindaklanjuti`,
+          link: '/kedisiplinan',
+          icon: 'sp',
+        });
+      }
+
+      if (actionItemPending > 0) {
+        newAlerts.push({
+          id: 'action-item-pending',
+          level: actionItemPending > 10 ? 'Tinggi' : 'Sedang',
+          judul: 'Action Item Rapat Pending',
+          pesan: `${actionItemPending} action item dari notulensi final belum diselesaikan`,
+          link: '/rapat',
+          icon: 'action',
+        });
+      }
+
+      if ((cutiRes.count ?? 0) > 3) {
+        newAlerts.push({
+          id: 'cuti-pending',
+          level: 'Sedang',
+          judul: 'Cuti Pending Menumpuk',
+          pesan: `${cutiRes.count} pengajuan cuti menunggu persetujuan`,
+          link: '/hris',
+          icon: 'cuti',
+        });
+      }
+
+      // Sort by level
+      const levelWeight: Record<AlertLevel, number> = {
+        Tinggi: 3,
+        Sedang: 2,
+        Rendah: 1,
+      };
+      newAlerts.sort((a, b) => levelWeight[b.level] - levelWeight[a.level]);
+
+      setAlerts(newAlerts);
+    } catch (err) {
+      console.warn('[DashboardKepsek] Modul KPI error:', err);
+    } finally {
+      setModulLoading(false);
+    }
+  }, []);  
+  
+  // =========================================================================
   // MASTER FETCH
   // =========================================================================
   const fetchAll = useCallback(
