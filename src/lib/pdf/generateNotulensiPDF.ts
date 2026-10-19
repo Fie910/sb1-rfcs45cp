@@ -12,7 +12,7 @@ import {
   formatTanggalPanjang,
   tanggalHariIni,
   PDF_THEME, // 🆕 Import Tema
-} from './pdf/pdfShared';
+} from './pdfShared';
 import type { ActionItemRapat } from '@/types/database';
 
 export type NotulensiPDFData = {
