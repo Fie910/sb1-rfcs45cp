@@ -519,6 +519,8 @@ export function SuratPeringatanTab() {
             nip: printTarget.penandatangan?.nip,
             jabatan: 'Kepala Sekolah',
           }}
+          verification_token={printTarget.verification_token}
+          content_hash={printTarget.content_hash}
           onClose={() => setPrintTarget(null)}
         />
       )}
