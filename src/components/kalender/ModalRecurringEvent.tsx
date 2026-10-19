@@ -165,7 +165,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
       // 3. Log
       await logActivity({
         aksi: 'CREATE',
-        modul: AUDIT_MODUL.KALENDER ?? 'Kalender',
+        modul: AUDIT_MODUL.KEGIATAN ?? 'Kalender',
         targetId: parentId,
         deskripsi: `Buat recurring event "${form.nama_kegiatan}" (${preview.count} occurrences, ${form.recurrence_pattern})`,
       });
