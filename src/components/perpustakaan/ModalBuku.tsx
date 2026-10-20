@@ -1,16 +1,16 @@
 // src/components/perpustakaan/ModalBuku.tsx
-// Form Tambah/Edit Buku Perpustakaan.
-
 import { useState, useEffect } from 'react';
 import {
   Loader2, Save, Book, Hash, UploadCloud, X, Paperclip,
-  User, Building2, Calendar, FileText, Library,
+  User, Building2, Calendar, FileText, Library, ScanBarcode, Sparkles
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
+import { fetchBookByISBN } from '@/lib/googleBooks'; // 🆕 Import Google Books
+import { QRScanner } from './QRScanner'; // 🆕 Import QR Scanner
 import {
   INPUT_CLASS, LABEL_CLASS,
   getKondisiBukuBadge, KONDISI_BUKU_OPTIONS, BAHASA_OPTIONS,
@@ -106,6 +106,10 @@ export function ModalBuku({
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
 
+  // 🆕 State untuk Scanner
+  const [scanOpen, setScanOpen] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+
   // ==========================================================================
   // INIT FORM
   // ==========================================================================
@@ -134,6 +138,7 @@ export function ModalBuku({
       setForm(emptyForm);
     }
     setCoverFile(null);
+    setScanOpen(false);
   }, [open, buku]);
 
   // ==========================================================================
@@ -200,6 +205,33 @@ export function ModalBuku({
     }
   };
 
+  // 🆕 Fungsi saat scan berhasil
+  const handleScanIsbn = async (isbn: string) => {
+    setScanOpen(false);
+    setForm((f) => ({ ...f, isbn }));
+    setIsScanning(true);
+    showToast('info', 'Mencari data buku...');
+
+    const bookData = await fetchBookByISBN(isbn);
+    setIsScanning(false);
+
+    if (bookData) {
+      setForm((f) => ({
+        ...f,
+        judul: bookData.judul || f.judul,
+        pengarang: bookData.pengarang || f.pengarang,
+        penerbit: bookData.penerbit || f.penerbit,
+        tahun_terbit: bookData.tahun_terbit ? String(bookData.tahun_terbit) : f.tahun_terbit,
+        sinopsis: bookData.sinopsis || f.sinopsis,
+        cover_url: bookData.cover_url || f.cover_url,
+        jumlah_halaman: bookData.jumlah_halaman ? String(bookData.jumlah_halaman) : f.jumlah_halaman,
+      }));
+      showToast('success', 'Data buku berhasil ditemukan!');
+    } else {
+      showToast('error', 'Buku tidak ditemukan di database Google Books. Silakan isi manual.');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.judul.trim()) { showToast('error', 'Judul buku wajib diisi'); return; }
     if (!form.kode_buku.trim()) { showToast('error', 'Kode buku belum terisi — pilih kategori'); return; }
@@ -236,11 +268,9 @@ export function ModalBuku({
         is_aktif: form.is_aktif,
       };
 
-      // Untuk create, jumlah_tersedia = jumlah_total
       if (!isEdit) {
         payload.jumlah_tersedia = total;
       } else {
-        // Saat edit, hitung ulang jumlah_tersedia = jumlah_total lama - yang sedang dipinjam
         const dipinjam = (buku?.jumlah_total ?? 0) - (buku?.jumlah_tersedia ?? 0);
         payload.jumlah_tersedia = Math.max(0, total - dipinjam);
       }
@@ -295,309 +325,349 @@ export function ModalBuku({
   // RENDER
   // ==========================================================================
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={isEdit ? 'Edit Buku' : 'Tambah Buku Baru'}
-      size="lg"
-    >
-      <div className="space-y-5 pt-1 max-h-[75vh] overflow-y-auto pr-1 custom-scrollbar">
+    <>
+      <Modal
+        open={open && !scanOpen}
+        onClose={onClose}
+        title={isEdit ? 'Edit Buku' : 'Tambah Buku Baru'}
+        size="lg"
+      >
+        <div className="space-y-5 pt-1 max-h-[75vh] overflow-y-auto pr-1 custom-scrollbar">
 
-        {/* SECTION: IDENTITAS UTAMA */}
-        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
-            <Book size={13} /> Identitas Buku
-          </h4>
+          {/* SECTION: IDENTITAS UTAMA */}
+          <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+              <Book size={13} /> Identitas Buku
+            </h4>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className={LABEL_CLASS}>Kategori (Dewey) *</label>
-              <SearchableSelect
-                options={kategoriList.map((k) => ({
-                  value: k.id,
-                  label: k.nama,
-                  hint: k.kode_dewey ? `DDC ${k.kode_dewey}` : undefined,
-                }))}
-                value={form.kategori_id}
-                onChange={(v) => setForm({ ...form, kategori_id: v })}
-                placeholder="Pilih kategori..."
-                searchPlaceholder="Cari kategori..."
-                emptyMessage="Kategori tidak ditemukan"
-              />
-            </div>
-
-            <div>
-              <label className={LABEL_CLASS}>
-                Kode Buku {!isEdit && '(Otomatis)'}
-              </label>
-              <div className="relative">
-                <Hash size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  value={form.kode_buku}
-                  onChange={(e) => setForm({ ...form, kode_buku: e.target.value })}
-                  placeholder="Pilih kategori untuk generate..."
-                  className={`${INPUT_CLASS} pl-8 font-mono`}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL_CLASS}>Kategori (Dewey) *</label>
+                <SearchableSelect
+                  options={kategoriList.map((k) => ({
+                    value: k.id,
+                    label: k.nama,
+                    hint: k.kode_dewey ? `DDC ${k.kode_dewey}` : undefined,
+                  }))}
+                  value={form.kategori_id}
+                  onChange={(v) => setForm({ ...form, kategori_id: v })}
+                  placeholder="Pilih kategori..."
+                  searchPlaceholder="Cari kategori..."
+                  emptyMessage="Kategori tidak ditemukan"
                 />
               </div>
-            </div>
-          </div>
 
-          <div>
-            <label className={LABEL_CLASS}>Judul Buku *</label>
-            <input
-              type="text"
-              value={form.judul}
-              onChange={(e) => setForm({ ...form, judul: e.target.value })}
-              placeholder="Contoh: Laskar Pelangi"
-              className={INPUT_CLASS}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className={LABEL_CLASS}>Pengarang</label>
-              <div className="relative">
-                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  value={form.pengarang}
-                  onChange={(e) => setForm({ ...form, pengarang: e.target.value })}
-                  placeholder="Andrea Hirata"
-                  className={`${INPUT_CLASS} pl-8`}
-                />
+              <div>
+                <label className={LABEL_CLASS}>
+                  Kode Buku {!isEdit && '(Otomatis)'}
+                </label>
+                <div className="relative">
+                  <Hash size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    value={form.kode_buku}
+                    onChange={(e) => setForm({ ...form, kode_buku: e.target.value })}
+                    placeholder="Pilih kategori untuk generate..."
+                    className={`${INPUT_CLASS} pl-8 font-mono`}
+                  />
+                </div>
               </div>
             </div>
+
+            {/* 🆕 ISBN dengan Tombol Scan */}
             <div>
-              <label className={LABEL_CLASS}>Penerbit</label>
-              <div className="relative">
-                <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <label className={LABEL_CLASS}>ISBN / Barcode</label>
+              <div className="flex gap-2">
                 <input
                   type="text"
-                  value={form.penerbit}
-                  onChange={(e) => setForm({ ...form, penerbit: e.target.value })}
-                  placeholder="Bentang Pustaka"
-                  className={`${INPUT_CLASS} pl-8`}
+                  value={form.isbn}
+                  onChange={(e) => setForm({ ...form, isbn: e.target.value })}
+                  placeholder="978-XXX-XXX-X"
+                  className={`${INPUT_CLASS} font-mono flex-1`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setScanOpen(true)}
+                  disabled={isScanning}
+                  className="inline-flex items-center justify-center px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-colors disabled:opacity-50 cursor-pointer"
+                  title="Scan Barcode ISBN"
+                >
+                  {isScanning ? <Loader2 size={16} className="animate-spin" /> : <ScanBarcode size={16} />}
+                </button>
               </div>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Klik ikon scan untuk memindai barcode di belakang buku (otomatis tarik data dari Google).
+              </p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className={LABEL_CLASS}>Tahun Terbit</label>
-              <input
-                type="number"
-                min={1900}
-                max={new Date().getFullYear() + 5}
-                value={form.tahun_terbit}
-                onChange={(e) => setForm({ ...form, tahun_terbit: e.target.value })}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div>
-              <label className={LABEL_CLASS}>ISBN</label>
+              <label className={LABEL_CLASS}>Judul Buku *</label>
               <input
                 type="text"
-                value={form.isbn}
-                onChange={(e) => setForm({ ...form, isbn: e.target.value })}
-                placeholder="978-XXX-XXX-X"
-                className={`${INPUT_CLASS} font-mono`}
-              />
-            </div>
-            <div>
-              <label className={LABEL_CLASS}>Bahasa</label>
-              <select
-                value={form.bahasa}
-                onChange={(e) => setForm({ ...form, bahasa: e.target.value })}
-                className={`${INPUT_CLASS} cursor-pointer`}
-              >
-                {BAHASA_OPTIONS.map((b) => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION: INVENTARIS */}
-        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
-            <Library size={13} /> Data Inventaris
-          </h4>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={LABEL_CLASS}>Jumlah Total *</label>
-              <input
-                type="number"
-                min={1}
-                value={form.jumlah_total}
-                onChange={(e) => setForm({ ...form, jumlah_total: e.target.value })}
+                value={form.judul}
+                onChange={(e) => setForm({ ...form, judul: e.target.value })}
+                placeholder="Contoh: Laskar Pelangi"
                 className={INPUT_CLASS}
               />
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL_CLASS}>Pengarang</label>
+                <div className="relative">
+                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    value={form.pengarang}
+                    onChange={(e) => setForm({ ...form, pengarang: e.target.value })}
+                    placeholder="Andrea Hirata"
+                    className={`${INPUT_CLASS} pl-8`}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Penerbit</label>
+                <div className="relative">
+                  <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    value={form.penerbit}
+                    onChange={(e) => setForm({ ...form, penerbit: e.target.value })}
+                    placeholder="Bentang Pustaka"
+                    className={`${INPUT_CLASS} pl-8`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL_CLASS}>Tahun Terbit</label>
+                <input
+                  type="number"
+                  min={1900}
+                  max={new Date().getFullYear() + 5}
+                  value={form.tahun_terbit}
+                  onChange={(e) => setForm({ ...form, tahun_terbit: e.target.value })}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Bahasa</label>
+                <select
+                  value={form.bahasa}
+                  onChange={(e) => setForm({ ...form, bahasa: e.target.value })}
+                  className={`${INPUT_CLASS} cursor-pointer`}
+                >
+                  {BAHASA_OPTIONS.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION: INVENTARIS */}
+          <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+              <Library size={13} /> Data Inventaris
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className={LABEL_CLASS}>Jumlah Total *</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.jumlah_total}
+                  onChange={(e) => setForm({ ...form, jumlah_total: e.target.value })}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Lokasi Rak</label>
+                <SearchableSelect
+                  options={rakList.map((r) => ({
+                    value: r.id,
+                    label: r.nama,
+                    hint: r.lokasi ?? undefined,
+                  }))}
+                  value={form.rak_id}
+                  onChange={(v) => setForm({ ...form, rak_id: v })}
+                  placeholder="Pilih rak..."
+                  searchPlaceholder="Cari rak..."
+                  emptyMessage="Rak tidak ditemukan"
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Kondisi Fisik</label>
+                <select
+                  value={form.kondisi}
+                  onChange={(e) => setForm({ ...form, kondisi: e.target.value as KondisiBuku })}
+                  className={`${INPUT_CLASS} cursor-pointer`}
+                >
+                  {KONDISI_BUKU_OPTIONS.map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL_CLASS}>Jumlah Halaman</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.jumlah_halaman}
+                  onChange={(e) => setForm({ ...form, jumlah_halaman: e.target.value })}
+                  placeholder="320"
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Status</label>
+                <label className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.is_aktif}
+                    onChange={(e) => setForm({ ...form, is_aktif: e.target.checked })}
+                    className="accent-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-300">Buku aktif & tersedia di OPAC</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION: SINOPSIS & COVER */}
+          <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+              <FileText size={13} /> Deskripsi & Cover
+            </h4>
+
             <div>
-              <label className={LABEL_CLASS}>Lokasi Rak</label>
-              <SearchableSelect
-                options={rakList.map((r) => ({
-                  value: r.id,
-                  label: r.nama,
-                  hint: r.lokasi ?? undefined,
-                }))}
-                value={form.rak_id}
-                onChange={(v) => setForm({ ...form, rak_id: v })}
-                placeholder="Pilih rak..."
-                searchPlaceholder="Cari rak..."
-                emptyMessage="Rak tidak ditemukan"
+              <label className={LABEL_CLASS}>Sinopsis</label>
+              <textarea
+                rows={3}
+                value={form.sinopsis}
+                onChange={(e) => setForm({ ...form, sinopsis: e.target.value })}
+                placeholder="Ringkasan isi buku..."
+                className={`${INPUT_CLASS} resize-none`}
               />
             </div>
-            <div>
-              <label className={LABEL_CLASS}>Kondisi Fisik</label>
-              <select
-                value={form.kondisi}
-                onChange={(e) => setForm({ ...form, kondisi: e.target.value as KondisiBuku })}
-                className={`${INPUT_CLASS} cursor-pointer`}
-              >
-                {KONDISI_BUKU_OPTIONS.map((k) => (
-                  <option key={k} value={k}>{k}</option>
-                ))}
-              </select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={LABEL_CLASS}>Jumlah Halaman</label>
-              <input
-                type="number"
-                min={0}
-                value={form.jumlah_halaman}
-                onChange={(e) => setForm({ ...form, jumlah_halaman: e.target.value })}
-                placeholder="320"
-                className={INPUT_CLASS}
+              <label className={LABEL_CLASS}>Cover Buku</label>
+
+              {form.cover_url && !coverFile && (
+                <div className="mb-2 relative w-32 h-44 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                  <img src={form.cover_url} alt="Cover" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, cover_url: '' })}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-slate-300 border border-slate-700 transition cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {coverFile && (
+                <div className="mb-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-xs max-w-sm">
+                  <Paperclip size={14} className="text-emerald-400 shrink-0" />
+                  <span className="text-emerald-300 truncate flex-1">{coverFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCoverFile(null)}
+                    className="p-1 rounded text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+
+              {!coverFile && !form.cover_url && (
+                <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-slate-800 hover:border-indigo-500/40 bg-slate-950/50 hover:bg-indigo-500/5 transition-all cursor-pointer">
+                  <UploadCloud size={20} className="text-indigo-400 mb-1" />
+                  <p className="text-[11px] text-slate-400">Klik untuk upload cover</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    JPG, PNG, WebP · Maks 5 MB · Otomatis dikompres
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            <div>
+              <label className={LABEL_CLASS}>Catatan</label>
+              <textarea
+                rows={2}
+                value={form.catatan}
+                onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                placeholder="Catatan tambahan (opsional)"
+                className={`${INPUT_CLASS} resize-none`}
               />
             </div>
-            <div>
-              <label className={LABEL_CLASS}>Status</label>
-              <label className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.is_aktif}
-                  onChange={(e) => setForm({ ...form, is_aktif: e.target.checked })}
-                  className="accent-indigo-500 cursor-pointer"
-                />
-                <span className="text-xs text-slate-300">Buku aktif & tersedia di OPAC</span>
-              </label>
-            </div>
+          </div>
+
+          {/* FOOTER */}
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-800 sticky bottom-0 bg-slate-900">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving || uploadingCover || !form.judul.trim() || !form.kode_buku.trim()}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {uploadingCover ? (
+                <><Loader2 size={14} className="animate-spin" /> Upload cover...</>
+              ) : saving ? (
+                <><Loader2 size={14} className="animate-spin" /> Menyimpan...</>
+              ) : (
+                <><Save size={14} /> {isEdit ? 'Simpan Perubahan' : 'Simpan Buku'}</>
+              )}
+            </button>
           </div>
         </div>
+      </Modal>
 
-        {/* SECTION: SINOPSIS & COVER */}
-        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
-            <FileText size={13} /> Deskripsi & Cover
-          </h4>
-
-          <div>
-            <label className={LABEL_CLASS}>Sinopsis</label>
-            <textarea
-              rows={3}
-              value={form.sinopsis}
-              onChange={(e) => setForm({ ...form, sinopsis: e.target.value })}
-              placeholder="Ringkasan isi buku..."
-              className={`${INPUT_CLASS} resize-none`}
-            />
-          </div>
-
-          <div>
-            <label className={LABEL_CLASS}>Cover Buku</label>
-
-            {/* Preview existing */}
-            {form.cover_url && !coverFile && (
-              <div className="mb-2 relative w-32 h-44 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                <img src={form.cover_url} alt="Cover" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, cover_url: '' })}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-slate-300 border border-slate-700 transition cursor-pointer"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-
-            {/* Preview new file */}
-            {coverFile && (
-              <div className="mb-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-xs max-w-sm">
-                <Paperclip size={14} className="text-emerald-400 shrink-0" />
-                <span className="text-emerald-300 truncate flex-1">{coverFile.name}</span>
-                <button
-                  type="button"
-                  onClick={() => setCoverFile(null)}
-                  className="p-1 rounded text-slate-400 hover:text-rose-400 transition cursor-pointer"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-
-            {/* Upload button */}
-            {!coverFile && !form.cover_url && (
-              <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-slate-800 hover:border-indigo-500/40 bg-slate-950/50 hover:bg-indigo-500/5 transition-all cursor-pointer">
-                <UploadCloud size={20} className="text-indigo-400 mb-1" />
-                <p className="text-[11px] text-slate-400">Klik untuk upload cover</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  JPG, PNG, WebP · Maks 5 MB · Otomatis dikompres
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverChange}
-                  className="hidden"
-                />
-              </label>
-            )}
-          </div>
-
-          <div>
-            <label className={LABEL_CLASS}>Catatan</label>
-            <textarea
-              rows={2}
-              value={form.catatan}
-              onChange={(e) => setForm({ ...form, catatan: e.target.value })}
-              placeholder="Catatan tambahan (opsional)"
-              className={`${INPUT_CLASS} resize-none`}
-            />
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-800 sticky bottom-0 bg-slate-900">
+      {/* 🆕 MODAL SCANNER */}
+      <Modal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        title="Scan ISBN Buku"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            Arahkan kamera ke barcode/ISBN di belakang buku.
+          </p>
+          <QRScanner
+            onScan={handleScanIsbn}
+            hint="Posisikan Barcode di dalam kotak"
+            pauseAfterScan={true}
+          />
           <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+            onClick={() => setScanOpen(false)}
+            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-colors cursor-pointer"
           >
-            Batal
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving || uploadingCover || !form.judul.trim() || !form.kode_buku.trim()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            {uploadingCover ? (
-              <><Loader2 size={14} className="animate-spin" /> Upload cover...</>
-            ) : saving ? (
-              <><Loader2 size={14} className="animate-spin" /> Menyimpan...</>
-            ) : (
-              <><Save size={14} /> {isEdit ? 'Simpan Perubahan' : 'Simpan Buku'}</>
-            )}
+            Batal Scan
           </button>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+    </>
   );
 }
