@@ -29,13 +29,6 @@ export interface TranscribeResult {
   segments?: TranscribedSegment[];
 }
 
-const SUNDANESE_VOCAB_PROMPT =
-  'Rekaman di sekolah Jawa Barat. Campuran Bahasa Indonesia dan Sunda. ' +
-  'Kata Sunda yang sering muncul: kumaha, sae, henteu, atos, pami, margi, ' +
-  'bade, nuju, tiasa, moal, sanes, abdi, urang, anjeun, aya, teu, geus, ' +
-  'rek, can, bisi, meureun, komo, lain, kitu, kieu, ari, mun, sabab, ' +
-  'matak, sanggeus, samemeh, enya, muhun, kedah, sapertos.';
-
 export async function transcribeAudio(
   audioBlob: Blob,
   opts: TranscribeOptions = {}
@@ -64,14 +57,12 @@ export async function transcribeAudio(
     formData.append('timestamp_granularities[]', 'segment');
   }
 
-  // ✅ GABUNGKAN PROMPT MENJADI SATU (Sunda + User)
+  // ✅ Append prompt HANYA JIKA user mengirimkannya (dan hanya SEKALI)
   const userPrompt = opts.prompt?.trim() ?? '';
-  const combinedPrompt = userPrompt
-    ? `${SUNDANESE_VOCAB_PROMPT} ${userPrompt}`
-    : SUNDANESE_VOCAB_PROMPT;
-
-  // ✅ APPEND HANYA SEKALI (Jangan dobel!)
-  formData.append('prompt', combinedPrompt.slice(0, 900));
+  if (userPrompt) {
+    // Batasi 900 karakter (limit Whisper ~224 token)
+    formData.append('prompt', userPrompt.slice(0, 900));
+  }
 
   const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
     method: 'POST',
