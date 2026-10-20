@@ -85,6 +85,9 @@ const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then((m) => ({ de
 
 const TahfidzPage = lazy(() => import('@/pages/TahfidzPage').then((m) => ({ default: m.TahfidzPage })));
 
+// 🆕 Halaman TV Display
+const TvDisplayPage = lazy(() => import('@/pages/TvDisplayPage'));
+
 // =============================================================================
 // SUB-COMPONENT
 // =============================================================================
@@ -100,11 +103,10 @@ function PageLoadingFallback() {
 }
 
 function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children: JSX.Element }) {
-  const { hasAccess, guru } = useAuth();   // ← TAMBAH `guru`
+  const { hasAccess, guru } = useAuth();
   if (accessKey && !hasAccess(accessKey)) {
     return <Navigate to="/" replace />;
   }
-  // Guard khusus tahfidz — role staf biasa tidak boleh akses meski via URL
   if (accessKey === 'tahfidz' && !canAccessTahfidz(guru)) {
     return <Navigate to="/" replace />;
   }
@@ -112,7 +114,7 @@ function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children
 }
 
 // =============================================================================
-// ROUTE PUBLIK (tanpa login) — scan QR aset + verifikasi surat/notulensi
+// ROUTE PUBLIK (tanpa login)
 // =============================================================================
 const PUBLIC_PATH_PREFIXES = [
   '/scan',
@@ -122,12 +124,11 @@ const PUBLIC_PATH_PREFIXES = [
   '/verifikasi-arsip', 
   '/forgot-password', 
   '/reset-password',
+  '/tv-display', // 🆕 Tambahan Route TV
 ];
 
 function isPublicPath(pathname: string): boolean {
-  // ✅ Exclude sub-path yang harus protected
   if (pathname.startsWith('/buku_tamu/kelola')) return false;
-
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
@@ -139,9 +140,6 @@ function AppContent() {
   const location = useLocation();
   const badgeCounts = useBadgeCounts(guru?.id ?? null, guru?.nama_lengkap ?? null);
 
-  // -------------------------------------------------------------------------
-  // LOADING
-  // -------------------------------------------------------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -153,9 +151,7 @@ function AppContent() {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // ROUTE PUBLIK — bypass login & AppLayout
-  // -------------------------------------------------------------------------
+  // ROUTE PUBLIK
   if (isPublicPath(location.pathname)) {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -167,15 +163,15 @@ function AppContent() {
           <Route path="/verifikasi-arsip/:token" element={<VerifikasiArsipPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* 🆕 Route TV Display */}
+          <Route path="/tv-display" element={<TvDisplayPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     );
   }
 
-  // -------------------------------------------------------------------------
-  // BELUM LOGIN & BUKAN PUBLIC PATH → LoginPage
-  // -------------------------------------------------------------------------
+  // BELUM LOGIN
   if (!session) {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -184,9 +180,7 @@ function AppContent() {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // SUDAH LOGIN → AppLayout + Routes
-  // -------------------------------------------------------------------------
+  // SUDAH LOGIN
   const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageKey;
 
   return (
@@ -214,14 +208,12 @@ function AppContent() {
           <Route path="/arsip" element={<ProtectedRoute accessKey="arsip"><ArsipPage /></ProtectedRoute>} />
           <Route path="/mitra" element={<ProtectedRoute accessKey="mitra"><MitraPage /></ProtectedRoute>} />
 
-          {/* Rute Modul Kesiswaan */}
           <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
           <Route path="/kelulusan" element={<ProtectedRoute accessKey="kelulusan"><Kelulusan /></ProtectedRoute>} />
           <Route path="/riwayat_siswa" element={<ProtectedRoute accessKey="riwayat_siswa"><RiwayatSiswa /></ProtectedRoute>} />
           <Route path="/mutasi_siswa" element={<ProtectedRoute accessKey="mutasi_siswa"><MutasiSiswa /></ProtectedRoute>} />
           <Route path="/kedisiplinan" element={<ProtectedRoute accessKey="kedisiplinan"><KedisiplinanPage /></ProtectedRoute>} />
 
-          {/* Rute Presensi Kesiswaan */}
           <Route path="/presensi_kesiswaan" element={<ProtectedRoute accessKey="presensi_kesiswaan"><InputPresensiKesiswaanPage /></ProtectedRoute>} />
 
           <Route path="/agenda" element={<ProtectedRoute accessKey="agenda"><AgendaPage /></ProtectedRoute>} />
@@ -238,7 +230,6 @@ function AppContent() {
           <Route path="/kehadiran_piket_penyambutan" element={<ProtectedRoute accessKey="kehadiran_piket_penyambutan"><KehadiranPiketPenyambutanPage /></ProtectedRoute>} />
           <Route path="/rekap_presensi_siswa" element={<ProtectedRoute accessKey="rekap_presensi_siswa"><RekapPresensiSiswaPage /></ProtectedRoute>} />
 
-          {/* Rute Rekap Presensi Kesiswaan */}
           <Route path="/rekap_presensi_kesiswaan" element={<ProtectedRoute accessKey="rekap_presensi_kesiswaan"><RekapPresensiKesiswaanPage /></ProtectedRoute>} />
           <Route path="/rekap_nilai" element={<ProtectedRoute accessKey="rekap_nilai"><RekapNilaiPage /></ProtectedRoute>} />
           <Route path="/rekap_presensi_guru" element={<ProtectedRoute accessKey="rekap_presensi_guru"><RekapPresensiGuruPage /></ProtectedRoute>} />
