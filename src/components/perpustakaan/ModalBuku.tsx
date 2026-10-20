@@ -1,19 +1,21 @@
 // src/components/perpustakaan/ModalBuku.tsx
+// Form Tambah/Edit Buku Perpustakaan dengan fitur Scan ISBN & Open Library fallback.
+
 import { useState, useEffect } from 'react';
 import {
   Loader2, Save, Book, Hash, UploadCloud, X, Paperclip,
-  User, Building2, Calendar, FileText, Library, ScanBarcode, Sparkles
+  User, Building2, FileText, Library, ScanBarcode
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
-import { lookupBookByISBN } from '@/lib/bookLookup';
-import { QRScanner } from './QRScanner';
+import { lookupBookByISBN } from '@/lib/bookLookup'; // 🆕 Gunakan wrapper
+import { QRScanner } from './QRScanner'; // 🆕 Import QR Scanner
 import {
   INPUT_CLASS, LABEL_CLASS,
-  getKondisiBukuBadge, KONDISI_BUKU_OPTIONS, BAHASA_OPTIONS,
+  KONDISI_BUKU_OPTIONS, BAHASA_OPTIONS,
   generateKodeBuku,
 } from './shared';
 import type {
@@ -90,7 +92,6 @@ const emptyForm = {
 // =============================================================================
 // KOMPONEN
 // =============================================================================
-
 export function ModalBuku({
   open,
   onClose,
@@ -106,7 +107,7 @@ export function ModalBuku({
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
 
-  // 🆕 State untuk Scanner
+  // State untuk Scanner
   const [scanOpen, setScanOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
@@ -205,30 +206,31 @@ export function ModalBuku({
     }
   };
 
-  // 🆕 Fungsi saat scan berhasil
   const handleScanIsbn = async (isbn: string) => {
     setScanOpen(false);
     setForm((f) => ({ ...f, isbn }));
     setIsScanning(true);
     showToast('info', 'Mencari data buku...');
 
-  const bookData = await lookupBookByISBN(isbn);
+    const bookData = await lookupBookByISBN(isbn);
+    setIsScanning(false);
 
-  if (bookData) {
-    setForm((f) => ({
-      ...f,
-      judul: bookData.judul || f.judul,
-      pengarang: bookData.pengarang || f.pengarang,
-      penerbit: bookData.penerbit || f.penerbit,
-      tahun_terbit: bookData.tahun_terbit ? String(bookData.tahun_terbit) : f.tahun_terbit,
-      sinopsis: bookData.sinopsis || f.sinopsis,
-      cover_url: bookData.cover_url || f.cover_url,
-      jumlah_halaman: bookData.jumlah_halaman ? String(bookData.jumlah_halaman) : f.jumlah_halaman,
-    }));
-    showToast('success', `Data buku berhasil ditemukan! (Sumber: ${bookData.source === 'google' ? 'Google Books' : 'Open Library'})`);
-  } else {
-    showToast('error', 'Buku tidak ditemukan di Google Books maupun Open Library. Silakan isi manual.');
-  }
+    if (bookData) {
+      setForm((f) => ({
+        ...f,
+        judul: bookData.judul || f.judul,
+        pengarang: bookData.pengarang || f.pengarang,
+        penerbit: bookData.penerbit || f.penerbit,
+        tahun_terbit: bookData.tahun_terbit ? String(bookData.tahun_terbit) : f.tahun_terbit,
+        sinopsis: bookData.sinopsis || f.sinopsis,
+        cover_url: bookData.cover_url || f.cover_url,
+        jumlah_halaman: bookData.jumlah_halaman ? String(bookData.jumlah_halaman) : f.jumlah_halaman,
+      }));
+      showToast('success', `Data buku ditemukan! (Sumber: ${bookData.source === 'google' ? 'Google Books' : 'Open Library'})`);
+    } else {
+      showToast('error', 'Buku tidak ditemukan di Google Books maupun Open Library. Silakan isi manual.');
+    }
+  };
 
   const handleSubmit = async () => {
     if (!form.judul.trim()) { showToast('error', 'Judul buku wajib diisi'); return; }
@@ -372,7 +374,7 @@ export function ModalBuku({
               </div>
             </div>
 
-            {/* 🆕 ISBN dengan Tombol Scan */}
+            {/* ISBN dengan Tombol Scan */}
             <div>
               <label className={LABEL_CLASS}>ISBN / Barcode</label>
               <div className="flex gap-2">
@@ -394,7 +396,7 @@ export function ModalBuku({
                 </button>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
-                Klik ikon scan untuk memindai barcode di belakang buku (otomatis tarik data dari Google).
+                Klik ikon scan untuk memindai barcode di belakang buku.
               </p>
             </div>
 
@@ -642,7 +644,7 @@ export function ModalBuku({
         </div>
       </Modal>
 
-      {/* 🆕 MODAL SCANNER */}
+      {/* MODAL SCANNER */}
       <Modal
         open={scanOpen}
         onClose={() => setScanOpen(false)}
