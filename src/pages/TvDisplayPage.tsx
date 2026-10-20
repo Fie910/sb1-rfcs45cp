@@ -3,13 +3,48 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Trophy, BookOpen, Clock, Loader2 } from 'lucide-react';
 
-// Tambahkan total_ayat untuk info tambahan
 type LeaderboardTahfidz = { nama: string; kelas: string; total_halaman: number; total_ayat: number };
 type LeaderboardPrestasi = { nama: string; kelas: string; total_poin: number };
 type LeaderboardKehadiran = { nama: string; kelas: string; persentase: number; total_hari: number };
 
 type DisplayMode = 'tahfidz' | 'prestasi' | 'kehadiran';
 
+// =============================================================================
+// HELPER TANGGAL (WIB)
+// =============================================================================
+function getWibDateString(date: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function getDateFilters() {
+  const now = new Date();
+  const todayStr = getWibDateString(now);
+
+  // 1. Hitung 30 hari terakhir
+  const thirtyDaysAgoDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgoStr = getWibDateString(thirtyDaysAgoDate);
+
+  // 2. Hitung awal pekan ini (Senin)
+  const wibDayStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jakarta', weekday: 'short' }).format(now);
+  const daysMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+  const currentDay = daysMap[wibDayStr] || 1; // 1 = Senin
+  
+  // Jika hari ini Minggu (0), mundur 6 hari ke Senin. Jika bukan, mundur (hari ini - 1)
+  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+  const startOfWeekDate = new Date(now.getTime() + diffToMonday * 24 * 60 * 60 * 1000);
+  const startOfWeekStr = getWibDateString(startOfWeekDate);
+
+  return { todayStr, thirtyDaysAgoStr, startOfWeekStr };
+}
+
+// =============================================================================
+// KOMPONEN UTAMA
+// =============================================================================
 export default function TvDisplayPage() {
   const [mode, setMode] = useState<DisplayMode>('tahfidz');
   const [loading, setLoading] = useState(true);
@@ -34,6 +69,8 @@ export default function TvDisplayPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const { todayStr, thirtyDaysAgoStr, startOfWeekStr } = getDateFilters();
+
       try {
         // =====================================================================
         // A. FETCH SISWA (Kamus Data untuk Join Manual)
@@ -51,20 +88,19 @@ export default function TvDisplayPage() {
         });
 
         // =====================================================================
-        // B. FETCH TAHFIDZ (Setoran + Setoran Ayat)
+        // B. FETCH TAHFIDZ (Pekan Ini)
         // =====================================================================
-        // 1. Ambil data setoran utama (untuk halaman & id)
         const { data: setoranRes } = await supabase
           .from('tahfidz_setoran')
-          .select('id, siswa_id, halaman_snapshot');
+          .select('id, siswa_id, halaman_snapshot')
+          .gte('tanggal', startOfWeekStr)
+          .lte('tanggal', todayStr);
 
-        // 2. Ambil data ayat (untuk hitung total ayat)
         const { data: ayatRes } = await supabase
           .from('tahfidz_setoran_ayat')
           .select('setoran_id');
 
         if (setoranRes) {
-          // Map untuk menghitung total ayat per setoran_id
           const ayatCountMap = new Map<string, number>();
           (ayatRes || []).forEach((a: any) => {
             ayatCountMap.set(a.setoran_id, (ayatCountMap.get(a.setoran_id) || 0) + 1);
@@ -83,21 +119,18 @@ export default function TvDisplayPage() {
               total_ayat: 0,
             };
 
-            // Tambahkan halaman
             existing.total_halaman += Number(s.halaman_snapshot) || 0;
-            // Tambahkan ayat (jika setoran ini punya ayat di tabel setoran_ayat)
             existing.total_ayat += ayatCountMap.get(s.id) || 0;
 
             map.set(s.siswa_id, existing);
           });
 
-          // Urutkan berdasarkan halaman terbanyak
           const sorted = Array.from(map.values()).sort((a, b) => b.total_halaman - a.total_halaman);
           setDataTahfidz(sorted.slice(0, 10));
         }
 
         // =====================================================================
-        // C. FETCH PRESTASI
+        // C. FETCH PRESTASI (Semua Waktu)
         // =====================================================================
         const { data: prestasiRes } = await supabase
           .from('kesiswaan_prestasi')
@@ -122,18 +155,19 @@ export default function TvDisplayPage() {
         }
 
         // =====================================================================
-        // D. FETCH KEHADIRAN (presensi_siswa_kesiswaans)
+        // D. FETCH KEHADIRAN (30 Hari Terakhir)
         // =====================================================================
         const { data: presensiRes } = await supabase
           .from('presensi_siswa_kesiswaans')
-          .select('siswa_id, status_kehadiran');
+          .select('siswa_id, status_kehadiran')
+          .gte('tanggal', thirtyDaysAgoStr)
+          .lte('tanggal', todayStr);
 
         if (presensiRes) {
           const map = new Map<number, { hadir: number; total: number }>();
           presensiRes.forEach((p: any) => {
             const existing = map.get(p.siswa_id) || { hadir: 0, total: 0 };
             existing.total += 1;
-            // Gunakan 'Hadir' sesuai constraint tabel
             if (p.status_kehadiran === 'Hadir') existing.hadir += 1;
             map.set(p.siswa_id, existing);
           });
@@ -174,11 +208,11 @@ export default function TvDisplayPage() {
   const renderHeader = () => {
     switch (mode) {
       case 'tahfidz':
-        return { icon: BookOpen, title: 'TOP 10 TAHFIDZ', subtitle: 'Paling Banyak Menghafal (Halaman)', color: 'text-emerald-400' };
+        return { icon: BookOpen, title: 'TOP 10 TAHFIDZ', subtitle: 'Pekan Ini (Halaman)', color: 'text-emerald-400' };
       case 'prestasi':
         return { icon: Trophy, title: 'TOP 10 PRESTASI', subtitle: 'Poin Prestasi Tertinggi', color: 'text-amber-400' };
       case 'kehadiran':
-        return { icon: Clock, title: 'TOP 10 KEHADIRAN', subtitle: 'Siswa Paling Disiplin Hadir', color: 'text-indigo-400' };
+        return { icon: Clock, title: 'TOP 10 KEHADIRAN', subtitle: '30 Hari Terakhir', color: 'text-indigo-400' };
     }
   };
 
@@ -221,13 +255,11 @@ export default function TvDisplayPage() {
                   <h3 className="text-3xl font-extrabold text-slate-100">{item.nama}</h3>
                   <p className="text-xl text-slate-400 font-medium">{item.kelas}</p>
                   
-                  {/* Info tambahan untuk Tahfidz */}
                   {isTahfidz && (
                     <p className="text-sm text-emerald-500/80 font-semibold mt-1">
                       {(item as LeaderboardTahfidz).total_ayat} Ayat Disetorkan
                     </p>
                   )}
-                  {/* Info tambahan untuk Kehadiran */}
                   {mode === 'kehadiran' && (
                     <p className="text-sm text-indigo-500/80 font-semibold mt-1">
                       Dari {(item as LeaderboardKehadiran).total_hari} Hari Tercatat
