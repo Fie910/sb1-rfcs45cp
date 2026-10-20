@@ -1,16 +1,12 @@
 // src/pages/TvDisplayPage.tsx
-// Halaman Publik untuk ditampilkan di TV Lobi Sekolah.
-// Fitur: Auto-rotate antara Leaderboard Tahfidz, Prestasi, dan Kehadiran.
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import {
-  Trophy, BookOpen, Star, Medal, Clock, Loader2, Sparkles, ChevronRight
-} from 'lucide-react';
+import { Trophy, BookOpen, Clock, Loader2 } from 'lucide-react';
 
-type LeaderboardTahfidz = { nama: string; kelas: string; total_halaman: number };
+// Tambahkan total_ayat untuk info tambahan
+type LeaderboardTahfidz = { nama: string; kelas: string; total_halaman: number; total_ayat: number };
 type LeaderboardPrestasi = { nama: string; kelas: string; total_poin: number };
-type LeaderboardKehadiran = { nama: string; kelas: string; persentase: number };
+type LeaderboardKehadiran = { nama: string; kelas: string; persentase: number; total_hari: number };
 
 type DisplayMode = 'tahfidz' | 'prestasi' | 'kehadiran';
 
@@ -39,73 +35,124 @@ export default function TvDisplayPage() {
     (async () => {
       setLoading(true);
       try {
-        // A. Fetch Tahfidz (Total Halaman)
-        const { data: tahfidzRes } = await supabase
-          .from('tahfidz_setoran')
-          .select(`
-            halaman_snapshot,
-            siswa:siswa_id (nama_lengkap, kelas:kelas_id (nama_kelas))
-          `)
-          .order('created_at', { ascending: false });
+        // =====================================================================
+        // A. FETCH SISWA (Kamus Data untuk Join Manual)
+        // =====================================================================
+        const { data: siswaData } = await supabase
+          .from('siswas')
+          .select('id, nama_lengkap, kelas:kelas_id (nama_kelas)');
 
-        if (tahfidzRes) {
-          const map = new Map<string, LeaderboardTahfidz>();
-          tahfidzRes.forEach((s: any) => {
-            if (!s.siswa) return;
-            const key = s.siswa.nama_lengkap;
-            const existing = map.get(key);
-            const halaman = Number(s.halaman_snapshot) || 0;
-            if (existing) {
-              existing.total_halaman += halaman;
-            } else {
-              map.set(key, {
-                nama: s.siswa.nama_lengkap,
-                kelas: s.siswa.kelas?.nama_kelas ?? '-',
-                total_halaman: halaman,
-              });
-            }
+        const siswaMap = new Map<number, { nama: string; kelas: string }>();
+        (siswaData || []).forEach((s: any) => {
+          siswaMap.set(s.id, {
+            nama: s.nama_lengkap,
+            kelas: s.kelas?.nama_kelas ?? '-',
           });
+        });
+
+        // =====================================================================
+        // B. FETCH TAHFIDZ (Setoran + Setoran Ayat)
+        // =====================================================================
+        // 1. Ambil data setoran utama (untuk halaman & id)
+        const { data: setoranRes } = await supabase
+          .from('tahfidz_setoran')
+          .select('id, siswa_id, halaman_snapshot');
+
+        // 2. Ambil data ayat (untuk hitung total ayat)
+        const { data: ayatRes } = await supabase
+          .from('tahfidz_setoran_ayat')
+          .select('setoran_id');
+
+        if (setoranRes) {
+          // Map untuk menghitung total ayat per setoran_id
+          const ayatCountMap = new Map<string, number>();
+          (ayatRes || []).forEach((a: any) => {
+            ayatCountMap.set(a.setoran_id, (ayatCountMap.get(a.setoran_id) || 0) + 1);
+          });
+
+          const map = new Map<number, LeaderboardTahfidz>();
+          
+          setoranRes.forEach((s: any) => {
+            const siswaInfo = siswaMap.get(s.siswa_id);
+            if (!siswaInfo) return;
+
+            const existing = map.get(s.siswa_id) || {
+              nama: siswaInfo.nama,
+              kelas: siswaInfo.kelas,
+              total_halaman: 0,
+              total_ayat: 0,
+            };
+
+            // Tambahkan halaman
+            existing.total_halaman += Number(s.halaman_snapshot) || 0;
+            // Tambahkan ayat (jika setoran ini punya ayat di tabel setoran_ayat)
+            existing.total_ayat += ayatCountMap.get(s.id) || 0;
+
+            map.set(s.siswa_id, existing);
+          });
+
+          // Urutkan berdasarkan halaman terbanyak
           const sorted = Array.from(map.values()).sort((a, b) => b.total_halaman - a.total_halaman);
           setDataTahfidz(sorted.slice(0, 10));
         }
 
-        // B. Fetch Prestasi (Total Poin)
+        // =====================================================================
+        // C. FETCH PRESTASI
+        // =====================================================================
         const { data: prestasiRes } = await supabase
           .from('kesiswaan_prestasi')
-          .select(`
-            poin,
-            siswa:siswa_id (nama_lengkap, kelas:kelas_id (nama_kelas))
-          `);
+          .select('siswa_id, poin');
 
         if (prestasiRes) {
-          const map = new Map<string, LeaderboardPrestasi>();
+          const map = new Map<number, LeaderboardPrestasi>();
           prestasiRes.forEach((p: any) => {
-            if (!p.siswa) return;
-            const key = p.siswa.nama_lengkap;
-            const existing = map.get(key);
-            if (existing) {
-              existing.total_poin += p.poin;
-            } else {
-              map.set(key, {
-                nama: p.siswa.nama_lengkap,
-                kelas: p.siswa.kelas?.nama_kelas ?? '-',
-                total_poin: p.poin,
-              });
-            }
+            const siswaInfo = siswaMap.get(p.siswa_id);
+            if (!siswaInfo) return;
+
+            const existing = map.get(p.siswa_id) || {
+              nama: siswaInfo.nama,
+              kelas: siswaInfo.kelas,
+              total_poin: 0,
+            };
+            existing.total_poin += p.poin;
+            map.set(p.siswa_id, existing);
           });
           const sorted = Array.from(map.values()).sort((a, b) => b.total_poin - a.total_poin);
           setDataPrestasi(sorted.slice(0, 10));
         }
 
-        // C. Fetch Kehadiran (Mockup - Bisa disesuaikan dengan query presensi Anda)
-        // Untuk sementara kita tampilkan data statis atau placeholder
-        setDataKehadiran([
-          { nama: 'Ahmad Fauzi', kelas: 'XII AKL 1', persentase: 100 },
-          { nama: 'Siti Aminah', kelas: 'XI TKJ 2', persentase: 98 },
-          { nama: 'Budi Santoso', kelas: 'XII TKR 1', persentase: 97 },
-          { nama: 'Rina Melati', kelas: 'X FKK', persentase: 95 },
-          { nama: 'Dedi Kurnia', kelas: 'XI AKL 2', persentase: 94 },
-        ]);
+        // =====================================================================
+        // D. FETCH KEHADIRAN (presensi_siswa_kesiswaans)
+        // =====================================================================
+        const { data: presensiRes } = await supabase
+          .from('presensi_siswa_kesiswaans')
+          .select('siswa_id, status_kehadiran');
+
+        if (presensiRes) {
+          const map = new Map<number, { hadir: number; total: number }>();
+          presensiRes.forEach((p: any) => {
+            const existing = map.get(p.siswa_id) || { hadir: 0, total: 0 };
+            existing.total += 1;
+            // Gunakan 'Hadir' sesuai constraint tabel
+            if (p.status_kehadiran === 'Hadir') existing.hadir += 1;
+            map.set(p.siswa_id, existing);
+          });
+
+          const result: LeaderboardKehadiran[] = [];
+          map.forEach((val, siswaId) => {
+            const siswaInfo = siswaMap.get(siswaId);
+            if (siswaInfo && val.total > 0) {
+              result.push({
+                nama: siswaInfo.nama,
+                kelas: siswaInfo.kelas,
+                persentase: Math.round((val.hadir / val.total) * 100),
+                total_hari: val.total,
+              });
+            }
+          });
+          const sorted = result.sort((a, b) => b.persentase - a.persentase);
+          setDataKehadiran(sorted.slice(0, 10));
+        }
 
       } catch (err) {
         console.error('Error fetching TV data:', err);
@@ -143,6 +190,14 @@ export default function TvDisplayPage() {
     const isPrestasi = mode === 'prestasi';
     const list = isTahfidz ? dataTahfidz : isPrestasi ? dataPrestasi : dataKehadiran;
 
+    if (list.length === 0) {
+      return (
+        <div className="text-center text-slate-500 text-3xl mt-20">
+          Belum ada data untuk ditampilkan
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4 w-full max-w-5xl mx-auto mt-8">
         {list.map((item, idx) => {
@@ -159,18 +214,28 @@ export default function TvDisplayPage() {
               }`}
             >
               <div className="flex items-center gap-6">
-                {/* Medali / Peringkat */}
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black ${medalColor} shadow-lg`}>
                   #{idx + 1}
                 </div>
-                {/* Info Siswa */}
                 <div>
                   <h3 className="text-3xl font-extrabold text-slate-100">{item.nama}</h3>
                   <p className="text-xl text-slate-400 font-medium">{item.kelas}</p>
+                  
+                  {/* Info tambahan untuk Tahfidz */}
+                  {isTahfidz && (
+                    <p className="text-sm text-emerald-500/80 font-semibold mt-1">
+                      {(item as LeaderboardTahfidz).total_ayat} Ayat Disetorkan
+                    </p>
+                  )}
+                  {/* Info tambahan untuk Kehadiran */}
+                  {mode === 'kehadiran' && (
+                    <p className="text-sm text-indigo-500/80 font-semibold mt-1">
+                      Dari {(item as LeaderboardKehadiran).total_hari} Hari Tercatat
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Skor */}
               <div className="text-right">
                 <span className={`text-5xl font-black ${header.color}`}>
                   {isTahfidz ? (item as LeaderboardTahfidz).total_halaman.toFixed(1) : isPrestasi ? (item as LeaderboardPrestasi).total_poin : (item as LeaderboardKehadiran).persentase}
@@ -188,12 +253,10 @@ export default function TvDisplayPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-8 flex flex-col relative overflow-hidden">
-      {/* Background Ornaments */}
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none" />
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Header TV */}
       <div className="text-center relative z-10">
         <div className="inline-flex items-center justify-center gap-4 mb-4">
           <Icon size={64} className={header.color} />
@@ -203,14 +266,12 @@ export default function TvDisplayPage() {
         <div className="w-32 h-2 bg-gradient-to-r from-indigo-500 to-emerald-500 mx-auto mt-6 rounded-full" />
       </div>
 
-      {/* List Content */}
       <div className="flex-1 relative z-10 flex items-center">
         <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
           {renderList()}
         </div>
       </div>
 
-      {/* Footer TV */}
       <div className="text-center relative z-10 pt-8 border-t border-slate-800/50 flex items-center justify-between text-slate-500">
         <p className="text-xl font-bold tracking-widest">SMK KH. A. WAHAB MUHSIN</p>
         <div className="flex items-center gap-2 text-lg font-semibold">
