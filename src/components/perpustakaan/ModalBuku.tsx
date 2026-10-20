@@ -9,8 +9,8 @@ import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
-import { fetchBookByISBN } from '@/lib/googleBooks'; // 🆕 Import Google Books
-import { QRScanner } from './QRScanner'; // 🆕 Import QR Scanner
+import { lookupBookByISBN } from '@/lib/bookLookup';
+import { QRScanner } from './QRScanner';
 import {
   INPUT_CLASS, LABEL_CLASS,
   getKondisiBukuBadge, KONDISI_BUKU_OPTIONS, BAHASA_OPTIONS,
