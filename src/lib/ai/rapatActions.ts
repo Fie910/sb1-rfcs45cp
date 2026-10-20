@@ -74,7 +74,6 @@ export async function convertActionItemsToTodos(
   const defaultDivisiId = defaultDivisi?.id;
 
   if (!defaultDivisiId) {
-    // Tidak bisa lanjut — tidak ada divisi sama sekali
     valid.forEach((a) => {
       result.gagal++;
       result.detail.push({
@@ -86,43 +85,45 @@ export async function convertActionItemsToTodos(
     return result;
   }
 
-  // Insert satu-satu (biar bisa track error per item)
+  // Insert satu-satu
   for (const item of valid) {
     const divisiId = divisiMap.get(item.pic_id!) ?? defaultDivisiId;
 
-    const { data, error } = await supabase
+    // ✅ Generate ID di frontend untuk menghindari RLS error saat RETURNING data
+    const todoId = crypto.randomUUID();
+
+    const { error } = await supabase
       .from('todos')
       .insert({
+        id: todoId, // Suntikkan ID yang sudah kita buat
         judul: `[${options.nomorRapat ?? 'Rapat'}] ${item.deskripsi.slice(0, 120)}`,
         deskripsi: `Dari rapat: ${options.rapatJudul}\n\nDeskripsi tugas:\n${item.deskripsi}`,
         divisi_id: divisiId,
         prioritas: item.prioritas,
         status: 'Belum Selesai',
         tanggal_tenggat: item.deadline,
-        // ✅ GUNAKAN options.dibuatOlehId (bukan currentGuruId)
         dibuat_oleh_id: options.dibuatOlehId,
         ditugaskan_ke_id: item.pic_id,
-      })
-      .select()
-      .single();
+      });
+    // ⚠️ Tidak ada .select().single() di sini
 
-    if (error || !data) {
+    if (error) {
       result.gagal++;
       result.detail.push({
         deskripsi: item.deskripsi,
         status: 'gagal',
-        error: error?.message ?? 'Unknown error',
+        error: error.message ?? 'Unknown error',
       });
     } else {
       result.berhasil++;
-      // Update in-memory: set todo_id (caller harus simpan untuk update DB)
-      item.todo_id = data.id;
+      // Update in-memory: set todo_id
+      item.todo_id = todoId;
       item.status = 'Belum';
 
       result.detail.push({
         deskripsi: item.deskripsi,
         status: 'ok',
-        todo_id: data.id,
+        todo_id: todoId,
       });
     }
   }
