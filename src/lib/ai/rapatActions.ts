@@ -99,7 +99,7 @@ export async function convertActionItemsToTodos(
         prioritas: item.prioritas,
         status: 'Belum Selesai',
         tanggal_tenggat: item.deadline,
-        dibuat_oleh_id: options.dibuatOlehId,
+        dibuat_oleh_id: currentGuruId,
         ditugaskan_ke_id: item.pic_id,
       })
       .select()
