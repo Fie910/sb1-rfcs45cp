@@ -212,25 +212,23 @@ export function ModalBuku({
     setIsScanning(true);
     showToast('info', 'Mencari data buku...');
 
-    const bookData = await fetchBookByISBN(isbn);
-    setIsScanning(false);
+const bookData = await lookupBookByISBN(isbn);
 
-    if (bookData) {
-      setForm((f) => ({
-        ...f,
-        judul: bookData.judul || f.judul,
-        pengarang: bookData.pengarang || f.pengarang,
-        penerbit: bookData.penerbit || f.penerbit,
-        tahun_terbit: bookData.tahun_terbit ? String(bookData.tahun_terbit) : f.tahun_terbit,
-        sinopsis: bookData.sinopsis || f.sinopsis,
-        cover_url: bookData.cover_url || f.cover_url,
-        jumlah_halaman: bookData.jumlah_halaman ? String(bookData.jumlah_halaman) : f.jumlah_halaman,
-      }));
-      showToast('success', 'Data buku berhasil ditemukan!');
-    } else {
-      showToast('error', 'Buku tidak ditemukan di database Google Books. Silakan isi manual.');
-    }
-  };
+if (bookData) {
+  setForm((f) => ({
+    ...f,
+    judul: bookData.judul || f.judul,
+    pengarang: bookData.pengarang || f.pengarang,
+    penerbit: bookData.penerbit || f.penerbit,
+    tahun_terbit: bookData.tahun_terbit ? String(bookData.tahun_terbit) : f.tahun_terbit,
+    sinopsis: bookData.sinopsis || f.sinopsis,
+    cover_url: bookData.cover_url || f.cover_url,
+    jumlah_halaman: bookData.jumlah_halaman ? String(bookData.jumlah_halaman) : f.jumlah_halaman,
+  }));
+  showToast('success', `Data buku berhasil ditemukan! (Sumber: ${bookData.source === 'google' ? 'Google Books' : 'Open Library'})`);
+} else {
+  showToast('error', 'Buku tidak ditemukan di Google Books maupun Open Library. Silakan isi manual.');
+}
 
   const handleSubmit = async () => {
     if (!form.judul.trim()) { showToast('error', 'Judul buku wajib diisi'); return; }
