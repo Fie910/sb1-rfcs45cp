@@ -1,5 +1,5 @@
 // src/components/perpustakaan/QRScanner.tsx
-// Reusable QR Scanner menggunakan html5-qrcode.
+// Reusable QR & Barcode Scanner menggunakan html5-qrcode.
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -8,16 +8,14 @@ import { CameraOff, Loader2, ScanLine } from 'lucide-react';
 interface QRScannerProps {
   onScan: (text: string) => void;
   hint?: string;
-  /** Kalau true, scanner akan pause sebentar setelah scan berhasil */
   pauseAfterScan?: boolean;
 }
 
 export function QRScanner({
   onScan,
-  hint = 'Posisikan QR di dalam kotak',
+  hint = 'Posisikan QR / Barcode di dalam kotak',
   pauseAfterScan = false,
 }: QRScannerProps) {
-  // useId dari React → generate ID unik untuk container (html5-qrcode butuh ID string)
   const rawId = useId();
   const containerId = `qr-${rawId.replace(/:/g, '_')}`;
 
@@ -28,15 +26,12 @@ export function QRScanner({
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState<string>('');
 
-  // Keep callback fresh
   useEffect(() => {
     onScanRef.current = onScan;
   }, [onScan]);
 
   useEffect(() => {
     let cancelled = false;
-
-    // Buat scanner dengan ID string
     const scanner = new Html5Qrcode(containerId);
     scannerRef.current = scanner;
 
@@ -46,7 +41,7 @@ export function QRScanner({
           { facingMode: 'environment' },
           {
             fps: 10,
-            qrbox: { width: 220, height: 220 },
+            qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0,
           },
           (decodedText) => {
@@ -88,7 +83,6 @@ export function QRScanner({
       }
     };
 
-    // Delay sedikit agar container sudah ada di DOM
     const timer = setTimeout(start, 100);
 
     return () => {
@@ -109,10 +103,8 @@ export function QRScanner({
         className="relative bg-black rounded-2xl overflow-hidden border border-slate-800 qr-scanner-wrap"
         style={{ aspectRatio: '1 / 1' }}
       >
-        {/* Container target html5-qrcode — pakai ID, bukan ref */}
         <div id={containerId} className="w-full h-full" />
 
-        {/* LOADING */}
         {status === 'loading' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-10 pointer-events-none">
             <Loader2 className="animate-spin text-indigo-400 mb-2" size={28} />
@@ -120,7 +112,6 @@ export function QRScanner({
           </div>
         )}
 
-        {/* ERROR */}
         {status === 'error' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/95 p-6 text-center z-10">
             <CameraOff className="text-rose-400 mb-2" size={32} />
@@ -129,7 +120,6 @@ export function QRScanner({
           </div>
         )}
 
-        {/* READY overlay */}
         {status === 'ready' && (
           <>
             <div className="absolute top-3 left-3 w-7 h-7 border-t-2 border-l-2 border-indigo-400 rounded-tl-lg pointer-events-none" />
@@ -147,7 +137,6 @@ export function QRScanner({
         )}
       </div>
 
-      {/* Scoped CSS untuk video yang di-inject html5-qrcode */}
       <style>{`
         .qr-scanner-wrap video {
           width: 100% !important;
