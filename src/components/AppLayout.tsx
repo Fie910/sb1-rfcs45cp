@@ -9,6 +9,7 @@ import type { PageKey } from '@/config/navigation';
 import VerifikasiArsipPage from '@/pages/VerifikasiArsipPage';
 import { InstallPWA } from '@/components/InstallPWA';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 type LayoutProps = {
   current: PageKey;
@@ -139,6 +140,9 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
 
             {/* Lonceng Notifikasi */}
             {guruId && <NotificationBell guruId={guruId} />}
+
+            {/* Toggle Tema */}
+            <ThemeToggle />
 
             {/* Tombol Logout Khusus Mobile */}
             <button
