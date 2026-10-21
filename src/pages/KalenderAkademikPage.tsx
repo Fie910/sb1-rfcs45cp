@@ -459,7 +459,7 @@ export function KalenderAkademikPage() {
                               : !cell.isCurrentMonth
                               ? 'text-slate-700'
                               : isLibur
-                              ? 'text-red-900'
+                              ? 'text-red-100'
                               : cell.isWeekend
                               ? 'text-rose-300'
                               : 'text-slate-300'
