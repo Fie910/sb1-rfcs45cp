@@ -455,7 +455,7 @@ export function KalenderAkademikPage() {
                         <span
                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold ${
                             cell.isToday
-                              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                              ? 'bg-indigo-100 text-white shadow-md shadow-indigo-600/30'
                               : !cell.isCurrentMonth
                               ? 'text-slate-700'
                               : isLibur
