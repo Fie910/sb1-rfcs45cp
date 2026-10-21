@@ -1797,7 +1797,7 @@ export type KalenderKategori =
 export type KalenderWarna =
   | 'rose'
   | 'blue'
-  | 'slate'
+  | 'red'
   | 'purple'
   | 'amber'
   | 'teal'
