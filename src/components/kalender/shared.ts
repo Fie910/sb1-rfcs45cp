@@ -23,7 +23,7 @@ const KEYWORD_MAP: Array<{
   },
   {
     kategori: 'libur',
-    warna: 'slate',
+    warna: 'red',
     label: 'Libur',
     keywords: ['libur', 'cuti', 'hari besar', 'hari raya', 'idul', 'natal', 'nyepi', 'waisak'],
   },
