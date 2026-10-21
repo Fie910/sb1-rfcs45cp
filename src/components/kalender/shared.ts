@@ -129,7 +129,7 @@ export function mapLiburToEvent(l: HariLibur): KalenderEvent {
     tanggal_mulai: l.tanggal,
     tanggal_selesai: l.tanggal,
     kategori: 'libur',
-    warna: 'slate',
+    warna: 'red',
     kategori_label: 'Hari Libur',
   };
 }
