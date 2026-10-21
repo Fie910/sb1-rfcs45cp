@@ -441,7 +441,7 @@ export function KalenderAkademikPage() {
                         !cell.isCurrentMonth
                           ? 'bg-slate-950/40'
                           : isLibur
-                          ? 'bg-red-900/70'
+                          ? 'bg-red-800/20'
                           : cell.isWeekend
                           ? 'bg-slate-900/60'
                           : 'bg-slate-900'
