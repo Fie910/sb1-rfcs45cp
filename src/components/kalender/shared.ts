@@ -140,7 +140,7 @@ export function mapLiburToEvent(l: HariLibur): KalenderEvent {
 export const WARNA_BG: Record<KalenderWarna, string> = {
   rose: 'bg-rose-500/15 border-rose-500/30 text-rose-300',
   blue: 'bg-blue-500/15 border-blue-500/30 text-blue-300',
-  slate: 'bg-slate-700/30 border-slate-600/40 text-slate-300',
+  red: 'bg-red-700/30 border-red-600/40 text-red-300',
   purple: 'bg-purple-500/15 border-purple-500/30 text-purple-300',
   amber: 'bg-amber-500/15 border-amber-500/30 text-amber-300',
   teal: 'bg-teal-500/15 border-teal-500/30 text-teal-300',
