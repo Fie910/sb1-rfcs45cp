@@ -152,7 +152,7 @@ export const WARNA_BG: Record<KalenderWarna, string> = {
 export const WARNA_DOT: Record<KalenderWarna, string> = {
   rose: 'bg-rose-400',
   blue: 'bg-blue-400',
-  slate: 'bg-slate-500',
+  red: 'bg-red-500',
   purple: 'bg-purple-400',
   amber: 'bg-amber-400',
   teal: 'bg-teal-400',
