@@ -526,7 +526,7 @@ export function KalenderAkademikPage() {
                   <span className="w-2 h-2 rounded-full bg-teal-400" /> Siswa
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-slate-500" /> Libur
+                  <span className="w-2 h-2 rounded-full bg-red-500" /> Libur
                 </span>
               </div>
             </>
