@@ -164,7 +164,7 @@ export const WARNA_DOT: Record<KalenderWarna, string> = {
 export const WARNA_BORDER_LEFT: Record<KalenderWarna, string> = {
   rose: 'border-l-rose-500',
   blue: 'border-l-blue-500',
-  slate: 'border-l-slate-500',
+  red: 'border-l-red-500',
   purple: 'border-l-purple-500',
   amber: 'border-l-amber-500',
   teal: 'border-l-teal-500',
