@@ -23,6 +23,7 @@ import {
   canManageRecurringEvent,
 } from '@/components/kalender/shared';
 import { ModalRecurringEvent } from '@/components/kalender/ModalRecurringEvent';
+import { ModalTambahKegiatan } from '@/components/ModalTambahKegiatan';
 import { downloadIcsFile } from '@/lib/kalenderUtils';
 import type {
   RencanaKegiatan, HariLibur, RapatWithRelations,
