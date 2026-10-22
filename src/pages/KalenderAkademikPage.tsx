@@ -745,6 +745,18 @@ function EventDetailCard({ event, onEdit }: { event: KalenderEvent; onEdit: (e: 
             )}            
           </div>
           <p className="text-sm font-bold text-slate-100">{event.judul}</p>
+          
+            {/* ✅ Tombol Edit khusus Kegiatan Sekolah (bukan rapat/libur) */}
+            {event.source === 'rencana' && (
+              <button
+                onClick={() => onEdit(event)}
+                className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition cursor-pointer shrink-0"
+                title="Edit Kegiatan Sekolah"
+              >
+                <Pencil size={12} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
