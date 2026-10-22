@@ -2,23 +2,22 @@
 // Kalender Akademik — kalender bulanan + linimasa agenda (rapat + kegiatan + libur).
 
 import { useAuth } from '@/context/AuthContext';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
   CalendarRange, ChevronLeft, ChevronRight, Loader2, Calendar,
-  User, Users, Clock, X, CalendarX, Info, Filter, MapPin,
-  CalendarDays, ArrowRight, Sparkles, Plus, Download, Repeat, Pencil,
+  User, Users, Clock, X, Info, Filter, MapPin,
+  CalendarDays, Download, Repeat, Pencil,
   Trash2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
-import { Modal } from '@/components/Modal';
 import { getTodayDateWib } from '@/utils/date';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
-  detectKategori, mapRencanaToEvent, mapRapatToEvent, mapLiburToEvent,
+  mapRencanaToEvent, mapRapatToEvent, mapLiburToEvent,
   toDateStr, getEventsForDate,
-  formatTanggalPanjang, formatTanggalMini, formatEventRange,
+  formatTanggalPanjang, formatEventRange,
   relativeDay,
   WARNA_BG, WARNA_DOT, WARNA_BORDER_LEFT,
   NAMA_BULAN, NAMA_HARI_SINGKAT,
@@ -29,7 +28,7 @@ import { ModalTambahKegiatan } from '@/components/ModalTambahKegiatan';
 import { downloadIcsFile } from '@/lib/kalenderUtils';
 import type {
   RencanaKegiatan, HariLibur, RapatWithRelations,
-  KalenderEvent, KalenderWarna,
+  KalenderEvent,
 } from '@/types/database';
 
 // =============================================================================
