@@ -671,7 +671,7 @@ export function KalenderAkademikPage() {
           ) : (
             <div className="p-4 space-y-2">
               {selectedEvents.map((e) => (
-                <EventDetailCard key={e.id} event={e} />
+                <EventDetailCard key={e.id} event={e} onEdit={handleEditKegiatan} />
               ))}
             </div>
           )}
