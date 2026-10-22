@@ -5,8 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   CalendarRange, ChevronLeft, ChevronRight, Loader2, Calendar,
-  User, Users, Clock, X, CalendarX, Info, Filter, MapPin, Pencil,
-  CalendarDays, ArrowRight, Sparkles, Plus, Download, Repeat,
+  User, Users, Clock, X, CalendarX, Info, Filter, MapPin,
+  CalendarDays, ArrowRight, Sparkles, Plus, Download, Repeat, Pencil,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
