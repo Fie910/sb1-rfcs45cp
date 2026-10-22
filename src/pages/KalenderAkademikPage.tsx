@@ -686,7 +686,22 @@ export function KalenderAkademikPage() {
           setRecurringModalOpen(false);
           fetchData();
         }}
-      />      
+      />
+
+      {/* ✅ Modal Edit/Tambah Kegiatan Sekolah */}
+      <ModalTambahKegiatan
+        open={modalKegiatanOpen}
+        onClose={() => {
+          setModalKegiatanOpen(false);
+          setEditingKegiatan(null);
+        }}
+        onSuccess={() => {
+          setModalKegiatanOpen(false);
+          setEditingKegiatan(null);
+          fetchData(); // Refresh kalender
+        }}
+        kegiatanEdit={editingKegiatan}
+      />
     </div>
   );
 }
