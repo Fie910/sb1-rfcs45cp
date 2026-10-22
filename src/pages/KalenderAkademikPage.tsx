@@ -102,7 +102,30 @@ export function KalenderAkademikPage() {
 
   // ✅ Recurring modal
   const [recurringModalOpen, setRecurringModalOpen] = useState(false);
+  
+  // ✅ State & Handler Edit Kegiatan
+  const [modalKegiatanOpen, setModalKegiatanOpen] = useState(false);
+  const [editingKegiatan, setEditingKegiatan] = useState<RencanaKegiatan | null>(null);
 
+  const handleEditKegiatan = (event: KalenderEvent) => {
+    if (event.source !== 'rencana') return;
+    
+    // Konversi KalenderEvent ke RencanaKegiatan
+    const originalData: RencanaKegiatan = {
+      id: event.source_id,
+      nama_kegiatan: event.judul,
+      tanggal_mulai: event.tanggal_mulai,
+      tanggal_selesai: event.tanggal_selesai,
+      penanggung_jawab: event.penanggung_jawab ?? '',
+      peserta: event.peserta ?? '',
+      deskripsi: event.deskripsi,
+      status: event.status ?? 'Akan Datang',
+    };
+    
+    setEditingKegiatan(originalData);
+    setModalKegiatanOpen(true);
+  };
+  
   // ✅ Handler dengan guard
   const handleOpenRecurring = () => {
     if (!canManageRecurringEvent(guru?.role)) {
