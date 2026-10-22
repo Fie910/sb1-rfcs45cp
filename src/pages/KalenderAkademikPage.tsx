@@ -750,7 +750,17 @@ const handleDeleteKegiatan = async (event: KalenderEvent) => {
 // =============================================================================
 // SUB: Event Detail Card
 // =============================================================================
-function EventDetailCard({ event, onEdit }: { event: KalenderEvent; onEdit: (e: KalenderEvent) => void }) {
+function EventDetailCard({
+  event,
+  onEdit,
+  onDelete,
+  canManage,
+}: {
+  event: KalenderEvent;
+  onEdit: (e: KalenderEvent) => void;
+  onDelete: (e: KalenderEvent) => void;
+  canManage: boolean;
+}) {
   return (
     <div
       className={`bg-slate-950/60 border border-slate-800 rounded-2xl p-3.5 border-l-4 ${WARNA_BORDER_LEFT[event.warna]}`}
@@ -783,20 +793,30 @@ function EventDetailCard({ event, onEdit }: { event: KalenderEvent; onEdit: (e: 
               <span className="text-[9px] font-bold text-purple-400 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 inline-flex items-center gap-0.5">
                 <Repeat size={8} /> Recurring
               </span>
-            )}            
+            )}
           </div>
+
           <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-bold text-slate-100">{event.judul}</p>
-          
-            {/* ✅ Tombol Edit khusus Kegiatan Sekolah (bukan rapat/libur) */}
-            {event.source === 'rencana' && canManageRecurringEvent(guru?.role) && (
-              <button
-                onClick={() => onEdit(event)}
-                className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition cursor-pointer shrink-0"
-                title="Edit Kegiatan Sekolah"
-              >
-                <Pencil size={12} />
-              </button>
+            <p className="text-sm font-bold text-slate-100">{event.judul}</p>
+
+            {/* ✅ Tombol Edit + Delete (khusus Kegiatan Sekolah) */}
+            {event.source === 'rencana' && canManage && (
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => onEdit(event)}
+                  className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition cursor-pointer"
+                  title="Edit Kegiatan Sekolah"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  onClick={() => onDelete(event)}
+                  className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition cursor-pointer"
+                  title="Hapus Kegiatan Sekolah"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             )}
           </div>
         </div>
