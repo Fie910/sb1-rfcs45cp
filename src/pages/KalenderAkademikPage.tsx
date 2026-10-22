@@ -709,7 +709,7 @@ export function KalenderAkademikPage() {
 // =============================================================================
 // SUB: Event Detail Card
 // =============================================================================
-function EventDetailCard({ event }: { event: KalenderEvent }) {
+function EventDetailCard({ event, onEdit }: { event: KalenderEvent; onEdit: (e: KalenderEvent) => void }) {
   return (
     <div
       className={`bg-slate-950/60 border border-slate-800 rounded-2xl p-3.5 border-l-4 ${WARNA_BORDER_LEFT[event.warna]}`}
