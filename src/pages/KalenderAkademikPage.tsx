@@ -136,6 +136,42 @@ export function KalenderAkademikPage() {
     setRecurringModalOpen(true);
   };
 
+// ✅ Handler Hapus Kegiatan
+const handleDeleteKegiatan = async (event: KalenderEvent) => {
+  if (event.source !== 'rencana') return;
+
+  if (!canManageRecurring) {
+    showToast('error', 'Anda tidak memiliki akses untuk menghapus kegiatan');
+    return;
+  }
+
+  const ok = window.confirm(
+    `Hapus kegiatan "${event.judul}"?\n\nTindakan ini tidak dapat dibatalkan.`
+  );
+  if (!ok) return;
+
+  const { error } = await supabase
+    .from('rencana_kegiatan')
+    .delete()
+    .eq('id', event.source_id);
+
+  if (error) {
+    console.error('[kalender] delete kegiatan:', error);
+    showToast('error', 'Gagal menghapus kegiatan');
+    return;
+  }
+
+  showToast('success', 'Kegiatan berhasil dihapus');
+  logActivity({
+    aksi: 'DELETE',
+    modul: AUDIT_MODUL.AUTH,
+    deskripsi: `Hapus kegiatan: ${event.judul}`,
+  });
+
+  // Refresh kalender
+  fetchData();
+};
+
   // =========================================================================
   // FETCH
   // =========================================================================
