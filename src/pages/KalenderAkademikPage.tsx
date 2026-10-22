@@ -147,8 +147,7 @@ const handleDeleteKegiatan = async (event: KalenderEvent) => {
     return;
   }
 
-  const { confirm } = useConfirm();
-  if (!(await confirm({ title: 'Hapus Kegiatan?', message: `Hapus "${event.judul}"?` }))) return;  
+  if (!(await confirm({ title: 'Hapus Kegiatan?', message: `Hapus "${event.judul}"?` }))) return;
 
   const { error } = await supabase
     .from('rencana_kegiatan')
@@ -168,7 +167,6 @@ const handleDeleteKegiatan = async (event: KalenderEvent) => {
     deskripsi: `Hapus kegiatan: ${event.judul}`,
   });
 
-  // Refresh kalender
   fetchData();
 };
 
