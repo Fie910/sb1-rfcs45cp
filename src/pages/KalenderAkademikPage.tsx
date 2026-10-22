@@ -744,6 +744,7 @@ function EventDetailCard({ event, onEdit }: { event: KalenderEvent; onEdit: (e: 
               </span>
             )}            
           </div>
+          <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-bold text-slate-100">{event.judul}</p>
           
             {/* ✅ Tombol Edit khusus Kegiatan Sekolah (bukan rapat/libur) */}
