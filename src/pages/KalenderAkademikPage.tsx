@@ -145,10 +145,8 @@ const handleDeleteKegiatan = async (event: KalenderEvent) => {
     return;
   }
 
-  const ok = window.confirm(
-    `Hapus kegiatan "${event.judul}"?\n\nTindakan ini tidak dapat dibatalkan.`
-  );
-  if (!ok) return;
+  const { confirm } = useConfirm();
+  if (!(await confirm({ title: 'Hapus Kegiatan?', message: `Hapus "${event.judul}"?` }))) return;  
 
   const { error } = await supabase
     .from('rencana_kegiatan')
