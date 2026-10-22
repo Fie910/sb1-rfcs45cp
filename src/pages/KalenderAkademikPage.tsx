@@ -83,6 +83,7 @@ function generateCalendarCells(year: number, month: number): CalendarCell[] {
 // =============================================================================
 export function KalenderAkademikPage() {
   const { guru } = useAuth();
+  const { confirm } = useConfirm();
   const canManageRecurring = canManageRecurringEvent(guru?.role);
   
   const today = getTodayDateWib();
