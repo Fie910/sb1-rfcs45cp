@@ -59,10 +59,10 @@ function generateDateRange(startStr: string, endStr: string): string[] {
   return dates;
 }
 
-function isWeekendDate(dateStr: string): boolean {
+/** 0=Minggu, 1=Senin, ..., 6=Sabtu (UTC, sama dgn getDay()) */
+function getDayOfWeek(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  return dow === 0 || dow === 6;
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
 function daysBetween(startStr: string, endStr: string): number {
