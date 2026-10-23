@@ -41,7 +41,7 @@ interface ModalKegiatanProps {
 
 type CreateMode = 'single' | 'per_day';
 
-const MAX_BATCH = 90; // batas aman untuk per_day mode
+const MAX_BATCH = 90;
 
 // =============================================================================
 // HELPERS
@@ -59,7 +59,7 @@ function generateDateRange(startStr: string, endStr: string): string[] {
   return dates;
 }
 
-/** 0=Minggu, 1=Senin, ..., 6=Sabtu (UTC, sama dgn getDay()) */
+/** 0=Minggu, 1=Senin, ..., 6=Sabtu */
 function getDayOfWeek(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
@@ -93,10 +93,7 @@ export function ModalTambahKegiatan({
 }: ModalKegiatanProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<RencanaKegiatan>(initialFormData);
-
-  // Mode (hanya untuk create, bukan edit)
   const [mode, setMode] = useState<CreateMode>('single');
-  // 0=Minggu, 6=Sabtu. Array memudahkan extend (mis. skip Jumat)
   const [skipDays, setSkipDays] = useState<number[]>([]);
   const [appendHariNumber, setAppendHariNumber] = useState(false);
 
@@ -117,7 +114,7 @@ export function ModalTambahKegiatan({
         deskripsi: kegiatanEdit.deskripsi || '',
         status: kegiatanEdit.status || 'Akan Datang',
       });
-      setMode('single'); // edit selalu single
+      setMode('single');
     } else {
       setFormData(initialFormData);
       setMode('single');
@@ -134,23 +131,22 @@ export function ModalTambahKegiatan({
     if (!formData.tanggal_mulai || !formData.tanggal_selesai) return [];
     if (formData.tanggal_selesai < formData.tanggal_mulai) return [];
 
-  const all = generateDateRange(formData.tanggal_mulai, formData.tanggal_selesai);
+    const all = generateDateRange(formData.tanggal_mulai, formData.tanggal_selesai);
     if (skipDays.length === 0) return all;
     return all.filter((d) => !skipDays.includes(getDayOfWeek(d)));
   }, [isPerDay, formData.tanggal_mulai, formData.tanggal_selesai, skipDays]);
-
-  /** Toggle 1 hari pada skipDays */
-  const toggleSkipDay = (day: number) => {
-    setSkipDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  };
 
   const totalRangeDays = useMemo(() => {
     if (!formData.tanggal_mulai || !formData.tanggal_selesai) return 0;
     if (formData.tanggal_selesai < formData.tanggal_mulai) return 0;
     return daysBetween(formData.tanggal_mulai, formData.tanggal_selesai);
   }, [formData.tanggal_mulai, formData.tanggal_selesai]);
+
+  const toggleSkipDay = (day: number) => {
+    setSkipDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
 
   // ===========================================================================
   // SUBMIT
@@ -187,13 +183,20 @@ export function ModalTambahKegiatan({
         return;
       }
       if (previewDates.length > MAX_BATCH) {
-        showToast('error', `Maksimal ${MAX_BATCH} event per input. Perpendek rentang atau kurangi skip weekend.`);
+        showToast(
+          'error',
+          `Maksimal ${MAX_BATCH} event per input. Perpendek rentang atau kurangi hari yang dilewati.`
+        );
         return;
       }
     }
 
     // ---------- Validasi single range ----------
-    if (!isPerDay && formData.tanggal_selesai && formData.tanggal_selesai < formData.tanggal_mulai) {
+    if (
+      !isPerDay &&
+      formData.tanggal_selesai &&
+      formData.tanggal_selesai < formData.tanggal_mulai
+    ) {
       showToast('error', 'Tanggal selesai tidak boleh sebelum tanggal mulai');
       return;
     }
@@ -247,7 +250,6 @@ export function ModalTambahKegiatan({
 
         if (error) throw error;
 
-        // Broadcast (non-fatal)
         try {
           await broadcastToAllGurus({
             judul: '📌 Agenda Kegiatan Baru',
@@ -317,7 +319,7 @@ export function ModalTambahKegiatan({
   return (
     <Modal open={open} onClose={onClose} title={modalTitle} size="md">
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-        {/* MODE TOGGLE — hanya untuk create */}
+        {/* 1. MODE TOGGLE */}
         {!isEdit && (
           <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
             <button
@@ -347,7 +349,7 @@ export function ModalTambahKegiatan({
           </div>
         )}
 
-        {/* Info banner per_day */}
+        {/* 2. INFO BANNER per_day */}
         {isPerDay && (
           <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300">
             <Info size={12} className="shrink-0 mt-0.5" />
@@ -358,7 +360,7 @@ export function ModalTambahKegiatan({
           </div>
         )}
 
-        {/* Nama Kegiatan */}
+        {/* 3. NAMA KEGIATAN */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5">
             Nama Kegiatan <span className="text-rose-400">*</span>
@@ -372,12 +374,14 @@ export function ModalTambahKegiatan({
                 : 'Contoh: Penilaian Tengah Semester (PTS)'
             }
             value={formData.nama_kegiatan}
-            onChange={(e) => setFormData({ ...formData, nama_kegiatan: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, nama_kegiatan: e.target.value })
+            }
             className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
           />
         </div>
 
-        {/* PJ + Peserta */}
+        {/* 4. PJ + PESERTA */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
@@ -389,7 +393,9 @@ export function ModalTambahKegiatan({
               required
               placeholder="Contoh: Tim Kurikulum / OSIS"
               value={formData.penanggung_jawab}
-              onChange={(e) => setFormData({ ...formData, penanggung_jawab: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, penanggung_jawab: e.target.value })
+              }
               className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
             />
           </div>
@@ -403,37 +409,40 @@ export function ModalTambahKegiatan({
               required
               placeholder="Contoh: Siswa Kelas X & XI"
               value={formData.peserta}
-              onChange={(e) => setFormData({ ...formData, peserta: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, peserta: e.target.value })
+              }
               className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
             />
           </div>
         </div>
 
-        {/* TANGGAL */}
+        {/* 5. TANGGAL */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-              <Calendar size={13} className="text-indigo-400" />
-              {isPerDay ? 'Tanggal Mulai' : 'Tanggal Mulai'}{' '}
+              <Calendar size={13} className="text-indigo-400" /> Tanggal Mulai{' '}
               <span className="text-rose-400">*</span>
             </label>
             <input
               type="date"
               required
               value={formData.tanggal_mulai}
-              onChange={(e) => setFormData({ ...formData, tanggal_mulai: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, tanggal_mulai: e.target.value })
+              }
               className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer"
             />
           </div>
-
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-              <Calendar size={13} className="text-indigo-400" />
-              Tanggal Selesai
+              <Calendar size={13} className="text-indigo-400" /> Tanggal Selesai
               {isPerDay ? (
                 <span className="text-rose-400">*</span>
               ) : (
-                <span className="text-slate-500 text-[10px] font-normal">(opsional)</span>
+                <span className="text-slate-500 text-[10px] font-normal">
+                  (opsional)
+                </span>
               )}
             </label>
             <input
@@ -441,44 +450,46 @@ export function ModalTambahKegiatan({
               required={isPerDay}
               min={formData.tanggal_mulai || undefined}
               value={formData.tanggal_selesai ?? ''}
-              onChange={(e) => setFormData({ ...formData, tanggal_selesai: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, tanggal_selesai: e.target.value })
+              }
               className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer"
             />
           </div>
         </div>
 
-        {/* OPSI PER_HARI */}
+        {/* 6. OPSI PER_HARI */}
         {isPerDay && (
           <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 space-y-2.5">
             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-300">
               <Layers size={12} className="text-emerald-400" /> Opsi Batch
             </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              Lewati hari:
-            </span>
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Lewati hari:
+              </span>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={skipDays.includes(6)}
-                onChange={() => toggleSkipDay(6)}
-                className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500"
-              />
-              <span className="text-[11px] text-slate-300">Sabtu</span>
-            </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={skipDays.includes(6)}
+                  onChange={() => toggleSkipDay(6)}
+                  className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-[11px] text-slate-300">Sabtu</span>
+              </label>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={skipDays.includes(0)}
-                onChange={() => toggleSkipDay(0)}
-                className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500"
-              />
-              <span className="text-[11px] text-slate-300">Minggu</span>
-            </label>
-          </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={skipDays.includes(0)}
+                  onChange={() => toggleSkipDay(0)}
+                  className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-[11px] text-slate-300">Minggu</span>
+              </label>
+            </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -494,7 +505,7 @@ export function ModalTambahKegiatan({
           </div>
         )}
 
-        {/* PREVIEW PER_HARI */}
+        {/* 7. PREVIEW PER_HARI */}
         {isPerDay && totalRangeDays > 0 && (
           <div
             className={`p-3 rounded-xl border ${
@@ -525,17 +536,22 @@ export function ModalTambahKegiatan({
                   </>
                 )}
               </span>
-              {skipDays.length > 0 && totalRangeDays > previewDates.length && (
-                <span className="text-[10px] text-slate-400">
-                  ({totalRangeDays - previewDates.length} hari dilewati)
-                </span>
-              )}
+              {skipDays.length > 0 &&
+                totalRangeDays > previewDates.length && (
+                  <span className="text-[10px] text-slate-400">
+                    ({totalRangeDays - previewDates.length} hari dilewati)
+                  </span>
+                )}
+            </div>
 
             {previewDates.length > 0 && (
               <p className="text-[10px] text-slate-400">
                 {formatDateWibLong(previewDates[0])}
                 {previewDates.length > 1 && (
-                  <> s.d. {formatDateWibLong(previewDates[previewDates.length - 1])}</>
+                  <>
+                    {' '}
+                    s.d. {formatDateWibLong(previewDates[previewDates.length - 1])}
+                  </>
                 )}
               </p>
             )}
@@ -555,7 +571,7 @@ export function ModalTambahKegiatan({
           </div>
         )}
 
-        {/* Status */}
+        {/* 8. STATUS */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
             <Activity size={13} className="text-indigo-400" /> Status Kegiatan
@@ -571,7 +587,7 @@ export function ModalTambahKegiatan({
           </select>
         </div>
 
-        {/* Deskripsi */}
+        {/* 9. DESKRIPSI */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
             <FileText size={13} className="text-indigo-400" /> Detail / Catatan Ringkas
@@ -585,7 +601,7 @@ export function ModalTambahKegiatan({
           />
         </div>
 
-        {/* Actions */}
+        {/* 10. ACTIONS */}
         <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800/80">
           <button
             type="button"
@@ -603,7 +619,9 @@ export function ModalTambahKegiatan({
             {loading ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                {isPerDay ? `Menyimpan ${previewDates.length} event...` : 'Menyimpan...'}
+                {isPerDay
+                  ? `Menyimpan ${previewDates.length} event...`
+                  : 'Menyimpan...'}
               </>
             ) : isEdit ? (
               <>
