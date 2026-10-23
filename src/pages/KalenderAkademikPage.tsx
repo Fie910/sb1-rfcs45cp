@@ -262,6 +262,80 @@ const handleDeleteKegiatan = async (event: KalenderEvent) => {
   fetchData();
 };
 
+// ✅ Edit grup (batch)
+const handleEditBatch = async (group: KegiatanGroup) => {
+  if (!canManageRecurring || !group.batch_id) return;
+
+  const { data, error } = await supabase
+    .from('rencana_kegiatan')
+    .select('*')
+    .eq('batch_id', group.batch_id)
+    .order('tanggal_mulai');
+
+  if (error || !data) {
+    showToast('error', 'Gagal memuat data grup');
+    return;
+  }
+
+  setEditingKegiatan(null);
+  setBatchEditing({ batchId: group.batch_id, items: data as RencanaKegiatan[] });
+  setModalKegiatanOpen(true);
+};
+
+// ✅ Hapus grup (batch)
+const handleDeleteBatch = async (group: KegiatanGroup) => {
+  if (!canManageRecurring || !group.batch_id) return;
+
+  const ok = await confirm({
+    title: 'Hapus Grup Kegiatan?',
+    message: `Hapus ${group.count} kegiatan "${group.label}"?\n\nTindakan ini tidak dapat dibatalkan.`,
+    variant: 'danger',
+    confirmLabel: `Ya, Hapus ${group.count} Kegiatan`,
+  });
+  if (!ok) return;
+
+  const { error } = await supabase
+    .from('rencana_kegiatan')
+    .delete()
+    .eq('batch_id', group.batch_id);
+
+  if (error) {
+    console.error('[kalender] delete batch:', error);
+    showToast('error', 'Gagal menghapus grup kegiatan');
+    return;
+  }
+
+  showToast('success', `${group.count} kegiatan berhasil dihapus`);
+  logActivity({
+    aksi: 'DELETE',
+    modul: AUDIT_MODUL.AUTH,
+    deskripsi: `Hapus grup kegiatan: ${group.label} (${group.count} hari)`,
+  });
+
+  fetchData();
+};
+
+// ✅ Toggle expand grup
+const toggleGroupExpand = (key: string) => {
+  setExpandedGroups((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    return next;
+  });
+};
+
+// ✅ Handler tambah kegiatan (kalau belum ada)
+const handleOpenCreateKegiatan = () => {
+  if (!canManageRecurring) {
+    showToast('error', 'Anda tidak memiliki akses untuk menambah kegiatan');
+    return;
+  }
+  setEditingKegiatan(null);
+  setBatchEditing(null);
+  setModalKegiatanOpen(true);
+};
+  
   // Log VIEW
   useEffect(() => {
     logActivity({
