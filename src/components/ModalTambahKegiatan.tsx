@@ -134,9 +134,17 @@ export function ModalTambahKegiatan({
     if (!formData.tanggal_mulai || !formData.tanggal_selesai) return [];
     if (formData.tanggal_selesai < formData.tanggal_mulai) return [];
 
-    const all = generateDateRange(formData.tanggal_mulai, formData.tanggal_selesai);
-    return skipWeekend ? all.filter((d) => !isWeekendDate(d)) : all;
-  }, [isPerDay, formData.tanggal_mulai, formData.tanggal_selesai, skipWeekend]);
+  const all = generateDateRange(formData.tanggal_mulai, formData.tanggal_selesai);
+    if (skipDays.length === 0) return all;
+    return all.filter((d) => !skipDays.includes(getDayOfWeek(d)));
+  }, [isPerDay, formData.tanggal_mulai, formData.tanggal_selesai, skipDays]);
+
+  /** Toggle 1 hari pada skipDays */
+  const toggleSkipDay = (day: number) => {
+    setSkipDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
 
   const totalRangeDays = useMemo(() => {
     if (!formData.tanggal_mulai || !formData.tanggal_selesai) return 0;
