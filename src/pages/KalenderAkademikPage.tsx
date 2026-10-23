@@ -122,6 +122,13 @@ export function KalenderAkademikPage() {
 
   const handleEditKegiatan = (event: KalenderEvent) => {
     if (event.source !== 'rencana') return;
+
+  // ✅ Batch edit state
+const [batchEditing, setBatchEditing] = useState<{
+  batchId: string;
+  items: RencanaKegiatan[];
+} | null>(null);
+const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
     
     // Konversi KalenderEvent ke RencanaKegiatan
     const originalData: RencanaKegiatan = {
