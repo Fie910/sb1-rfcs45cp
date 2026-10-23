@@ -872,6 +872,43 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
         </div>
       )}
 
+{/* ============ AGENDA KEGIATAN TERDAFTAR (GROUPED) ============ */}
+{rencanaGroups.length > 0 && (
+  <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+    <div className="flex items-center justify-between p-4 border-b border-slate-800">
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+          <Layers size={16} />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-100">Agenda Kegiatan Terdaftar</p>
+          <p className="text-[10px] text-slate-500">
+            {rencanaGroups.length} grup · {rencanaGroups.reduce((a, g) => a + g.count, 0)} kegiatan
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      {rencanaGroups.map((group) => (
+        <KegiatanGroupCard
+          key={group.key}
+          group={group}
+          canManage={canManageRecurring}
+          expanded={expandedGroups.has(group.key)}
+          onToggleExpand={() => toggleGroupExpand(group.key)}
+          onEditSingle={(e) => {
+            handleEditKegiatan(e);
+          }}
+          onDeleteSingle={handleDeleteKegiatan}
+          onEditGroup={() => handleEditBatch(group)}
+          onDeleteGroup={() => handleDeleteBatch(group)}
+        />
+      ))}
+    </div>
+  </div>
+)}
+      
       {/* ✅ Modal Recurring Event */}
       <ModalRecurringEvent
         open={recurringModalOpen}
