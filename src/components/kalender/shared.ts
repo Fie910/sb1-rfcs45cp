@@ -94,6 +94,8 @@ export function mapRencanaToEvent(k: RencanaKegiatan): KalenderEvent {
     kategori,
     warna,
     kategori_label: label,
+    batch_id: k.batch_id ?? null,
+    batch_label: k.batch_label ?? null,
   };
 }
 
