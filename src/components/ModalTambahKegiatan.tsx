@@ -525,12 +525,11 @@ export function ModalTambahKegiatan({
                   </>
                 )}
               </span>
-              {skipWeekend && totalRangeDays > previewDates.length && (
+              {skipDays.length > 0 && totalRangeDays > previewDates.length && (
                 <span className="text-[10px] text-slate-400">
-                  ({totalRangeDays - previewDates.length} hari weekend dilewati)
+                  ({totalRangeDays - previewDates.length} hari dilewati)
                 </span>
               )}
-            </div>
 
             {previewDates.length > 0 && (
               <p className="text-[10px] text-slate-400">
