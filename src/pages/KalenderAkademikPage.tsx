@@ -1051,3 +1051,186 @@ function EventDetailCard({
     </div>
   );
 }
+
+// =============================================================================
+// SUB: Kegiatan Group Card
+// =============================================================================
+function KegiatanGroupCard({
+  group, canManage, expanded, onToggleExpand,
+  onEditSingle, onDeleteSingle, onEditGroup, onDeleteGroup,
+}: {
+  group: KegiatanGroup;
+  canManage: boolean;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onEditSingle: (e: KalenderEvent) => void;
+  onDeleteSingle: (e: KalenderEvent) => void;
+  onEditGroup: () => void;
+  onDeleteGroup: () => void;
+}) {
+  const todayStr = getTodayDateWib();
+  const isPast = group.tanggalSelesai < todayStr;
+  const isOngoing = group.tanggalMulai <= todayStr && group.tanggalSelesai >= todayStr;
+
+  return (
+    <div
+      className={`relative group bg-slate-950/60 border rounded-2xl p-3.5 transition-all ${
+        isOngoing
+          ? 'border-amber-500/40 ring-1 ring-amber-500/20'
+          : isPast
+          ? 'border-slate-800/60 opacity-70'
+          : 'border-slate-800 hover:border-indigo-500/40'
+      }`}
+    >
+      {/* Top actions */}
+      {canManage && (
+        <div className="absolute top-3 right-3 flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+          {group.isBatch ? (
+            <>
+              <button
+                onClick={onEditGroup}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
+                title={`Edit semua ${group.count} kegiatan`}
+              >
+                <Pencil size={13} />
+              </button>
+              <button
+                onClick={onDeleteGroup}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                title={`Hapus semua ${group.count} kegiatan`}
+              >
+                <Trash2 size={13} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => onEditSingle(group.items[0])}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
+                title="Edit"
+              >
+                <Pencil size={13} />
+              </button>
+              <button
+                onClick={() => onDeleteSingle(group.items[0])}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                title="Hapus"
+              >
+                <Trash2 size={13} />
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="pr-16 mb-2">
+        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${WARNA_BG[group.items[0].warna]}`}>
+            {group.items[0].kategori_label}
+          </span>
+          {group.isBatch && (
+            <span className="text-[9px] font-bold text-cyan-400 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 inline-flex items-center gap-0.5">
+              <Layers size={8} /> Grup · {group.count} hari
+            </span>
+          )}
+          {isOngoing && (
+            <span className="text-[9px] font-bold text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+              Berlangsung
+            </span>
+          )}
+          {isPast && (
+            <span className="text-[9px] font-bold text-slate-500 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700">
+              Lewat
+            </span>
+          )}
+        </div>
+
+        <p className="text-sm font-bold text-slate-100 leading-tight">
+          {group.label}
+        </p>
+        <p className="text-[10px] text-slate-500 mt-0.5">
+          {group.isBatch ? (
+            <>
+              {formatTanggalPanjang(group.tanggalMulai).split(',')[0]},{' '}
+              {group.tanggalMulai.slice(8, 10)}/{group.tanggalMulai.slice(5, 7)}
+              {group.count > 1 && (
+                <>
+                  {' — '}
+                  {group.tanggalSelesai.slice(8, 10)}/{group.tanggalSelesai.slice(5, 7)}
+                </>
+              )}
+            </>
+          ) : (
+            formatTanggalPanjang(group.tanggalMulai)
+          )}
+        </p>
+      </div>
+
+      {/* PJ & Peserta */}
+      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mb-2">
+        {group.items[0].penanggung_jawab && (
+          <span className="inline-flex items-center gap-1 truncate">
+            <User size={9} /> {group.items[0].penanggung_jawab}
+          </span>
+        )}
+        {group.items[0].peserta && (
+          <span className="inline-flex items-center gap-1 truncate">
+            <Users size={9} /> {group.items[0].peserta}
+          </span>
+        )}
+      </div>
+
+      {/* Expand toggle untuk batch */}
+      {group.isBatch && group.count > 1 && (
+        <button
+          onClick={onToggleExpand}
+          className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-slate-400 hover:text-indigo-300 py-1.5 rounded-lg hover:bg-slate-800/50 transition cursor-pointer border-t border-slate-800/60 pt-2 mt-1"
+        >
+          {expanded ? (
+            <><ChevronUp size={12} /> Sembunyikan {group.count} tanggal</>
+          ) : (
+            <><ChevronDown size={12} /> Lihat {group.count} tanggal</>
+          )}
+        </button>
+      )}
+
+      {/* Expanded list */}
+      {group.isBatch && expanded && (
+        <div className="mt-2 space-y-1 pt-2 border-t border-slate-800/60">
+          {group.items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between text-[11px] p-1.5 rounded-lg bg-slate-900/40 hover:bg-slate-900/70"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-slate-300 font-medium truncate">{item.judul}</p>
+                <p className="text-slate-500 text-[10px]">
+                  {formatTanggalPanjang(item.tanggal_mulai)}
+                </p>
+              </div>
+              {canManage && (
+                <div className="flex items-center gap-0.5 shrink-0 ml-1">
+                  <button
+                    onClick={() => onEditSingle(item)}
+                    className="p-1 rounded text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition cursor-pointer"
+                    title="Edit tanggal ini"
+                  >
+                    <Pencil size={10} />
+                  </button>
+                  <button
+                    onClick={() => onDeleteSingle(item)}
+                    className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                    title="Hapus tanggal ini"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
