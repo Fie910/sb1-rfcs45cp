@@ -8,7 +8,7 @@ import {
   CalendarRange, ChevronLeft, ChevronRight, Loader2, Calendar,
   User, Users, Clock, X, Info, Filter, MapPin,
   CalendarDays, Download, Repeat, Pencil,
-  Trash2,
+  Trash2, Plus,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
