@@ -136,7 +136,16 @@ export function KalenderAkademikPage() {
     }
     setRecurringModalOpen(true);
   };
-
+  
+  const handleOpenCreateKegiatan = () => {
+    if (!canManageRecurring) {
+      showToast('error', 'Anda tidak memiliki akses untuk menambah kegiatan');
+      return;
+    }
+    setEditingKegiatan(null);
+    setModalKegiatanOpen(true);
+  };
+  
   // =========================================================================
   // FETCH
   // =========================================================================
