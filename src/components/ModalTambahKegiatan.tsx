@@ -122,7 +122,7 @@ export function ModalTambahKegiatan({
       setFormData(initialFormData);
       setMode('single');
     }
-    setSkipWeekend(false);
+    setSkipDays([]);
     setAppendHariNumber(false);
   }, [open, kegiatanEdit]);
 
