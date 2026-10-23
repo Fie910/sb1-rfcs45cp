@@ -454,17 +454,31 @@ export function ModalTambahKegiatan({
               <Layers size={12} className="text-emerald-400" /> Opsi Batch
             </div>
 
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Lewati hari:
+            </span>
+
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={skipWeekend}
-                onChange={(e) => setSkipWeekend(e.target.checked)}
+                checked={skipDays.includes(6)}
+                onChange={() => toggleSkipDay(6)}
                 className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500"
               />
-              <span className="text-[11px] text-slate-300">
-                Lewati Sabtu & Minggu
-              </span>
+              <span className="text-[11px] text-slate-300">Sabtu</span>
             </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={skipDays.includes(0)}
+                onChange={() => toggleSkipDay(0)}
+                className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500"
+              />
+              <span className="text-[11px] text-slate-300">Minggu</span>
+            </label>
+          </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
               <input
