@@ -1829,6 +1829,8 @@ export type KalenderEvent = {
   kategori: KalenderKategori;
   warna: KalenderWarna;
   kategori_label: string;
+  batch_id?: string | null;
+  batch_label?: string | null;
 };
 
 // =============================================================================
