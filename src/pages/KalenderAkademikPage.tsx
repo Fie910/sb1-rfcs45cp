@@ -388,13 +388,24 @@ const handleDeleteKegiatan = async (event: KalenderEvent) => {
 
           {/* Recurring — hanya manager */}
           {canManageRecurring && (
-          <button
-            onClick={handleOpenRecurring}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer"
-          >
-            <Repeat size={14} />
-            Buat Recurring
-          </button>
+            <>
+              <button
+                onClick={handleOpenCreateKegiatan}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition cursor-pointer"
+                title="Tambah kegiatan (single atau per hari)"
+              >
+                <Plus size={14} />
+                Tambah Kegiatan
+              </button>
+
+              <button
+                onClick={handleOpenRecurring}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer"
+              >
+                <Repeat size={14} />
+                Buat Recurring
+              </button>
+            </>
           )}
         </div>
       </div>
