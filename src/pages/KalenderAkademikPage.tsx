@@ -161,6 +161,7 @@ const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
       return;
     }
     setEditingKegiatan(null);
+    setBatchEditing(null);
     setModalKegiatanOpen(true);
   };
   
@@ -324,18 +325,7 @@ const toggleGroupExpand = (key: string) => {
     return next;
   });
 };
-
-// ✅ Handler tambah kegiatan (kalau belum ada)
-const handleOpenCreateKegiatan = () => {
-  if (!canManageRecurring) {
-    showToast('error', 'Anda tidak memiliki akses untuk menambah kegiatan');
-    return;
-  }
-  setEditingKegiatan(null);
-  setBatchEditing(null);
-  setModalKegiatanOpen(true);
-};
-  
+ 
   // Log VIEW
   useEffect(() => {
     logActivity({
