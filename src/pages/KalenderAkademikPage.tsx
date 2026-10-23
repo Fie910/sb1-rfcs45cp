@@ -154,7 +154,8 @@ const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
     }
     setRecurringModalOpen(true);
   };
-  
+
+  // ✅ Handler tambah kegiatan
   const handleOpenCreateKegiatan = () => {
     if (!canManageRecurring) {
       showToast('error', 'Anda tidak memiliki akses untuk menambah kegiatan');
