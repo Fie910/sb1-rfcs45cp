@@ -273,6 +273,8 @@ export interface RencanaKegiatan {
   deskripsi?: string | null;
   status?: string;
   created_at?: string;
+  batch_id?: string | null;
+  batch_label?: string | null;
 }
 
 export type JadwalPiketPenyambutan = {
