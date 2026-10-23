@@ -925,13 +925,16 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
         onClose={() => {
           setModalKegiatanOpen(false);
           setEditingKegiatan(null);
+          setBatchEditing(null);
         }}
         onSuccess={() => {
           setModalKegiatanOpen(false);
           setEditingKegiatan(null);
-          fetchData(); // Refresh kalender
+          setBatchEditing(null);
+          fetchData();
         }}
         kegiatanEdit={editingKegiatan}
+        batchEdit={batchEditing}
       />
     </div>
   );
