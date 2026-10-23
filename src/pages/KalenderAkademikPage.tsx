@@ -378,6 +378,57 @@ const toggleGroupExpand = (key: string) => {
       });
   }, [selectedDate, filteredEvents]);
 
+// ✅ Grouping kegiatan by batch_id
+const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
+  const rencana = filteredEvents.filter((e) => e.source === 'rencana');
+
+  const byBatch = new Map<string, KalenderEvent[]>();
+  const singles: KalenderEvent[] = [];
+
+  for (const e of rencana) {
+    if (e.batch_id) {
+      const arr = byBatch.get(e.batch_id) ?? [];
+      arr.push(e);
+      byBatch.set(e.batch_id, arr);
+    } else {
+      singles.push(e);
+    }
+  }
+
+  const groups: KegiatanGroup[] = [];
+
+  for (const [batchId, items] of byBatch) {
+    const sorted = [...items].sort((a, b) =>
+      a.tanggal_mulai.localeCompare(b.tanggal_mulai)
+    );
+    groups.push({
+      key: `batch-${batchId}`,
+      batch_id: batchId,
+      label: sorted[0].batch_label || sorted[0].judul,
+      items: sorted,
+      tanggalMulai: sorted[0].tanggal_mulai,
+      tanggalSelesai: sorted[sorted.length - 1].tanggal_selesai,
+      count: sorted.length,
+      isBatch: true,
+    });
+  }
+
+  for (const s of singles) {
+    groups.push({
+      key: `single-${s.id}`,
+      batch_id: null,
+      label: s.judul,
+      items: [s],
+      tanggalMulai: s.tanggal_mulai,
+      tanggalSelesai: s.tanggal_selesai,
+      count: 1,
+      isBatch: false,
+    });
+  }
+
+  return groups.sort((a, b) => a.tanggalMulai.localeCompare(b.tanggalMulai));
+}, [filteredEvents]);
+  
   // =========================================================================
   // NAVIGASI
   // =========================================================================
