@@ -80,6 +80,17 @@ function generateCalendarCells(year: number, month: number): CalendarCell[] {
 // =============================================================================
 // KOMPONEN UTAMA
 // =============================================================================
+type KegiatanGroup = {
+  key: string;
+  batch_id: string | null;
+  label: string;
+  items: KalenderEvent[];
+  tanggalMulai: string;
+  tanggalSelesai: string;
+  count: number;
+  isBatch: boolean;
+};
+
 export function KalenderAkademikPage() {
   const { guru } = useAuth();
   const confirm = useConfirm();
