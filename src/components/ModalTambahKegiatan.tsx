@@ -96,7 +96,8 @@ export function ModalTambahKegiatan({
 
   // Mode (hanya untuk create, bukan edit)
   const [mode, setMode] = useState<CreateMode>('single');
-  const [skipWeekend, setSkipWeekend] = useState(false);
+  // 0=Minggu, 6=Sabtu. Array memudahkan extend (mis. skip Jumat)
+  const [skipDays, setSkipDays] = useState<number[]>([]);
   const [appendHariNumber, setAppendHariNumber] = useState(false);
 
   const isEdit = Boolean(kegiatanEdit?.id);
