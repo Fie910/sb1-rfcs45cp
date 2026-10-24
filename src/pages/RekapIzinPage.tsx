@@ -159,7 +159,7 @@ export function RekapIzinPage() {
   // Ringkasan Statistik
   const totalIzin = filteredList.length;
   const totalSakit = filteredList.filter((i) => i.kategori_izin === 'Sakit').length;
-const totalDinas = filteredList.filter((i) => i.kategori_izin === 'Dinas').length;
+  const totalDinas = filteredList.filter((i) => i.kategori_izin === 'Dinas').length;
   const totalSudahDisampaikan = filteredList.filter(
     (i) => i.status_penyampaian === 'Sudah Disampaikan'
   ).length;
