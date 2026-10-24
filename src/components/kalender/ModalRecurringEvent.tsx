@@ -29,7 +29,7 @@ const EMPTY_FORM = {
   penanggung_jawab: '',
   peserta: '',
   tanggal_mulai: new Date().toISOString().slice(0, 10),
-  recurrence_pattern: 'Mingguan' as RecurrencePattern,
+  recurrence_pattern: 'Pekanan' as RecurrencePattern,
   recurrence_until: (() => {
     const d = new Date();
     d.setMonth(d.getMonth() + 3);
