@@ -213,6 +213,16 @@ export function RekapIzinPage() {
 
         <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-4 backdrop-blur-xl shadow-xl shadow-black/20 flex items-center gap-3">
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
+            <AlertCircle size={22} />
+          </div>
+          <div>
+            <p className="text-[11px] text-slate-400 font-semibold">Kategori Dinas</p>
+            <p className="text-xl font-black text-slate-100">{totalDinas}</p>
+          </div>
+        </div>
+
+        <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-4 backdrop-blur-xl shadow-xl shadow-black/20 flex items-center gap-3">
+          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
             <CheckCircle size={22} />
           </div>
           <div>
