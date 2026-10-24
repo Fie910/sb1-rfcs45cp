@@ -24,28 +24,20 @@ interface GuruOption {
 interface IzinGuruJoined {
   id: number;
   tanggal_izin: string;
-  kategori_izin: 'Izin' | 'Sakit';
+  kategori_izin: 'Izin' | 'Sakit' | 'Dinas';
+  jenis_delegasi: 'none' | 'asistensi' | 'tugas';
+  nama_asisten: string | null;
   keterangan_izin: string | null;
-  titipan_tugas: string;
+  titipan_tugas: string | null;
+  is_full_day: boolean;
   status_penyampaian: string;
   waktu_penyampaian: string | null;
   status_penanganan: string;
-  guru_izin: {
-    id: string;
-    nama_lengkap: string;
-  } | null;
-  guru_piket: {
-    id: string;
-    nama_lengkap: string;
-  } | null;
-  kelas: {
-    id: number;
-    nama_kelas: string;
-  } | null;
-  mata_pelajaran: {
-    id: number;
-    nama_mapel: string;
-  } | null;
+  guru_izin: { id: string; nama_lengkap: string } | null;
+  guru_piket: { id: string; nama_lengkap: string } | null;
+  kelas: { id: number; nama_kelas: string } | null;
+  mata_pelajaran: { id: number; nama_mapel: string } | null;
+  jadwal_kbm: { id: number; waktu_mulai: string; waktu_selesai: string } | null;
 }
 
 const HEADERS = [
