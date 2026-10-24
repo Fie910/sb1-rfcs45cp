@@ -315,13 +315,13 @@ export function PiketPage() {
     showToast('error', 'Tidak ada tugas untuk disalin');
     return;
   }
-    navigator.clipboard.writeText(text);
-    setCopiedId(idKey);
-    showToast('success', 'Delegasi tugas berhasil disalin ke clipboard');
-    setTimeout(() => {
-      setCopiedId(null);
-    }, 2000);
-  };
+  navigator.clipboard.writeText(text);
+  setCopiedId(id);
+  showToast('success', 'Delegasi tugas berhasil disalin ke clipboard');
+  setTimeout(() => {
+    setCopiedId(null);
+  }, 2000);
+};
 
   // ===========================================================================
   // HANDLER: Print / Export PDF Lembar Tugas
