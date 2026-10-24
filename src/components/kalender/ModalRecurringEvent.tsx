@@ -109,8 +109,8 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
       showToast('error', 'Tidak ada tanggal yang di-generate. Cek tanggal mulai/selesai.');
       return;
     }
-    if (form.recurrence_pattern === 'Mingguan' && form.recurrence_days.length === 0) {
-      showToast('error', 'Pilih minimal 1 hari untuk recurring mingguan');
+    if (form.recurrence_pattern === 'Pekanan' && form.recurrence_days.length === 0) {
+      showToast('error', 'Pilih minimal 1 hari untuk recurring pekanan');
       return;
     }
 
