@@ -95,6 +95,40 @@ export function buildDelegasiTugasMessage(data: DelegasiTugasData): string {
   return lines.join('\n');
 }
 
+// =============================================================================
+// ASISTENSI — pesan delegasi jenis asistensi
+// =============================================================================
+export interface AsistensiData {
+  guru_izin_nama: string;
+  tanggal_izin: string;
+  kategori_izin: string;
+  keterangan_izin: string | null;
+  kelas_nama: string;
+  mapel_nama: string;
+  nama_asisten: string;
+  waktu?: string | null;
+}
+
+export function buildAsistensiMessage(data: AsistensiData): string {
+  const lines: string[] = [];
+
+  lines.push('*🤝 DELEGASI ASISTENSI KELAS*');
+  lines.push('');
+  lines.push(`*Dari:* ${data.guru_izin_nama}`);
+  lines.push(`*Asisten:* ${data.nama_asisten}`);
+  lines.push(`*Tanggal:* ${data.tanggal_izin}`);
+  if (data.waktu) lines.push(`*Waktu:* ${data.waktu}`);
+  lines.push(`*Kategori:* ${data.kategori_izin}`);
+  if (data.keterangan_izin) lines.push(`*Alasan:* ${data.keterangan_izin}`);
+  lines.push('');
+  lines.push(`*Kelas:* ${data.kelas_nama}`);
+  lines.push(`*Mata Pelajaran:* ${data.mapel_nama}`);
+  lines.push('');
+  lines.push('_Mohon dampingi kelas sesuai jadwal. Terima kasih._');
+
+  return lines.join('\n');
+}
+
 /**
  * Bangun pesan ringkasan semua delegasi hari ini — untuk kirim ke grup guru piket.
  */
