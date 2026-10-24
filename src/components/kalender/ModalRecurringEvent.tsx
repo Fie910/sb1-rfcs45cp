@@ -202,7 +202,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
           <input
             value={form.nama_kegiatan}
             onChange={(e) => setForm({ ...form, nama_kegiatan: e.target.value })}
-            placeholder="Contoh: Rapat Koordinasi Mingguan"
+            placeholder="Contoh: Rapat Koordinasi Pekanan"
             className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
           />
         </div>
