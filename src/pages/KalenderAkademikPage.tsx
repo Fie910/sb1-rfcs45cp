@@ -48,8 +48,8 @@ function generateCalendarCells(year: number, month: number): CalendarCell[] {
   const today = getTodayDateWib();
 
   const firstDay = new Date(year, month, 1);
-  let firstDayIdx = firstDay.getDay();
-  firstDayIdx = firstDayIdx === 0 ? 6 : firstDayIdx - 1;
+// 0 = Minggu, 1 = Senin, ... 6 = Sabtu (native getDay)
+const firstDayIdx = firstDay.getDay();
 
   const startDate = new Date(year, month, 1 - firstDayIdx);
 
