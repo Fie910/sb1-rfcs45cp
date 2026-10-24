@@ -109,7 +109,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
       showToast('error', 'Tidak ada tanggal yang di-generate. Cek tanggal mulai/selesai.');
       return;
     }
-    if (form.recurrence_pattern === 'Pekanan' && form.recurrence_days.length === 0) {
+    if (form.recurrence_pattern === 'Mingguan' && form.recurrence_days.length === 0) {
       showToast('error', 'Pilih minimal 1 hari untuk recurring pekanan');
       return;
     }
@@ -130,7 +130,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
           is_recurring: true,
           recurrence_pattern: form.recurrence_pattern,
           recurrence_until: form.recurrence_until,
-          recurrence_days: form.recurrence_pattern === 'Pekanan' ? form.recurrence_days : null,
+          recurrence_days: form.recurrence_pattern === 'Mingguan' ? form.recurrence_days : null,
         })
         .select('id')
         .single();
