@@ -272,7 +272,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
           </div>
 
           {/* Hari Selector (khusus Pekanan) */}
-          {form.recurrence_pattern === 'Pekanan' && (
+          {form.recurrence_pattern === 'Mingguan' && (
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 Hari dalam sepekan
