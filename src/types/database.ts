@@ -190,19 +190,23 @@ export type JadwalPiketWithRelations = JadwalPiket & {
   gurus: Pick<Guru, 'id' | 'nama_lengkap'> | null;
 };
 
-export type KategoriIzin = 'Sakit' | 'Izin';
+export type KategoriIzin = 'Sakit' | 'Izin' | 'Dinas';
+export type JenisDelegasi = 'none' | 'asistensi' | 'tugas';
 
 export type IzinGuruPiket = {
   id: number;
   guru_izin_id: string;
   tanggal_izin: string;
-  alasan_izin: string;
-  kategori_izin: KategoriIzin | null;
+  kategori_izin: KategoriIzin;
+  jenis_delegasi: JenisDelegasi;
+  nama_asisten: string | null;
   keterangan_izin: string | null;
-  titipan_tugas: string;
-  kelas_id: number;
-  mata_pelajaran: string;
+  titipan_tugas: string | null;         // ✅ nullable
+  url_file: string | null;
+  kelas_id: number | null;              // ✅ nullable (full-day)
   mapel_id: number | null;
+  jadwal_kbm_id: number | null;         // ✅ baru
+  is_full_day: boolean;                 // ✅ baru
   status_penanganan: 'Menunggu' | 'Diproses Piket' | 'Selesai';
   guru_piket_id: string | null;
   status_penyampaian: 'Belum Disampaikan' | 'Sudah Disampaikan';
@@ -215,6 +219,7 @@ export type IzinGuruPiketWithRelations = IzinGuruPiket & {
   kelas: Pick<Kelas, 'id' | 'nama_kelas'> | null;
   guru_piket: Pick<Guru, 'id' | 'nama_lengkap'> | null;
   mata_pelajarans: Pick<MataPelajaran, 'id' | 'nama_mapel'> | null;
+  jadwal_kbm: Pick<JadwalKbm, 'id' | 'hari' | 'waktu_mulai' | 'waktu_selesai'> | null;
 };
 
 export type PengaturanSekolah = {
