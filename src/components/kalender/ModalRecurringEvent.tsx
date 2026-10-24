@@ -39,7 +39,7 @@ const EMPTY_FORM = {
 };
 
 const HARI_LABELS = [
-  { value: 0, label: 'Min' },
+  { value: 0, label: 'Ahd' },
   { value: 1, label: 'Sen' },
   { value: 2, label: 'Sel' },
   { value: 3, label: 'Rab' },
