@@ -315,95 +315,115 @@ export function RekapIzinPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs text-slate-300">
-              {loading ? (
-                <tr>
-                  <td colSpan={HEADERS.length} className="text-center py-20 text-slate-400">
-                    <Loader2 className="animate-spin text-indigo-400 mx-auto" size={28} />
-                  </td>
-                </tr>
-              ) : filteredList.length === 0 ? (
-                <tr>
-                  <td colSpan={HEADERS.length} className="text-center py-16 text-slate-400">
-                    <FileText size={36} className="mx-auto mb-2 text-slate-600" />
-                    <p className="font-bold text-slate-200 text-xs">Tidak ada data izin guru.</p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Sesuaikan rentang tanggal atau filter guru Anda.
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                {filteredList.map((i) => (
-  <tr key={i.id} className="hover:bg-slate-800/30 transition-colors">
-    <td className="py-3.5 px-5 font-medium text-slate-300 sticky left-0 z-10 bg-slate-900/95 backdrop-blur-md shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
-      {i.tanggal_izin}
-    </td>
-    <td className="py-3.5 px-5 font-bold text-slate-100 sticky left-[120px] z-10 bg-slate-900/95 backdrop-blur-md shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
-      {i.guru_izin?.nama_lengkap ?? '-'}
-    </td>
-    <td className="py-3.5 px-5">
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-        i.kategori_izin === 'Sakit'
-          ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-          : i.kategori_izin === 'Dinas'
-          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-          : 'bg-violet-500/10 text-violet-400 border-violet-500/30'
-      }`}>
-        {i.kategori_izin}
-      </span>
-    </td>
-    <td className="py-3.5 px-5 text-slate-300 text-[11px]">
-      {i.is_full_day ? 'Full Hari' : 'Per Sesi'}
-      {i.jadwal_kbm && !i.is_full_day && (
-        <span className="block text-[10px] text-slate-500">
-          {i.jadwal_kbm.waktu_mulai?.slice(0, 5)}-{i.jadwal_kbm.waktu_selesai?.slice(0, 5)}
-        </span>
-      )}
-    </td>
-    <td className="py-3.5 px-5">
-      {i.jenis_delegasi === 'none' ? (
-        <span className="text-slate-500 text-[11px]">-</span>
-      ) : (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-          i.jenis_delegasi === 'asistensi'
-            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-            : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-        }`}>
-          {i.jenis_delegasi}
-        </span>
-      )}
-    </td>
-    <td className="py-3.5 px-5 text-slate-400 max-w-xs truncate text-[11px]" title={
-      i.jenis_delegasi === 'asistensi' ? i.nama_asisten ?? '' : i.titipan_tugas ?? ''
-    }>
-      {i.jenis_delegasi === 'asistensi'
-        ? i.nama_asisten ?? '-'
-        : i.jenis_delegasi === 'tugas'
-        ? i.titipan_tugas ?? '-'
-        : '-'}
-    </td>
-    <td className="py-3.5 px-5 text-slate-300">{i.kelas?.nama_kelas ?? '-'}</td>
-    <td className="py-3.5 px-5 text-slate-300">{i.mata_pelajaran?.nama_mapel ?? '-'}</td>
-    <td className="py-3.5 px-5">
-      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-        i.status_penyampaian === 'Sudah Disampaikan'
-          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-          : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-      }`}>
-        {i.status_penyampaian === 'Sudah Disampaikan'
-          ? <CheckCircle size={11} />
-          : <Clock size={11} />}
-        {i.status_penyampaian || 'Belum Disampaikan'}
-      </span>
-    </td>
-    <td className="py-3.5 px-5 text-slate-400 whitespace-nowrap text-[11px]">
-      {i.waktu_penyampaian
-        ? new Date(i.waktu_penyampaian).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })
-        : '-'}
-    </td>
-  </tr>
-))}
-              )}
-            </tbody>
+  {loading ? (
+    <tr>
+      <td colSpan={HEADERS.length} className="text-center py-20 text-slate-400">
+        <Loader2 className="animate-spin text-indigo-400 mx-auto" size={28} />
+      </td>
+    </tr>
+  ) : filteredList.length === 0 ? (
+    <tr>
+      <td colSpan={HEADERS.length} className="text-center py-16 text-slate-400">
+        <FileText size={36} className="mx-auto mb-2 text-slate-600" />
+        <p className="font-bold text-slate-200 text-xs">Tidak ada data izin guru.</p>
+        <p className="text-[11px] text-slate-500 mt-1">
+          Sesuaikan rentang tanggal atau filter guru Anda.
+        </p>
+      </td>
+    </tr>
+  ) : (
+    filteredList.map((i) => (
+      <tr key={i.id} className="hover:bg-slate-800/30 transition-colors">
+        <td className="py-3.5 px-5 font-medium text-slate-300 sticky left-0 z-10 bg-slate-900/95 backdrop-blur-md shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
+          {i.tanggal_izin}
+        </td>
+        <td className="py-3.5 px-5 font-bold text-slate-100 sticky left-[120px] z-10 bg-slate-900/95 backdrop-blur-md shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
+          {i.guru_izin?.nama_lengkap ?? '-'}
+        </td>
+        <td className="py-3.5 px-5">
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+              i.kategori_izin === 'Sakit'
+                ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                : i.kategori_izin === 'Dinas'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                : 'bg-violet-500/10 text-violet-400 border-violet-500/30'
+            }`}
+          >
+            {i.kategori_izin}
+          </span>
+        </td>
+        <td className="py-3.5 px-5 text-slate-300 text-[11px]">
+          {i.is_full_day ? 'Full Hari' : 'Per Sesi'}
+          {i.jadwal_kbm && !i.is_full_day && (
+            <span className="block text-[10px] text-slate-500">
+              {i.jadwal_kbm.waktu_mulai?.slice(0, 5)}-
+              {i.jadwal_kbm.waktu_selesai?.slice(0, 5)}
+            </span>
+          )}
+        </td>
+        <td className="py-3.5 px-5">
+          {i.jenis_delegasi === 'none' ? (
+            <span className="text-slate-500 text-[11px]">-</span>
+          ) : (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                i.jenis_delegasi === 'asistensi'
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+              }`}
+            >
+              {i.jenis_delegasi}
+            </span>
+          )}
+        </td>
+        <td
+          className="py-3.5 px-5 text-slate-400 max-w-xs truncate text-[11px]"
+          title={
+            i.jenis_delegasi === 'asistensi'
+              ? i.nama_asisten ?? ''
+              : i.titipan_tugas ?? ''
+          }
+        >
+          {i.jenis_delegasi === 'asistensi'
+            ? i.nama_asisten ?? '-'
+            : i.jenis_delegasi === 'tugas'
+            ? i.titipan_tugas ?? '-'
+            : '-'}
+        </td>
+        <td className="py-3.5 px-5 text-slate-300">
+          {i.kelas?.nama_kelas ?? '-'}
+        </td>
+        <td className="py-3.5 px-5 text-slate-300">
+          {i.mata_pelajaran?.nama_mapel ?? '-'}
+        </td>
+        <td className="py-3.5 px-5">
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border backdrop-blur-md ${
+              i.status_penyampaian === 'Sudah Disampaikan'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+            }`}
+          >
+            {i.status_penyampaian === 'Sudah Disampaikan' ? (
+              <CheckCircle size={11} />
+            ) : (
+              <Clock size={11} />
+            )}
+            {i.status_penyampaian || 'Belum Disampaikan'}
+          </span>
+        </td>
+        <td className="py-3.5 px-5 text-slate-400 whitespace-nowrap text-[11px]">
+          {i.waktu_penyampaian
+            ? new Date(i.waktu_penyampaian).toLocaleString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+              })
+            : '-'}
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
           </table>
         </div>
       </div>
