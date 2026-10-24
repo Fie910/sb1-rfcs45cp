@@ -655,7 +655,7 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
                     <button
                       key={cell.dateStr}
                       onClick={() => setSelectedDate(cell.dateStr)}
-                      className={`relative min-h-[72px] md:min-h-[88px] p-1.5 text-left transition cursor-pointer hover:bg-slate-800/50 ${borderRight} ${borderBottom} border-slate-500/90 ${
+                      className={`relative min-h-[72px] md:min-h-[88px] p-1.5 text-left transition cursor-pointer hover:bg-slate-800/50 ${borderRight} ${borderBottom} border-slate-600/90 ${
                         !cell.isCurrentMonth
                           ? 'bg-slate-950/40'
                           : isLibur
