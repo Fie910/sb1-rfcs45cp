@@ -616,23 +616,24 @@ export function PiketPage() {
                 </button>
 
                 {izin.titipan_tugas && (
-                  <button
-                    onClick={() => handleCopyTask(izin.titipan_tugas!, izin.id)}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-300 bg-slate-900 hover:bg-indigo-500/10 border border-slate-800 hover:border-indigo-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
-                    title="Salin Teks Tugas"
-                  >
-                    {copiedId === izin.id ? (
-                      <>
-                        <Check size={13} className="text-emerald-400" />
-                        <span className="text-emerald-400">Tersalin</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} />
-                     </button>
-                    )}
-                  </button>
-                )}
+  <button
+    onClick={() => handleCopyTask(izin.titipan_tugas, izin.id)}
+    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-300 bg-slate-900 hover:bg-indigo-500/10 border border-slate-800 hover:border-indigo-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+    title="Salin Teks Tugas"
+  >
+    {copiedId === izin.id ? (
+      <>
+        <Check size={13} className="text-emerald-400" />
+        <span className="text-emerald-400">Tersalin</span>
+      </>
+    ) : (
+      <>
+        <Copy size={14} />
+        <span>Salin Teks</span>
+      </>
+    )}
+  </button>
+)}
               </div>
             </div>
             <p className="text-slate-200 whitespace-pre-wrap text-sm leading-relaxed">
