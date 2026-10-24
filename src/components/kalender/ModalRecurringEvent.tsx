@@ -271,11 +271,11 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
             ))}
           </div>
 
-          {/* Hari Selector (khusus Mingguan) */}
-          {form.recurrence_pattern === 'Mingguan' && (
+          {/* Hari Selector (khusus Pekanan) */}
+          {form.recurrence_pattern === 'Pekanan' && (
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                Hari dalam seminggu
+                Hari dalam sepekan
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {HARI_LABELS.map((h) => (
