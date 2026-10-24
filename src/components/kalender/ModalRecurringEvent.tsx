@@ -255,7 +255,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
 
           {/* Pattern Selector */}
           <div className="grid grid-cols-3 gap-2">
-            {(['Harian', 'Mingguan', 'Bulanan'] as RecurrencePattern[]).map((p) => (
+            {(['Harian', 'Pekanan', 'Bulanan'] as RecurrencePattern[]).map((p) => (
               <button
                 key={p}
                 type="button"
