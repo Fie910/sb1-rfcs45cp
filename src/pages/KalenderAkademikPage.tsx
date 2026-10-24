@@ -634,6 +634,7 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
                     {hari}
                   </div>
                 ))}
+              </div>
 
               {/* Grid */}
               <div className="grid grid-cols-7">
