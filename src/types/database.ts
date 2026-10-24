@@ -151,12 +151,24 @@ export type JadwalKbmWithRelations = JadwalKbm & {
   mata_pelajarans: Pick<MataPelajaran, 'id' | 'nama_mapel'> | null;
 };
 
+export type StatusKehadiranAgenda =
+  | 'Hadir Mengajar'
+  | 'Terlambat'
+  | 'Alpa'
+  | 'Izin'
+  | 'Sakit'
+  | 'Dinas'
+  | 'Asistensi'
+  | 'Sakit+tugas'
+  | 'Izin+tugas'
+  | 'Dinas+tugas';
+
 export type AgendaGuru = {
   id: number;
   guru_id: string;
   jadwal_kbm_id: number | null;
   tanggal: string;
-  status_kehadiran: 'Hadir' | 'Tidak Hadir' | 'Hadir Mengajar' | 'Terlambat';
+  status_kehadiran: StatusKehadiranAgenda;
   catatan_materi: string | null;
   latitude_guru: number | null;
   longitude_guru: number | null;
@@ -164,7 +176,6 @@ export type AgendaGuru = {
   menit_terlambat: number;
   alpa_jam_pelajaran: number;
   created_at: string;
-    // Snapshot ↓
   mapel_nama_snapshot: string | null;
   kelas_nama_snapshot: string | null;
   waktu_mulai_snapshot: string | null;
