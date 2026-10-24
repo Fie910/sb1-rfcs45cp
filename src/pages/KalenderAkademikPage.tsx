@@ -681,7 +681,7 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
                               : cell.isWeekend
                               ? 'text-rose-300'
                               : cell.isFriday
-                              ? 'bg-emerald-300 text-emerald-300'
+                              ? 'text-emerald-300'
                               : 'text-slate-300'
                           }`}
                         >
