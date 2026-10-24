@@ -628,9 +628,8 @@ export function PiketPage() {
                       </>
                     ) : (
                       <>
-                        <Copy size={13} />
-                        <span>Salin Teks</span>
-                      </>
+                        <Copy size={14} />
+                     </button>
                     )}
                   </button>
                 )}
