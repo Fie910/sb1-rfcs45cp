@@ -301,19 +301,19 @@ export function RekapIzinPage() {
         <div className="max-h-[600px] overflow-auto relative">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
-  <tr className="border-b border-slate-800/80 bg-slate-950/90 text-[11px] font-bold text-slate-400 uppercase backdrop-blur-md">
-    <th className="py-4 px-5 sticky top-0 left-0 z-30 bg-slate-950/95 min-w-[120px] shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Tanggal</th>
-    <th className="py-4 px-5 sticky top-0 left-[120px] z-30 bg-slate-950/95 min-w-[180px] shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Guru</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Kategori</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Cakupan</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Delegasi</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Asisten / Instruksi</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Kelas</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Mapel</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Status</th>
-    <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Waktu Sampai</th>
-  </tr>
-</thead>
+              <tr className="border-b border-slate-800/80 bg-slate-950/90 text-[11px] font-bold text-slate-400 uppercase backdrop-blur-md">
+                <th className="py-4 px-5 sticky top-0 left-0 z-30 bg-slate-950/95 min-w-[120px] shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Tanggal</th>
+                <th className="py-4 px-5 sticky top-0 left-[120px] z-30 bg-slate-950/95 min-w-[180px] shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Guru</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Kategori</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Cakupan</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Delegasi</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Asisten / Instruksi</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Kelas</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Mapel</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Status</th>
+                <th className="py-4 px-5 sticky top-0 z-20 bg-slate-950/95">Waktu Sampai</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs text-slate-300">
               {loading ? (
                 <tr>
