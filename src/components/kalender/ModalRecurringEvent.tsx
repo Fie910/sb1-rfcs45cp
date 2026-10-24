@@ -190,7 +190,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
           <Info size={12} className="shrink-0 mt-0.5" />
           <span>
             Event akan otomatis di-generate ke setiap tanggal sesuai pattern.
-            Cocok untuk kegiatan rutin (rapat mingguan, upacara, dll).
+            Cocok untuk kegiatan rutin (rapat pekanan, upacara, dll).
           </span>
         </div>
 
