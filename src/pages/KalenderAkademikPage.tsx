@@ -628,13 +628,12 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
                   <div
                     key={hari}
                     className={`py-2 text-center text-[10px] font-extrabold uppercase tracking-wider ${
-                      idx >= 6 ? 'text-rose-400' : 'text-slate-500'
+                      idx === 0 ? 'text-rose-400' : 'text-slate-500'
                     }`}
                   >
                     {hari}
                   </div>
                 ))}
-              </div>
 
               {/* Grid */}
               <div className="grid grid-cols-7">
