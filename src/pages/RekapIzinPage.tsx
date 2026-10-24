@@ -44,10 +44,11 @@ const HEADERS = [
   'Tanggal Izin',
   'Guru Izin',
   'Kategori',
-  'Keterangan',
+  'Cakupan',
+  'Jenis Delegasi',
+  'Asisten / Instruksi',
   'Kelas',
   'Mata Pelajaran',
-  'Titipan Tugas',
   'Status Penyampaian',
   'Waktu Penyampaian',
 ];
