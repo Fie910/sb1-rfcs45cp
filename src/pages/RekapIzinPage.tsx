@@ -131,22 +131,30 @@ export function RekapIzinPage() {
 
   // Rows untuk Ekspor Excel/PDF
   const rows = useMemo(() => {
-    return filteredList.map((i) => [
+  return filteredList.map((i) => {
+    const delegasiText =
+      i.jenis_delegasi === 'asistensi'
+        ? `Asistensi: ${i.nama_asisten ?? '-'}`
+        : i.jenis_delegasi === 'tugas'
+        ? `Tugas: ${i.titipan_tugas ?? '-'}`
+        : '-';
+
+    return [
       i.tanggal_izin,
       i.guru_izin?.nama_lengkap ?? '-',
       i.kategori_izin ?? '-',
-      i.keterangan_izin ?? '-',
+      i.is_full_day ? 'Full Hari' : 'Per Sesi',
+      i.jenis_delegasi === 'none' ? '-' : i.jenis_delegasi,
+      delegasiText,
       i.kelas?.nama_kelas ?? '-',
       i.mata_pelajaran?.nama_mapel ?? '-',
-      i.titipan_tugas ?? '-',
       i.status_penyampaian ?? '-',
       i.waktu_penyampaian
-        ? new Date(i.waktu_penyampaian).toLocaleString('id-ID', {
-            timeZone: 'Asia/Jakarta',
-          })
+        ? new Date(i.waktu_penyampaian).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })
         : '-',
-    ]);
-  }, [filteredList]);
+    ];
+  });
+}, [filteredList]);
 
   // Ringkasan Statistik
   const totalIzin = filteredList.length;
