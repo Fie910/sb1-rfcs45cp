@@ -1,4 +1,4 @@
-// src/lib/notification.ts
+// src/lib/notifications/notification.ts
 // Helper terpusat untuk mengirim notifikasi in-app + memicu push notification.
 //
 // Cara pakai:
