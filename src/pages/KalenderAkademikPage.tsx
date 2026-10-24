@@ -72,6 +72,7 @@ const firstDayIdx = firstDay.getDay();
       isCurrentMonth: cellMonth === month && cellYear === year,
       isToday: dateStr === today,
       isWeekend: dayOfWeek === 0,
+      isFriday: dayOfWeek === 5,
     });
   }
 
