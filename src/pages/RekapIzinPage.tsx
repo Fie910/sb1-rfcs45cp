@@ -87,7 +87,8 @@ export function RekapIzinPage() {
         guru_izin:gurus!izin_guru_pikets_guru_izin_id_fkey(id, nama_lengkap),
         guru_piket:gurus!izin_guru_pikets_guru_piket_id_fkey(id, nama_lengkap),
         kelas:kelas_id(id, nama_kelas),
-        mata_pelajaran:mata_pelajarans!izin_guru_pikets_mapel_id_fkey(id, nama_mapel)
+        mata_pelajaran:mata_pelajarans!izin_guru_pikets_mapel_id_fkey(id, nama_mapel),
+        jadwal_kbm:jadwal_kbm_id(id, waktu_mulai, waktu_selesai)
       `)
       .order('tanggal_izin', { ascending: false });
 
