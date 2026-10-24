@@ -617,7 +617,7 @@ export function PiketPage() {
 
                 {izin.titipan_tugas && (
                   <button
-                    onClick={() => handleCopyTask(izin.titipan_tugas, izin.id)}
+                    onClick={() => handleCopyTask(izin.titipan_tugas!, izin.id)}
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-300 bg-slate-900 hover:bg-indigo-500/10 border border-slate-800 hover:border-indigo-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                     title="Salin Teks Tugas"
                   >
