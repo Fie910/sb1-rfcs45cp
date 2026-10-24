@@ -307,11 +307,14 @@ export function PiketPage() {
   // ===========================================================================
   // HANDLER: Copy Text Delegasi Tugas
   // ===========================================================================
-  const handleCopyTask = (text: string, idKey: string | number) => {
-    if (!text || text === 'Tidak ada titipan tugas') {
-      showToast('error', 'Tidak ada teks tugas untuk disalin');
-      return;
-    }
+  const handleCopyTask = async (
+  text: string | null | undefined,
+  id: string | number
+) => {
+  if (!text || !text.trim()) {
+    showToast('error', 'Tidak ada tugas untuk disalin');
+    return;
+  }
     navigator.clipboard.writeText(text);
     setCopiedId(idKey);
     showToast('success', 'Delegasi tugas berhasil disalin ke clipboard');
