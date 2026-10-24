@@ -41,6 +41,7 @@ type CalendarCell = {
   isCurrentMonth: boolean;
   isToday: boolean;
   isWeekend: boolean;
+  isFriday: boolean;
 };
 
 function generateCalendarCells(year: number, month: number): CalendarCell[] {
