@@ -253,6 +253,7 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     orientation = 'l',
     footerNote,
     signature,
+    tagline,
   } = options;
 
   const doc = new jsPDF(orientation, 'mm', 'a4');
