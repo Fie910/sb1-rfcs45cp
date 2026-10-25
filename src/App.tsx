@@ -16,6 +16,7 @@ import { useBadgeCounts } from '@/hooks/useBadgeCounts';
 import VerifikasiSuratPage from '@/pages/VerifikasiSuratPage';
 import VerifikasiNotulensiPage from '@/pages/VerifikasiNotulensiPage';
 import VerifikasiArsipPage from '@/pages/VerifikasiArsipPage';
+import { SplashScreen } from '@/components/SplashScreen';
 
 // =============================================================================
 // Lazy load seluruh halaman internal untuk optimasi bundle
