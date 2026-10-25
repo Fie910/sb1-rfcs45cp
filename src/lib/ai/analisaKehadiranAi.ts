@@ -84,7 +84,7 @@ export async function generateAnalisaKehadiran(
       prompt: userPrompt,
       systemPrompt,
       examples,
-      temperature: 0.5,
+      temperature: 0.65,
       maxTokens: 2048,
       jsonMode: true,
     });
