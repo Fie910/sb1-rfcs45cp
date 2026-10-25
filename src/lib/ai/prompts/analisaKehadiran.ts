@@ -113,7 +113,9 @@ ATURAN:
 4. Jangan sebut tanggal/nomor yang tidak ada di data.
 5. Masing-masing field maksimal 3 kalimat.
 6. Field "motivasi_personal" WAJIB menggemakan makna fitrah (merawat amanah diri) 
-   dan/atau karya (mengukir jejak untuk siswa) — tanpa menyebut tagline secara literal.`;
+   dan/atau karya (mengukir jejak untuk siswa) — tanpa menyebut tagline secara literal.
+7. Jika field "motivasi_personal" menyebut "Merawat Fitrah, Mengukir Karya" secara 
+   literal verbatim, output akan di-reject. Sampaikan maknanya, bukan slogannya.`;
 
 
   return { systemPrompt, examples, userPrompt };
