@@ -20,21 +20,18 @@ export function SplashScreen() {
       {/* Content wrapper — animasi di sini (satu-satunya div wrapper level top) */}
       <div className="relative text-center space-y-6 px-6 max-w-lg animate-fade-in-up">
         {/* Logo sekolah */}
-        <div className="w-24 h-24 mx-auto rounded-3xl bg-slate-900/60 border border-slate-800/60 backdrop-blur-xl flex items-center justify-center shadow-2xl shadow-indigo-500/10 overflow-hidden">
-          {logo_url ? (
-            <img
-              src={logo_url}
-              alt={nama_sekolah || 'Logo Sekolah'}
-              className="w-full h-full object-contain p-2"
-              onError={(e) => {
-                (e.target as HTMLImageElement).outerHTML =
-                  '<span class="text-5xl">🏫</span>';
-              }}
-            />
-          ) : (
-            <span className="text-5xl">🏫</span>
-          )}
-        </div>
+        {logo_url && !logoError ? (
+  <img
+    src={logo_url}
+    alt={nama_sekolah || 'Logo Sekolah'}
+    className="w-24 h-24 object-contain mx-auto drop-shadow-[0_6px_16px_rgba(0,0,0,0.4)] animate-fade-in"
+    onError={() => setLogoError(true)}
+  />
+) : (
+  <div className="w-24 h-24 mx-auto rounded-3xl bg-slate-900/60 border border-slate-800/60 backdrop-blur-xl flex items-center justify-center shadow-2xl shadow-indigo-500/10">
+    <span className="text-5xl">🏫</span>
+  </div>
+)}
 
         {/* Text block */}
         <div>
