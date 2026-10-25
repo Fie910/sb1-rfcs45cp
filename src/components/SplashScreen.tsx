@@ -7,6 +7,7 @@ import { useSchoolBranding } from '@/hooks/useSchoolBranding';
 
 export function SplashScreen() {
   const { nama_sekolah, logo_url } = useSchoolBranding();
+  const [logoError, setLogoError] = useState(false);
 
   return (
     <div className="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center overflow-hidden">
