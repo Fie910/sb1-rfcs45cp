@@ -264,48 +264,52 @@ export function PiketPage() {
   // HANDLER: Update status kehadiran guru per JP (OFFLINE-AWARE)
   // ===========================================================================
   const handleStatusKbmChange = async (
-    item: JadwalKBMJP,
-    newStatus: StatusKehadiranGuru
-  ) => {
-    if (isHariLibur) {
-      showToast('error', 'Tidak dapat memperbarui presensi pada hari libur');
-      return;
-    }
+  item: JadwalKBMJP,
+  newStatus: StatusKehadiranGuru
+) => {
+  if (isHariLibur) {
+    showToast('error', 'Tidak dapat memperbarui presensi pada hari libur');
+    return;
+  }
 
-    setSavingKbmId(item.id);
-    // Optimistic UI
-    setPresensiMap((prev) => ({ ...prev, [item.id]: newStatus }));
+  setSavingKbmId(item.id);
+  // Optimistic UI
+  setPresensiMap((prev) => ({ ...prev, [item.id]: newStatus }));
 
-    try {
-      const res = await offlineUpsert(
-        'presensi_guru_piket',
-        {
-          tanggal: selectedDate,
-          jadwal_kbmjp_id: item.id,
-          guru_id: item.guru_id,
-          status: newStatus,
-          piket_user_id: guru?.id || null,
-        },
-        'tanggal,jadwal_kbmjp_id',
-        { userId: guru?.id ?? '', label: 'Presensi guru per JP' }
+  try {
+    const res = await offlineUpsert(
+      'presensi_guru_piket',
+      {
+        tanggal: selectedDate,
+        jadwal_kbmjp_id: item.id,
+        guru_id: item.guru_id,
+        status: newStatus,
+        piket_user_id: guru?.id || null,
+      },
+      'tanggal,jadwal_kbmjp_id',
+      { userId: guru?.id ?? '', label: 'Presensi guru per JP' }
+    );
+
+    const guruNama = item.gurus?.nama_lengkap || 'Guru';
+    if (res.queued) {
+      showToast(
+        'success',
+        `Tersimpan lokal (${guruNama}). Akan dikirim saat online.`
       );
-
-      const guruNama = item.gurus?.nama_lengkap || 'Guru';
-      if (res.queued) {
-        showToast('success', `Tersimpan lokal (${guruNama}). Akan dikirim saat online.`);
-      } else {
-        showToast(
-  'success',
-  successMsg(`Presensi ${guruNama} tersimpan`, 'rahmat')
-);
-    } catch (err: any) {
-      showToast('error', 'Gagal menyimpan presensi: ' + (err?.message ?? err));
-      // Rollback UI ke data server
-      fetchKbmjpData();
-    } finally {
-      setSavingKbmId(null);
+    } else {
+      showToast(
+        'success',
+        successMsg(`Presensi ${guruNama} tersimpan`, 'rahmat')
+      );
     }
-  };
+  } catch (err: any) {
+    showToast('error', 'Gagal menyimpan presensi: ' + (err?.message ?? err));
+    // Rollback UI ke data server
+    fetchKbmjpData();
+  } finally {
+    setSavingKbmId(null);
+  }
+};
 
   // ===========================================================================
   // HANDLER: Copy Text Delegasi Tugas
