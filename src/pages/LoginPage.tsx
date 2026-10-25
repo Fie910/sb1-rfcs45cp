@@ -72,22 +72,39 @@ export function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Header Header & Branding */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-2xl shadow-lg shadow-indigo-500/10 mb-4">
-            <LayoutDashboard size={32} />
-          </div>
-          <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
-            <span className="block">SMK KH. A. WAHAB MUHSIN</span>
-            <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">
-              Sistem Informasi Sekolah
-            </span>
-            <Tagline variant="inline" className="justify-center" />
-          </h1>
-          
+  {/* Logo sekolah */}
+  <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-900/80 border border-slate-800 rounded-3xl shadow-2xl shadow-indigo-500/10 overflow-hidden mb-4">
+    {logo_url ? (
+      <img
+        src={logo_url}
+        alt={nama_sekolah || 'Logo Sekolah'}
+        className="w-full h-full object-contain p-2"
+        onError={(e) => {
+          (e.target as HTMLImageElement).outerHTML =
+            '<div class="text-indigo-400"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></div>';
+        }}
+      />
+    ) : (
+      <LayoutDashboard size={32} className="text-indigo-400" />
+    )}
+  </div>
 
-          <p className="text-sm text-slate-400 mt-1">
-            {mode === 'signin' ? 'Masuk sebagai guru' : 'Daftar akun guru baru'}
-          </p>
-        </div>
+  <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
+    <span className="block">{nama_sekolah || 'SMK KH. A. WAHAB MUHSIN'}</span>
+    <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">
+      Sistem Informasi Sekolah
+    </span>
+  </h1>
+
+  {/* Tagline — di baris terpisah dengan margin */}
+  <div className="mt-3 flex justify-center">
+    <Tagline variant="inline" separator="rub" />
+  </div>
+
+  <p className="text-sm text-slate-400 mt-2">
+    {mode === 'signin' ? 'Masuk sebagai guru' : 'Daftar akun guru baru'}
+  </p>
+</div>
 
         {/* Container Form Card */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 md:p-8 shadow-2xl backdrop-blur-xl">
