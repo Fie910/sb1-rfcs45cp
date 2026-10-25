@@ -19,6 +19,7 @@ import {
   exportColoredPdf, getPersenWarna, formatTanggalPdf,
   PDF_COLORS, fetchKepalaSekolahData, type PdfColumn,
 } from '@/lib/pdf/pdfColoredExport';
+import { SEKOLAH_TAGLINE_WA } from '@/constants/branding';
 
 // =============================================================================
 // TYPES
