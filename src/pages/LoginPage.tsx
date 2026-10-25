@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { Link } from 'react-router-dom';
+import { Tagline } from '@/components/Tagline';
 
 type Mode = 'signin' | 'signup';
 
