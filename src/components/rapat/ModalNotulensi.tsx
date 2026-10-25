@@ -21,6 +21,7 @@ import type {
   ActionItemRapat, Guru, StatusNotulensi,
 } from '@/types/database';
 import { SpeechToText } from '@/components/SpeechToText';
+import { successMsg } from '@/constants/branding';
 
 // =============================================================================
 // TYPES
