@@ -77,7 +77,7 @@ export function LoginPage() {
             <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">
               Sistem Informasi Sekolah
             </span>
-            <Tagline variant="hero" className="justify-center" />
+            <Tagline variant="footer" className="justify-center" />
           </h1>
           
 
