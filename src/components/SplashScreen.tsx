@@ -1,5 +1,6 @@
 // src/components/SplashScreen.tsx
 import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { Tagline } from './Tagline';
 import { TAGLINE_DOA } from '@/constants/branding';
 import { useSchoolBranding } from '@/hooks/useSchoolBranding';
