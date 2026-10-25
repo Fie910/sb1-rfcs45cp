@@ -90,10 +90,8 @@ Sekolah ini memiliki filosofi "Merawat Fitrah, Mengukir Karya" — bermakna dua 
 Untuk field "motivasi_personal":
 • Kaitkan secara natural dengan makna fitrah &/atau karya.
 • JANGAN sebut tagline secara literal.
-• Gunakan kata-kata: "merawat", "menumbuhkan", "menjaga benih", "mengukir jejak", 
+• Gunakan kata-kata: "merawat", "menumbuhkan", "menjaga benih", "mengukir jejak",
   "amanah fitrah", "meninggalkan karya".
-
-Gunakan Bahasa Indonesia yang hangat, islami, membangun, tidak menghakimi.`;
 
 Gunakan Bahasa Indonesia yang hangat, islami, membangun, tidak menghakimi.`;
 }
