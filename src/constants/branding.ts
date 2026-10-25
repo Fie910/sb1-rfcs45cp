@@ -13,4 +13,4 @@ export const TAGLINE_DOA =
   'Setiap langkah ke kelas dengan niat baik adalah amal yang mengalir pahalanya.';
 
 /** Tagline dalam format single-line untuk WA & string contexts */
-export const SEKOLAH_TAGLINE_WA = '_"Merawat Fitrah, Mengukir Karya"_';
+export const SEKOLAH_TAGLINE_WA = '_"Merawat Fitrah * Mengukir Karya"_';
