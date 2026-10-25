@@ -47,6 +47,7 @@ import type {
   HariMinggu,
   PengaturanSekolah,
 } from '@/types/database';
+import { successMsg } from '@/constants/branding';
 
 type PresensiWithSiswa = {
   id: number;
