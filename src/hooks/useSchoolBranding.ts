@@ -17,7 +17,6 @@ const DEFAULT: SchoolBranding = {
 
 export function useSchoolBranding() {
   const [branding, setBranding] = useState<SchoolBranding>(() => {
-    // Try localStorage dulu biar logo langsung muncul (no flash)
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem(CACHE_KEY);
@@ -40,22 +39,36 @@ export function useSchoolBranding() {
 
     (async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('pengaturan_sekolahs')
           .select('nama_sekolah, logo_url')
+          .order('id', { ascending: true })    // ✅ konsisten ambil record pertama
           .limit(1)
           .maybeSingle();
 
+        if (error) {
+          console.warn('[useSchoolBranding] Supabase error:', error.message);
+        }
+
         if (data) {
+          // ✅ Handle empty string sebagai null
+          const rawLogo = (data.logo_url ?? '').trim();
+          const logo = rawLogo.length > 0 ? rawLogo : null;
+
           const b: SchoolBranding = {
-            nama_sekolah: data.nama_sekolah ?? '',
-            logo_url: data.logo_url ?? null,
+            nama_sekolah: (data.nama_sekolah ?? '').trim(),
+            logo_url: logo,
           };
+
+          console.log('[useSchoolBranding] Fetched:', b);
+
           memoryCache = b;
           setBranding(b);
           try {
             localStorage.setItem(CACHE_KEY, JSON.stringify(b));
           } catch { /* ignore quota */ }
+        } else {
+          console.warn('[useSchoolBranding] Tidak ada row pengaturan_sekolahs');
         }
       } catch (err) {
         console.warn('[useSchoolBranding] Gagal fetch:', err);
