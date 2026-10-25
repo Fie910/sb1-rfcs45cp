@@ -75,20 +75,20 @@ export function LoginPage() {
         <div className="text-center">
   {/* Logo sekolah */}
   <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-900/80 border border-slate-800 rounded-3xl shadow-2xl shadow-indigo-500/10 overflow-hidden mb-4">
-    {logo_url ? (
-      <img
-        src={logo_url}
-        alt={nama_sekolah || 'Logo Sekolah'}
-        className="w-full h-full object-contain p-2"
-        onError={(e) => {
-          (e.target as HTMLImageElement).outerHTML =
-            '<div class="text-indigo-400"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></div>';
-        }}
-      />
-    ) : (
-      <LayoutDashboard size={32} className="text-indigo-400" />
-    )}
-  </div>
+  {logo_url ? (
+    <img
+      src={logo_url}
+      alt={nama_sekolah || 'Logo Sekolah'}
+      className="w-full h-full object-contain p-2"
+      onError={(e) => {
+        (e.target as HTMLImageElement).outerHTML =
+          '<div class="text-indigo-400">...svg...</div>';
+      }}
+    />
+  ) : (
+    <LayoutDashboard size={32} className="text-indigo-400" />
+  )}
+</div>
 
   <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
     <span className="block">{nama_sekolah || 'SMK KH. A. WAHAB MUHSIN'}</span>
