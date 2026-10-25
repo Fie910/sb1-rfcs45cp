@@ -182,6 +182,8 @@ ${analisa.area_perbaikan}
 
 _${SALAM_PENUTUP},_
 
+_🕌 Merawat Fitrah, Mengukir Karya_
+
 *${namaSekolah}*`;
 }
 
