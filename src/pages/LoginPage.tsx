@@ -76,8 +76,8 @@ export function LoginPage() {
             <span className="block">SMK KH. A. WAHAB MUHSIN</span>
             <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">
               Sistem Informasi Sekolah
-              <p <Tagline variant="inline" className="justify-center" /> </p>
             </span>
+            <Tagline variant="inline" className="justify-center" />
           </h1>
           
 
