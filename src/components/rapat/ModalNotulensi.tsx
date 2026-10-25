@@ -333,10 +333,7 @@ export function ModalNotulensi({
         }
       }
 
-      showToast(
-        'success',
-        finalize ? 'Notulensi difinalisasi & peserta dinotifikasi' : 'Notulensi disimpan sebagai draft'
-      );
+      showToast('success', successMsg('Notulensi final', 'jejak'));
       onSaved();
       onClose();
     } catch (err: any) {
