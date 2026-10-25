@@ -42,7 +42,7 @@ export function SplashScreen() {
           <h1 className="text-lg font-extrabold text-slate-100 mb-5">
             Sistem Informasi Sekolah
           </h1>
-
+<div className="relative text-center space-y-6 px-6 max-w-lg animate-fade-in-up">
           <Tagline variant="hero" separator="rub" className="justify-center" />
 
           <p className="text-[11px] text-slate-500 italic mt-6 max-w-xs mx-auto leading-relaxed">
