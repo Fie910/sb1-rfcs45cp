@@ -2,32 +2,48 @@
 import { Loader2 } from 'lucide-react';
 import { Tagline } from './Tagline';
 import { TAGLINE_DOA } from '@/constants/branding';
+import { useSchoolBranding } from '@/hooks/useSchoolBranding';
 
 export function SplashScreen() {
+  const { nama_sekolah, logo_url } = useSchoolBranding();
+
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center overflow-hidden">
       {/* Ambient glow */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative text-center space-y-6 px-6 max-w-lg">
-        {/* Logo placeholder — ganti dengan logo sekolah */}
-        <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-blue-600 flex items-center justify-center shadow-2xl shadow-indigo-500/30">
-          <span className="text-4xl">🏫</span>
+        {/* Logo sekolah */}
+        <div className="w-24 h-24 mx-auto rounded-3xl bg-slate-900/60 border border-slate-800/60 backdrop-blur-xl flex items-center justify-center shadow-2xl shadow-indigo-500/10 overflow-hidden">
+          {logo_url ? (
+            <img
+              src={logo_url}
+              alt={nama_sekolah || 'Logo Sekolah'}
+              className="w-full h-full object-contain p-2"
+              onError={(e) => {
+                // Fallback kalau logo gagal load
+                (e.target as HTMLImageElement).outerHTML = '<span class="text-5xl">🏫</span>';
+              }}
+            />
+          ) : (
+            <span className="text-5xl">🏫</span>
+          )}
         </div>
 
         <div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-semibold mb-2">
-            Selamat Datang di
-          </p>
-          <h1 className="text-lg font-extrabold text-slate-100 mb-4">
+          {nama_sekolah && (
+            <p className="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-semibold mb-2">
+              {nama_sekolah}
+            </p>
+          )}
+          <h1 className="text-lg font-extrabold text-slate-100 mb-5">
             Sistem Informasi Sekolah
           </h1>
 
-          {/* Tagline dengan gaya hero */}
-          <Tagline variant="hero" className="block" />
+          <Tagline variant="hero" separator="rub" className="justify-center" />
 
           <p className="text-[11px] text-slate-500 italic mt-6 max-w-xs mx-auto leading-relaxed">
             {TAGLINE_DOA}
