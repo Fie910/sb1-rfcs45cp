@@ -49,6 +49,7 @@ export type PdfExportOptions = {
   orientation?: 'p' | 'l';
   footerNote?: string;
   signature?: PdfSignature;
+  tagline?: string;
 };
 
 // =============================================================================
