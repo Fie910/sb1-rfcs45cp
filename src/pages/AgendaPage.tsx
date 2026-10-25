@@ -436,7 +436,7 @@ export function AgendaPage() {
           setAgendaList((prev) => prev.map((a) => a.id === existing.id ? { ...a, ...patch } : a));
           showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
         } else {
-          showToast('success', 'Berhasil memperbarui presensi');
+          showToast('success', successMsg('Presensi agenda tersimpan', 'rahmat'));
           fetchData();
         }
       } else {
