@@ -1,7 +1,7 @@
 // src/constants/branding.ts
 // Konstanta branding sekolah — dipakai di berbagai komponen UI & pesan
 
-export const SEKOLAH_TAGLINE = 'Merawat Fitrah, Mengukir Karya';
+export const SEKOLAH_TAGLINE = 'Merawat Fitrah * Mengukir Karya';
 export const SEKOLAH_TAGLINE_FITRAH = 'Merawat Fitrah';
 export const SEKOLAH_TAGLINE_KARYA = 'Mengukir Karya';
 
