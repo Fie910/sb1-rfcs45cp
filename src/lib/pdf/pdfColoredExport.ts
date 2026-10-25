@@ -442,6 +442,12 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - marginX, pageHeight - 6, {
       align: 'right',
     });
+
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Merawat Fitrah, Mengukir Karya', pageWidth / 2, pageHeight - 5, {
+      align: 'center',
+    });
   }
 
   // ══════════════════════════════════════════════
