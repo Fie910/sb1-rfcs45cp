@@ -293,8 +293,10 @@ export function PiketPage() {
       if (res.queued) {
         showToast('success', `Tersimpan lokal (${guruNama}). Akan dikirim saat online.`);
       } else {
-        showToast('success', `Status presensi ${guruNama} berhasil diperbarui`);
-      }
+        showToast(
+  'success',
+  successMsg(`Presensi ${guruNama} tersimpan`, 'rahmat')
+);
     } catch (err: any) {
       showToast('error', 'Gagal menyimpan presensi: ' + (err?.message ?? err));
       // Rollback UI ke data server
