@@ -11,6 +11,7 @@ import { NotulensiSayaTab } from '@/components/rapat/NotulensiSayaTab';
 import { ManajemenRapatTab } from '@/components/rapat/ManajemenRapatTab';
 import { isRapatManager, useAutoCloseRapat } from '@/components/rapat/shared';
 import { showToast } from '@/components/Toast';
+import { successMsg } from '@/constants/branding';
 
 type TabKey = 'jadwal' | 'notulensi' | 'manajemen';
 
