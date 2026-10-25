@@ -39,24 +39,22 @@ export function useSchoolBranding() {
 
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from('pengaturan_sekolahs')
-          .select('nama_sekolah, logo_url')
-          .order('id', { ascending: true })    // ✅ konsisten ambil record pertama
-          .limit(1)
-          .maybeSingle();
+        // ✅ Pakai RPC yang aman untuk anon
+        const { data, error } = await supabase.rpc('get_school_branding');
 
         if (error) {
-          console.warn('[useSchoolBranding] Supabase error:', error.message);
+          console.warn('[useSchoolBranding] RPC error:', error.message);
         }
 
-        if (data) {
-          // ✅ Handle empty string sebagai null
-          const rawLogo = (data.logo_url ?? '').trim();
+        // RPC return array, ambil row pertama
+        const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+
+        if (row) {
+          const rawLogo = (row.logo_url ?? '').trim();
           const logo = rawLogo.length > 0 ? rawLogo : null;
 
           const b: SchoolBranding = {
-            nama_sekolah: (data.nama_sekolah ?? '').trim(),
+            nama_sekolah: (row.nama_sekolah ?? '').trim(),
             logo_url: logo,
           };
 
@@ -68,7 +66,7 @@ export function useSchoolBranding() {
             localStorage.setItem(CACHE_KEY, JSON.stringify(b));
           } catch { /* ignore quota */ }
         } else {
-          console.warn('[useSchoolBranding] Tidak ada row pengaturan_sekolahs');
+          console.warn('[useSchoolBranding] RPC return 0 row');
         }
       } catch (err) {
         console.warn('[useSchoolBranding] Gagal fetch:', err);
