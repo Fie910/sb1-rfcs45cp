@@ -1,3 +1,4 @@
+//src/pages/LoginPage.tsx
 import { useState } from 'react';
 import { LayoutDashboard, Mail, Lock, User, Loader2, CreditCard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
