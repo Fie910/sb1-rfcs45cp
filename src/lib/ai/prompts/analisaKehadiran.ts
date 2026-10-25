@@ -111,7 +111,10 @@ ATURAN:
 2. Bahasa formal tapi hangat, nuansa islami.
 3. Kalau data bagus, pujilah spesifik. Kalau ada masalah, sampaikan lembut & solutif.
 4. Jangan sebut tanggal/nomor yang tidak ada di data.
-5. Masing-masing field maksimal 3 kalimat.`;
+5. Masing-masing field maksimal 3 kalimat.
+6. Field "motivasi_personal" WAJIB menggemakan makna fitrah (merawat amanah diri) 
+   dan/atau karya (mengukir jejak untuk siswa) — tanpa menyebut tagline secara literal.`;
+
 
   return { systemPrompt, examples, userPrompt };
 }
