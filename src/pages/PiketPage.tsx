@@ -510,11 +510,11 @@ export function PiketPage() {
         showToast('success', 'Tersimpan lokal. Akan dikirim saat online.');
       } else {
         showToast(
-          'success',
-          !isSudah
-            ? 'Tugas ditandai selesai & diserahkan'
-            : 'Status dikembalikan ke menunggu'
-        );
+  'success',
+  !isSudah
+    ? successMsg('Tugas tersampaikan', 'jejak')
+    : 'Status dikembalikan ke menunggu'   // ← tanpa tagline, karena bukan "selesai"
+);
         fetchData();
       }
     } catch (err: any) {
