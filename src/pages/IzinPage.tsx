@@ -32,6 +32,7 @@ import type {
   Kelas, IzinGuruPiketWithRelations, MataPelajaran,
   KategoriIzin, JenisDelegasi, JadwalKbm, JadwalKbmWithRelations,
 } from '@/types/database';
+import { successMsg } from '@/constants/branding';
 
 const ROLE_KEPALA_KEPEGAWAIAN = ['admin', 'kepala', 'takola'];
 
