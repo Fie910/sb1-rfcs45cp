@@ -68,6 +68,16 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Header Header & Branding */}
+        <div className="text-center mb-6">
+  <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-2xl mb-4">
+    <span className="text-3xl">🏫</span>
+  </div>
+  <h1 className="text-xl font-extrabold text-slate-100 mb-2">
+    Sistem Informasi Sekolah
+  </h1>
+  <Tagline variant="inline" className="justify-center" />
+</div>
+        
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-2xl shadow-lg shadow-indigo-500/10 mb-4">
             <LayoutDashboard size={32} />
