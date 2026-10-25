@@ -73,10 +73,10 @@ ${recordsText}
 
 Balas dalam JSON dengan 4 field:
 {
-  "ringkasan_pola": "1-2 kalimat pola izin yang terlihat (mis. 'sering sakit, tapi 80% mendelegasikan')",
-  "kekuatan": "1-2 kalimat hal positif yang patut diapresiasi (mis. 'konsisten menyiapkan tugas meski sakit')",
-  "area_perbaikan": "1-2 kalimat saran konkret (mis. 'kurangi izin tanpa tugas dengan persiapan lebih awal')",
-  "motivasi_personal": "1-2 kalimat motivasi islami yang hangat dan menyentuh, relevan dengan konteks"
+  "ringkasan_pola": "1-2 kalimat pola izin yang terlihat",
+  "kekuatan": "1-2 kalimat hal positif yang patut diapresiasi",
+  "area_perbaikan": "1-2 kalimat saran konkret",
+  "motivasi_personal": "1-2 kalimat motivasi islami yang hangat dan menyentuh"
 }
 
 KONTEKS IDENTITAS SEKOLAH:
@@ -87,10 +87,8 @@ Sekolah ini memiliki filosofi "Merawat Fitrah, Mengukir Karya" — bermakna dua 
 Untuk field "motivasi_personal":
 • Kaitkan secara natural dengan makna fitrah &/atau karya.
 • JANGAN sebut tagline secara literal.
-• Gunakan kata-kata: "merawat", "menumbuhkan", "menjaga benih", "mengukir jejak", 
+• Gunakan kata-kata: "merawat", "menumbuhkan", "menjaga benih", "mengukir jejak",
   "amanah fitrah", "meninggalkan karya".
-
-Gunakan Bahasa Indonesia yang hangat, islami, membangun, tidak menghakimi.`;
 
 Gunakan Bahasa Indonesia yang hangat, islami, membangun, tidak menghakimi.`;
 }
