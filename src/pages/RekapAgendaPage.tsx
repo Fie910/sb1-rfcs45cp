@@ -19,6 +19,7 @@ import {
   PDF_COLORS, fetchKepalaSekolahData, type PdfColumn,
 } from '@/lib/pdf/pdfColoredExport';
 import type { AgendaGuruWithRelations, Guru } from '@/types/database';
+import { SEKOLAH_TAGLINE_WA } from '@/constants/branding';
 
 // =============================================================================
 // TYPES
