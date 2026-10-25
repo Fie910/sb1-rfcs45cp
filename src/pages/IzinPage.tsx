@@ -314,9 +314,12 @@ export function IzinPage() {
       if (error) throw error;
 
       showToast(
-        'success',
-        `Izin ${editingId ? 'diperbarui' : 'diajukan'}`
-      );
+  'success',
+  successMsg(
+    `Izin ${editingId ? 'diperbarui' : 'diajukan'}`,
+    'ibadah'
+  )
+);
 
       await logActivity({
         aksi: editingId ? 'UPDATE' : 'CREATE',
