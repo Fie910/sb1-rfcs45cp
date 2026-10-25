@@ -99,7 +99,6 @@ export function LoginPage() {
   {/* Tagline — di baris terpisah dengan margin */}
   <div className="mt-3 flex justify-center">
     <Tagline variant="inline" separator="rub" />
-
   </div>
 
   <p className="text-sm text-slate-400 mt-2">
