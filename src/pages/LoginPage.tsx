@@ -85,9 +85,10 @@ export function LoginPage() {
           <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
             <span className="block">SMK KH. A. WAHAB MUHSIN</span>
             <span className="block text-base md:text-xl text-slate-300 font-bold mt-1">
-              Sistem Informasi Proses Memuliakan Murid
+              Sistem Informasi Sekolah
             </span>
           </h1>
+          <Tagline variant="inline" className="justify-center" />
 
           <p className="text-sm text-slate-400 mt-1">
             {mode === 'signin' ? 'Masuk sebagai guru' : 'Daftar akun guru baru'}
