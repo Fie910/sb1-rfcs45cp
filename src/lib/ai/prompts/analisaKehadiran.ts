@@ -65,6 +65,18 @@ Detail: 1 sesi alpa hari Senin jam pertama, 2 sesi sakit, 2 sesi izin`,
         motivasi_personal: 'Rasulullah SAW mengajarkan bahwa setiap amanah akan dimintai pertanggungjawaban. Menjaga kehadiran adalah bagian dari amanah tersebut. Setiap sesi mengajar yang tidak ditinggalkan adalah sedekah ilmu yang pahalanya terus mengalir. Semoga Allah memudahkan setiap langkah Pak Rudi di pekan-pekan berikutnya.',
       }),
     },
+  {
+      input: `Nama: Bu Fatimah
+Periode: Februari 2025
+Total sesi: 24 | Hadir: 22 | Izin (+Tugas): 1 | Sakit (+Tugas): 1 | Persentase: 95% | Rata sekolah: 88%
+Detail: 22 sesi hadir tepat waktu, 1 sesi izin dengan titipan tugas lengkap, 1 sesi sakit dengan tugas terstruktur`,
+      output: JSON.stringify({
+        ringkasan_karakter: 'Bu Fatimah menunjukkan kehadiran sangat baik 95% (22 dari 24 sesi). Dua sesi berhalangan justru ditandai dengan titipan tugas lengkap, menunjukkan kesadaran tinggi terhadap amanah.',
+        kekuatan: 'Konsistensi hadir tepat waktu luar biasa, dan saat berhalangan pun tetap menjaga keberlangsungan belajar siswa melalui titipan tugas yang terstruktur.',
+        area_perbaikan: 'Tidak ada catatan signifikan. Pertahankan ritme ini dan bagikan praktik baik titipan tugas ke rekan sejawat — model ini layak ditiru.',
+        motivasi_personal: 'Setiap kehadiran Bu Fatimah bukan sekadar kehadiran fisik, tapi sebuah amanah fitrah yang dirawat dengan sabar — dan setiap titipan tugas adalah ukiran karya yang tetap hidup meski Bu Fatimah tidak di kelas. Inilah wujud nyata guru yang merawat apa yang Allah titipkan dan meninggalkan jejak yang bertahan lama. Semoga Allah memberkahi setiap langkah kecil yang konsisten ini.',
+      }),
+    },
   ];
 
   const userPrompt = `═══════════════════════════════════════
