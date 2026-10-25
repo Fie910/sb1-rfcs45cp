@@ -6,6 +6,7 @@ import { showToast } from '@/components/Toast';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { Link } from 'react-router-dom';
 import { Tagline } from '@/components/Tagline';
+import { useSchoolBranding } from '@/hooks/useSchoolBranding';
 
 type Mode = 'signin' | 'signup';
 
