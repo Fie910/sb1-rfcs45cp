@@ -141,14 +141,7 @@ function AppContent() {
   const badgeCounts = useBadgeCounts(guru?.id ?? null, guru?.nama_lengkap ?? null);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="relative flex items-center justify-center">
-          <div className="absolute w-16 h-16 rounded-full bg-indigo-500/20 animate-ping" />
-          <Loader2 className="animate-spin text-indigo-400 relative z-10" size={40} />
-        </div>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   // ROUTE PUBLIK
