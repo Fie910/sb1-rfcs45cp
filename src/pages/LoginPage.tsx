@@ -74,21 +74,18 @@ export function LoginPage() {
         {/* Header Header & Branding */}
         <div className="text-center">
   {/* Logo sekolah */}
-  <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-900/80 border border-slate-800 rounded-3xl shadow-2xl shadow-indigo-500/10 overflow-hidden mb-4">
-  {logo_url ? (
-    <img
-      src={logo_url}
-      alt={nama_sekolah || 'Logo Sekolah'}
-      className="w-full h-full object-contain p-2"
-      onError={(e) => {
-        (e.target as HTMLImageElement).outerHTML =
-          '<div class="text-indigo-400">...svg...</div>';
-      }}
-    />
-  ) : (
+  {logo_url && !logoError ? (
+  <img
+    src={logo_url}
+    alt={nama_sekolah || 'Logo Sekolah'}
+    className="w-20 h-20 object-contain mx-auto mb-4 drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
+    onError={() => setLogoError(true)}
+  />
+) : (
+  <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-900/80 border border-slate-800 rounded-3xl shadow-2xl shadow-indigo-500/10 mb-4">
     <LayoutDashboard size={32} className="text-indigo-400" />
-  )}
-</div>
+  </div>
+)}
 
   <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
     <span className="block">{nama_sekolah || 'SMK KH. A. WAHAB MUHSIN'}</span>
