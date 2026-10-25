@@ -19,6 +19,7 @@ export function LoginPage() {
   const [nip, setNip] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [logoError, setLogoError] = useState(false);
   const { nama_sekolah, logo_url } = useSchoolBranding();
 
   const handleSubmit = async (e: React.FormEvent) => {
