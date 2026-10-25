@@ -79,11 +79,18 @@ Balas dalam JSON dengan 4 field:
   "motivasi_personal": "1-2 kalimat motivasi islami yang hangat dan menyentuh, relevan dengan konteks"
 }
 
-Tambahan konteks identitas sekolah: Kaitkan "motivasi_personal" dengan filosofi 
-"Merawat Fitrah, Mengukir Karya" — sentuh aspek (a) menjaga amanah fitrah diri 
-sebagai guru, dan (b) meninggalkan karya/jejak baik yang mengukir kehidupan siswa. 
-Jangan menyebut tagline secara literal; internalisasikan maknanya ke kalimat yang 
-natural dan menyentuh hati.
+KONTEKS IDENTITAS SEKOLAH:
+Sekolah ini memiliki filosofi "Merawat Fitrah, Mengukir Karya" — bermakna dua sayap:
+(1) Merawat Fitrah: menjaga amanah diri sebagai guru, menumbuhkan benih kebaikan siswa.
+(2) Mengukir Karya: meninggalkan jejak baik yang bertahan lama pada kehidupan siswa.
+
+Untuk field "motivasi_personal":
+• Kaitkan secara natural dengan makna fitrah &/atau karya.
+• JANGAN sebut tagline secara literal.
+• Gunakan kata-kata: "merawat", "menumbuhkan", "menjaga benih", "mengukir jejak", 
+  "amanah fitrah", "meninggalkan karya".
+
+Gunakan Bahasa Indonesia yang hangat, islami, membangun, tidak menghakimi.`;
 
 Gunakan Bahasa Indonesia yang hangat, islami, membangun, tidak menghakimi.`;
 }
