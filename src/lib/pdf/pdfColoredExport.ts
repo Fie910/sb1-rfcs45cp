@@ -420,8 +420,8 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     drawSignatureBlock(doc, pageWidth, currentPageHeight, signature);
   }
 
-  // ══════════════════════════════════════════════
-  // 6. FOOTER
+    // ══════════════════════════════════════════════
+  // 6. FOOTER (Redesign: metadata + divider + tagline)
   // ══════════════════════════════════════════════
   const pageCount = doc.getNumberOfPages();
   const cetakTanggal = new Date().toLocaleDateString('id-ID', {
@@ -431,26 +431,60 @@ export function exportColoredPdf(options: PdfExportOptions): void {
     year: 'numeric',
   });
 
+  // Tagline default: dari constant. Set '' (empty string) via options untuk hide.
+  const finalTagline = tagline === '' ? null : (tagline ?? SEKOLAH_TAGLINE);
+
+  // 3-tier footer layout (bottom → top):
+  //   Y = pageHeight - 4.5  → tagline (italic serif, navy)
+  //   Y = pageHeight - 7    → divider line
+  //   Y = pageHeight - 10   → metadata (footerNote + tanggal | halaman)
+  const footerMetaY = pageHeight - 10;
+  const dividerY = pageHeight - 7;
+  const taglineY = pageHeight - 4.5;
+
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+
+    // --- Row 1: Metadata (kiri) & Nomor Halaman (kanan) ---
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
+    doc.setTextColor(
+      PDF_THEME.slate600[0],
+      PDF_THEME.slate600[1],
+      PDF_THEME.slate600[2]
+    );
 
     const leftText = footerNote
       ? `${footerNote} · Dicetak: ${cetakTanggal}`
       : `Dicetak: ${cetakTanggal}`;
-    doc.text(leftText, marginX, pageHeight - 6);
+    doc.text(leftText, marginX, footerMetaY);
 
-    doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - marginX, pageHeight - 6, {
+    doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - marginX, footerMetaY, {
       align: 'right',
     });
 
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
-    doc.text('Merawat Fitrah, Mengukir Karya', pageWidth / 2, pageHeight - 5, {
-      align: 'center',
-    });
+    // --- Divider line tipis ---
+    doc.setDrawColor(
+      PDF_COLORS.slate300[0],
+      PDF_COLORS.slate300[1],
+      PDF_COLORS.slate300[2]
+    );
+    doc.setLineWidth(0.2);
+    doc.line(marginX, dividerY, pageWidth - marginX, dividerY);
+
+    // --- Row 2: Tagline (center, italic serif, navy) ---
+    if (finalTagline) {
+      doc.setFont('times', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(
+        PDF_THEME.navy[0],
+        PDF_THEME.navy[1],
+        PDF_THEME.navy[2]
+      );
+      doc.text(`—  ${finalTagline}  —`, pageWidth / 2, taglineY, {
+        align: 'center',
+      });
+    }
   }
 
   // ══════════════════════════════════════════════
