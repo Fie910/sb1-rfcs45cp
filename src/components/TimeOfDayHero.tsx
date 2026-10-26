@@ -11,16 +11,6 @@ type TimeOfDayHeroProps = {
   forcePhase?: TimePhase;
 };
 
-useEffect(() => {
-  // Preload gambar fase berikutnya agar transisi mulus saat jam berubah
-  const phases: TimePhase[] = ['dawn', 'morning', 'day', 'golden', 'evening', 'night'];
-  const currentIdx = phases.indexOf(phase);
-  const nextPhase = phases[(currentIdx + 1) % phases.length];
-
-  const img = new Image();
-  img.src = PHASE_IMAGES[nextPhase];
-}, [phase]);
-
 /**
  * Hero card dengan background foto sesuai waktu.
  * - Teks di kiri (dengan gradient overlay gelap).
@@ -31,8 +21,20 @@ export function TimeOfDayHero({
   trailing,
   forcePhase,
 }: TimeOfDayHeroProps) {
+  // 1️⃣ Deklarasi phase DULU
   const phase = useMemo(() => forcePhase ?? getTimePhase(), [forcePhase]);
   const bgImage = PHASE_IMAGES[phase];
+
+  // 2️⃣ Baru useEffect memakai `phase`
+  useEffect(() => {
+    // Preload gambar fase berikutnya agar transisi mulus saat jam berubah
+    const phases: TimePhase[] = ['dawn', 'morning', 'day', 'golden', 'evening', 'night'];
+    const currentIdx = phases.indexOf(phase);
+    const nextPhase = phases[(currentIdx + 1) % phases.length];
+
+    const img = new Image();
+    img.src = PHASE_IMAGES[nextPhase];
+  }, [phase]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 shadow-lg">
