@@ -15,7 +15,10 @@ let toastId = 0;
 const listeners = new Set<(toasts: ToastMessage[]) => void>();
 let currentToasts: ToastMessage[] = [];
 
-export function showToast(type: ToastType, message: string) {
+// =============================================================================
+// INTERNAL — actual toast pusher (tanpa suara)
+// =============================================================================
+function showToastBase(type: ToastType, message: string) {
   const id = ++toastId;
   currentToasts = [...currentToasts, { id, type, message }];
   listeners.forEach((l) => l(currentToasts));
@@ -25,10 +28,18 @@ export function showToast(type: ToastType, message: string) {
   }, 4000);
 }
 
-export function showToast(type, message) {
+// =============================================================================
+// PUBLIC API — dengan sound feedback
+// =============================================================================
+export function showToast(type: ToastType, message: string) {
   if (type === 'success') playSuccess();
   if (type === 'error') playError();
+  showToastBase(type, message);
+}
 
+// =============================================================================
+// CONTAINER
+// =============================================================================
 export function ToastContainer() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
