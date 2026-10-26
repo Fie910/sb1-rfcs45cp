@@ -190,14 +190,12 @@ return (
           </Suspense>
         )}
 
-  // BELUM LOGIN
-  if (!session) {
-    return (
-      <Suspense fallback={<PageLoadingFallback />}>
-        <LoginPage />
-      </Suspense>
-    );
-  }
+        {/* BELUM LOGIN */}
+        {!isPublicPath(location.pathname) && !session && (
+          <Suspense fallback={<PageLoadingFallback />}>
+            <LoginPage />
+          </Suspense>
+        )}
 
   // SUDAH LOGIN
   const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageKey;
