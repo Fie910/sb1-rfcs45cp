@@ -1,5 +1,5 @@
 // src/components/TimeOfDayHero.tsx
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { getTimePhase, PHASE_IMAGES, type TimePhase } from '@/constants/timeOfDay';
 
 type TimeOfDayHeroProps = {
