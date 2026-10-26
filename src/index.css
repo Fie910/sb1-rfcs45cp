@@ -599,11 +599,24 @@ button:not(:disabled):active,
 .animate-moon-glow {
   animation: moonGlow 3s ease-in-out infinite;
 }
+@keyframes iconSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes iconGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(165, 180, 252, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(165, 180, 252, 0.9));
+  }
+}
 
 .animate-spin-glow {
   animation: 
-    sunSpin 60s linear infinite,
-    moonGlow 3s ease-in-out infinite;
+    iconSpin 60s linear infinite,
+    iconGlow 3s ease-in-out infinite;
 }
 
 /* 5. Accessibility — hormati prefers-reduced-motion */
