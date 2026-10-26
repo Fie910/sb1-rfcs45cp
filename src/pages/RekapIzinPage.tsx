@@ -201,10 +201,10 @@ export function RekapIzinPage() {
   const [kepalaSekolah, setKepalaSekolah] = useState<{ nama: string; nip: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [tanggalMulai, setTanggalMulai] = useState<string>(getFirstDayOfMonthWib());
-  const [tanggalSelesai, setTanggalSelesai] = useState<string>(getTodayDateWib());
-  const [filterGuru, setFilterGuru] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [tanggalMulai, setTanggalMulai] = usePersistedState('rekap_izin_tgl_mulai', getFirstDayOfMonthWib());
+  const [tanggalSelesai, setTanggalSelesai] = usePersistedState('rekap_izin_tgl_selesai', getTodayDateWib());
+  const [filterGuru, setFilterGuru] = usePersistedState('rekap_izin_filter_guru', '');
+  const [searchQuery, setSearchQuery] = usePersistedState('rekap_izin_search', '');
 
   const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
   const aiCacheRef = useRef<Map<string, AnalisaIzinAi>>(new Map());
