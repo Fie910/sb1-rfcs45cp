@@ -158,6 +158,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
 
         {/* Konten Halaman */}
         <main className="flex-1 overflow-y-auto">{children}</main>
+        <TaglineBadge />
       </div>
 
       {/* Tombol Tutup Sidebar Mobile */}
