@@ -22,7 +22,7 @@ const PHASE_CONFIG: Record<
     animationClass: string;
   }
 > = {
-  dawn: {
+  night: {
     icon: SunDim,
     colorClass: 'text-amber-400',
     glowClass: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]',
@@ -52,12 +52,7 @@ const PHASE_CONFIG: Record<
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,113,133,0.5)]',
     animationClass: 'animate-sun-slow',
   },
-  night: {
-    icon: Moon,
-    colorClass: 'text-indigo-300',
-    glowClass: '',
-    animationClass: 'animate-spin-glow',
-  },
+  
 };
 
 export function TimeOfDayIcon({ size = 32 }: { size?: number }) {
