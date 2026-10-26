@@ -23,13 +23,13 @@ const PHASE_CONFIG: Record<
   }
 > = {
   dawn: {
-    icon: Sunrise,
+    icon: SunDim,
     colorClass: 'text-amber-400',
     glowClass: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]',
     animationClass: '', // statis, belum terbit
   },
   morning: {
-    icon: Sun,
+    icon: SunMedium,
     colorClass: 'text-yellow-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(250,204,21,0.6)]',
     animationClass: 'animate-sun-slow',
@@ -41,13 +41,13 @@ const PHASE_CONFIG: Record<
     animationClass: 'animate-sun-slow',
   },
   golden: {
-    icon: Sunset,
+    icon: SunMedium,
     colorClass: 'text-orange-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,146,60,0.6)]',
     animationClass: 'animate-sun-slow',
   },
   evening: {
-    icon: Sunset,
+    icon: SunDim,
     colorClass: 'text-rose-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,113,133,0.5)]',
     animationClass: 'animate-sun-slow',
@@ -56,7 +56,7 @@ const PHASE_CONFIG: Record<
     icon: Moon,
     colorClass: 'text-indigo-300',
     glowClass: '',
-    animationClass: 'animate-moon-glow',
+    animationClass: 'animate-moon-glow' 'animate-sun-slow',
   },
 };
 
