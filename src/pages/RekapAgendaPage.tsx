@@ -215,10 +215,10 @@ export function RekapAgendaPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [filterGuru, setFilterGuru] = useState('');
-  const [filterMapel, setFilterMapel] = useState('');
-  const [startDate, setStartDate] = useState(getFirstDayOfMonthWib);
-  const [endDate, setEndDate] = useState(getLastDayOfMonthWib);
+  const [startDate, setStartDate] = usePersistedState('rekap_agenda_start', getFirstDayOfMonthWib());
+  const [endDate, setEndDate] = usePersistedState('rekap_agenda_end', getLastDayOfMonthWib());
+  const [filterGuru, setFilterGuru] = usePersistedState('rekap_agenda_filter_guru', '');
+  const [filterMapel, setFilterMapel] = usePersistedState('rekap_agenda_filter_mapel', '');
 
   const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
   const aiCacheRef = useRef<Map<string, AnalisaAgendaAi>>(new Map());
