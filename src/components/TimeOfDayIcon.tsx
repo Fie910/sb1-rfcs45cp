@@ -46,7 +46,7 @@ const PHASE_CONFIG: Record<
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,146,60,0.6)]',
     animationClass: 'animate-spin-glow',
   },
-  nigth: {
+  night: {
     icon: SunDim,
     colorClass: 'text-rose-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,113,133,0.5)]',
