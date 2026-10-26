@@ -274,6 +274,7 @@ return (
     {showSplash && <SplashScreen isFading={splashPhase === 'fading'} />}
   </>
 );
+  }   {
 
 // =============================================================================
 // APP
