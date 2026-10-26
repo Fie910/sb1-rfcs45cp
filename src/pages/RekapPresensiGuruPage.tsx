@@ -257,9 +257,6 @@ export function RekapPresensiGuruPage() {
     'SMK KH. A. Wahab Muhsin Sukahideng'
   );
   const [loading, setLoading] = useState(true);
-  const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-});
 
   const [startDate, setStartDate] = usePersistedState('rekap_presensi_start', getFirstDayOfMonthWib());
   const [endDate, setEndDate] = usePersistedState('rekap_presensi_end', getTodayDateWib());
