@@ -625,8 +625,8 @@ button:not(:disabled):active,
   [role="button"]:not(:disabled):active {
     transform: none;
   }
-  .animate-spin-glow,
   .animate-sun-slow,
   .animate-moon-glow,
   .animate-fade-page {
     animation: none;
+  }}
