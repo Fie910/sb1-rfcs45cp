@@ -50,7 +50,7 @@ const PHASE_CONFIG: Record<
     icon: Sunset,
     colorClass: 'text-rose-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,113,133,0.5)]',
-    animationClass: '',
+    animationClass: 'animate-sun-slow',
   },
   night: {
     icon: Moon,
