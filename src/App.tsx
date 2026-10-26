@@ -144,7 +144,7 @@ function AppContent() {
   // ⏱️ Minimum splash duration (1.2s) — cukup untuk "rasakan" tanpa mengganggu
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setMinTimeElapsed(true), 1900);
+    const timer = setTimeout(() => setMinTimeElapsed(true), 2500);
     return () => clearTimeout(timer);
   }, []);
 
