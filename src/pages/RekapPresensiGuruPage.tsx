@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { getFirstDayOfMonthWib, getTodayDateWib } from '@/utils/date';
 import {
   generateAnalisaKehadiran,
   isAiAvailable,
