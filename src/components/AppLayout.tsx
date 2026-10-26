@@ -12,6 +12,8 @@ import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TaglineBadge } from '@/components/TaglineBadge';
 import { useLocation } from 'react-router-dom';
+import { Volume2, VolumeX } from 'lucide-react';
+import { isSoundEnabled, toggleSound } from '@/lib/sound';
 
 type LayoutProps = {
   current: PageKey;
