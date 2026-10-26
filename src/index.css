@@ -606,8 +606,8 @@ button:not(:disabled):active,
   [role="button"]:not(:disabled):active {
     transform: none;
   }
-  .animate-sun-slow,
-  .animate-moon-glow,
+  
+  /* Hanya mematikan animasi halaman, matahari & bulan tetap jalan */
   .animate-fade-page {
     animation: none;
   }
