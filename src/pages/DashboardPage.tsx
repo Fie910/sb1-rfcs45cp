@@ -223,8 +223,9 @@ export function DashboardPage({
         </div>
 
         {loading ? (
-          <div className="text-center py-8 bg-slate-900 border border-slate-800 rounded-2xl">
-            <Loader2 size={20} className="animate-spin text-indigo-400 mx-auto" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
           </div>
         ) : pengumumanList.length === 0 ? (
           <PengumumanEmpty />
