@@ -1,5 +1,5 @@
 // src/components/TimeOfDayIcon.tsx
-import { Sunrise, Sun, Sunset, Moon } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, SunDim, SunMedium } from 'lucide-react';
 
 type TimePhase = 'dawn' | 'morning' | 'day' | 'golden' | 'evening' | 'night';
 
