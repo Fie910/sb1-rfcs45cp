@@ -26,6 +26,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
   const { guru, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
 
   const location = useLocation();
   // Ambil ID guru yang sedang login untuk komponen lonceng
