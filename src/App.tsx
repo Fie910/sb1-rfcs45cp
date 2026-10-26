@@ -187,8 +187,8 @@ return (
             <Route path="/tv-display" element={<TvDisplayPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          </Suspense>
-        )}
+        </Suspense>
+      )}
 
   // BELUM LOGIN
   if (!session) {
