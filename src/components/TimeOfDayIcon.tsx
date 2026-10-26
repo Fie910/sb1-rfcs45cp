@@ -22,7 +22,7 @@ const PHASE_CONFIG: Record<
     animationClass: string;
   }
 > = {
-  dawn: {
+  night: {
     icon: SunDim,
     colorClass: 'text-amber-500',
     glowClass: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]',
