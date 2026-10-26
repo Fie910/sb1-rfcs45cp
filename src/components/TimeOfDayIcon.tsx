@@ -34,7 +34,7 @@ const PHASE_CONFIG: Record<
     glowClass: 'drop-shadow-[0_0_14px_rgba(250,204,21,0.6)]',
     animationClass: 'animate-spin-glow',
   },
-  night: {
+  day: {
     icon: Sun,
     colorClass: 'text-amber-300',
     glowClass: 'drop-shadow-[0_0_18px_rgba(252,211,77,0.7)]',
