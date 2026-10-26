@@ -28,13 +28,13 @@ const PHASE_CONFIG: Record<
     glowClass: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]',
     animationClass: 'animate-spin-glow',
   },
-  night: {
+  morning: {
     icon: SunMedium,
     colorClass: 'text-yellow-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(250,204,21,0.6)]',
     animationClass: 'animate-spin-glow',
   },
-  day: {
+  night: {
     icon: Sun,
     colorClass: 'text-amber-300',
     glowClass: 'drop-shadow-[0_0_18px_rgba(252,211,77,0.7)]',
