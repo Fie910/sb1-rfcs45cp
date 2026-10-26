@@ -260,7 +260,7 @@ export function DashboardPage({
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
           🧪 Preview Semua Phase (Testing)
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
           {(['dawn', 'morning', 'day', 'golden', 'evening', 'night'] as const).map((p) => (
             <TimeOfDayHero
               key={p}
