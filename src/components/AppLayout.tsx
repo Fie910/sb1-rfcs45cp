@@ -10,6 +10,7 @@ import VerifikasiArsipPage from '@/pages/VerifikasiArsipPage';
 import { InstallPWA } from '@/components/InstallPWA';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { TaglineBadge } from '@/components/TaglineBadge';
 
 type LayoutProps = {
   current: PageKey;
