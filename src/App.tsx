@@ -141,7 +141,15 @@ function AppContent() {
   const location = useLocation();
   const badgeCounts = useBadgeCounts(guru?.id ?? null, guru?.nama_lengkap ?? null);
 
-  if (loading) {
+  // ⏱️ Minimum splash duration (1.2s) — cukup untuk "rasakan" tanpa mengganggu
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Splash tampil selama: (auth masih loading) ATAU (minimum time belum lewat)
+  if (loading || !minTimeElapsed) {
     return <SplashScreen />;
   }
 
