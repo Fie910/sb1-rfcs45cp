@@ -197,75 +197,74 @@ return (
           </Suspense>
         )}
 
-  // SUDAH LOGIN
-  const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageKey;
+        {/* SUDAH LOGIN */}
+        {!isPublicPath(location.pathname) && session && (
+          <AppLayout current={currentPath} badgeCounts={badgeCounts}>
+          <Suspense fallback={<PageLoadingFallback />}>
+            <Routes>
+            <Route path="/" element={<DashboardPage badgeCounts={badgeCounts} />} />
+            <Route path="/dashboard" element={<DashboardPage badgeCounts={badgeCounts} />} />
+            <Route path="/dashboard_kepsek" element={<ProtectedRoute accessKey="dashboard_kepsek"><DashboardKepsekPage /></ProtectedRoute>} />
+             <Route path="/buku_tamu/kelola" element={<ProtectedRoute accessKey="buku_tamu"><BukuTamuKelolaPage /></ProtectedRoute>} />
+            <Route path="/monev_divisi" element={<ProtectedRoute accessKey="monev_divisi"><MonevDivisiPage /></ProtectedRoute>} />
+            <Route path="/kalender_akademik" element={<ProtectedRoute accessKey="kalender_akademik"><KalenderAkademikPage /></ProtectedRoute>} />
+            <Route path="/saran_pengaduan" element={<ProtectedRoute accessKey="saran_pengaduan"><SaranPengaduanPage /></ProtectedRoute>} />
+            <Route path="/sarpras" element={<ProtectedRoute accessKey="sarpras"><InventarisSarprasPage /></ProtectedRoute>} />
+            <Route path="/profil" element={<ProfilPage />} />
+            <Route path="/todo" element={<ProtectedRoute accessKey="todo"><TodoListPage /></ProtectedRoute>} />
+            <Route path="/siswa" element={<ProtectedRoute accessKey="siswa"><SiswaPage /></ProtectedRoute>} />
+            <Route path="/kelas" element={<ProtectedRoute accessKey="kelas"><KelasPage /></ProtectedRoute>} />
+            <Route path="/nilai" element={<ProtectedRoute accessKey="nilai"><NilaiPage /></ProtectedRoute>} />
+            <Route path="/presensi" element={<ProtectedRoute accessKey="presensi"><PresensiPage /></ProtectedRoute>} />
+            <Route path="/surat" element={<ProtectedRoute accessKey="surat"><SuratPage /></ProtectedRoute>} />
+            <Route path="/tugas_disposisi" element={<ProtectedRoute accessKey="tugas_disposisi"><TugasDisposisiPage /></ProtectedRoute>} />
+            <Route path="/hris" element={<ProtectedRoute accessKey="hris"><HrisPage /></ProtectedRoute>} />
+            <Route path="/rapat" element={<ProtectedRoute accessKey="rapat"><RapatPage /></ProtectedRoute>} />
+            <Route path="/arsip" element={<ProtectedRoute accessKey="arsip"><ArsipPage /></ProtectedRoute>} />
+            <Route path="/mitra" element={<ProtectedRoute accessKey="mitra"><MitraPage /></ProtectedRoute>} />
 
-  return (
-    <AppLayout current={currentPath} badgeCounts={badgeCounts}>
-      <Suspense fallback={<PageLoadingFallback />}>
-        <Routes>
-          <Route path="/" element={<DashboardPage badgeCounts={badgeCounts} />} />
-          <Route path="/dashboard" element={<DashboardPage badgeCounts={badgeCounts} />} />
-          <Route path="/dashboard_kepsek" element={<ProtectedRoute accessKey="dashboard_kepsek"><DashboardKepsekPage /></ProtectedRoute>} />
-          <Route path="/buku_tamu/kelola" element={<ProtectedRoute accessKey="buku_tamu"><BukuTamuKelolaPage /></ProtectedRoute>} />
-          <Route path="/monev_divisi" element={<ProtectedRoute accessKey="monev_divisi"><MonevDivisiPage /></ProtectedRoute>} />
-          <Route path="/kalender_akademik" element={<ProtectedRoute accessKey="kalender_akademik"><KalenderAkademikPage /></ProtectedRoute>} />
-          <Route path="/saran_pengaduan" element={<ProtectedRoute accessKey="saran_pengaduan"><SaranPengaduanPage /></ProtectedRoute>} />
-          <Route path="/sarpras" element={<ProtectedRoute accessKey="sarpras"><InventarisSarprasPage /></ProtectedRoute>} />
-          <Route path="/profil" element={<ProfilPage />} />
-          <Route path="/todo" element={<ProtectedRoute accessKey="todo"><TodoListPage /></ProtectedRoute>} />
-          <Route path="/siswa" element={<ProtectedRoute accessKey="siswa"><SiswaPage /></ProtectedRoute>} />
-          <Route path="/kelas" element={<ProtectedRoute accessKey="kelas"><KelasPage /></ProtectedRoute>} />
-          <Route path="/nilai" element={<ProtectedRoute accessKey="nilai"><NilaiPage /></ProtectedRoute>} />
-          <Route path="/presensi" element={<ProtectedRoute accessKey="presensi"><PresensiPage /></ProtectedRoute>} />
-          <Route path="/surat" element={<ProtectedRoute accessKey="surat"><SuratPage /></ProtectedRoute>} />
-          <Route path="/tugas_disposisi" element={<ProtectedRoute accessKey="tugas_disposisi"><TugasDisposisiPage /></ProtectedRoute>} />
-          <Route path="/hris" element={<ProtectedRoute accessKey="hris"><HrisPage /></ProtectedRoute>} />
-          <Route path="/rapat" element={<ProtectedRoute accessKey="rapat"><RapatPage /></ProtectedRoute>} />
-          <Route path="/arsip" element={<ProtectedRoute accessKey="arsip"><ArsipPage /></ProtectedRoute>} />
-          <Route path="/mitra" element={<ProtectedRoute accessKey="mitra"><MitraPage /></ProtectedRoute>} />
+            <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
+            <Route path="/kelulusan" element={<ProtectedRoute accessKey="kelulusan"><Kelulusan /></ProtectedRoute>} />
+            <Route path="/riwayat_siswa" element={<ProtectedRoute accessKey="riwayat_siswa"><RiwayatSiswa /></ProtectedRoute>} />
+            <Route path="/mutasi_siswa" element={<ProtectedRoute accessKey="mutasi_siswa"><MutasiSiswa /></ProtectedRoute>} />
+            <Route path="/kedisiplinan" element={<ProtectedRoute accessKey="kedisiplinan"><KedisiplinanPage /></ProtectedRoute>} />
 
-          <Route path="/kenaikan_kelas" element={<ProtectedRoute accessKey="kenaikan_kelas"><KenaikanKelas /></ProtectedRoute>} />
-          <Route path="/kelulusan" element={<ProtectedRoute accessKey="kelulusan"><Kelulusan /></ProtectedRoute>} />
-          <Route path="/riwayat_siswa" element={<ProtectedRoute accessKey="riwayat_siswa"><RiwayatSiswa /></ProtectedRoute>} />
-          <Route path="/mutasi_siswa" element={<ProtectedRoute accessKey="mutasi_siswa"><MutasiSiswa /></ProtectedRoute>} />
-          <Route path="/kedisiplinan" element={<ProtectedRoute accessKey="kedisiplinan"><KedisiplinanPage /></ProtectedRoute>} />
+            <Route path="/presensi_kesiswaan" element={<ProtectedRoute accessKey="presensi_kesiswaan"><InputPresensiKesiswaanPage /></ProtectedRoute>} />
 
-          <Route path="/presensi_kesiswaan" element={<ProtectedRoute accessKey="presensi_kesiswaan"><InputPresensiKesiswaanPage /></ProtectedRoute>} />
+            <Route path="/agenda" element={<ProtectedRoute accessKey="agenda"><AgendaPage /></ProtectedRoute>} />
+            <Route path="/izin" element={<ProtectedRoute accessKey="izin"><IzinPage /></ProtectedRoute>} />
+            <Route path="/piket" element={<ProtectedRoute accessKey="piket"><PiketPage /></ProtectedRoute>} />
+            <Route path="/sekolah" element={<ProtectedRoute accessKey="sekolah"><SekolahPage /></ProtectedRoute>} />
+            <Route path="/pengumuman" element={<ProtectedRoute accessKey="pengumuman"><PengumumanPage /></ProtectedRoute>} />
+            <Route path="/guru" element={<ProtectedRoute accessKey="guru"><GuruPage /></ProtectedRoute>} />
+            <Route path="/jadwal_kbm" element={<ProtectedRoute accessKey="jadwal_kbm"><JadwalKbmPage /></ProtectedRoute>} />
+            <Route path="/jadwal_kbm_jps" element={<ProtectedRoute accessKey="jadwal_kbm_jps"><JadwalKbmJpsPage /></ProtectedRoute>} />
+            <Route path="/jadwal_piket" element={<ProtectedRoute accessKey="jadwal_piket"><JadwalPiketPage /></ProtectedRoute>} />
+            <Route path="/jadwal_piket_penyambutan" element={<ProtectedRoute accessKey="jadwal_piket_penyambutan"><JadwalPiketPenyambutanPage /></ProtectedRoute>} />
+            <Route path="/kehadiran_piket" element={<ProtectedRoute accessKey="kehadiran_piket"><KehadiranPiketPage /></ProtectedRoute>} />
+            <Route path="/kehadiran_piket_penyambutan" element={<ProtectedRoute accessKey="kehadiran_piket_penyambutan"><KehadiranPiketPenyambutanPage /></ProtectedRoute>} />
+            <Route path="/rekap_presensi_siswa" element={<ProtectedRoute accessKey="rekap_presensi_siswa"><RekapPresensiSiswaPage /></ProtectedRoute>} />
 
-          <Route path="/agenda" element={<ProtectedRoute accessKey="agenda"><AgendaPage /></ProtectedRoute>} />
-          <Route path="/izin" element={<ProtectedRoute accessKey="izin"><IzinPage /></ProtectedRoute>} />
-          <Route path="/piket" element={<ProtectedRoute accessKey="piket"><PiketPage /></ProtectedRoute>} />
-          <Route path="/sekolah" element={<ProtectedRoute accessKey="sekolah"><SekolahPage /></ProtectedRoute>} />
-          <Route path="/pengumuman" element={<ProtectedRoute accessKey="pengumuman"><PengumumanPage /></ProtectedRoute>} />
-          <Route path="/guru" element={<ProtectedRoute accessKey="guru"><GuruPage /></ProtectedRoute>} />
-          <Route path="/jadwal_kbm" element={<ProtectedRoute accessKey="jadwal_kbm"><JadwalKbmPage /></ProtectedRoute>} />
-          <Route path="/jadwal_kbm_jps" element={<ProtectedRoute accessKey="jadwal_kbm_jps"><JadwalKbmJpsPage /></ProtectedRoute>} />
-          <Route path="/jadwal_piket" element={<ProtectedRoute accessKey="jadwal_piket"><JadwalPiketPage /></ProtectedRoute>} />
-          <Route path="/jadwal_piket_penyambutan" element={<ProtectedRoute accessKey="jadwal_piket_penyambutan"><JadwalPiketPenyambutanPage /></ProtectedRoute>} />
-          <Route path="/kehadiran_piket" element={<ProtectedRoute accessKey="kehadiran_piket"><KehadiranPiketPage /></ProtectedRoute>} />
-          <Route path="/kehadiran_piket_penyambutan" element={<ProtectedRoute accessKey="kehadiran_piket_penyambutan"><KehadiranPiketPenyambutanPage /></ProtectedRoute>} />
-          <Route path="/rekap_presensi_siswa" element={<ProtectedRoute accessKey="rekap_presensi_siswa"><RekapPresensiSiswaPage /></ProtectedRoute>} />
-
-          <Route path="/rekap_presensi_kesiswaan" element={<ProtectedRoute accessKey="rekap_presensi_kesiswaan"><RekapPresensiKesiswaanPage /></ProtectedRoute>} />
-          <Route path="/rekap_nilai" element={<ProtectedRoute accessKey="rekap_nilai"><RekapNilaiPage /></ProtectedRoute>} />
-          <Route path="/rekap_presensi_guru" element={<ProtectedRoute accessKey="rekap_presensi_guru"><RekapPresensiGuruPage /></ProtectedRoute>} />
-          <Route path="/rekap_agenda" element={<ProtectedRoute accessKey="rekap_agenda"><RekapAgendaPage /></ProtectedRoute>} />
-          <Route path="/rekap_izin" element={<ProtectedRoute accessKey="rekap_izin"><RekapIzinPage /></ProtectedRoute>} />
-          <Route path="/hak_akses" element={<ProtectedRoute accessKey="hak_akses"><HakAksesPage /></ProtectedRoute>} />
-          <Route path="/hari_libur" element={<ProtectedRoute accessKey="hari_libur"><HariLiburPage /></ProtectedRoute>} />
-          <Route path="/audit_log" element={<ProtectedRoute accessKey="audit_log"><AuditLogPage /></ProtectedRoute>} />
+            <Route path="/rekap_presensi_kesiswaan" element={<ProtectedRoute accessKey="rekap_presensi_kesiswaan"><RekapPresensiKesiswaanPage /></ProtectedRoute>} />
+            <Route path="/rekap_nilai" element={<ProtectedRoute accessKey="rekap_nilai"><RekapNilaiPage /></ProtectedRoute>} />
+            <Route path="/rekap_presensi_guru" element={<ProtectedRoute accessKey="rekap_presensi_guru"><RekapPresensiGuruPage /></ProtectedRoute>} />
+            <Route path="/rekap_agenda" element={<ProtectedRoute accessKey="rekap_agenda"><RekapAgendaPage /></ProtectedRoute>} />
+            <Route path="/rekap_izin" element={<ProtectedRoute accessKey="rekap_izin"><RekapIzinPage /></ProtectedRoute>} />
+            <Route path="/hak_akses" element={<ProtectedRoute accessKey="hak_akses"><HakAksesPage /></ProtectedRoute>} />
+            <Route path="/hari_libur" element={<ProtectedRoute accessKey="hari_libur"><HariLiburPage /></ProtectedRoute>} />
+            <Route path="/audit_log" element={<ProtectedRoute accessKey="audit_log"><AuditLogPage /></ProtectedRoute>} />
           
-          <Route path="/bk" element={<ProtectedRoute accessKey="bk"><BimbinganKonselingPage /></ProtectedRoute>} />
-          <Route path="/perpustakaan" element={<ProtectedRoute accessKey="perpustakaan"><PerpustakaanPage /></ProtectedRoute>} />
-          <Route path="/tahfidz" element={<ProtectedRoute accessKey="tahfidz"><TahfidzPage /></ProtectedRoute>}/>
+            <Route path="/bk" element={<ProtectedRoute accessKey="bk"><BimbinganKonselingPage /></ProtectedRoute>} />
+            <Route path="/perpustakaan" element={<ProtectedRoute accessKey="perpustakaan"><PerpustakaanPage /></ProtectedRoute>} />
+            <Route path="/tahfidz" element={<ProtectedRoute accessKey="tahfidz"><TahfidzPage /></ProtectedRoute>}/>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </AppLayout>
-  );
-}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </AppLayout>
+        )}
+      </>
+    )}
 
 // =============================================================================
 // APP
