@@ -607,8 +607,18 @@ button:not(:disabled):active,
     transform: none;
   }
   
-  /* Hanya mematikan animasi halaman, matahari & bulan tetap jalan */
+  /* Alih-alih dimatikan, ganti dengan animasi opacity yang halus */
+  .animate-sun-slow,
+  .animate-moon-glow {
+    animation: simple-fade 2s infinite ease-in-out;
+  }
+  
   .animate-fade-page {
     animation: none;
   }
+}
+
+@keyframes simple-fade {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
 }
