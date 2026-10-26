@@ -171,6 +171,20 @@ export function DashboardPage({
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
       {/* ==================== HEADER COMPACT ==================== */}
+
+{/* TESTING — hapus setelah selesai */}
+<div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+  {(['dawn', 'morning', 'day', 'golden', 'evening', 'night'] as const).map((p) => (
+    <TimeOfDayHero
+      key={p}
+      forcePhase={p}
+      trailing={<span className="text-xs text-white font-bold">{p}</span>}
+    >
+      <p className="text-xs font-bold text-white">Preview: {p}</p>
+    </TimeOfDayHero>
+  ))}
+</div>
+      
 <TimeOfDayHero
   trailing={
     <div className="text-right">
