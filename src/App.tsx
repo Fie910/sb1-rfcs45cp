@@ -267,7 +267,7 @@ return (
         </Suspense>
       </AppLayout>
         )}
-      </>
+      </div>
     )}
 
     {/* Splash overlay selama showing/fading */}
