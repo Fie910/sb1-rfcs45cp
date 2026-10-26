@@ -54,7 +54,7 @@ const PHASE_CONFIG: Record<
   },
   night: {
     icon: Moon,
-    colorClass: 'text-indigo-300',
+    colorClass: 'text-silver-300',
     glowClass: '',
     animationClass: 'animate-moon-glow',
   },
