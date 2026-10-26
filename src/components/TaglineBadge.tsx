@@ -40,12 +40,12 @@ export function TaglineBadge() {
                  select-none"
       title="Tagline Sekolah"
     >
-      
+      <span className="text-amber-400/60 text-[8px]">·</span>
       <span className="text-[10px] italic font-serif bg-gradient-to-r from-emerald-300/80 to-teal-300/80 bg-clip-text text-transparent">
         {SEKOLAH_TAGLINE_FITRAH}
       </span>
       <span className="text-amber-400/80 text-[10px] leading-none">۞</span>
-      <span className="text-amber-400/60 text-[8px]">·</span>
+      
       <span className="text-[10px] font-bold bg-gradient-to-r from-amber-300/80 to-yellow-300/80 bg-clip-text text-transparent">
         {SEKOLAH_TAGLINE_KARYA}
       </span>
