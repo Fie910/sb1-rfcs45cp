@@ -257,14 +257,13 @@ export function RekapPresensiGuruPage() {
     'SMK KH. A. Wahab Muhsin Sukahideng'
   );
   const [loading, setLoading] = useState(true);
-  const [filterGuru, setFilterGuru] = useState('');
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
+  const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-  });
-  const [endDate, setEndDate] = useState(
-    () => new Date().toISOString().split('T')[0]
-  );
+});
+
+  const [startDate, setStartDate] = usePersistedState('rekap_presensi_start', getFirstDayOfMonthWib());
+  const [endDate, setEndDate] = usePersistedState('rekap_presensi_end', getTodayDateWib());
+  const [filterGuru, setFilterGuru] = usePersistedState('rekap_presensi_filter_guru', '');
 
   // ✅ State kepala sekolah — HARUS di dalam komponen
   const [kepalaSekolah, setKepalaSekolah] = useState<{
