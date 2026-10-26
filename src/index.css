@@ -600,6 +600,12 @@ button:not(:disabled):active,
   animation: moonGlow 3s ease-in-out infinite;
 }
 
+.animate-spin-glow {
+  animation: 
+    sunSpin 60s linear infinite,
+    moonGlow 3s ease-in-out infinite;
+}
+
 /* 5. Accessibility — hormati prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   button:not(:disabled):active,
