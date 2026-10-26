@@ -26,7 +26,7 @@ const PHASE_CONFIG: Record<
     icon: SunDim,
     colorClass: 'text-amber-400',
     glowClass: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]',
-    animationClass: '', // statis, belum terbit
+    animationClass: 'animate-moon-glow', // statis, belum terbit
   },
   morning: {
     icon: SunMedium,
