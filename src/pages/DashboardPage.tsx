@@ -170,7 +170,7 @@ export function DashboardPage({
       {/* ==================== HEADER COMPACT ==================== */}
       <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl px-4 py-3">
   {/* Ambient time-of-day decoration */}
-  <div className="absolute top-1/2 right-10 -translate-y-1/2 opacity-25 pointer-events-none">
+  <div className="absolute top-1/2 right-15 -translate-y-1/2 opacity-25 pointer-events-none">
     <TimeOfDayIcon size={56} />
   </div>
 
