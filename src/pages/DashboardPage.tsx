@@ -185,6 +185,25 @@ export function DashboardPage({
   ))}
 </div>
       
+<TimeOfDayHero
+  trailing={
+    <div className="text-right">
+      <p className="text-[10px] md:text-[11px] font-bold text-slate-200 drop-shadow-md">
+        {formatTanggalCompact(now)}
+      </p>
+      <p className="text-[10px] text-slate-300/80 mt-0.5 drop-shadow-md">
+        {formatJam(now)} WIB
+      </p>
+    </div>
+  }
+>
+  <p className="text-[10px] italic text-amber-300/90 tracking-wide truncate drop-shadow-md">
+    {SCHOOL_SLOGAN}
+  </p>
+  <p className="text-sm md:text-base font-extrabold text-white truncate mt-0.5 drop-shadow-lg">
+    {SCHOOL_GREETING}, {namaPanggilan}!
+  </p>
+</TimeOfDayHero>
 
       {/* ==================== PENGUMUMAN ==================== */}
       <div>
