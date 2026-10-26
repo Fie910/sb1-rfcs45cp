@@ -5,12 +5,16 @@ import { Tagline } from './Tagline';
 import { TAGLINE_DOA } from '@/constants/branding';
 import { useSchoolBranding } from '@/hooks/useSchoolBranding';
 
-export function SplashScreen() {
+export function SplashScreen({ isFading = false }: { isFading?: boolean }) {
   const { nama_sekolah, logo_url } = useSchoolBranding();
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center overflow-hidden">
+    <div
+      className={`fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center overflow-hidden
+                  transition-opacity duration-500 ease-out
+                  ${isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+    >
       {/* Ambient glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-fade-in-slow" />
