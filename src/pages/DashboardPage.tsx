@@ -16,6 +16,7 @@ import {
 import { Link } from 'react-router-dom';
 import { TimeOfDayIcon } from '@/components/TimeOfDayIcon';
 import { SkeletonCard } from '@/components/Skeleton';
+import { Tagline } from '@/components/Tagline';
 
 // =============================================================================
 // KONSTANTA SEKOLAH
