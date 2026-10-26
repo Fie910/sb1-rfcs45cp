@@ -1,3 +1,4 @@
+//src/components/Toast.tsx
 import { useEffect, useState, type ReactNode } from 'react';
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
 import { playSuccess, playError } from '@/lib/sound';
