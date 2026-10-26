@@ -157,7 +157,11 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
         </header>
 
         {/* Konten Halaman */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="...">
+  <div key={location.pathname} className="animate-fade-page">
+    {children}
+  </div>
+</main>
         <TaglineBadge />
       </div>
 
