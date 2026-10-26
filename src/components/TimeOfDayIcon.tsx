@@ -36,7 +36,7 @@ const PHASE_CONFIG: Record<
   },
   night: {
     icon: Sun,
-    colorClass: 'text-amber-100',
+    colorClass: 'text-yellow-100',
     glowClass: 'drop-shadow-[0_0_18px_rgba(252,211,77,0.7)]',
     animationClass: 'animate-spin-glow',
   },
