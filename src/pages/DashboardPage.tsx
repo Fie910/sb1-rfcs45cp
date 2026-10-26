@@ -247,26 +247,33 @@ export function DashboardPage({
       />
 
       {/* ==================== MODAL KUSTOM SHORTCUT ==================== */}
-      <ModalKustomShortcut
+            <ModalKustomShortcut
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         onSaved={fetchShortcuts}
         currentShortcuts={shortcuts}
         guruId={guru?.id ?? ''}
       />
+
+      {/* TESTING — hapus setelah selesai */}
+      <div className="pt-8 border-t border-slate-800">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          🧪 Preview Semua Phase (Testing)
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {(['dawn', 'morning', 'day', 'golden', 'evening', 'night'] as const).map((p) => (
+            <TimeOfDayHero
+              key={p}
+              forcePhase={p}
+              trailing={<span className="text-xs text-white font-bold">{p}</span>}
+            >
+              <p className="text-xs font-bold text-white">Preview: {p}</p>
+            </TimeOfDayHero>
+          ))}
+        </div>
+      </div>
+      {/* END TESTING */}
+
     </div>
   );
 }
-
-{/* TESTING — hapus setelah selesai */}
-<div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
-  {(['dawn', 'morning', 'day', 'golden', 'evening', 'night'] as const).map((p) => (
-    <TimeOfDayHero
-      key={p}
-      forcePhase={p}
-      trailing={<span className="text-xs text-white font-bold">{p}</span>}
-    >
-      <p className="text-xs font-bold text-white">Preview: {p}</p>
-    </TimeOfDayHero>
-  ))}
-</div>
