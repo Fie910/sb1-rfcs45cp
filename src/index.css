@@ -629,4 +629,5 @@ button:not(:disabled):active,
   .animate-moon-glow,
   .animate-fade-page {
     animation: none;
-  }}
+  }
+}
