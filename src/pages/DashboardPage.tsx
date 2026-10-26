@@ -14,9 +14,10 @@ import {
   Megaphone, Loader2, ArrowRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { TimeOfDayIcon } from '@/components/TimeOfDayIcon';
+//import { TimeOfDayIcon } from '@/components/TimeOfDayIcon';
 import { SkeletonCard } from '@/components/Skeleton';
 import { Tagline } from '@/components/Tagline';
+import { TimeOfDayHero } from '@/components/TimeOfDayHero';
 
 // =============================================================================
 // KONSTANTA SEKOLAH
