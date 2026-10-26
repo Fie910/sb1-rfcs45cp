@@ -180,7 +180,7 @@ export function DashboardPage({
     {/* Kiri: Slogan + Greeting */}
     <div className="min-w-0 flex-1">
       <p className="text-[10px] italic text-indigo-300/80 tracking-wide truncate">
-        {SCHOOL_SLOGAN}
+        <Tagline variant="inline" separator="rub" />
       </p>
       <p className="text-sm md:text-base font-extrabold text-slate-100 truncate mt-0.5">
         {SCHOOL_GREETING}, {namaPanggilan}!
