@@ -32,7 +32,7 @@ export function TaglineBadge() {
 
   return (
     <div
-      className="hidden md:flex fixed bottom-4 left-4 z-[80] items-center gap-1.5
+      className="hidden md:flex fixed bottom-4 center-4 z-[80] items-center gap-1.5
                  px-2.5 py-1 rounded-full
                  bg-slate-900/40 border border-slate-800/40
                  backdrop-blur-md opacity-30 hover:opacity-90
