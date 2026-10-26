@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
+import { playSuccess, playError } from '@/lib/sound';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -22,6 +23,10 @@ export function showToast(type: ToastType, message: string) {
     listeners.forEach((l) => l(currentToasts));
   }, 4000);
 }
+
+export function showToast(type, message) {
+  if (type === 'success') playSuccess();
+  if (type === 'error') playError();
 
 export function ToastContainer() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
