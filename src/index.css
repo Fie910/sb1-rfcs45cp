@@ -551,3 +551,64 @@ html[data-theme="light"] .divide-slate-800 > * {
     background: white !important;
   }
 }
+
+/* ================================================
+   PREMIUM MICRO-INTERACTIONS
+   ================================================ */
+
+/* 1. Button press feedback — semua tombol terasa "ditekan" */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.97);
+  transition: transform 100ms ease-out;
+}
+
+/* 2. Page transition — fade saat pindah halaman */
+@keyframes fadePage {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-page {
+  animation: fadePage 200ms ease-out;
+}
+
+/* 3. Sun rotation — 60 detik per putaran (sangat lambat) */
+@keyframes sunSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-sun-slow {
+  animation: sunSpin 60s linear infinite;
+}
+
+/* 4. Moon glow — breathing effect 3 detik */
+@keyframes moonGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(165, 180, 252, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(165, 180, 252, 0.9));
+  }
+}
+.animate-moon-glow {
+  animation: moonGlow 3s ease-in-out infinite;
+}
+
+/* 5. Accessibility — hormati prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active {
+    transform: none;
+  }
+  .animate-sun-slow,
+  .animate-moon-glow,
+  .animate-fade-page {
+    animation: none;
+  }
+}
