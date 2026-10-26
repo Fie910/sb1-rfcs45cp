@@ -171,34 +171,25 @@ export function DashboardPage({
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
       {/* ==================== HEADER COMPACT ==================== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl px-4 py-3">
-  {/* Ambient time-of-day decoration */}
-  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-25 pointer-events-none">
-    <TimeOfDayIcon size={56} />
-  </div>
-
-  <div className="relative flex items-center justify-between gap-3 flex-wrap">
-    {/* Kiri: Slogan + Greeting */}
-    <div className="min-w-0 flex-1">
-      <p className="text-[10px] italic text-indigo-300/80 tracking-wide truncate">
-        <Tagline variant="inline" separator="rub" />
-      </p>
-      <p className="text-sm md:text-base font-extrabold text-slate-100 truncate mt-0.5">
-        {SCHOOL_GREETING}, {namaPanggilan}!
-      </p>
-    </div>
-
-    {/* Kanan: Tanggal + Jam */}
-    <div className="text-right shrink-0 relative z-10">
-      <p className="text-[10px] md:text-[11px] font-bold text-slate-300">
+<TimeOfDayHero
+  trailing={
+    <div className="text-right">
+      <p className="text-[10px] md:text-[11px] font-bold text-slate-200 drop-shadow-md">
         {formatTanggalCompact(now)}
       </p>
-      <p className="text-[10px] text-slate-500 mt-0.5">
+      <p className="text-[10px] text-slate-300/80 mt-0.5 drop-shadow-md">
         {formatJam(now)} WIB
       </p>
     </div>
-  </div>
-</div>
+  }
+>
+  <p className="text-[10px] italic text-amber-300/90 tracking-wide truncate drop-shadow-md">
+    {SCHOOL_SLOGAN}
+  </p>
+  <p className="text-sm md:text-base font-extrabold text-white truncate mt-0.5 drop-shadow-lg">
+    {SCHOOL_GREETING}, {namaPanggilan}!
+  </p>
+</TimeOfDayHero>
 
       {/* ==================== PENGUMUMAN ==================== */}
       <div>
