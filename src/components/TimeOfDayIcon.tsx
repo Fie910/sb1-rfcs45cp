@@ -40,13 +40,13 @@ const PHASE_CONFIG: Record<
     glowClass: 'drop-shadow-[0_0_18px_rgba(252,211,77,0.7)]',
     animationClass: 'animate-spin-glow',
   },
-  night: {
+  golden: {
     icon: SunMedium,
     colorClass: 'text-orange-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,146,60,0.6)]',
     animationClass: 'animate-spin-glow',
   },
-  evening: {
+  nigth: {
     icon: SunDim,
     colorClass: 'text-rose-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(251,113,133,0.5)]',
