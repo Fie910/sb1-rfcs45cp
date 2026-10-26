@@ -697,11 +697,26 @@ export function IzinPage() {
           <Clock size={20} className="text-indigo-400" /> Pengajuan Izin Saya
         </h2>
         {myIzin.length === 0 ? (
-          <div className="bg-slate-900/60 rounded-3xl border border-slate-800/80 text-center py-16 px-6">
-            <FileText size={32} className="mx-auto mb-3 text-slate-500" />
-            <p className="text-slate-400">Belum ada pengajuan izin.</p>
-          </div>
-        ) : (
+  <div className="bg-slate-900/60 rounded-3xl border border-slate-800/80 text-center py-14 px-6">
+    <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 mb-4">
+      <CheckCircle2 size={28} className="text-emerald-400" />
+    </div>
+    <h3 className="text-sm font-bold text-slate-100 mb-1">
+      Anda hadir penuh
+    </h3>
+    <p className="text-xs text-slate-400 max-w-sm mx-auto mb-5 leading-relaxed">
+      Tidak ada pengajuan izin bulan ini. Semoga Allah menjaga kesehatan dan
+      memberi keberkahan pada setiap langkah ke kelas.
+    </p>
+    <button
+      onClick={openModalForCreate}
+      className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-4 py-2 rounded-xl transition-all cursor-pointer"
+    >
+      <Plus size={14} />
+      Ajukan Izin (jika perlu)
+    </button>
+  </div>
+) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {myIzin.map((i) => renderIzinCard(i, true))}
           </div>
