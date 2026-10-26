@@ -170,7 +170,11 @@ const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageK
 return (
   <>
     {isReady && (
-      <>
+  <div
+    className={`transition-opacity duration-500 ${
+      splashPhase === 'fading' || splashPhase === 'gone' ? 'opacity-100' : 'opacity-0'
+    }`}
+  >
 
         {/* ROUTE PUBLIK */}
         {isPublicPath(location.pathname) && (
