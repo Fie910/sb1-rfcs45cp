@@ -28,6 +28,15 @@
   animation: fadeInUp 500ms ease-out;
 }
 
+@keyframes fadeInSlow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in-slow {
+  animation: fadeInSlow 1500ms ease-out;
+}
+
 html {
   scroll-behavior: smooth;
 }
