@@ -164,25 +164,31 @@ function AppContent() {
   const isReady = !loading && minTimeElapsed;
   const showSplash = splashPhase !== 'gone';
 
-  // ROUTE PUBLIK
-  if (isPublicPath(location.pathname)) {
-    return (
-      <Suspense fallback={<PageLoadingFallback />}>
-        <Routes>
-          <Route path="/scan/:token" element={<ScanAsetPage />} />
-          <Route path="/buku_tamu" element={<BukuTamuPage />} />
-          <Route path="/verifikasi-surat/:token" element={<VerifikasiSuratPage />} />
-          <Route path="/verifikasi-notulensi/:token" element={<VerifikasiNotulensiPage />} />
-          <Route path="/verifikasi-arsip/:token" element={<VerifikasiArsipPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          {/* 🆕 Route TV Display */}
-          <Route path="/tv-display" element={<TvDisplayPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    );
-  }
+  // SUDAH LOGIN
+const currentPath = (location.pathname.replace('/', '') || 'dashboard') as PageKey;
+
+return (
+  <>
+    {isReady && (
+      <>
+
+        {/* ROUTE PUBLIK */}
+        {isPublicPath(location.pathname) && (
+          <Suspense fallback={<PageLoadingFallback />}>
+            <Routes>
+            <Route path="/scan/:token" element={<ScanAsetPage />} />
+            <Route path="/buku_tamu" element={<BukuTamuPage />} />
+            <Route path="/verifikasi-surat/:token" element={<VerifikasiSuratPage />} />
+            <Route path="/verifikasi-notulensi/:token" element={<VerifikasiNotulensiPage />} />
+            <Route path="/verifikasi-arsip/:token" element={<VerifikasiArsipPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            {/* 🆕 Route TV Display */}
+            <Route path="/tv-display" element={<TvDisplayPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          </Suspense>
+        )}
 
   // BELUM LOGIN
   if (!session) {
