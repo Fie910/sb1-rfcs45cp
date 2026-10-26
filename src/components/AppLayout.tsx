@@ -11,6 +11,7 @@ import { InstallPWA } from '@/components/InstallPWA';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TaglineBadge } from '@/components/TaglineBadge';
+import { useLocation } from 'react-router-dom';
 
 type LayoutProps = {
   current: PageKey;
