@@ -168,29 +168,34 @@ export function DashboardPage({
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
       {/* ==================== HEADER COMPACT ==================== */}
-      <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl px-4 py-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          {/* Kiri: Slogan + Greeting */}
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] italic text-indigo-300/80 tracking-wide truncate">
-              {SCHOOL_SLOGAN}
-            </p>
-            <p className="text-sm md:text-base font-extrabold text-slate-100 truncate mt-0.5">
-              {SCHOOL_GREETING}, {namaPanggilan}!
-            </p>
-          </div>
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl px-4 py-3">
+  {/* Ambient time-of-day decoration */}
+  <div className="absolute top-1/2 right-3 -translate-y-1/2 opacity-25 pointer-events-none">
+    <TimeOfDayIcon size={56} />
+  </div>
 
-          {/* Kanan: Tanggal + Jam */}
-          <div className="text-right shrink-0">
-            <p className="text-[10px] md:text-[11px] font-bold text-slate-300">
-              {formatTanggalCompact(now)}
-            </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              {formatJam(now)} WIB
-            </p>
-          </div>
-        </div>
-      </div>
+  <div className="relative flex items-center justify-between gap-3 flex-wrap">
+    {/* Kiri: Slogan + Greeting */}
+    <div className="min-w-0 flex-1">
+      <p className="text-[10px] italic text-indigo-300/80 tracking-wide truncate">
+        {SCHOOL_SLOGAN}
+      </p>
+      <p className="text-sm md:text-base font-extrabold text-slate-100 truncate mt-0.5">
+        {SCHOOL_GREETING}, {namaPanggilan}!
+      </p>
+    </div>
+
+    {/* Kanan: Tanggal + Jam */}
+    <div className="text-right shrink-0 relative z-10">
+      <p className="text-[10px] md:text-[11px] font-bold text-slate-300">
+        {formatTanggalCompact(now)}
+      </p>
+      <p className="text-[10px] text-slate-500 mt-0.5">
+        {formatJam(now)} WIB
+      </p>
+    </div>
+  </div>
+</div>
 
       {/* ==================== PENGUMUMAN ==================== */}
       <div>
