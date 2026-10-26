@@ -141,17 +141,28 @@ function AppContent() {
   const location = useLocation();
   const badgeCounts = useBadgeCounts(guru?.id ?? null, guru?.nama_lengkap ?? null);
 
-  // ⏱️ Minimum splash duration (1.2s) — cukup untuk "rasakan" tanpa mengganggu
+  // ⏱️ Phase splash: 'showing' → 'fading' → 'gone'
+  const [splashPhase, setSplashPhase] = useState<'showing' | 'fading' | 'gone'>('showing');
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+
+  // Minimum display time (2.5s)
   useEffect(() => {
     const timer = setTimeout(() => setMinTimeElapsed(true), 2500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Splash tampil selama: (auth masih loading) ATAU (minimum time belum lewat)
-  if (loading || !minTimeElapsed) {
-    return <SplashScreen />;
-  }
+  // Trigger fade-out setelah (auth selesai + min time lewat)
+  useEffect(() => {
+    if (loading || !minTimeElapsed) return;
+    if (splashPhase !== 'showing') return;
+
+    setSplashPhase('fading');
+    const fadeTimer = setTimeout(() => setSplashPhase('gone'), 500);
+    return () => clearTimeout(fadeTimer);
+  }, [loading, minTimeElapsed, splashPhase]);
+
+  const isReady = !loading && minTimeElapsed;
+  const showSplash = splashPhase !== 'gone';
 
   // ROUTE PUBLIK
   if (isPublicPath(location.pathname)) {
