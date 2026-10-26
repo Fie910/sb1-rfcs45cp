@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { TimeOfDayIcon } from '@/components/TimeOfDayIcon';
+import { SkeletonCard } from '@/components/Skeleton';
 
 // =============================================================================
 // KONSTANTA SEKOLAH
