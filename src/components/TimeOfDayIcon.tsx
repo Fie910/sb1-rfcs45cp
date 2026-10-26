@@ -22,13 +22,13 @@ const PHASE_CONFIG: Record<
     animationClass: string;
   }
 > = {
-  night: {
+  dawn: {
     icon: SunDim,
     colorClass: 'text-amber-400',
     glowClass: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]',
     animationClass: 'animate-spin-glow',
   },
-  morning: {
+  night: {
     icon: SunMedium,
     colorClass: 'text-yellow-400',
     glowClass: 'drop-shadow-[0_0_14px_rgba(250,204,21,0.6)]',
