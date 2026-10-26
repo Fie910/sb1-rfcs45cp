@@ -149,6 +149,15 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
 
             {/* Toggle Tema */}
             <ThemeToggle />
+            
+<button onClick={() => {
+  const next = !soundOn;
+  setSoundOn(next);
+  toggleSound(next);
+  if (next) playSuccess(); // feedback bahwa suara aktif
+}}>
+  {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+</button>
 
             {/* Tombol Logout Khusus Mobile */}
             <button
