@@ -12,6 +12,7 @@ import { ManajemenRapatTab } from '@/components/rapat/ManajemenRapatTab';
 import { isRapatManager, useAutoCloseRapat } from '@/components/rapat/shared';
 import { showToast } from '@/components/Toast';
 import { successMsg } from '@/constants/branding';
+import { useLocation } from 'react-router-dom';
 
 type TabKey = 'jadwal' | 'notulensi' | 'manajemen';
 
@@ -27,6 +28,17 @@ const ALL_TABS: TabDef[] = [
   { key: 'notulensi', label: 'Notulensi Saya', icon: ClipboardList },
   { key: 'manajemen', label: 'Manajemen Rapat', icon: BarChart3, managerOnly: true },
 ];
+
+const location = useLocation();
+
+useEffect(() => {
+  if (location.state?.openCreate) {
+    openCreate(); // fungsi yang sudah ada di file Anda
+    // Bersihkan state agar jika user refresh, modal tidak terbuka lagi
+    window.history.replaceState({}, document.title);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [location.state]);
 
 export function RapatPage() {
   const { guru } = useAuth();
