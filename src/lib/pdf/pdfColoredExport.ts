@@ -241,7 +241,7 @@ function drawSignatureBlock(
 // =============================================================================
 // MAIN — EXPORT COLORED PDF
 // =============================================================================
-export async function exportColoredPdf(options: PdfExportOptions): void {
+export async function exportColoredPdf(options: PdfExportOptions): Promise<void> {
   const {
     filename,
     title,
