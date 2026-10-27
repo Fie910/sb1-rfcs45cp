@@ -32,7 +32,7 @@ const ALL_TABS: TabDef[] = [
 export function RapatPage() {
   const { guru } = useAuth();
   const isManager = isRapatManager(guru);
-  const location = useLocation(); // ✅ PINDAH KE SINI (di dalam komponen)
+  const location = useLocation();
 
   // ✅ Auto-close rapat menggantung > 7 hari
   useAutoCloseRapat((count) => {
