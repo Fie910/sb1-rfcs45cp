@@ -257,6 +257,7 @@ export async function exportColoredPdf(options: PdfExportOptions): void {
     footerNote,
     signature,
     tagline,
+    action = 'preview',
   } = options;
 
   const doc = new jsPDF(orientation, 'mm', 'a4');
