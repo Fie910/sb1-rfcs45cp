@@ -30,7 +30,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
-
+  const { cheatSheetOpen, setCheatSheetOpen } = useKeyboardShortcuts();
   const location = useLocation();
   // Ambil ID guru yang sedang login untuk komponen lonceng
   const guruId = guru?.id || '';
