@@ -71,4 +71,4 @@ export function KeyboardShortcutCheatSheet({
       </div>
     </Modal>
   );
-}v
+}
