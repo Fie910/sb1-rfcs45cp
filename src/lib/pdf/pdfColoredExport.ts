@@ -52,6 +52,7 @@ export type PdfExportOptions = {
   footerNote?: string;
   signature?: PdfSignature;
   tagline?: string;
+  action?: PdfAction;
 };
 
 // =============================================================================
