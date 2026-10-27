@@ -27,7 +27,7 @@ export type SuratIzinData = {
   content_hash: string | null;
 };
 
-export async function generateSuratIzinPDF(data: SuratIzinData, action: PdfAction = 'save'): Promise<void> {
+export async function generateSuratIzinPDF(data: SuratIzinData, action: PdfAction = 'preview'): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
   const pengaturan = await fetchPengaturan(true);
