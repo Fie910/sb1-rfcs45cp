@@ -2,9 +2,9 @@
 import jsPDF from 'jspdf';
 import {
   fetchPengaturan, generateQrDataUrl, loadImageAsDataUrl,
-  buildVerifyUrl, tanggalHariIni, PDF_THEME, drawWatermark
+  buildVerifyUrl, tanggalHariIni, PDF_THEME, drawWatermark,
+  type PdfAction, // ✅ Import dari pdfShared
 } from './pdfShared';
-import type { PdfAction } from './pdfColoredExport';
 
 export type SertifikatTahfidzData = {
   siswa: { nama_lengkap: string; nisn: string; kelas: string; };
@@ -28,18 +28,17 @@ export async function generateSertifikatTahfidz(
 
   const pengaturan = await fetchPengaturan(true);
 
+  // ===========================================================================
   // 1. BACKGROUND & BORDER (Luxury)
-  // Bingkai Luar (Navy Tebal)
+  // ===========================================================================
   doc.setDrawColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.setLineWidth(4);
   doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
 
-  // Bingkai Dalam (Gold Tipis)
   doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
   doc.setLineWidth(1);
   doc.rect(12, 12, pageWidth - 24, pageHeight - 24);
 
-  // Ornamen Sudut (Gold)
   doc.setFillColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
   const cSize = 5;
   doc.rect(8, 8, cSize, cSize, 'F');
@@ -47,17 +46,24 @@ export async function generateSertifikatTahfidz(
   doc.rect(8, pageHeight - 8 - cSize, cSize, cSize, 'F');
   doc.rect(pageWidth - 8 - cSize, pageHeight - 8 - cSize, cSize, cSize, 'F');
 
-  // 2. WATERMARK LOGO (Sangat Tipis di Tengah)
+  // ===========================================================================
+  // 2. WATERMARK LOGO
+  // ===========================================================================
   if (pengaturan.logo_url) {
     await drawWatermark(doc, pengaturan.logo_url);
   }
 
+  // ===========================================================================
   // 3. KOP SEKOLAH
+  // ===========================================================================
   let cursorY = 28;
+
   if (pengaturan.logo_url) {
     const logoData = await loadImageAsDataUrl(pengaturan.logo_url);
     if (logoData) {
-      try { doc.addImage(logoData, 'PNG', pageWidth / 2 - 15, cursorY, 30, 30); } catch {}
+      try {
+        doc.addImage(logoData, 'PNG', pageWidth / 2 - 15, cursorY, 30, 30);
+      } catch { /* ignore */ }
     }
   }
 
@@ -75,7 +81,9 @@ export async function generateSertifikatTahfidz(
     doc.text(pengaturan.alamat, pageWidth / 2, cursorY, { align: 'center' });
   }
 
+  // ===========================================================================
   // 4. JUDUL SERTIFIKAT
+  // ===========================================================================
   cursorY += 15;
   doc.setFont('times', 'bold');
   doc.setFontSize(44);
@@ -96,7 +104,9 @@ export async function generateSertifikatTahfidz(
     doc.text(`Nomor: ${data.nomor_sertifikat}`, pageWidth / 2, cursorY, { align: 'center' });
   }
 
+  // ===========================================================================
   // 5. NAMA SISWA
+  // ===========================================================================
   cursorY += 15;
   doc.setFont('times', 'italic');
   doc.setFontSize(14);
@@ -109,7 +119,6 @@ export async function generateSertifikatTahfidz(
   doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text(data.siswa.nama_lengkap, pageWidth / 2, cursorY, { align: 'center' });
 
-  // Garis Emas di bawah nama
   cursorY += 4;
   const textWidth = doc.getTextWidth(data.siswa.nama_lengkap);
   doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
@@ -122,7 +131,9 @@ export async function generateSertifikatTahfidz(
   doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
   doc.text(`NISN: ${data.siswa.nisn} · Kelas ${data.siswa.kelas}`, pageWidth / 2, cursorY, { align: 'center' });
 
+  // ===========================================================================
   // 6. PENCAPAIAN
+  // ===========================================================================
   cursorY += 12;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -134,7 +145,6 @@ export async function generateSertifikatTahfidz(
   doc.setTextColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
   doc.text(data.pencapaian, pageWidth / 2, cursorY, { align: 'center' });
 
-  // Statistik
   if (data.total_halaman || data.nilai_rata) {
     cursorY += 10;
     doc.setFont('helvetica', 'normal');
@@ -148,7 +158,9 @@ export async function generateSertifikatTahfidz(
     }
   }
 
+  // ===========================================================================
   // 7. FOOTER: TTD, QR & GOLD SEAL
+  // ===========================================================================
   const footerY = pageHeight - 45;
   const rightX = pageWidth - 50;
   const leftX = 50;
@@ -156,9 +168,9 @@ export async function generateSertifikatTahfidz(
   // --- GOLD SEAL (Kiri) ---
   doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
   doc.setLineWidth(2);
-  doc.circle(leftX, footerY + 5, 18, 'S'); // Lingkaran luar
+  doc.circle(leftX, footerY + 5, 18, 'S');
   doc.setLineWidth(0.5);
-  doc.circle(leftX, footerY + 5, 15, 'S'); // Lingkaran dalam
+  doc.circle(leftX, footerY + 5, 15, 'S');
   
   doc.setFont('times', 'bold');
   doc.setFontSize(10);
@@ -193,7 +205,7 @@ export async function generateSertifikatTahfidz(
     doc.text(`NIP. ${nipKepsek}`, rightX, footerY + 39, { align: 'right' });
   }
 
-  // --- QR CODE (Tengah Bawah) ---
+  // --- QR CODE ---
   if (data.verification_token) {
     const qrSize = 22;
     const qrX = pageWidth / 2 - qrSize / 2;
@@ -207,10 +219,12 @@ export async function generateSertifikatTahfidz(
       doc.setFontSize(6);
       doc.setTextColor(120);
       doc.text('Scan Verifikasi', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-    } catch {}
+    } catch { /* skip */ }
   }
 
+  // ===========================================================================
   // 8. OUTPUT
+  // ===========================================================================
   const safeNama = data.siswa.nama_lengkap.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
   const safePencapaian = data.pencapaian.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
   const fileName = `Sertifikat_Tahfidz_${safeNama}_${safePencapaian}.pdf`;
