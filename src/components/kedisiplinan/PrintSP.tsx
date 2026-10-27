@@ -87,7 +87,7 @@ export function PrintSP({
   useEffect(() => {
     if (isGeneratedRef.current) return;
     isGeneratedRef.current = true;
-    generate('save'); // Default saat modal terbuka
+    generate('preview'); // Default saat modal terbuka
   }, [generate]);
 
   return (
