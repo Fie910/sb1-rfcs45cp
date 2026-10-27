@@ -34,6 +34,7 @@ import type {
 } from '@/types/database';
 import { successMsg } from '@/constants/branding';
 import { HoldToConfirmButton } from '@/components/HoldToConfirmButton';
+import { useLocation } from 'react-router-dom';
 
 const ROLE_KEPALA_KEPEGAWAIAN = ['admin', 'kepala', 'takola'];
 
@@ -67,6 +68,8 @@ const EMPTY_FORM: FormState = {
   titipan_tugas: '',
   url_file: '',
 };
+
+const location = useLocation();
 
 /** Group jadwal by slot (waktu_mulai + waktu_selesai) untuk deteksi kelas gabungan */
 type JadwalSlot = {
