@@ -88,6 +88,9 @@ export function PrintSP({
 
   // Auto-generate saat modal dibuka
   useEffect(() => {
+    if (isGeneratedRef.current) return;
+    isGeneratedRef.current = true;
+    
     generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
