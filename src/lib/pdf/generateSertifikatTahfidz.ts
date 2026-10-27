@@ -1,15 +1,10 @@
 // src/lib/pdf/generateSertifikatTahfidz.ts
-// Sertifikat Tahfidz A4 Landscape dengan desain mewah (Navy & Gold).
-
 import jsPDF from 'jspdf';
 import {
-  fetchPengaturan,
-  generateQrDataUrl,
-  loadImageAsDataUrl,
-  buildVerifyUrl,
-  tanggalHariIni,
-  PDF_THEME,
+  fetchPengaturan, generateQrDataUrl, loadImageAsDataUrl,
+  buildVerifyUrl, tanggalHariIni, PDF_THEME, drawWatermark
 } from './pdfShared';
+import type { PdfAction } from './pdfColoredExport';
 
 export type SertifikatTahfidzData = {
   siswa: { nama_lengkap: string; nisn: string; kelas: string; };
@@ -23,56 +18,52 @@ export type SertifikatTahfidzData = {
   penandatangan?: { nama: string; nip: string | null; jabatan: string; };
 };
 
-export async function generateSertifikatTahfidz(data: SertifikatTahfidzData): Promise<void> {
+export async function generateSertifikatTahfidz(
+  data: SertifikatTahfidzData, 
+  action: PdfAction = 'save'
+): Promise<void> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();   // 297
   const pageHeight = doc.internal.pageSize.getHeight(); // 210
 
   const pengaturan = await fetchPengaturan(true);
 
-  // ===========================================================================
-  // 1. BACKGROUND & BORDER (Navy & Gold)
-  // ===========================================================================
-  // Bingkai Luar (Navy, Tebal)
+  // 1. BACKGROUND & BORDER (Luxury)
+  // Bingkai Luar (Navy Tebal)
   doc.setDrawColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
-  doc.setLineWidth(3);
-  doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+  doc.setLineWidth(4);
+  doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
 
-  // Bingkai Dalam (Gold, Tipis)
+  // Bingkai Dalam (Gold Tipis)
   doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
-  doc.setLineWidth(0.5);
-  doc.rect(14, 14, pageWidth - 28, pageHeight - 28);
+  doc.setLineWidth(1);
+  doc.rect(12, 12, pageWidth - 24, pageHeight - 24);
 
   // Ornamen Sudut (Gold)
   doc.setFillColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
-  const cornerSize = 4;
-  // Kiri atas
-  doc.rect(10, 10, cornerSize, cornerSize, 'F');
-  // Kanan atas
-  doc.rect(pageWidth - 10 - cornerSize, 10, cornerSize, cornerSize, 'F');
-  // Kiri bawah
-  doc.rect(10, pageHeight - 10 - cornerSize, cornerSize, cornerSize, 'F');
-  // Kanan bawah
-  doc.rect(pageWidth - 10 - cornerSize, pageHeight - 10 - cornerSize, cornerSize, cornerSize, 'F');
+  const cSize = 5;
+  doc.rect(8, 8, cSize, cSize, 'F');
+  doc.rect(pageWidth - 8 - cSize, 8, cSize, cSize, 'F');
+  doc.rect(8, pageHeight - 8 - cSize, cSize, cSize, 'F');
+  doc.rect(pageWidth - 8 - cSize, pageHeight - 8 - cSize, cSize, cSize, 'F');
 
-  // ===========================================================================
-  // 2. KOP SEKOLAH (Tengah Atas)
-  // ===========================================================================
-  let cursorY = 25;
+  // 2. WATERMARK LOGO (Sangat Tipis di Tengah)
+  if (pengaturan.logo_url) {
+    await drawWatermark(doc, pengaturan.logo_url);
+  }
 
-  // Logo di Tengah (Proporsional 30x30 mm)
+  // 3. KOP SEKOLAH
+  let cursorY = 28;
   if (pengaturan.logo_url) {
     const logoData = await loadImageAsDataUrl(pengaturan.logo_url);
     if (logoData) {
-      try {
-        doc.addImage(logoData, 'PNG', pageWidth / 2 - 15, cursorY, 30, 30);
-      } catch { /* ignore */ }
+      try { doc.addImage(logoData, 'PNG', pageWidth / 2 - 15, cursorY, 30, 30); } catch {}
     }
   }
 
-  cursorY += 35;
+  cursorY += 36;
   doc.setFont('times', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text(pengaturan.nama_sekolah.toUpperCase(), pageWidth / 2, cursorY, { align: 'center' });
 
@@ -82,157 +73,151 @@ export async function generateSertifikatTahfidz(data: SertifikatTahfidzData): Pr
   doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
   if (pengaturan.alamat) {
     doc.text(pengaturan.alamat, pageWidth / 2, cursorY, { align: 'center' });
-    cursorY += 4;
-  }
-  const kontakParts = [];
-  if (pengaturan.telepon) kontakParts.push(`Telp: ${pengaturan.telepon}`);
-  if (pengaturan.email) kontakParts.push(`Email: ${pengaturan.email}`);
-  if (kontakParts.length > 0) {
-    doc.setFontSize(8);
-    doc.text(kontakParts.join(' · '), pageWidth / 2, cursorY, { align: 'center' });
   }
 
-  // Garis Pemisah Kop (Gold)
-  cursorY += 5;
-  doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
-  doc.setLineWidth(0.8);
-  doc.line(pageWidth / 2 - 60, cursorY, pageWidth / 2 + 60, cursorY);
-
-  // ===========================================================================
-  // 3. JUDUL SERTIFIKAT
-  // ===========================================================================
+  // 4. JUDUL SERTIFIKAT
   cursorY += 15;
   doc.setFont('times', 'bold');
-  doc.setFontSize(40);
+  doc.setFontSize(44);
   doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text('SERTIFIKAT', pageWidth / 2, cursorY, { align: 'center' });
 
   cursorY += 10;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setTextColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
   doc.text('TAHFIDZ AL-QURAN', pageWidth / 2, cursorY, { align: 'center' });
 
   if (data.nomor_sertifikat) {
     cursorY += 6;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
     doc.text(`Nomor: ${data.nomor_sertifikat}`, pageWidth / 2, cursorY, { align: 'center' });
   }
 
-  // ===========================================================================
-  // 4. NAMA SISWA
-  // ===========================================================================
+  // 5. NAMA SISWA
   cursorY += 15;
   doc.setFont('times', 'italic');
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
   doc.text('Diberikan kepada:', pageWidth / 2, cursorY, { align: 'center' });
 
-  cursorY += 12;
+  cursorY += 14;
   doc.setFont('times', 'bold');
-  doc.setFontSize(32);
+  doc.setFontSize(36);
   doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text(data.siswa.nama_lengkap, pageWidth / 2, cursorY, { align: 'center' });
 
   // Garis Emas di bawah nama
-  cursorY += 3;
+  cursorY += 4;
   const textWidth = doc.getTextWidth(data.siswa.nama_lengkap);
   doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
-  doc.setLineWidth(0.8);
-  doc.line(pageWidth / 2 - textWidth / 2 - 5, cursorY, pageWidth / 2 + textWidth / 2 + 5, cursorY);
+  doc.setLineWidth(1);
+  doc.line(pageWidth / 2 - textWidth / 2 - 10, cursorY, pageWidth / 2 + textWidth / 2 + 10, cursorY);
 
-  cursorY += 7;
+  cursorY += 8;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
   doc.text(`NISN: ${data.siswa.nisn} · Kelas ${data.siswa.kelas}`, pageWidth / 2, cursorY, { align: 'center' });
 
-  // ===========================================================================
-  // 5. PENCAPAIAN
-  // ===========================================================================
+  // 6. PENCAPAIAN
   cursorY += 12;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.text('Atas pencapaiannya dalam menghafal Al-Quran:', pageWidth / 2, cursorY, { align: 'center' });
 
-  cursorY += 10;
+  cursorY += 12;
   doc.setFont('times', 'bold');
-  doc.setFontSize(22);
+  doc.setFontSize(26);
   doc.setTextColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
   doc.text(data.pencapaian, pageWidth / 2, cursorY, { align: 'center' });
 
   // Statistik
   if (data.total_halaman || data.nilai_rata) {
-    cursorY += 8;
+    cursorY += 10;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
     const parts = [];
-    if (data.total_halaman) parts.push(`Total ${data.total_halaman.toFixed(1)} halaman hafalan`);
+    if (data.total_halaman) parts.push(`${data.total_halaman.toFixed(1)} halaman hafalan`);
     if (data.nilai_rata) parts.push(`Rata-rata nilai ${data.nilai_rata.toFixed(1)}`);
     if (parts.length > 0) {
-      doc.text(parts.join(' · '), pageWidth / 2, cursorY, { align: 'center' });
+      doc.text(parts.join('  •  '), pageWidth / 2, cursorY, { align: 'center' });
     }
   }
 
-  // ===========================================================================
-  // 6. FOOTER: TANGGAL, TTD, QR
-  // ===========================================================================
+  // 7. FOOTER: TTD, QR & GOLD SEAL
   const footerY = pageHeight - 45;
-  const rightX = pageWidth - 40;
+  const rightX = pageWidth - 50;
+  const leftX = 50;
 
-  // TTD Kanan
-  doc.setFont('helvetica', 'normal');
+  // --- GOLD SEAL (Kiri) ---
+  doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
+  doc.setLineWidth(2);
+  doc.circle(leftX, footerY + 5, 18, 'S'); // Lingkaran luar
+  doc.setLineWidth(0.5);
+  doc.circle(leftX, footerY + 5, 15, 'S'); // Lingkaran dalam
+  
+  doc.setFont('times', 'bold');
   doc.setFontSize(10);
+  doc.setTextColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
+  doc.text('SEGEL', leftX, footerY + 3, { align: 'center' });
+  doc.text('RESMI', leftX, footerY + 8, { align: 'center' });
+  doc.setFontSize(7);
+  doc.text('TAHFIDZ', leftX, footerY + 12, { align: 'center' });
+  
+  // --- TTD KANAN ---
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
   doc.setTextColor(PDF_THEME.slate900[0], PDF_THEME.slate900[1], PDF_THEME.slate900[2]);
   
-  const tanggal = data.tanggal_terbit
-    ? new Date(`${data.tanggal_terbit}T00:00:00+07:00`).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' })
-    : tanggalHariIni();
+  const tanggal = data.tanggal_terbit ? new Date(`${data.tanggal_terbit}T00:00:00+07:00`).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' }) : tanggalHariIni();
   
   doc.text(`Sukahideng, ${tanggal}`, rightX, footerY, { align: 'right' });
-  doc.text(`${data.penandatangan?.jabatan ?? 'Kepala Sekolah'},`, rightX, footerY + 5, { align: 'right' });
+  doc.text(`${data.penandatangan?.jabatan ?? 'Kepala Sekolah'},`, rightX, footerY + 6, { align: 'right' });
 
-  // Nama Kepsek (Bold, Times)
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   const namaKepsek = data.penandatangan?.nama ?? pengaturan.nama_kepsek ?? '-';
-  doc.text(namaKepsek, rightX, footerY + 30, { align: 'right' });
+  doc.text(namaKepsek, rightX, footerY + 32, { align: 'right' });
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
+  doc.line(rightX - 60, footerY + 35, rightX, footerY + 35);
 
-  // NIP
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   const nipKepsek = data.penandatangan?.nip ?? pengaturan.nip_kepsek;
   if (nipKepsek) {
-    doc.text(`NIP. ${nipKepsek}`, rightX, footerY + 35, { align: 'right' });
+    doc.text(`NIP. ${nipKepsek}`, rightX, footerY + 39, { align: 'right' });
   }
 
-  // QR Kiri
+  // --- QR CODE (Tengah Bawah) ---
   if (data.verification_token) {
-    const qrSize = 24;
-    const qrX = 40;
-    const qrY = pageHeight - 45;
+    const qrSize = 22;
+    const qrX = pageWidth / 2 - qrSize / 2;
+    const qrY = pageHeight - 40;
     const verifyUrl = buildVerifyUrl('surat', data.verification_token, null);
 
     try {
       const qrDataUrl = await generateQrDataUrl(verifyUrl, qrSize * 8);
       doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6);
       doc.setTextColor(120);
-      doc.text('Scan untuk verifikasi', qrX + qrSize / 2, qrY + qrSize + 2.5, { align: 'center' });
-      doc.text('keaslian sertifikat', qrX + qrSize / 2, qrY + qrSize + 5, { align: 'center' });
-      doc.setTextColor(0);
-    } catch { /* skip */ }
+      doc.text('Scan Verifikasi', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
+    } catch {}
   }
 
-  // ===========================================================================
-  // 7. SAVE
-  // ===========================================================================
+  // 8. OUTPUT
   const safeNama = data.siswa.nama_lengkap.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
   const safePencapaian = data.pencapaian.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
-  doc.save(`Sertifikat_Tahfidz_${safeNama}_${safePencapaian}.pdf`);
+  const fileName = `Sertifikat_Tahfidz_${safeNama}_${safePencapaian}.pdf`;
+
+  if (action === 'preview') {
+    window.open(doc.output('bloburl'), '_blank');
+  } else {
+    doc.save(fileName);
+  }
 }
