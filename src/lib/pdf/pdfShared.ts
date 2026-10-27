@@ -251,7 +251,7 @@ export function drawFooter(
 }
 
 // =============================================================================
-// PDF: WATERMARK LOGO (BARU)
+// PDF: WATERMARK LOGO (UPGRADE: Lebih Terlihat)
 // =============================================================================
 export async function drawWatermark(doc: jsPDF, logoUrl: string | null): Promise<void> {
   if (!logoUrl) return;
@@ -260,15 +260,17 @@ export async function drawWatermark(doc: jsPDF, logoUrl: string | null): Promise
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const size = 120; // Ukuran watermark (mm)
+  
+  // Perbesar ukuran menjadi 140mm (sebelumnya 120mm)
+  const size = 140; 
   const x = (pageWidth - size) / 2;
   const y = (pageHeight - size) / 2;
 
-  // Simpan state grafis saat ini
+  // Simpan state grafis
   const currentGState = doc.saveGraphicsState();
   
-  // Set opacity 5% (sangat tipis)
-  const gState = new (doc as any).GState({ opacity: 0.05 });
+  // ✅ Naikkan opacity dari 0.05 menjadi 0.12 (12%)
+  const gState = new (doc as any).GState({ opacity: 0.12 });
   doc.setGState(gState);
   
   try {
@@ -276,6 +278,11 @@ export async function drawWatermark(doc: jsPDF, logoUrl: string | null): Promise
   } catch (err) {
     console.warn('Watermark gagal ditambahkan:', err);
   }
+
+  // Kembalikan state
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  doc.restoreGraphicsState();
+}
 
   // Kembalikan ke state normal
   doc.setGState(new (doc as any).GState({ opacity: 1 }));
