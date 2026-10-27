@@ -424,7 +424,7 @@ export async function exportColoredPdf(options: PdfExportOptions): void {
     drawSignatureBlock(doc, pageWidth, currentPageHeight, signature);
   }
 
-    // ══════════════════════════════════════════════
+  // ══════════════════════════════════════════════
   // 6. FOOTER (Redesign: metadata + divider + tagline)
   // ══════════════════════════════════════════════
   const pageCount = doc.getNumberOfPages();
