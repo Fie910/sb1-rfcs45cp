@@ -39,9 +39,6 @@ export async function generateSPPDF(data: SPPdfData): Promise<void> {
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
   const pengaturan = await fetchPengaturan(true);
 
-  // ✅ TAMBAHKAN WATERMARK
-  await drawWatermark(doc, pengaturan.logo_url);
-
   // 1. KOP SURAT
   let y = await drawKopSurat(doc, pengaturan);
 
@@ -217,7 +214,8 @@ export async function generateSPPDF(data: SPPdfData): Promise<void> {
 
   // 13. FOOTER
   drawFooter(doc, pengaturan, A4_LAYOUT, `Surat Peringatan ${data.sp.level} - ${data.siswa.nama_lengkap}.`);
-
+  
+  await drawWatermark(doc, pengaturan.logo_url);
   // 14. UPDATE DB
   if (data.verification_token) {
     try {
