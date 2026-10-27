@@ -1,13 +1,12 @@
-// src/lib/pdf/generateNotulensiPDF.ts
 import jsPDF from 'jspdf';
 import { supabase } from '@/lib/supabase';
 import {
   A4_LAYOUT, buildVerifyUrl, drawFooter, drawKopSurat, drawQrVerifikasi,
   fetchPengaturan, formatJam, formatTanggalPanjang, tanggalHariIni, PDF_THEME,
   drawWatermark,
+  type PdfAction // ✅ Diambil dari pdfShared
 } from './pdfShared';
 import type { ActionItemRapat } from '@/types/database';
-import { PdfAction } from './pdfColoredExport';
 
 export type NotulensiPDFData = {
   nomor_rapat: string;
@@ -37,24 +36,24 @@ export type NotulensiPDFData = {
   content_hash: string | null;
 };
 
-export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAction = 'preview'): Promise<void> {
+export async function generateNotulensiPDF(
+  data: NotulensiPDFData, 
+  action: PdfAction = 'save'
+): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
   let y = 15;
 
   const pengaturan = await fetchPengaturan();
 
-  // 1. KOP SURAT
   y = await drawKopSurat(doc, pengaturan);
 
-  // 2. JUDUL (Times New Roman, Navy)
   y += 12;
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
   doc.text('NOTULENSI RAPAT', pageWidth / 2, y, { align: 'center' });
 
-  // Garis Emas di bawah judul
   y += 2;
   doc.setDrawColor(PDF_THEME.gold[0], PDF_THEME.gold[1], PDF_THEME.gold[2]);
   doc.setLineWidth(0.5);
@@ -72,7 +71,6 @@ export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAc
   doc.text(`Jenis: ${data.jenis_rapat}`, pageWidth / 2, y, { align: 'center' });
   doc.setTextColor(0);
 
-  // 3. IDENTITAS RAPAT
   y += 10;
   doc.setFont('times', 'bold');
   doc.setFontSize(12);
@@ -107,7 +105,6 @@ export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAc
     y += Math.max(5, valLines.length * 4.5);
   });
 
-  // 4. DAFTAR PESERTA
   y += 4;
   doc.setFont('times', 'bold');
   doc.setFontSize(12);
@@ -125,7 +122,6 @@ export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAc
     const colX = [marginX + 3, marginX + 12, marginX + 90, marginX + 130];
     const colLabels = ['No', 'Nama', 'Jabatan', 'Kehadiran'];
 
-    // Header Tabel (Navy bg, White text)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setFillColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
@@ -155,7 +151,6 @@ export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAc
     });
   }
 
-  // Fungsi bantuan untuk section text panjang
   const renderSection = (roman: string, title: string, content: string | null) => {
     if (y > pageHeight - 40) { doc.addPage(); y = 20; }
     doc.setFont('times', 'bold');
@@ -188,7 +183,6 @@ export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAc
   renderSection('IV', 'PEMBAHASAN', data.pembahasan);
   renderSection('V', 'KEPUTUSAN', data.keputusan);
 
-  // 6. ACTION ITEMS
   if (data.action_items.length > 0) {
     if (y > pageHeight - 45) { doc.addPage(); y = 20; }
 
@@ -237,7 +231,6 @@ export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAc
     });
   }
 
-  // 7. TANDA TANGAN
   if (y > pageHeight - 80) { doc.addPage(); y = 30; }
   y += 10;
 
