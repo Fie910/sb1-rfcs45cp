@@ -1,7 +1,8 @@
 // src/pages/RapatPage.tsx
 // Halaman utama Modul Rapat & Notulensi dengan 3 tab.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react'; // ✅ TAMBAH useEffect
+import { useLocation } from 'react-router-dom';        // ✅ TAMBAH useLocation
 import {
   CalendarCheck, ClipboardList, BarChart3, Users,
 } from 'lucide-react';
@@ -12,7 +13,6 @@ import { ManajemenRapatTab } from '@/components/rapat/ManajemenRapatTab';
 import { isRapatManager, useAutoCloseRapat } from '@/components/rapat/shared';
 import { showToast } from '@/components/Toast';
 import { successMsg } from '@/constants/branding';
-import { useLocation } from 'react-router-dom';
 
 type TabKey = 'jadwal' | 'notulensi' | 'manajemen';
 
@@ -29,22 +29,12 @@ const ALL_TABS: TabDef[] = [
   { key: 'manajemen', label: 'Manajemen Rapat', icon: BarChart3, managerOnly: true },
 ];
 
-const location = useLocation();
-
-useEffect(() => {
-  if (location.state?.openCreate) {
-    openCreate(); // fungsi yang sudah ada di file Anda
-    // Bersihkan state agar jika user refresh, modal tidak terbuka lagi
-    window.history.replaceState({}, document.title);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [location.state]);
-
 export function RapatPage() {
   const { guru } = useAuth();
   const isManager = isRapatManager(guru);
+  const location = useLocation(); // ✅ PINDAH KE SINI (di dalam komponen)
 
-  // ✅ Auto-close rapat menggantung > 7 hari (trigger sekali saat mount)
+  // ✅ Auto-close rapat menggantung > 7 hari
   useAutoCloseRapat((count) => {
     if (count > 0) {
       showToast('info', `${count} rapat menggantung di-close otomatis`);
@@ -58,6 +48,23 @@ export function RapatPage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>('jadwal');
   const effectiveTab = visibleTabs.find((t) => t.key === activeTab)?.key ?? 'jadwal';
+
+  // ✅ TANGKAP QUICK ACTION DARI COMMAND PALETTE
+  useEffect(() => {
+    if (location.state?.openCreate) {
+      // Karena tombol "Tambah Rapat" ada di tab Jadwal/Manajemen,
+      // kita arahkan user ke tab tersebut.
+      if (isManager) {
+        setActiveTab('manajemen'); // Manager biasanya tambah via Manajemen
+      } else {
+        setActiveTab('jadwal');
+      }
+      
+      // Bersihkan state agar tidak looping
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, isManager]);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
