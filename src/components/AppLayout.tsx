@@ -1,4 +1,5 @@
 // src/components/AppLayout.tsx
+import { playSuccess } from '@/lib/sound';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { LogOut, Menu, X, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -14,7 +15,6 @@ import { TaglineBadge } from '@/components/TaglineBadge';
 import { useLocation } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '@/lib/sound';
-import { playSuccess } from '@/lib/sound';
 
 type LayoutProps = {
   current: PageKey;
