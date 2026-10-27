@@ -15,6 +15,8 @@ import { TaglineBadge } from '@/components/TaglineBadge';
 import { useLocation } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '@/lib/sound';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { KeyboardShortcutCheatSheet } from '@/components/KeyboardShortcutCheatSheet';
 
 type LayoutProps = {
   current: PageKey;
