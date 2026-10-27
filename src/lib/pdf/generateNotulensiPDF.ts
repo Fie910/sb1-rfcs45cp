@@ -267,6 +267,8 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
 
   drawFooter(doc, pengaturan, A4_LAYOUT, `Notulensi ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}.`);
 
+  await drawWatermark(doc, pengaturan.logo_url);
+
   const fileName = `Notulensi_${data.nomor_rapat}_${data.judul_rapat.slice(0, 40).replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
   doc.save(fileName);
 
