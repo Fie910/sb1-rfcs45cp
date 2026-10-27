@@ -136,6 +136,15 @@ export function PengumumanPage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (location.state?.openCreate) {
+      openCreate(); // fungsi yang sudah ada di file Anda
+      // Bersihkan state agar jika user refresh, modal tidak terbuka lagi
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
   const resetImageState = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
