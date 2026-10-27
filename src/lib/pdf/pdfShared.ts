@@ -3,6 +3,7 @@
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { supabase } from '@/lib/supabase';
+import { SEKOLAH_TAGLINE } from '@/constants/branding';
 
 // =============================================================================
 // TYPES & KONSTANTA WARNA
