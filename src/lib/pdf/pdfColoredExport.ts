@@ -9,8 +9,6 @@ import { SEKOLAH_TAGLINE } from '@/constants/branding';
 // =============================================================================
 // TYPES
 // =============================================================================
-// export type RGB = [number, number, number]; // Dihapus, pakai dari pdfShared
-
 export type PdfColumn = {
   header: string;
   halign?: 'left' | 'center' | 'right';
@@ -423,7 +421,7 @@ export async function exportColoredPdf(options: PdfExportOptions): Promise<void>
   }
 
   // ══════════════════════════════════════════════
-  // 6. FOOTER (Redesign: metadata + divider + tagline)
+  // 6. FOOTER
   // ══════════════════════════════════════════════
   const pageCount = doc.getNumberOfPages();
   const cetakTanggal = new Date().toLocaleDateString('id-ID', {
@@ -433,13 +431,8 @@ export async function exportColoredPdf(options: PdfExportOptions): Promise<void>
     year: 'numeric',
   });
 
-  // Tagline default: dari constant. Set '' (empty string) via options untuk hide.
   const finalTagline = tagline === '' ? null : (tagline ?? SEKOLAH_TAGLINE);
 
-  // 3-tier footer layout (bottom → top):
-  //   Y = pageHeight - 4.5  → tagline (italic serif, navy)
-  //   Y = pageHeight - 7    → divider line
-  //   Y = pageHeight - 10   → metadata (footerNote + tanggal | halaman)
   const footerMetaY = pageHeight - 10;
   const dividerY = pageHeight - 7;
   const taglineY = pageHeight - 4.5;
@@ -447,7 +440,6 @@ export async function exportColoredPdf(options: PdfExportOptions): Promise<void>
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
 
-    // --- Row 1: Metadata (kiri) & Nomor Halaman (kanan) ---
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(
@@ -465,7 +457,6 @@ export async function exportColoredPdf(options: PdfExportOptions): Promise<void>
       align: 'right',
     });
 
-    // --- Divider line tipis ---
     doc.setDrawColor(
       PDF_COLORS.slate300[0],
       PDF_COLORS.slate300[1],
@@ -474,7 +465,6 @@ export async function exportColoredPdf(options: PdfExportOptions): Promise<void>
     doc.setLineWidth(0.2);
     doc.line(marginX, dividerY, pageWidth - marginX, dividerY);
 
-    // --- Row 2: Tagline (center, italic serif, navy) ---
     if (finalTagline) {
       doc.setFont('times', 'italic');
       doc.setFontSize(8.5);
@@ -493,7 +483,7 @@ export async function exportColoredPdf(options: PdfExportOptions): Promise<void>
   // 7. WATERMARK & SAVE
   // ══════════════════════════════════════════════
   if (schoolLogoUrl) {
-    await drawWatermark(doc, schoolLogoUrl); // ✅ Panggil Watermark
+    await drawWatermark(doc, schoolLogoUrl);
   }
 
   const finalName = filename.toLowerCase().endsWith('.pdf') ? filename : `${filename}.pdf`;
@@ -506,7 +496,7 @@ export async function exportColoredPdf(options: PdfExportOptions): Promise<void>
 }
 
 // =============================================================================
-// 🆕 ASYNC WRAPPER — Auto-fetch pengaturan + logo + kepsek
+// 🆕 ASYNC WRAPPER
 // =============================================================================
 export async function exportColoredPdfBranded(
   options: Omit<PdfExportOptions, 'schoolName' | 'schoolAddress' | 'schoolLogoUrl' | 'schoolContact' | 'signature'> & {
@@ -551,12 +541,12 @@ export async function exportColoredPdfBranded(
         nama: kepsek.nama,
         nip: kepsek.nip,
         jabatan: 'Kepala Sekolah',
-        kota: 'Tasikmalaya',
+        kota: 'Sukahideng',
       };
     }
   }
 
-  exportColoredPdf({
+  await exportColoredPdf({
     ...options,
     schoolName,
     schoolAddress,
