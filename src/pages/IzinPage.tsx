@@ -163,7 +163,7 @@ export function IzinPage() {
 
   useEffect(() => {
   if (location.state?.openCreate) {
-    openCreate(); // fungsi yang sudah ada di file Anda
+    openModalForCreate(); // fungsi yang sudah ada di file Anda
     // Bersihkan state agar jika user refresh, modal tidak terbuka lagi
     window.history.replaceState({}, document.title);
   }
