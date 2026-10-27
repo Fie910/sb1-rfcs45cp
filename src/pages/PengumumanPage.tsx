@@ -23,6 +23,7 @@ import {
   generateRingkasanPengumuman,
   type RingkasanPengumumanAI,
 } from '@/lib/ai/pengumumanAi';
+import { useLocation } from 'react-router-dom';
 
 const emptyForm = {
   judul: '',
