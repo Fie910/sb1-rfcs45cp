@@ -77,7 +77,7 @@ export const PrintDisposisi: React.FC<PrintDisposisiProps> = ({
           {/* Watermark Logo */}
           {logo_url && (
             <div 
-              className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none print:opacity-[0.06]"
+              className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none print:opacity-[0.12]"
               style={{
                 backgroundImage: `url(${logo_url})`,
                 backgroundPosition: 'center',
