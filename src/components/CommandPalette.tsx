@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, X, CornerDownLeft, ArrowUp, ArrowDown,
-  Clock, Sparkles,
+  Clock, Sparkles, Zap, Megaphone, FileText, CalendarCheck, PlusCircle,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { canAccessTahfidz } from '@/components/tahfidz/shared';
@@ -15,35 +15,95 @@ import type { LucideIcon } from 'lucide-react';
 // =============================================================================
 // KONSTANTA
 // =============================================================================
-const RECENT_KEY = 'smk_recent_pages';
+const RECENT_KEY = 'smk_recent_actions';
 const MAX_RECENT = 5;
 
 // =============================================================================
 // TYPES
 // =============================================================================
+type ItemType = 'page' | 'action';
+
 type CommandItem = {
-  key: PageKey;
+  type: ItemType;
+  key: string;
   label: string;
   group: string;
   icon: LucideIcon;
   path: string;
+  state?: Record<string, any>; // untuk membuka modal, dll.
 };
+
+// =============================================================================
+// QUICK ACTIONS DEFINITION
+// =============================================================================
+const QUICK_ACTIONS: CommandItem[] = [
+  {
+    type: 'action',
+    key: 'act_pengumuman',
+    label: 'Buat Pengumuman Baru',
+    group: 'Aksi Cepat',
+    icon: Megaphone,
+    path: '/pengumuman',
+    state: { openCreate: true },
+  },
+  {
+    type: 'action',
+    key: 'act_izin',
+    label: 'Ajukan Izin & Delegasi',
+    group: 'Aksi Cepat',
+    icon: FileText,
+    path: '/izin',
+    state: { openCreate: true },
+  },
+  {
+    type: 'action',
+    key: 'act_rapat',
+    label: 'Buat Jadwal Rapat Baru',
+    group: 'Aksi Cepat',
+    icon: CalendarCheck,
+    path: '/rapat',
+    state: { openCreate: true },
+  },
+];
+
+// =============================================================================
+// HELPER — Fuzzy Match
+// =============================================================================
+/**
+ * Simple fuzzy match: Apakah huruf-huruf di `query` muncul berurutan di `text`?
+ * Contoh: query "izn" -> text "Izin" = TRUE
+ * query "pgnuman" -> text "Pengumuman" = TRUE
+ */
+function fuzzyMatch(query: string, text: string): boolean {
+  const q = query.toLowerCase();
+  const t = text.toLowerCase();
+  
+  // 1. Fast path: substring exact (prioritas tertinggi)
+  if (t.includes(q)) return true;
+  
+  // 2. Fuzzy: cocokkan huruf berurutan
+  let qIdx = 0;
+  for (let i = 0; i < t.length && qIdx < q.length; i++) {
+    if (t[i] === q[qIdx]) qIdx++;
+  }
+  return qIdx === q.length;
+}
 
 // =============================================================================
 // HELPER — localStorage recent
 // =============================================================================
-function getRecentKeys(): PageKey[] {
+function getRecentKeys(): string[] {
   try {
     const raw = localStorage.getItem(RECENT_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as PageKey[]) : [];
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
   } catch {
     return [];
   }
 }
 
-function saveRecentKey(key: PageKey) {
+function saveRecentKey(key: string) {
   try {
     const cur = getRecentKeys().filter((k) => k !== key);
     const next = [key, ...cur].slice(0, MAX_RECENT);
@@ -72,26 +132,38 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [recentKeys, setRecentKeys] = useState<PageKey[]>([]);
+  const [recentKeys, setRecentKeys] = useState<string[]>([]);
 
-  // Build flat list of accessible items
-const allItems: CommandItem[] = useMemo(() => {
-  const items: CommandItem[] = [];
-  NAVIGATION_CONFIG.forEach((group) => {
-    group.items.forEach((item) => {
-      if (!hasAccess(item.key)) return;
-      if (item.customAccess === 'tahfidz' && !canAccessTahfidz(guru)) return;
-      items.push({
-        key: item.key,
-        label: item.label,
-        group: group.groupTitle,
-        icon: item.icon,
-        path: item.path,
+  // Build flat list of accessible items (Pages + Actions)
+  const allItems: CommandItem[] = useMemo(() => {
+    const items: CommandItem[] = [];
+
+    // 1. Tambahkan Quick Actions (selalu di atas)
+    QUICK_ACTIONS.forEach((action) => {
+      // Opsional: filter aksi berdasarkan akses (misal: hanya yang bisa akses /izin bisa melihat "Ajukan Izin")
+      if (hasAccess(action.path.replace('/', '') as PageKey)) {
+        items.push(action);
+      }
+    });
+
+    // 2. Tambahkan Halaman Navigasi
+    NAVIGATION_CONFIG.forEach((group) => {
+      group.items.forEach((item) => {
+        if (!hasAccess(item.key)) return;
+        if (item.customAccess === 'tahfidz' && !canAccessTahfidz(guru)) return;
+        items.push({
+          type: 'page',
+          key: item.key,
+          label: item.label,
+          group: group.groupTitle,
+          icon: item.icon,
+          path: item.path,
+        });
       });
     });
-  });
-  return items;
-}, [hasAccess, guru]);
+
+    return items;
+  }, [hasAccess, guru]);
 
   // Recent items (resolve + filter accessible)
   const recentItems: CommandItem[] = useMemo(() => {
@@ -101,14 +173,14 @@ const allItems: CommandItem[] = useMemo(() => {
       .slice(0, MAX_RECENT);
   }, [recentKeys, allItems]);
 
-  // Filtered items (by query)
+  // Filtered items (by query) — menggunakan FUZZY MATCH
   const filteredItems: CommandItem[] = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return allItems;
     return allItems.filter(
       (i) =>
-        i.label.toLowerCase().includes(q) ||
-        i.group.toLowerCase().includes(q)
+        fuzzyMatch(q, i.label) ||
+        fuzzyMatch(q, i.group)
     );
   }, [allItems, query]);
 
@@ -170,7 +242,8 @@ const allItems: CommandItem[] = useMemo(() => {
   // ==========================================================================
   const handleSelect = (item: CommandItem) => {
     saveRecentKey(item.key);
-    navigate(item.path);
+    // Navigasi dengan state jika ini adalah Quick Action (untuk buka modal)
+    navigate(item.path, { state: item.state });
     onOpenChange(false);
   };
 
@@ -198,11 +271,8 @@ const allItems: CommandItem[] = useMemo(() => {
 
   const showRecent = !query.trim() && recentItems.length > 0;
   const recentKeySet = new Set(recentItems.map((r) => r.key));
-
-  // Cek apakah ada index valid
   const hasAnyResult = flatItems.length > 0;
 
-  // Untuk render: kita track offset index per item
   let cursor = 0;
 
   return (
@@ -212,10 +282,8 @@ const allItems: CommandItem[] = useMemo(() => {
         if (e.target === e.currentTarget) onOpenChange(false);
       }}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" />
 
-      {/* Card */}
       <div
         className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
         onMouseDown={(e) => e.stopPropagation()}
@@ -229,7 +297,7 @@ const allItems: CommandItem[] = useMemo(() => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Cari menu atau fitur... (presensi, nilai, sarpras)"
+            placeholder="Cari menu atau aksi... (ketik: izn, pgnuman, buat izin)"
             className="flex-1 bg-transparent text-slate-100 placeholder:text-slate-600 focus:outline-none text-sm"
           />
           {query && (
@@ -336,12 +404,8 @@ const allItems: CommandItem[] = useMemo(() => {
               </Kbd>
               <span className="ml-1">Pilih</span>
             </span>
-            <span className="hidden sm:flex items-center gap-1">
-              <Kbd>Esc</Kbd>
-              <span className="ml-1">Tutup</span>
-            </span>
           </div>
-          <span className="font-mono">{flatItems.length} menu</span>
+          <span className="font-mono">{flatItems.length} hasil</span>
         </div>
       </div>
     </div>
@@ -394,6 +458,8 @@ interface RowProps {
 
 function CommandRow({ item, active, index, onSelect, onHover, isRecent }: RowProps) {
   const Icon = item.icon;
+  const isAction = item.type === 'action';
+
   return (
     <button
       type="button"
@@ -408,12 +474,12 @@ function CommandRow({ item, active, index, onSelect, onHover, isRecent }: RowPro
     >
       <div
         className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-          active
-            ? 'bg-indigo-500/20 text-indigo-300'
-            : 'bg-slate-800 text-slate-400'
+          isAction
+            ? active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-emerald-400/70'
+            : active ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-400'
         }`}
       >
-        <Icon size={14} />
+        {isAction ? <Zap size={14} /> : <Icon size={14} />}
       </div>
       <div className="min-w-0 flex-1">
         <p
@@ -423,8 +489,14 @@ function CommandRow({ item, active, index, onSelect, onHover, isRecent }: RowPro
         >
           {item.label}
         </p>
-        <p className="text-[10px] text-slate-500 truncate">
-          {isRecent ? 'Terakhir dibuka' : item.group}
+        <p className="text-[10px] text-slate-500 truncate flex items-center gap-1.5">
+          {isRecent ? (
+            'Terakhir dibuka'
+          ) : isAction ? (
+            <><span className="text-emerald-400/80 font-bold">Aksi</span> · {item.group}</>
+          ) : (
+            item.group
+          )}
         </p>
       </div>
       {active && <CornerDownLeft size={12} className="text-indigo-400 shrink-0" />}
