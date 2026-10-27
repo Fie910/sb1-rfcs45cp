@@ -1,3 +1,4 @@
+//src/config/navigation.ts
 import {
   LayoutDashboard,
   User,
