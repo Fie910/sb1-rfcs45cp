@@ -2,16 +2,9 @@
 import jsPDF from 'jspdf';
 import { supabase } from '@/lib/supabase';
 import {
-  A4_LAYOUT,
-  buildVerifyUrl,
-  drawFooter,
-  drawKopSurat,
-  drawQrVerifikasi,
-  fetchPengaturan,
-  formatJam,
-  formatTanggalPanjang,
-  tanggalHariIni,
-  PDF_THEME, // 🆕 Import Tema
+  A4_LAYOUT, buildVerifyUrl, drawFooter, drawKopSurat, drawQrVerifikasi,
+  fetchPengaturan, formatJam, formatTanggalPanjang, tanggalHariIni, PDF_THEME,
+  drawWatermark,
 } from './pdfShared';
 import type { ActionItemRapat } from '@/types/database';
 
