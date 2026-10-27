@@ -20,7 +20,7 @@ export type SertifikatTahfidzData = {
 
 export async function generateSertifikatTahfidz(
   data: SertifikatTahfidzData, 
-  action: PdfAction = 'save'
+  action: PdfAction = 'preview'
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();   // 297
