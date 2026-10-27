@@ -13,6 +13,8 @@ import {
 } from './pdfShared';
 import { getSemesterDateRange, type SemesterType } from '@/lib/tahfidz/semester';
 import { getHalamanSetoran } from '@/lib/tahfidz/hitungHalaman';
+import { PdfAction } from './pdfColoredExport';
+import { drawWatermark } from './pdfShared';
 import type { TahfidzSurah, TahfidzHalamanDetail } from '@/types/database';
 
 function formatTanggalPendekRaport(d: string): string {
@@ -38,6 +40,7 @@ export async function generateRaportTahfidz(
   data: RaportTahfidzData,
   surahMap: Map<number, TahfidzSurah>,
   halamanMap: TahfidzHalamanDetail[]
+  action: PdfAction = 'preview'
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
