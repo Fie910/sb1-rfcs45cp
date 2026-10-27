@@ -1,31 +1,16 @@
 //src/pages/DashboardKepsekPage.tsx
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  Eye,
-  Loader2,
-  Users,
-  UserCheck,
-  FileText,
-  ClipboardCheck,
-  Activity,
-  RefreshCw,
-  Award,
-  AlertTriangle,
-  Calendar,
+  Eye, Loader2, Users, UserCheck, FileText, ClipboardCheck,
+  Activity, RefreshCw, Award, AlertTriangle, Calendar,
   TrendingUp,
 } from 'lucide-react';
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
+  ResponsiveContainer, LineChart, Line, XAxis,
+  YAxis, CartesianGrid, Tooltip,
+  Legend, AreaChart, Area,
 } from 'recharts';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
-import { AreaChart, Area, defs, linearGradient, stop } from 'recharts';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { getTodayDateWib } from '@/utils/date';
