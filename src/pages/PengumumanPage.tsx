@@ -99,7 +99,7 @@ const compressAndConvertToWebP = (
 
 export function PengumumanPage() {
   const { guru } = useAuth();
-
+  const location = useLocation();
   const [list, setList] = useState<Pengumuman[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
