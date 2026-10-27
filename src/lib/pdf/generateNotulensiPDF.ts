@@ -38,7 +38,7 @@ export type NotulensiPDFData = {
 
 export async function generateNotulensiPDF(
   data: NotulensiPDFData, 
-  action: PdfAction = 'save'
+  action: PdfAction = 'preview'
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
