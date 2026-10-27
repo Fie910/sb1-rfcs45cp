@@ -1,4 +1,3 @@
-// src/lib/pdf/generateRaportTahfidz.ts
 import jsPDF from 'jspdf';
 import { supabase } from '@/lib/supabase';
 import {
@@ -10,11 +9,11 @@ import {
   fetchPengaturan,
   tanggalHariIni,
   PDF_THEME,
+  drawWatermark,
+  type PdfAction, // ✅ Import dari pdfShared
 } from './pdfShared';
 import { getSemesterDateRange, type SemesterType } from '@/lib/tahfidz/semester';
 import { getHalamanSetoran } from '@/lib/tahfidz/hitungHalaman';
-import type { PdfAction } from './pdfColoredExport';
-import { drawWatermark } from './pdfShared';
 import type { TahfidzSurah, TahfidzHalamanDetail } from '@/types/database';
 
 function formatTanggalPendekRaport(d: string): string {
@@ -40,7 +39,7 @@ export async function generateRaportTahfidz(
   data: RaportTahfidzData,
   surahMap: Map<number, TahfidzSurah>,
   halamanMap: TahfidzHalamanDetail[],
-  action: PdfAction = 'preview'
+  action: PdfAction = 'save' // ✅ Koma diperbaiki
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
@@ -48,7 +47,6 @@ export async function generateRaportTahfidz(
 
   const dateRange = getSemesterDateRange(data.tahunAjaran, data.semester);
 
-  // Fetch Data
   const { data: setoranList } = await supabase
     .from('tahfidz_setoran')
     .select(`id, tanggal, jenis, surah_mulai, ayat_mulai, surah_selesai, ayat_selesai, kualitas, nilai, catatan, halaman_snapshot, guru:guru_tahfidz_id (nama_lengkap)`)
@@ -96,10 +94,8 @@ export async function generateRaportTahfidz(
   const targetHalaman = targetData?.target_halaman ?? 0;
   const persenCapaian = targetHalaman > 0 ? (totalHalaman / targetHalaman) * 100 : 0;
 
-  // 1. KOP
   let y = await drawKopSurat(doc, pengaturan);
 
-  // 2. JUDUL RAPORT
   y += 12;
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
@@ -113,7 +109,6 @@ export async function generateRaportTahfidz(
   doc.text(`Tahun Ajaran ${data.tahunAjaran} · Semester ${data.semester}`, pageWidth / 2, y, { align: 'center' });
   doc.setTextColor(0);
 
-  // 3. IDENTITAS SISWA
   y += 12;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -140,7 +135,6 @@ export async function generateRaportTahfidz(
     y += 5.5;
   });
 
-  // 4. STATISTIK
   y += 6;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -165,8 +159,7 @@ export async function generateRaportTahfidz(
     const x = marginX + col * (statBoxW + statBoxGap);
     const boxY = y + row * (statBoxH + statBoxGap);
 
-    // Background & Border Navy Muda
-    doc.setFillColor(248, 250, 252); // Slate 50
+    doc.setFillColor(248, 250, 252);
     doc.setDrawColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
     doc.setLineWidth(0.3);
     doc.roundedRect(x, boxY, statBoxW, statBoxH, 2, 2, 'FD');
@@ -192,7 +185,6 @@ export async function generateRaportTahfidz(
   doc.setTextColor(0);
   y += 6;
 
-  // 5. TARGET & CAPAIAN
   if (targetData) {
     if (y > pageHeight - 60) { doc.addPage(); y = 20; }
 
@@ -228,7 +220,7 @@ export async function generateRaportTahfidz(
       const barW = contentWidth - 10;
       const barH = 5;
       const barY = y;
-      doc.setFillColor(226, 232, 240); // Slate 200
+      doc.setFillColor(226, 232, 240);
       doc.roundedRect(marginX + 5, barY, barW, barH, 1, 1, 'F');
 
       const fillW = (Math.min(100, persenCapaian) / 100) * barW;
@@ -241,7 +233,6 @@ export async function generateRaportTahfidz(
     }
   }
 
-  // 6. DAFTAR SETORAN
   if (y > pageHeight - 50) { doc.addPage(); y = 20; }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -301,7 +292,6 @@ export async function generateRaportTahfidz(
     doc.setTextColor(0); y += 3;
   }
 
-  // 7. MILESTONE TERCAPAI
   if (milestones.length > 0) {
     if (y > pageHeight - 50) { doc.addPage(); y = 20; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
@@ -327,7 +317,6 @@ export async function generateRaportTahfidz(
     y += 6;
   }
 
-  // 8. AYAT BERMASALAH
   if (ayatBermasalah.length > 0) {
     if (y > pageHeight - 50) { doc.addPage(); y = 20; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
@@ -350,7 +339,6 @@ export async function generateRaportTahfidz(
     y += 3;
   }
 
-  // 9. TANDA TANGAN + QR
   if (y > pageHeight - 80) { doc.addPage(); y = 30; }
   y += 10;
   const rightX = pageWidth - marginX - 60;
@@ -381,13 +369,12 @@ export async function generateRaportTahfidz(
   }
 
   drawFooter(doc, pengaturan, A4_LAYOUT, `Raport Tahfidz ${data.semester} ${data.tahunAjaran} - ${data.siswa.nama_lengkap}.`);
-  
-  // ✅ Panggil Watermark
+
   await drawWatermark(doc, pengaturan.logo_url);
 
   const safeNama = data.siswa.nama_lengkap.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
   const fileName = `Raport_Tahfidz_${safeNama}_${data.semester}_${data.tahunAjaran.replace('/', '-')}.pdf`;
-
+  
   if (action === 'preview') {
     window.open(doc.output('bloburl'), '_blank');
   } else {
