@@ -65,6 +65,8 @@ export function PrintSP({
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
 
+  const isGeneratedRef = useRef(false);
+
   const generate = useCallback(async () => {
     setStatus('loading');
     setErrorMsg('');
@@ -78,11 +80,11 @@ export function PrintSP({
       });
       setStatus('success');
     } catch (err: any) {
-      console.error('[PrintSP] generate error:', err);
       setErrorMsg(err?.message || 'Gagal membuat PDF');
       setStatus('error');
     }
   }, [sp, siswa, penandatangan, verification_token, content_hash]);
+
 
   // Auto-generate saat modal dibuka
   useEffect(() => {
