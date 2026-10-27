@@ -7,6 +7,7 @@ import {
   drawWatermark,
 } from './pdfShared';
 import type { ActionItemRapat } from '@/types/database';
+import { PdfAction } from './pdfColoredExport';
 
 export type NotulensiPDFData = {
   nomor_rapat: string;
