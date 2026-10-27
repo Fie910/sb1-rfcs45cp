@@ -147,6 +147,8 @@ export async function generateSuratIzinPDF(data: SuratIzinData): Promise<void> {
   // 9. FOOTER
   drawFooter(doc, pengaturan, A4_LAYOUT, `Dokumen ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}. Keaslian dapat diverifikasi dengan scan QR code.`);
 
+  await drawWatermark(doc, pengaturan.logo_url);
+
   // 10. SAVE
   const fileName = `Surat_Izin_${data.nomor_pengajuan}_${data.guru_nama.replace(/\s+/g, '_')}.pdf`;
   doc.save(fileName);
