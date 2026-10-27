@@ -1,7 +1,7 @@
 // src/components/kedisiplinan/PrintSP.tsx
 // Modal wrapper — auto-generate PDF Surat Peringatan dan download.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Loader2,
   Download,
