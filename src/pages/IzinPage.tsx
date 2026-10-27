@@ -106,6 +106,7 @@ function groupJadwalBySlot(jadwalList: JadwalKbmWithRelations[]): JadwalSlot[] {
 // =============================================================================
 export function IzinPage() {
   const { guru } = useAuth();
+  const location = useLocation();
   const [izinList, setIzinList] = useState<IzinGuruPiketWithRelations[]>([]);
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
   const [mapelList, setMapelList] = useState<MataPelajaran[]>([]);
