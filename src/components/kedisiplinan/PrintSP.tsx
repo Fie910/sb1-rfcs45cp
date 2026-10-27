@@ -67,19 +67,16 @@ export function PrintSP({
 
   const isGeneratedRef = useRef(false);
 
-  const generate = useCallback(async () => {
+  const generate = useCallback(async (action: 'save' | 'preview' = 'save') => {
     setStatus('loading');
     setErrorMsg('');
     try {
       await generateSPPDF({
-        sp,
-        siswa,
-        penandatangan,
-        verification_token,
-        content_hash,
-      });
+        sp, siswa, penandatangan, verification_token, content_hash,
+      }, action); // ✅ Teruskan action
       setStatus('success');
     } catch (err: any) {
+      console.error('[PrintSP] generate error:', err);
       setErrorMsg(err?.message || 'Gagal membuat PDF');
       setStatus('error');
     }
