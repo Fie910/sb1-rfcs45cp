@@ -270,7 +270,7 @@ export async function drawWatermark(doc: jsPDF, logoUrl: string | null): Promise
   const currentGState = doc.saveGraphicsState();
   
   // ✅ Naikkan opacity dari 0.05 menjadi 0.12 (12%)
-  const gState = new (doc as any).GState({ opacity: 0.24 });
+  const gState = new (doc as any).GState({ opacity: 0.12 });
   doc.setGState(gState);
   
   try {
