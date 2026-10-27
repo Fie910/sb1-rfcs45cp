@@ -151,25 +151,29 @@ export function PrintSP({
         {/* ACTIONS */}
         <div className="flex justify-end gap-2 pt-2">
           {status === 'error' && (
-            <button
-              onClick={generate}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
-            >
+            <button onClick={() => generate('save')} className="...">
               <RefreshCw size={12} /> Coba Lagi
             </button>
           )}
+          
           {status === 'success' && (
-            <button
-              onClick={generate}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
-            >
-              <Download size={12} /> Unduh Lagi
-            </button>
+            <>
+              <button
+                onClick={() => generate('preview')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer shadow-lg shadow-indigo-600/20"
+              >
+                <Eye size={12} /> Pratinjau PDF
+              </button>
+              <button
+                onClick={() => generate('save')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                <Download size={12} /> Unduh Lagi
+              </button>
+            </>
           )}
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
-          >
+
+          <button onClick={onClose} className="...">
             {status === 'loading' ? 'Batal' : 'Tutup'}
           </button>
         </div>
