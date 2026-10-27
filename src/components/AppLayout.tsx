@@ -198,6 +198,10 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
       <InstallPWA />
       {/* 🆕 Badge status offline/sinkronisasi */}
       <SyncStatusBadge />
+      <KeyboardShortcutCheatSheet 
+        open={cheatSheetOpen} 
+        onClose={() => setCheatSheetOpen(false)} 
+      />
     </div>
   );
 }
