@@ -229,8 +229,17 @@ export async function generateSPPDF(data: SPPdfData, action: PdfAction = 'save')
     } catch (err) { console.warn(err); }
   }
 
-  // 15. SAVE
+  // 15. OUTPUT (Preview atau Save)
   const safeNomor = data.sp.nomor_sp.replace(/[^a-zA-Z0-9]/g, '_');
   const safeNama = data.siswa.nama_lengkap.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
-  doc.save(`SP_${data.sp.level}_${safeNomor}_${safeNama}.pdf`);
+  const fileName = `SP_${data.sp.level}_${safeNomor}_${safeNama}.pdf`;
+
+  if (action === 'preview') {
+    // Buka di tab baru (Browser akan menampilkan PDF Viewer)
+    const blobUrl = doc.output('bloburl');
+    window.open(blobUrl, '_blank');
+  } else {
+    // Langsung Download
+    doc.save(fileName);
+  }
 }
