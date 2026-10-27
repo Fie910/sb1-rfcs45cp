@@ -216,6 +216,7 @@ export async function generateSPPDF(data: SPPdfData): Promise<void> {
   drawFooter(doc, pengaturan, A4_LAYOUT, `Surat Peringatan ${data.sp.level} - ${data.siswa.nama_lengkap}.`);
   
   await drawWatermark(doc, pengaturan.logo_url);
+  
   // 14. UPDATE DB
   if (data.verification_token) {
     try {
