@@ -3,7 +3,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/lib/supabase';
-import { PDF_THEME, loadImageAsDataUrl, type RGB, drawWatermark } from './pdfShared';
+import { PDF_THEME, loadImageAsDataUrl, type RGB, fetchPengaturan, drawWatermark } from './pdfShared';
 import { SEKOLAH_TAGLINE } from '@/constants/branding';
 
 // =============================================================================
