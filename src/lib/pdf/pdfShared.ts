@@ -251,37 +251,39 @@ export function drawFooter(
 }
 
 // =============================================================================
-// PDF: WATERMARK LOGO (UPGRADE: Lebih Terlihat)
+// PDF: WATERMARK LOGO (Semua Halaman)
 // =============================================================================
 export async function drawWatermark(doc: jsPDF, logoUrl: string | null): Promise<void> {
   if (!logoUrl) return;
   const logoData = await loadImageAsDataUrl(logoUrl);
   if (!logoData) return;
 
+  const pageCount = doc.getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   
-  // Perbesar ukuran menjadi 140mm (sebelumnya 120mm)
   const size = 140; 
   const x = (pageWidth - size) / 2;
   const y = (pageHeight - size) / 2;
 
-  // Simpan state grafis
-  const currentGState = doc.saveGraphicsState();
-  
-  // ✅ Naikkan opacity dari 0.05 menjadi 0.12 (12%)
-  const gState = new (doc as any).GState({ opacity: 0.12 });
-  doc.setGState(gState);
-  
-  try {
-    doc.addImage(logoData, 'PNG', x, y, size, size);
-  } catch (err) {
-    console.warn('Watermark gagal ditambahkan:', err);
-  }
+  // ✅ LOOP KE SETIAP HALAMAN
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i); // Pindah ke halaman i
+    
+    doc.saveGraphicsState();
+    // Opacity 12%
+    const gState = new (doc as any).GState({ opacity: 0.12 });
+    doc.setGState(gState);
+    
+    try {
+      doc.addImage(logoData, 'PNG', x, y, size, size);
+    } catch (err) {
+      console.warn('Watermark gagal ditambahkan:', err);
+    }
 
-  // Kembalikan state
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  doc.restoreGraphicsState();
+    doc.setGState(new (doc as any).GState({ opacity: 1 }));
+    doc.restoreGraphicsState();
+  }
 }
 
 
