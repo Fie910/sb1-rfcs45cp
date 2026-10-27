@@ -95,26 +95,26 @@ export const PrintDisposisi: React.FC<PrintDisposisiProps> = ({
             </div>
 
             {/* Table Ringkasan Surat */}
-            <table className="w-full text-sm border-collapse border border-[#0F2952] mb-4">
-              <tbody>
-                <tr className="border-b border-[#0F2952]">
-                  <td className="p-2 font-bold w-1/4 border-r border-[#0F2952] bg-slate-50 print:bg-transparent text-[#0F2952]">Surat Dari</td>
-                  <td className="p-2 w-1/4 border-r border-[#0F2952]">{surat.asal_surat}</td>
-                  <td className="p-2 font-bold w-1/4 border-r border-[#0F2952] bg-slate-50 print:bg-transparent text-[#0F2952]">No. Surat</td>
-                  <td className="p-2 w-1/4">{surat.no_surat}</td>
-                </tr>
-                <tr className="border-b border-[#0F2952]">
-                  <td className="p-2 font-bold border-r border-[#0F2952] bg-slate-50 print:bg-transparent text-[#0F2952]">Tgl. Surat</td>
-                  <td className="p-2 border-r border-[#0F2952]">{surat.tanggal_surat}</td>
-                  <td className="p-2 font-bold border-r border-[#0F2952] bg-slate-50 print:bg-transparent text-[#0F2952]">Sifat Surat</td>
-                  <td className="p-2 font-bold">{surat.sifat}</td>
-                </tr>
-                <tr>
-                  <td className="p-2 font-bold border-r border-[#0F2952] bg-slate-50 print:bg-transparent text-[#0F2952]">Perihal</td>
-                  <td colSpan={3} className="p-2">{surat.perihal}</td>
-                </tr>
-              </tbody>
-            </table>
+<table className="w-full text-sm border-collapse border border-[#0F2952] mb-4 relative z-10">
+  <tbody>
+    <tr className="border-b border-[#0F2952]">
+      <td className="p-2 font-bold w-1/4 border-r border-[#0F2952] bg-slate-50/50 print:bg-transparent text-[#0F2952]">Surat Dari</td>
+      <td className="p-2 w-1/4 border-r border-[#0F2952]">{surat.asal_surat}</td>
+      <td className="p-2 font-bold w-1/4 border-r border-[#0F2952] bg-slate-50/50 print:bg-transparent text-[#0F2952]">No. Surat</td>
+      <td className="p-2 w-1/4">{surat.no_surat}</td>
+    </tr>
+    <tr className="border-b border-[#0F2952]">
+      <td className="p-2 font-bold border-r border-[#0F2952] bg-slate-50/50 print:bg-transparent text-[#0F2952]">Tgl. Surat</td>
+      <td className="p-2 border-r border-[#0F2952]">{surat.tanggal_surat}</td>
+      <td className="p-2 font-bold border-r border-[#0F2952] bg-slate-50/50 print:bg-transparent text-[#0F2952]">Sifat Surat</td>
+      <td className="p-2 font-bold">{surat.sifat}</td>
+    </tr>
+    <tr>
+      <td className="p-2 font-bold border-r border-[#0F2952] bg-slate-50/50 print:bg-transparent text-[#0F2952]">Perihal</td>
+      <td colSpan={3} className="p-2">{surat.perihal}</td>
+    </tr>
+  </tbody>
+</table>
 
             {/* Isi Instruksi Disposisi */}
             <table className="w-full text-sm border-collapse border border-[#0F2952] mb-8">
