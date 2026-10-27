@@ -8,7 +8,7 @@ import {
   XCircle,
   FileCheck,
   RefreshCw,
-  X,
+  X, Eye,
 } from 'lucide-react';
 import {
   generateSPPDF,
