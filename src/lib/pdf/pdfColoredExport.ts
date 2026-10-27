@@ -553,7 +553,7 @@ export async function exportColoredPdfBranded(
         nama: kepsek.nama,
         nip: kepsek.nip,
         jabatan: 'Kepala Sekolah',
-        kota: 'Sukahideng',
+        kota: 'Tasikmalaya',
       };
     }
   }
