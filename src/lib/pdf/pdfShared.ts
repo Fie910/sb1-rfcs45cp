@@ -9,7 +9,7 @@ import { SEKOLAH_TAGLINE } from '@/constants/branding';
 // TYPES & KONSTANTA WARNA
 // =============================================================================
 export type RGB = [number, number, number]; // 🆕 Tambah tipe RGB
-
+export type PdfAction = 'save' | 'preview';
 export type PengaturanSekolah = {
   nama_sekolah: string;
   alamat: string | null;
