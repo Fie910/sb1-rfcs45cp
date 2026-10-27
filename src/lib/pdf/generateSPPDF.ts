@@ -39,6 +39,9 @@ export async function generateSPPDF(data: SPPdfData): Promise<void> {
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
   const pengaturan = await fetchPengaturan(true);
 
+  // ✅ TAMBAHKAN WATERMARK
+  await drawWatermark(doc, pengaturan.logo_url);
+
   // 1. KOP SURAT
   let y = await drawKopSurat(doc, pengaturan);
 
