@@ -39,7 +39,7 @@ export async function generateRaportTahfidz(
   data: RaportTahfidzData,
   surahMap: Map<number, TahfidzSurah>,
   halamanMap: TahfidzHalamanDetail[],
-  action: PdfAction = 'save' // ✅ Koma diperbaiki
+  action: PdfAction = 'preview'
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
