@@ -1,8 +1,8 @@
 // src/pages/RapatPage.tsx
 // Halaman utama Modul Rapat & Notulensi dengan 3 tab.
 
-import { useState, useMemo, useEffect } from 'react'; // ✅ TAMBAH useEffect
-import { useLocation } from 'react-router-dom';        // ✅ TAMBAH useLocation
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   CalendarCheck, ClipboardList, BarChart3, Users,
 } from 'lucide-react';
