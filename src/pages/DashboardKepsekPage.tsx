@@ -182,7 +182,9 @@ function SnapshotCard({ icon: Icon, label, value, sublabel, color }: SnapshotCar
           <Icon size={18} />
         </div>
       </div>
-      <p className={`text-2xl md:text-3xl font-black tracking-tight ${c.value}`}>{value}</p>
+      <p className={`text-2xl md:text-3xl font-black tracking-tight ${c.value} flex items-baseline gap-1`}>
+  {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
+</p>
       <p className="text-[11px] text-slate-500 mt-1">{sublabel}</p>
     </div>
   );
