@@ -6,6 +6,7 @@ import {
   fetchPengaturan, formatTanggalPanjang, tanggalHariIni, PDF_THEME,
   drawWatermark,
 } from './pdfShared';
+import type { PdfAction } from './pdfShared';
 
 export type SPLevel = 'SP1' | 'SP2' | 'SP3';
 
