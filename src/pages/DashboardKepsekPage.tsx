@@ -989,53 +989,65 @@ export function DashboardKepsekPage() {
           </div>
         ) : (
           <div style={{ width: '100%', height: CHART_HEIGHT }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData} margin={CHART_MARGIN}>
-                <CartesianGrid {...GRID_STYLE} />
-                <XAxis
-                  dataKey="label"
-                  {...AXIS_STYLE}
-                  interval={period === 7 ? 0 : 'preserveStartEnd'}
-                />
-                <YAxis
-                  {...AXIS_STYLE}
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE.contentStyle}
-                  labelStyle={TOOLTIP_STYLE.labelStyle}
-                  itemStyle={TOOLTIP_STYLE.itemStyle}
-                  formatter={(v, name) => [`${v ?? 0}%`, String(name ?? '')]}
-                />
-                <Legend
-                  wrapperStyle={{
-                    fontSize: '12px',
-                    color: '#94a3b8',
-                    paddingTop: '8px',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="guruPersen"
-                  name="Guru Hadir"
-                  stroke={CHART_COLORS.emerald}
-                  strokeWidth={2.5}
-                  dot={{ r: period === 7 ? 3 : 0, strokeWidth: 2 }}
-                  activeDot={{ r: 5, strokeWidth: 2 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="siswaPersen"
-                  name="Siswa Hadir"
-                  stroke={CHART_COLORS.indigo}
-                  strokeWidth={2.5}
-                  dot={{ r: period === 7 ? 3 : 0, strokeWidth: 2 }}
-                  activeDot={{ r: 5, strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+  <ResponsiveContainer width="100%" height="100%">
+    <AreaChart data={trendData} margin={CHART_MARGIN}>
+      <defs>
+        <linearGradient id="colorGuru" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={CHART_COLORS.emerald} stopOpacity={0.3}/>
+          <stop offset="95%" stopColor={CHART_COLORS.emerald} stopOpacity={0}/>
+        </linearGradient>
+        <linearGradient id="colorSiswa" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={CHART_COLORS.indigo} stopOpacity={0.3}/>
+          <stop offset="95%" stopColor={CHART_COLORS.indigo} stopOpacity={0}/>
+        </linearGradient>
+      </defs>
+      <CartesianGrid {...GRID_STYLE} vertical={false} />
+      <XAxis
+        dataKey="label"
+        {...AXIS_STYLE}
+        interval={period === 7 ? 0 : 'preserveStartEnd'}
+      />
+      <YAxis
+        {...AXIS_STYLE}
+        domain={[0, 100]}
+        tickFormatter={(v) => `${v}%`}
+      />
+      <Tooltip
+        contentStyle={TOOLTIP_STYLE.contentStyle}
+        labelStyle={TOOLTIP_STYLE.labelStyle}
+        itemStyle={TOOLTIP_STYLE.itemStyle}
+        formatter={(v, name) => [`${v ?? 0}%`, String(name ?? '')]}
+      />
+      <Legend
+        wrapperStyle={{
+          fontSize: '12px',
+          color: '#94a3b8',
+          paddingTop: '8px',
+        }}
+      />
+      <Area
+        type="monotone"
+        dataKey="guruPersen"
+        name="Guru Hadir"
+        stroke={CHART_COLORS.emerald}
+        strokeWidth={3}
+        fillOpacity={1}
+        fill="url(#colorGuru)"
+        activeDot={{ r: 6, strokeWidth: 0, fill: CHART_COLORS.emerald }}
+      />
+      <Area
+        type="monotone"
+        dataKey="siswaPersen"
+        name="Siswa Hadir"
+        stroke={CHART_COLORS.indigo}
+        strokeWidth={3}
+        fillOpacity={1}
+        fill="url(#colorSiswa)"
+        activeDot={{ r: 6, strokeWidth: 0, fill: CHART_COLORS.indigo }}
+      />
+    </AreaChart>
+  </ResponsiveContainer>
+</div>
         )}
       </div>
 
