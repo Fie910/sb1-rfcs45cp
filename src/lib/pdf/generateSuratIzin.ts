@@ -6,7 +6,7 @@ import {
   fetchPengaturan, formatTanggalPanjang, tanggalHariIni, PDF_THEME,
   drawWatermark,
 } from './pdfShared';
-import type { PdfAction } from './pdfShared';
+import { type PdfAction } from './pdfShared';
 
 export type SuratIzinData = {
   nomor_pengajuan: string;
