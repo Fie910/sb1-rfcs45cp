@@ -210,7 +210,7 @@ export async function drawKopSurat(
 }
 
 // =============================================================================
-// PDF: FOOTER
+// PDF: FOOTER (Upgrade: Tagline + Metadata)
 // =============================================================================
 export function drawFooter(
   doc: jsPDF,
@@ -218,25 +218,68 @@ export function drawFooter(
   layout: PdfLayoutConstants = A4_LAYOUT,
   customMessage?: string
 ): void {
-  const { pageWidth, pageHeight, contentWidth } = layout;
+  const { pageWidth, pageHeight, contentWidth, marginX } = layout;
   const totalPages = doc.getNumberOfPages();
+  const cetakTanggal = tanggalHariIni();
 
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+
+    // --- Garis Pemisah (Slate 300) ---
+    doc.setDrawColor(PDF_THEME.slate200[0], PDF_THEME.slate200[1], PDF_THEME.slate200[2]);
+    doc.setLineWidth(0.2);
+    doc.line(marginX, pageHeight - 14, pageWidth - marginX, pageHeight - 14);
+
+    // --- Row 1: Metadata (Kiri) & Halaman (Kanan) ---
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
+    doc.setFontSize(7.5);
     doc.setTextColor(PDF_THEME.slate600[0], PDF_THEME.slate600[1], PDF_THEME.slate600[2]);
-    const message =
-      customMessage ??
-      `Dokumen ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}.`;
-    doc.text(
-      `${message} Halaman ${i}/${totalPages}.`,
-      pageWidth / 2,
-      pageHeight - 8,
-      { align: 'center', maxWidth: contentWidth }
-    );
+    
+    const message = customMessage ?? `Dokumen ini dicetak otomatis oleh Sistem Informasi ${pengaturan.nama_sekolah}.`;
+    const leftText = `${message} · Dicetak: ${cetakTanggal}`;
+    
+    doc.text(leftText, marginX, pageHeight - 9);
+    doc.text(`Halaman ${i} dari ${totalPages}`, pageWidth - marginX, pageHeight - 9, { align: 'right' });
+
+    // --- Row 2: Tagline (Tengah, Italic Serif) ---
+    doc.setFont('times', 'italic');
+    doc.setFontSize(8.5);
+    doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+    doc.text(`—  ${SEKOLAH_TAGLINE}  —`, pageWidth / 2, pageHeight - 4.5, { align: 'center' });
   }
   doc.setTextColor(0);
+}
+
+// =============================================================================
+// PDF: WATERMARK LOGO (BARU)
+// =============================================================================
+export async function drawWatermark(doc: jsPDF, logoUrl: string | null): Promise<void> {
+  if (!logoUrl) return;
+  const logoData = await loadImageAsDataUrl(logoUrl);
+  if (!logoData) return;
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const size = 120; // Ukuran watermark (mm)
+  const x = (pageWidth - size) / 2;
+  const y = (pageHeight - size) / 2;
+
+  // Simpan state grafis saat ini
+  const currentGState = doc.saveGraphicsState();
+  
+  // Set opacity 5% (sangat tipis)
+  const gState = new (doc as any).GState({ opacity: 0.05 });
+  doc.setGState(gState);
+  
+  try {
+    doc.addImage(logoData, 'PNG', x, y, size, size);
+  } catch (err) {
+    console.warn('Watermark gagal ditambahkan:', err);
+  }
+
+  // Kembalikan ke state normal
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  doc.restoreGraphicsState();
 }
 
 // =============================================================================
