@@ -117,17 +117,17 @@ export const PrintDisposisi: React.FC<PrintDisposisiProps> = ({
 </table>
 
             {/* Isi Instruksi Disposisi */}
-            <table className="w-full text-sm border-collapse border border-[#0F2952] mb-8">
-              <thead>
-                <tr className="bg-[#0F2952] text-white text-left print:bg-[#0F2952] print:text-white">
-                  <th className="p-2 border-r border-[#0F2952] w-1/2">Diteruskan Kepada (Disposisi)</th>
-                  <th className="p-2">Petunjuk / Instruksi Kepala Sekolah</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="p-3 border-r border-[#0F2952] align-top font-semibold">
-                    📌 {disposisi.penerima_disposisi}
+<table className="w-full text-sm border-collapse border border-[#0F2952] mb-8 relative z-10">
+  <thead>
+    <tr className="bg-[#0F2952] text-white text-left print:bg-[#0F2952] print:text-white">
+      <th className="p-2 border-r border-[#0F2952] w-1/2">Diteruskan Kepada (Disposisi)</th>
+      <th className="p-2">Petunjuk / Instruksi Kepala Sekolah</th>
+    </tr>
+  </thead>
+  <tbody className="bg-white/60 print:bg-transparent">
+    <tr>
+      <td className="p-3 border-r border-[#0F2952] align-top font-semibold bg-slate-50/50 print:bg-transparent">
+         📌 {disposisi.penerima_disposisi}
                     <div className="text-xs font-normal text-gray-500 mt-1">
                       Tgl Disposisi: {disposisi.tanggal_disposisi}
                     </div>
