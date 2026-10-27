@@ -14,6 +14,7 @@ import { TaglineBadge } from '@/components/TaglineBadge';
 import { useLocation } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '@/lib/sound';
+import { playSuccess } from '@/lib/sound';
 
 type LayoutProps = {
   current: PageKey;
