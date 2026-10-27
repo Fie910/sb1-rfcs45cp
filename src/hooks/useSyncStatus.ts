@@ -1,20 +1,25 @@
-//src/hooks/useSyncStatus.ts
-
+// src/hooks/useSyncStatus.ts
 import { useEffect, useState } from 'react';
-import { getPendingCount, subscribeSync, flushQueue } from '../lib/offline/syncQueue';
+import { getPendingCount, getPendingOps, subscribeSync, flushQueue } from '../lib/offline/syncQueue';
+import type { PendingOp } from '../lib/offline/db';
 
 export function useSyncStatus() {
   const [online, setOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
   const [pending, setPending] = useState(0);
+  const [pendingOps, setPendingOps] = useState<PendingOp[]>([]);
   const [flushing, setFlushing] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     const refresh = async () => {
       const c = await getPendingCount();
-      if (mounted) setPending(c);
+      const ops = await getPendingOps();
+      if (mounted) {
+        setPending(c);
+        setPendingOps(ops);
+      }
     };
     refresh();
     const unsub = subscribeSync(refresh);
@@ -39,5 +44,5 @@ export function useSyncStatus() {
     };
   }, []);
 
-  return { online, pending, flushing };
+  return { online, pending, pendingOps, flushing };
 }
