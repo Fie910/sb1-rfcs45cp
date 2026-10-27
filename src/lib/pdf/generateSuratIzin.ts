@@ -152,7 +152,6 @@ export async function generateSuratIzinPDF(data: SuratIzinData, action: PdfActio
 
   // 10. SAVE
   const fileName = `Surat_Izin_${data.nomor_pengajuan}_${data.guru_nama.replace(/\s+/g, '_')}.pdf`;
-  doc.save(fileName);
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -161,4 +160,13 @@ export async function generateSuratIzinPDF(data: SuratIzinData, action: PdfActio
         .eq('nomor_pengajuan', data.nomor_pengajuan).is('surat_generated_at', null);
     }
   } catch { /* silent */ }
+
+  if (action === 'preview') {
+    // Buka di tab baru (Browser akan menampilkan PDF Viewer)
+    const blobUrl = doc.output('bloburl');
+    window.open(blobUrl, '_blank');
+  } else {
+    // Langsung Download
+    doc.save(fileName);
+  }
 }
