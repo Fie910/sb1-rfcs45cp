@@ -492,12 +492,19 @@ export async function exportColoredPdf(options: PdfExportOptions): void {
   }
 
   // ══════════════════════════════════════════════
-  // 7. SAVE
+  // 7. WATERMARK & SAVE
   // ══════════════════════════════════════════════
-  const finalName = filename.toLowerCase().endsWith('.pdf')
-    ? filename
-    : `${filename}.pdf`;
-  doc.save(finalName);
+  if (schoolLogoUrl) {
+    await drawWatermark(doc, schoolLogoUrl); // ✅ Panggil Watermark
+  }
+
+  const finalName = filename.toLowerCase().endsWith('.pdf') ? filename : `${filename}.pdf`;
+  
+  if (action === 'preview') {
+    window.open(doc.output('bloburl'), '_blank');
+  } else {
+    doc.save(finalName);
+  }
 }
 
 // =============================================================================
