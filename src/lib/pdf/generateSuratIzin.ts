@@ -2,15 +2,9 @@
 import jsPDF from 'jspdf';
 import { supabase } from '@/lib/supabase';
 import {
-  A4_LAYOUT,
-  buildVerifyUrl,
-  drawFooter,
-  drawKopSurat,
-  drawQrVerifikasi,
-  fetchPengaturan,
-  formatTanggalPanjang,
-  tanggalHariIni,
-  PDF_THEME, // 🆕
+  A4_LAYOUT, buildVerifyUrl, drawFooter, drawKopSurat, drawQrVerifikasi,
+  fetchPengaturan, formatTanggalPanjang, tanggalHariIni, PDF_THEME,
+  drawWatermark,
 } from './pdfShared';
 
 export type SuratIzinData = {
