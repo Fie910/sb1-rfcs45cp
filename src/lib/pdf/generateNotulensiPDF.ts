@@ -271,7 +271,12 @@ export async function generateNotulensiPDF(data: NotulensiPDFData, action: PdfAc
   await drawWatermark(doc, pengaturan.logo_url);
 
   const fileName = `Notulensi_${data.nomor_rapat}_${data.judul_rapat.slice(0, 40).replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-  doc.save(fileName);
+  
+  if (action === 'preview') {
+    window.open(doc.output('bloburl'), '_blank');
+  } else {
+    doc.save(fileName);
+  }
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
