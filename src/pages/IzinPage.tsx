@@ -69,8 +69,6 @@ const EMPTY_FORM: FormState = {
   url_file: '',
 };
 
-const location = useLocation();
-
 /** Group jadwal by slot (waktu_mulai + waktu_selesai) untuk deteksi kelas gabungan */
 type JadwalSlot = {
   key: string;
