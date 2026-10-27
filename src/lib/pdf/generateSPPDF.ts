@@ -34,7 +34,8 @@ function getLevelNumeric(level: SPLevel): string {
   return { SP1: 'Pertama', SP2: 'Kedua', SP3: 'Ketiga' }[level];
 }
 
-export async function generateSPPDF(data: SPPdfData): Promise<void> {
+export type PdfAction = 'save' | 'preview';
+export async function generateSPPDF(data: SPPdfData, action: PdfAction = 'save'): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
   const pengaturan = await fetchPengaturan(true);
