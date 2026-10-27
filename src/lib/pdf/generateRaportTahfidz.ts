@@ -381,7 +381,16 @@ export async function generateRaportTahfidz(
   }
 
   drawFooter(doc, pengaturan, A4_LAYOUT, `Raport Tahfidz ${data.semester} ${data.tahunAjaran} - ${data.siswa.nama_lengkap}.`);
+  
+  // ✅ Panggil Watermark
+  await drawWatermark(doc, pengaturan.logo_url);
 
   const safeNama = data.siswa.nama_lengkap.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
-  doc.save(`Raport_Tahfidz_${safeNama}_${data.semester}_${data.tahunAjaran.replace('/', '-')}.pdf`);
+  const fileName = `Raport_Tahfidz_${safeNama}_${data.semester}_${data.tahunAjaran.replace('/', '-')}.pdf`;
+
+  if (action === 'preview') {
+    window.open(doc.output('bloburl'), '_blank');
+  } else {
+    doc.save(fileName);
+  }
 }
