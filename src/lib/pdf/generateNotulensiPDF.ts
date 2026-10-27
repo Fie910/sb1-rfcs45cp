@@ -43,6 +43,9 @@ export async function generateNotulensiPDF(data: NotulensiPDFData): Promise<void
 
   const pengaturan = await fetchPengaturan();
 
+  // ✅ TAMBAHKAN WATERMARK
+  await drawWatermark(doc, pengaturan.logo_url);
+
   // 1. KOP SURAT
   y = await drawKopSurat(doc, pengaturan);
 
