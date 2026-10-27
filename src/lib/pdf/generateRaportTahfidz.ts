@@ -13,7 +13,6 @@ import {
 } from './pdfShared';
 import { getSemesterDateRange, type SemesterType } from '@/lib/tahfidz/semester';
 import { getHalamanSetoran } from '@/lib/tahfidz/hitungHalaman';
-import { PdfAction } from './pdfColoredExport';
 import type { PdfAction } from './pdfColoredExport';
 import { drawWatermark } from './pdfShared';
 import type { TahfidzSurah, TahfidzHalamanDetail } from '@/types/database';
