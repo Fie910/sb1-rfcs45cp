@@ -87,10 +87,8 @@ export function PrintSP({
   useEffect(() => {
     if (isGeneratedRef.current) return;
     isGeneratedRef.current = true;
-    
-    generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    generate('save'); // Default saat modal terbuka
+  }, [generate]);
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
