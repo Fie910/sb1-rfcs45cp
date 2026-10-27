@@ -35,6 +35,8 @@ const emptyForm = {
   is_aktif: true,
 };
 
+const location = useLocation();
+
 // Helper format tanggal ke WIB (Asia/Jakarta)
 const formatDateWIB = (dateString: string) => {
   if (!dateString) return '-';
