@@ -284,10 +284,6 @@ export async function drawWatermark(doc: jsPDF, logoUrl: string | null): Promise
   doc.restoreGraphicsState();
 }
 
-  // Kembalikan ke state normal
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  doc.restoreGraphicsState();
-}
 
 // =============================================================================
 // PDF: QR VERIFIKASI
