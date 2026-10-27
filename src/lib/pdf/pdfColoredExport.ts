@@ -11,6 +11,8 @@ import { SEKOLAH_TAGLINE } from '@/constants/branding';
 // =============================================================================
 // export type RGB = [number, number, number]; // Dihapus, pakai dari pdfShared
 
+export type PdfAction = 'save' | 'preview';
+
 export type PdfColumn = {
   header: string;
   halign?: 'left' | 'center' | 'right';
