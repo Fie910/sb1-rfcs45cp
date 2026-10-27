@@ -6,6 +6,7 @@ import {
   fetchPengaturan, formatTanggalPanjang, tanggalHariIni, PDF_THEME,
   drawWatermark,
 } from './pdfShared';
+import type { PdfAction } from './pdfShared';
 
 export type SuratIzinData = {
   nomor_pengajuan: string;
@@ -26,7 +27,6 @@ export type SuratIzinData = {
   content_hash: string | null;
 };
 
-export type PdfAction = 'save' | 'preview';
 export async function generateSuratIzinPDF(data: SuratIzinData, action: PdfAction = 'save'): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
