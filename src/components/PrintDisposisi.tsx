@@ -132,7 +132,7 @@ export const PrintDisposisi: React.FC<PrintDisposisiProps> = ({
                       Tgl Disposisi: {disposisi.tanggal_disposisi}
                     </div>
                   </td>
-                  <td className="p-3 align-top min-h-[120px]">
+                  <td className="p-3 align-top min-h-[120px] bg-white/60 print:bg-transparent">
                     <p className="whitespace-pre-line">{disposisi.isi_disposisi}</p>
                   </td>
                 </tr>
