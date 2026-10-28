@@ -22,10 +22,8 @@ import { haversineDistance } from '@/utils/geo';
 import { offlineInsert, offlineUpdate } from '@/lib/offline/offlineClient';
 import { cachedQuerySafe } from '@/lib/offline/cachedQuery';
 import type {
-  JadwalKbmWithRelations,
-  AgendaGuruWithRelations,
-  HariMinggu,
-  PengaturanSekolah,
+  JadwalKbmWithRelations, AgendaGuruWithRelations,
+  HariMinggu, PengaturanSekolah,
 } from '@/types/database';
 import { successMsg } from '@/constants/branding';
 
