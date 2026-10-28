@@ -795,15 +795,14 @@ export function PresensiPage() {
                             : 'hover:bg-slate-800/40'
                         }`}
                       >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
+                                                <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${getAvatarColor(s.nama_lengkap)} flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm`}>
+                              {getInitials(s.nama_lengkap)}
+                            </div>
                             <div>
-                              <p className="text-sm font-semibold text-slate-100">
-                                {s.nama_lengkap}
-                              </p>
-                              <p className="text-xs text-slate-400 font-mono mt-0.5">
-                                {s.nisn || '-'}
-                              </p>
+                              <p className="text-sm font-semibold text-slate-100">{s.nama_lengkap}</p>
+                              <p className="text-xs text-slate-400 font-mono mt-0.5">{s.nisn || '-'}</p>
                             </div>
                             {isUnselected && (
                               <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full ml-auto">
