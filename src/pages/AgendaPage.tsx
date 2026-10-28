@@ -1,28 +1,11 @@
 // src/pages/AgendaPage.tsx
 import { useEffect, useState, useCallback } from 'react';
 import {
-  BookHeart,
-  Loader2,
-  CheckCircle2,
-  Clock,
-  CalendarDays,
-  NotebookPen,
-  Save,
-  Lock,
-  AlertTriangle,
-  History,
-  Search,
-  Calendar,
-  FileText,
-  AlertCircle,
-  UserX,
-  UserCheck,
-  Users,
-  FileSpreadsheet,
-  Download,
-  Filter,
-  Navigation,
-  RefreshCw,
+  BookHeart, Loader2, CheckCircle2, Clock, CalendarDays,
+  NotebookPen, Save, Lock, AlertTriangle, History,
+  Search, Calendar, FileText, AlertCircle, UserX,
+  UserCheck, Users, FileSpreadsheet, Download, Filter,
+  Navigation, RefreshCw,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
