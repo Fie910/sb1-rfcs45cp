@@ -119,39 +119,40 @@ export function DashboardPage({
   // ==========================================================================
   // FETCH SHORTCUTS (+ seed kalau belum ada)
   // ==========================================================================
-  const fetchShortcuts = useCallback(async () => {
+    const fetchShortcuts = useCallback(async () => {
     if (!guru?.id) return;
     setLoadingShortcuts(true);
 
     try {
-      const { data: existing, error } = await supabase
-        .from('user_dashboard_shortcuts')
-        .select('page_key, urutan')
-        .eq('guru_id', guru.id)
-        .order('urutan');
-
-      if (error) {
-        console.warn('[dashboard] shortcuts error:', error);
-        return;
-      }
+      const { data: existing } = await cachedQuerySafe<Shortcut[]>(
+        `dashboard_shortcuts:${guru.id}`,
+        async () => {
+          const { data, error } = await supabase
+            .from('user_dashboard_shortcuts')
+            .select('page_key, urutan')
+            .eq('guru_id', guru.id)
+            .order('urutan');
+          if (error) throw error;
+          return data ?? [];
+        },
+        []
+      );
 
       if (!existing || existing.length === 0) {
-        const { error: rpcError } = await supabase.rpc('seed_default_shortcuts', {
-          p_guru_id: guru.id,
-        });
-
-        if (rpcError) {
-          console.warn('[dashboard] seed error:', rpcError);
-          return;
+        // Jika belum ada shortcut, coba seed (hanya jika online)
+        if (navigator.onLine) {
+          const { error: rpcError } = await supabase.rpc('seed_default_shortcuts', {
+            p_guru_id: guru.id,
+          });
+          if (!rpcError) {
+            const { data: seeded } = await supabase
+              .from('user_dashboard_shortcuts')
+              .select('page_key, urutan')
+              .eq('guru_id', guru.id)
+              .order('urutan');
+            setShortcuts((seeded as Shortcut[]) ?? []);
+          }
         }
-
-        const { data: seeded } = await supabase
-          .from('user_dashboard_shortcuts')
-          .select('page_key, urutan')
-          .eq('guru_id', guru.id)
-          .order('urutan');
-
-        setShortcuts((seeded as Shortcut[]) ?? []);
       } else {
         setShortcuts(existing as Shortcut[]);
       }
