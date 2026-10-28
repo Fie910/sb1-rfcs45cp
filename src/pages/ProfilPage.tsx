@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { KartuKehadiran } from '@/components/profil/KartuKehadiran';
 import { ProfileHero } from '@/components/profil/ProfileHero';
+import { usePersistedState } from '@/hooks/usePersistedState';
 
 type TabKey = 'identitas' | 'kehadiran' | 'keamanan';
 
