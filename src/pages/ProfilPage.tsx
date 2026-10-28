@@ -11,7 +11,7 @@ type TabKey = 'identitas' | 'kehadiran' | 'keamanan';
 
 export function ProfilPage() {
   const { user, guru, refreshGuru } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabKey>('identitas');
+  const [activeTab, setActiveTab] = useState<TabKey>('kehadiran');
 
   // State Profil
   const [namaLengkap, setNamaLengkap] = useState('');
