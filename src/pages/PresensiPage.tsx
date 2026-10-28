@@ -612,7 +612,36 @@ export function PresensiPage() {
       ) : (
         <div className="space-y-6">
           {/* SUMMARY */}
-          {/* Ganti tombol Set Semua Hadir dengan flex container */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+              {(Object.keys(STATUS_CONFIG) as Status[]).map((status) => {
+                const config = STATUS_CONFIG[status];
+                const Icon = config.icon;
+                const count = summary[status] ?? 0;
+                return (
+                  <div
+                    key={status}
+                    className="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 flex items-center gap-3 shadow-lg relative overflow-hidden"
+                  >
+                    <div
+                      className={`w-10 h-10 ${config.badgeBg} ${config.badgeBorder} border ${config.badgeText} rounded-xl flex items-center justify-center shrink-0`}
+                    >
+                      <Icon size={18} />
+                    </div>
+                    <div>
+                      <p className="text-xl font-extrabold text-slate-100 tracking-tight">
+                        {count}
+                      </p>
+                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                        {status}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Ganti tombol Set Semua Hadir dengan flex container */}
             <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
