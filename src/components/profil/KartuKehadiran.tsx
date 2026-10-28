@@ -1,6 +1,7 @@
 // src/components/profil/KartuKehadiran.tsx
 // Kartu ringkasan kehadiran di halaman Profil — donut + 6 stat cards + filter bulan.
 
+import {useState, useEffect} from 'react'
 import {
   Loader2, BookHeart, CalendarDays, TrendingUp, CheckCircle2,
   XCircle, Timer, ClockAlert, Stethoscope, HeartPulse, Calendar,
