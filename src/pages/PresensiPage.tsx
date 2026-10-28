@@ -1,8 +1,8 @@
-//src/pages/PresensiPage.tsx
+// src/pages/PresensiPage.tsx
 import { useEffect, useState, useCallback } from 'react';
 import {
   CalendarCheck, Loader2, Save, Check, X, AlertCircle,
-  Clock, Sparkles, BookOpen, CalendarX, CheckCheck,
+  Clock, Sparkles, BookOpen, CalendarX, CheckCheck, Search,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -16,7 +16,6 @@ import {
 import type {
   Kelas, Siswa, PresensiWithSiswa, JadwalKbmWithRelations,
 } from '@/types/database';
-import { Search } from 'lucide-react';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { SkeletonCard } from '@/components/Skeleton';
 
@@ -129,7 +128,7 @@ export function PresensiPage() {
             .select('*')
             .eq('tanggal', tanggal)
             .maybeSingle();
-          if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+          if (error && error.code !== 'PGRST116') throw error;
           return (data as HariLibur) ?? null;
         },
         null
@@ -213,8 +212,6 @@ export function PresensiPage() {
 
     setLoadingJadwal(true);
     const selectedHari = getHariFromDateString(tanggal);
-
-    // Cache key mencakup guru, kelas, hari
     const cacheKey = `jadwal_kbms:guru:${guru?.id ?? 'x'}:kelas:${selectedKelas}:hari:${selectedHari}`;
 
     const { data: list } = await cachedQuerySafe<JadwalKbmWithRelations[]>(
@@ -357,6 +354,8 @@ export function PresensiPage() {
       showToast('error', 'Sesi login guru tidak ditemukan');
       return;
     }
+    
+    // Validasi menggunakan siswaList (bukan filteredSiswa)
     const unselectedSiswa = siswaList.filter((s) => !attendance[s.id]);
     if (unselectedSiswa.length > 0) {
       showToast('error', `Masih ada ${unselectedSiswa.length} siswa yang belum diabsen`);
@@ -379,10 +378,7 @@ export function PresensiPage() {
           if (res.queued) queuedCount++;
         }
         if (queuedCount > 0) {
-          showToast(
-            'success',
-            `Tersimpan lokal (${queuedCount} siswa). Akan dikirim saat online.`
-          );
+          showToast('success', `Tersimpan lokal (${queuedCount} siswa). Akan dikirim saat online.`);
         } else {
           showToast('success', 'Presensi jam pelajaran ini berhasil diperbarui');
         }
@@ -427,6 +423,11 @@ export function PresensiPage() {
 
   const unselectedCount = siswaList.filter((s) => !attendance[s.id]).length;
 
+  // Filter pencarian siswa
+  const filteredSiswa = siswaList.filter((s) =>
+    s.nama_lengkap.toLowerCase().includes(searchSiswa.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -442,12 +443,7 @@ export function PresensiPage() {
   }
 
   const selectedJadwalDetail = availableJadwal.find((j) => j.id === selectedJadwalId);
-  const isCurrentClassActive =
-    activeJadwal && activeJadwal.id === selectedJadwalId && !hariLibur;
-
-    const filteredSiswa = siswaList.filter((s) =>
-    s.nama_lengkap.toLowerCase().includes(searchSiswa.toLowerCase())
-  );
+  const isCurrentClassActive = activeJadwal && activeJadwal.id === selectedJadwalId && !hariLibur;
 
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
@@ -503,13 +499,11 @@ export function PresensiPage() {
                   </span>
                   <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
                     <Clock size={13} className="text-indigo-400" />
-                    {activeJadwal.waktu_mulai?.slice(0, 5)} -{' '}
-                    {activeJadwal.waktu_selesai?.slice(0, 5)} WIB
+                    {activeJadwal.waktu_mulai?.slice(0, 5)} - {activeJadwal.waktu_selesai?.slice(0, 5)} WIB
                   </span>
                 </div>
                 <p className="text-base font-bold text-slate-100 mt-1">
-                  {activeJadwal.mata_pelajarans?.nama_mapel} — Kelas{' '}
-                  {activeJadwal.kelas?.nama_kelas}
+                  {activeJadwal.mata_pelajarans?.nama_mapel} — Kelas {activeJadwal.kelas?.nama_kelas}
                 </p>
               </div>
             </div>
@@ -543,9 +537,7 @@ export function PresensiPage() {
               }))}
               value={selectedKelas}
               onChange={(v) => setSelectedKelas(v ? Number(v) : '')}
-              placeholder={
-                kelasList.length === 0 ? 'Memuat / tidak ada kelas' : 'Pilih kelas...'
-              }
+              placeholder={kelasList.length === 0 ? 'Memuat / tidak ada kelas' : 'Pilih kelas...'}
               searchPlaceholder="Cari kelas..."
               emptyMessage="Kelas tidak ditemukan"
               disabled={!!hariLibur}
@@ -564,17 +556,11 @@ export function PresensiPage() {
               className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-medium focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {hariLibur ? (
-                <option value="" className="bg-slate-900 text-slate-400">
-                  Hari libur (KBM nonaktif)
-                </option>
+                <option value="" className="bg-slate-900 text-slate-400">Hari libur (KBM nonaktif)</option>
               ) : !selectedKelas ? (
-                <option value="" className="bg-slate-900 text-slate-400">
-                  Pilih kelas dulu...
-                </option>
+                <option value="" className="bg-slate-900 text-slate-400">Pilih kelas dulu...</option>
               ) : loadingJadwal ? (
-                <option value="" className="bg-slate-900 text-slate-400">
-                  Memuat jadwal...
-                </option>
+                <option value="" className="bg-slate-900 text-slate-400">Memuat jadwal...</option>
               ) : availableJadwal.length === 0 ? (
                 <option value="" className="bg-slate-900 text-slate-400">
                   Tidak ada jadwal di hari {getHariFromDateString(tanggal)}
@@ -582,8 +568,7 @@ export function PresensiPage() {
               ) : (
                 availableJadwal.map((j) => (
                   <option key={j.id} value={j.id} className="bg-slate-900 text-slate-100">
-                    {j.mata_pelajarans?.nama_mapel} ({j.waktu_mulai?.slice(0, 5)} -{' '}
-                    {j.waktu_selesai?.slice(0, 5)})
+                    {j.mata_pelajarans?.nama_mapel} ({j.waktu_mulai?.slice(0, 5)} - {j.waktu_selesai?.slice(0, 5)})
                   </option>
                 ))
               )}
@@ -615,27 +600,22 @@ export function PresensiPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* SUMMARY */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* SUMMARY & SEARCH */}
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
               {(Object.keys(STATUS_CONFIG) as Status[]).map((status) => {
                 const config = STATUS_CONFIG[status];
                 const Icon = config.icon;
                 const count = summary[status] ?? 0;
                 return (
-                  <div
-                    key={status}
-                    className="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 flex items-center gap-3 shadow-lg relative overflow-hidden"
-                  >
-                    <div
-                      className={`w-10 h-10 ${config.badgeBg} ${config.badgeBorder} border ${config.badgeText} rounded-xl flex items-center justify-center shrink-0`}
-                    >
+                  <div key={status} className="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 flex items-center gap-3 shadow-lg relative overflow-hidden">
+                    <div className={`w-10 h-10 ${config.badgeBg} ${config.badgeBorder} border ${config.badgeText} rounded-xl flex items-center justify-center shrink-0`}>
                       <Icon size={18} />
                     </div>
                     <div>
                       <p className="text-xl font-extrabold text-slate-100 tracking-tight flex items-baseline">
-  <AnimatedNumber value={count} duration={800} />
-</p>
+                        <AnimatedNumber value={count} duration={800} />
+                      </p>
                       <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                         {status}
                       </p>
@@ -645,8 +625,7 @@ export function PresensiPage() {
               })}
             </div>
 
-            {/* Ganti tombol Set Semua Hadir dengan flex container */}
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                 <input
@@ -670,10 +649,7 @@ export function PresensiPage() {
           {unselectedCount > 0 && (
             <div className="bg-amber-950/40 border border-amber-500/30 text-amber-300 text-sm rounded-2xl p-4 flex items-center gap-3 backdrop-blur-sm">
               <AlertCircle size={18} className="shrink-0 text-amber-400" />
-              <span>
-                Terdapat <strong>{unselectedCount} siswa</strong> yang belum diisi status
-                kehadirannya.
-              </span>
+              <span>Terdapat <strong>{unselectedCount} siswa</strong> yang belum diisi status kehadirannya.</span>
             </div>
           )}
 
@@ -681,8 +657,7 @@ export function PresensiPage() {
             <div className="bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-sm rounded-2xl p-4 flex items-center gap-3 backdrop-blur-sm">
               <AlertCircle size={18} className="shrink-0 text-indigo-400" />
               <span>
-                Presensi untuk jam pelajaran{' '}
-                <strong>({selectedJadwalDetail?.mata_pelajarans?.nama_mapel})</strong> pada
+                Presensi untuk jam pelajaran <strong>({selectedJadwalDetail?.mata_pelajarans?.nama_mapel})</strong> pada
                 tanggal ini sudah ada. Perubahan akan memperbarui data tersimpan.
               </span>
             </div>
@@ -711,8 +686,6 @@ export function PresensiPage() {
                         <p className="text-xs text-slate-400 font-mono mt-0.5">{s.nisn || '-'}</p>
                       </div>
                     </div>
-                    {/* ... badge belum diabsen ... */}
-                  </div>
                     {isUnselected && (
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
                         Belum Diabsen
@@ -755,11 +728,7 @@ export function PresensiPage() {
                       value={keterangan[s.id] ?? ''}
                       onChange={(e) => setKet(s.id, e.target.value)}
                       placeholder={
-                        !status
-                          ? 'Pilih status terlebih dahulu...'
-                          : status === 'Hadir'
-                          ? '-'
-                          : 'Masukan alasan / keterangan...'
+                        !status ? 'Pilih status terlebih dahulu...' : status === 'Hadir' ? '-' : 'Masukan alasan / keterangan...'
                       }
                       disabled={!status || status === 'Hadir'}
                       className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-950/40 disabled:text-slate-600 disabled:border-slate-800/40"
@@ -790,12 +759,10 @@ export function PresensiPage() {
                       <tr
                         key={s.id}
                         className={`transition-colors ${
-                          isUnselected
-                            ? 'bg-amber-500/[0.03] hover:bg-amber-500/[0.06]'
-                            : 'hover:bg-slate-800/40'
+                          isUnselected ? 'bg-amber-500/[0.03] hover:bg-amber-500/[0.06]' : 'hover:bg-slate-800/40'
                         }`}
                       >
-                                                <td className="px-6 py-4">
+                        <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${getAvatarColor(s.nama_lengkap)} flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm`}>
                               {getInitials(s.nama_lengkap)}
@@ -839,11 +806,7 @@ export function PresensiPage() {
                             value={keterangan[s.id] ?? ''}
                             onChange={(e) => setKet(s.id, e.target.value)}
                             placeholder={
-                              !status
-                                ? 'Pilih status...'
-                                : status === 'Hadir'
-                                ? '-'
-                                : 'Keterangan...'
+                              !status ? 'Pilih status...' : status === 'Hadir' ? '-' : 'Keterangan...'
                             }
                             disabled={!status || status === 'Hadir'}
                             className="w-full px-3.5 py-2 text-sm rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-950/40 disabled:text-slate-600 disabled:border-slate-800/40"
@@ -857,15 +820,23 @@ export function PresensiPage() {
             </div>
           </div>
 
-          {/* SIMPAN */}
+          {/* SIMPAN (SMART BUTTON) */}
           <div className="flex justify-end pt-2">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/35 transform hover:-translate-y-0.5 active:translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              className={`w-full sm:w-auto px-8 py-3.5 font-bold rounded-xl shadow-lg transform transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer ${
+                unselectedCount > 0
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-amber-500/30 animate-pulse'
+                  : 'bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-indigo-500/20 hover:-translate-y-0.5 active:translate-y-0.5'
+              }`}
             >
               {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              {hasExisting ? 'Perbarui Presensi Jam Ini' : 'Simpan Presensi Jam Ini'}
+              {unselectedCount > 0
+                ? `Lengkapi ${unselectedCount} Siswa Lainnya`
+                : hasExisting
+                ? 'Perbarui Presensi Jam Ini'
+                : 'Simpan Presensi Jam Ini'}
             </button>
           </div>
         </div>
