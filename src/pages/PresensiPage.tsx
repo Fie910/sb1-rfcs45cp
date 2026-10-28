@@ -92,7 +92,27 @@ export function PresensiPage() {
 
   const [attendance, setAttendance] = useState<Record<string, Status | null>>({});
   const [keterangan, setKeterangan] = useState<Record<string, string>>({});
+  const [searchSiswa, setSearchSiswa] = useState('');
   const [hasExisting, setHasExisting] = useState(false);
+
+  // Helper untuk membuat inisial nama (misal: Budi Santoso -> BS)
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
+  // Helper warna avatar berdasarkan nama agar konsisten
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      'from-blue-500 to-indigo-500',
+      'from-emerald-500 to-teal-500',
+      'from-amber-500 to-orange-500',
+      'from-purple-500 to-pink-500',
+      'from-rose-500 to-red-500',
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   // ==========================================================================
   // 1. Cek Apakah Tanggal Terpilih Adalah Hari Libur (dengan cache)
