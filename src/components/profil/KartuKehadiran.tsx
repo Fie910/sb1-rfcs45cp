@@ -6,6 +6,7 @@ import {
   XCircle, Timer, ClockAlert, Stethoscope, HeartPulse, Calendar,
 } from 'lucide-react';
 import { useKehadiranGuru, getMonthOptions } from '@/hooks/useKehadiranGuru';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 // =============================================================================
 // KOMPONEN
