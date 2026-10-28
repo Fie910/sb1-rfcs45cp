@@ -445,6 +445,10 @@ export function PresensiPage() {
   const isCurrentClassActive =
     activeJadwal && activeJadwal.id === selectedJadwalId && !hariLibur;
 
+    const filteredSiswa = siswaList.filter((s) =>
+    s.nama_lengkap.toLowerCase().includes(searchSiswa.toLowerCase())
+  );
+
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
       {/* HEADER */}
