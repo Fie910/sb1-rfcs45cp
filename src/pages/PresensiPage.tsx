@@ -629,9 +629,9 @@ export function PresensiPage() {
                       <Icon size={18} />
                     </div>
                     <div>
-                      <p className="text-xl font-extrabold text-slate-100 tracking-tight">
-                        {count}
-                      </p>
+                      <p className="text-xl font-extrabold text-slate-100 tracking-tight flex items-baseline">
+  <AnimatedNumber value={count} duration={800} />
+</p>
                       <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                         {status}
                       </p>
