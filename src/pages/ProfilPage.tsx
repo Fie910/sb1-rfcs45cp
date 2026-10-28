@@ -7,7 +7,6 @@ import { showToast } from '@/components/Toast';
 import { KartuKehadiran } from '@/components/profil/KartuKehadiran';
 import { ProfileHero } from '@/components/profil/ProfileHero';
 import { usePersistedState } from '@/hooks/usePersistedState';
-import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 type TabKey = 'identitas' | 'kehadiran' | 'keamanan';
 
