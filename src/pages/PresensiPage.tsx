@@ -16,6 +16,9 @@ import {
 import type {
   Kelas, Siswa, PresensiWithSiswa, JadwalKbmWithRelations,
 } from '@/types/database';
+import { Search } from 'lucide-react';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { SkeletonCard } from '@/components/Skeleton';
 
 type Status = 'Hadir' | 'Sakit' | 'Izin' | 'Alpa';
 
