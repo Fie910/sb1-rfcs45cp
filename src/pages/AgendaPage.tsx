@@ -968,7 +968,7 @@ export function AgendaPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="relative space-y-4">
                 {groupedTodayJadwal.map((group, index) => {
                   const firstJadwal = group.jadwalList[0];
                   const active = isScheduleActive(firstJadwal, todayHari);
