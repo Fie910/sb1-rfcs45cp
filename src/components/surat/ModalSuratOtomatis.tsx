@@ -1,6 +1,6 @@
 // src/components/surat/ModalSuratOtomatis.tsx
 import { useState } from 'react';
-import { X, Sparkles, Loader2, FileText, ChevronDown } from 'lucide-react';
+import { X, Sparkles, Loader2, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { generateSuratOtomatisPDF, type TemplateType } from '@/lib/pdf/generateSuratOtomatisPDF';
@@ -18,10 +18,9 @@ type Props = {
 };
 
 const emptyData = {
-  tujuan: '', isi_pembuka: '', hari_tanggal: '', waktu: '', tempat: '', agenda: '', isi_penutup: '', catatan: '',
-  pemberi_nama: '', pemberi_jabatan: '', pemberi_instansi: '',
-  penerima_nama: '', penerima_jabatan: '', penerima_instansi: '', tugas_sebagai: '',
-  siswa_nama: '', siswa_ttl: '', siswa_jk: '', siswa_kompetensi: '', isi_keterangan: '',
+  tujuan: '', lampiran: '', isi_surat: '', isi_penutup: '', catatan: '',
+  pihak_nama: '', pihak_identitas: '',
+  pemberi_nama: '', pemberi_jabatan: '', penerima_nama: '', penerima_jabatan: '', tugas_sebagai: '', hari_tanggal: '', waktu: '', tempat: '',
   sk_tentang: '', sk_menimbang: '', sk_mengingat: '', sk_memperhatikan: '', sk_memutuskan: ''
 };
 
@@ -29,11 +28,7 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
   const [loading, setLoading] = useState(false);
   const [templateType, setTemplateType] = useState<TemplateType>('UNDANGAN');
   const [form, setForm] = useState({
-    kategori_id: '',
-    nomor_surat: '',
-    tanggal_surat: new Date().toISOString().split('T')[0],
-    perihal: '',
-    ...emptyData
+    kategori_id: '', nomor_surat: '', tanggal_surat: new Date().toISOString().split('T')[0], perihal: '', ...emptyData
   });
   const [isNomorManual, setIsNomorManual] = useState(false);
 
@@ -58,22 +53,13 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
     setLoading(true);
     try {
       const token = crypto.randomUUID();
-      
-      const dataPayload = {
-        tujuan: form.tujuan, isi_pembuka: form.isi_pembuka, hari_tanggal: form.hari_tanggal, waktu: form.waktu, tempat: form.tempat, agenda: form.agenda, isi_penutup: form.isi_penutup, catatan: form.catatan,
-        pemberi_nama: form.pemberi_nama, pemberi_jabatan: form.pemberi_jabatan, pemberi_instansi: form.pemberi_instansi,
-        penerima_nama: form.penerima_nama, penerima_jabatan: form.penerima_jabatan, penerima_instansi: form.penerima_instansi, tugas_sebagai: form.tugas_sebagai,
-        siswa_nama: form.siswa_nama, siswa_ttl: form.siswa_ttl, siswa_jk: form.siswa_jk, siswa_kompetensi: form.siswa_kompetensi, isi_keterangan: form.isi_keterangan,
-        sk_tentang: form.sk_tentang, sk_menimbang: form.sk_menimbang, sk_mengingat: form.sk_mengingat, sk_memperhatikan: form.sk_memperhatikan, sk_memutuskan: form.sk_memutuskan
-      };
-
       const blob = await generateSuratOtomatisPDF({
         nomor_surat: form.nomor_surat,
         tanggal_surat: form.tanggal_surat,
         perihal: form.perihal,
         verification_token: token,
         template_type: templateType,
-        data: dataPayload
+        data: form
       }, 'blob') as Blob;
 
       const fileName = `otomatis/${token}.pdf`;
@@ -82,38 +68,25 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
         .upload(fileName, blob, { contentType: 'application/pdf', cacheControl: '31536000', upsert: false });
 
       if (uploadErr) throw uploadErr;
-
       const { data: publicUrlData } = supabase.storage.from('dokumen-surat').getPublicUrl(fileName);
 
       const { error: insertErr } = await supabase.from('surat').insert([{
-        jenis_surat: 'KELUAR',
-        kategori_id: form.kategori_id || null,
-        nomor_surat: form.nomor_surat,
-        perihal: form.perihal,
-        ringkasan: form.perihal, // Bisa disesuaikan
-        pengirim_atau_tujuan: form.tujuan || form.penerima_nama || '-',
-        tanggal_surat: form.tanggal_surat,
-        file_url: publicUrlData.publicUrl,
+        jenis_surat: 'KELUAR', kategori_id: form.kategori_id || null,
+        nomor_surat: form.nomor_surat, perihal: form.perihal,
+        ringkasan: form.perihal, pengirim_atau_tujuan: form.tujuan || form.penerima_nama || form.pihak_nama || '-',
+        tanggal_surat: form.tanggal_surat, file_url: publicUrlData.publicUrl,
       }]);
 
       if (insertErr) throw insertErr;
 
-      await logActivity({
-        aksi: 'CREATE',
-        modul: (AUDIT_MODUL as any)?.SURAT ?? 'Surat & Persuratan',
-        deskripsi: `Buat Surat ${templateType} Otomatis: ${form.nomor_surat}`,
-      });
-
-      showToast('success', 'Surat berhasil dibuat dan disimpan!');
-      onSuccess();
-      onClose();
+      await logActivity({ aksi: 'CREATE', modul: (AUDIT_MODUL as any)?.SURAT ?? 'Surat', deskripsi: `Buat Surat ${templateType}: ${form.nomor_surat}` });
+      showToast('success', 'Surat berhasil dibuat!');
+      onSuccess(); onClose();
       setForm({ kategori_id: '', nomor_surat: '', tanggal_surat: new Date().toISOString().split('T')[0], perihal: '', ...emptyData });
       setIsNomorManual(false);
     } catch (err: any) {
       showToast('error', 'Gagal: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   if (!open) return null;
@@ -122,21 +95,11 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
     <div>
       <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>
       {type === 'text' ? (
-        <input
-          type="text"
-          value={form[key] as string}
-          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-          className="w-full bg-slate-950 border border-white/10 rounded-xl p-2.5 text-xs sm:text-sm text-slate-100 outline-none focus:border-purple-500"
-          placeholder={placeholder}
-        />
+        <input type="text" value={form[key] as string} onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+          className="w-full bg-slate-950 border border-white/10 rounded-xl p-2.5 text-xs sm:text-sm text-slate-100 outline-none focus:border-purple-500" placeholder={placeholder} />
       ) : (
-        <textarea
-          value={form[key] as string}
-          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-          rows={4}
-          className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-xs sm:text-sm text-slate-100 outline-none focus:border-purple-500 resize-y"
-          placeholder={placeholder}
-        />
+        <textarea value={form[key] as string} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={4}
+          className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-xs sm:text-sm text-slate-100 outline-none focus:border-purple-500 resize-y" placeholder={placeholder} />
       )}
     </div>
   );
@@ -146,32 +109,27 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
       <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden max-h-[92vh] flex flex-col">
         <div className="flex justify-between items-center px-5 py-4 border-b border-white/10 bg-slate-900/50 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm sm:text-base text-white">Buat Surat Otomatis</h3>
-            </div>
+            <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center"><Sparkles size={18} /></div>
+            <h3 className="font-bold text-sm sm:text-base text-white">Buat Surat Otomatis</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 cursor-pointer"><X className="w-5 h-5" /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
-          
-          {/* PEMILIHAN TEMPLATE */}
+          {/* TEMPLATE SELECTOR */}
           <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5">
-            <label className="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Pilih Template Surat</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {(['UNDANGAN', 'TUGAS', 'KETERANGAN', 'SK'] as TemplateType[]).map((t) => (
-                <button
-                  key={t} type="button" onClick={() => setTemplateType(t)}
-                  className={`py-2 rounded-lg text-xs font-bold border transition ${
-                    templateType === t ? 'bg-purple-600 border-purple-500 text-white shadow-lg' : 'bg-slate-900 border-white/10 text-slate-400 hover:bg-slate-800'
-                  }`}
-                >
-                  {t === 'SK' ? 'Surat Keputusan' : `Surat ${t.charAt(0) + t.slice(1).toLowerCase()}`}
+            <label className="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Pilih Template</label>
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+              {[
+                { id: 'UNDANGAN', label: 'Undangan' }, { id: 'PERMOHONAN', label: 'Permohonan' }, { id: 'PEMBERITAHUAN', label: 'Pemberitahuan' },
+                { id: 'TUGAS', label: 'Surat Tugas' }, { id: 'PENGANTAR', label: 'Pengantar' }, { id: 'BISNIS', label: 'Bisnis / Niaga' },
+                { id: 'KETERANGAN', label: 'Keterangan' }, { id: 'PERNYATAAN', label: 'Pernyataan' }, { id: 'SK', label: 'Surat Keputusan' }
+              ].map((t) => (
+                <button key={t.id} type="button" onClick={() => setTemplateType(t.id as TemplateType)}
+                  className={`py-2 px-1 rounded-lg text-[10px] sm:text-xs font-bold border transition text-center ${
+                    templateType === t.id ? 'bg-purple-600 border-purple-500 text-white shadow-lg' : 'bg-slate-900 border-white/10 text-slate-400 hover:bg-slate-800'
+                  }`}>
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -180,11 +138,8 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">Kode Perihal</label>
-              <SearchableSelect
-                options={kategoriList.map(k => ({ value: k.id, label: `[${k.kode}] ${k.nama_kategori}` }))}
-                value={form.kategori_id} onChange={handleKategoriChange}
-                placeholder="Pilih Kode..." searchPlaceholder="Cari..." emptyMessage="Kosong"
-              />
+              <SearchableSelect options={kategoriList.map(k => ({ value: k.id, label: `[${k.kode}] ${k.nama_kategori}` }))}
+                value={form.kategori_id} onChange={handleKategoriChange} placeholder="Pilih..." searchPlaceholder="Cari..." emptyMessage="Kosong" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">Perihal</label>
@@ -207,36 +162,53 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
           </div>
 
           <div className="border-t border-white/5 pt-4 space-y-4">
-            {/* FORM UNDANGAN */}
-            {templateType === 'UNDANGAN' && (
+            {/* GAYA BLOK KIRI */}
+            {['UNDANGAN', 'PERMOHONAN', 'PEMBERITAHUAN', 'BISNIS'].includes(templateType) && (
               <>
-                {renderField('Tujuan (Yth.)', 'tujuan', 'text', 'Bapak/Ibu Staf Pendidik...')}
-                {renderField('Isi Pembuka', 'isi_pembuka', 'textarea', 'Assalamu\'alaikum... Dalam rangka...')}
+                {renderField('Tujuan (Yth.)', 'tujuan', 'text', 'Bapak/Ibu ...')}
+                {renderField('Lampiran (Opsional)', 'lampiran', 'text', '1 Berkas / -')}
+                {renderField('Isi Pembuka / Latar Belakang', 'isi_surat', 'textarea', 'Sehubungan dengan...')}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {renderField('Hari, Tanggal', 'hari_tanggal', 'text', 'Senin, 21 Juli 2025')}
-                  {renderField('Waktu', 'waktu', 'text', '07.15 WIB s.d selesai')}
-                  {renderField('Tempat', 'tempat', 'text', 'Aula KH. Zainal Muhsin')}
+                  {renderField('Waktu', 'waktu', 'text', '07.15 WIB')}
+                  {renderField('Tempat', 'tempat', 'text', 'Aula Sekolah')}
                 </div>
-                {renderField('Agenda (Opsional)', 'agenda', 'textarea', '1. Pembukaan\n2. Sambutan...')}
-                {renderField('Isi Penutup', 'isi_penutup', 'textarea', 'Mengingat pentingnya acara...')}
-                {renderField('Catatan (Opsional)', 'catatan', 'textarea', '1. Membawa laptop\n2. Batik bebas')}
+                {renderField('Isi Penutup', 'isi_penutup', 'textarea', 'Demikian surat ini kami sampaikan...')}
               </>
             )}
 
-            {/* FORM TUGAS */}
+            {templateType === 'PENGANTAR' && (
+              <>
+                {renderField('Tujuan (Yth.)', 'tujuan', 'text', 'Bapak/Ibu ...')}
+                {renderField('Isi Pengantar', 'isi_surat', 'textarea', 'Bersama dengan surat ini kami sampaikan...')}
+                {renderField('Daftar Dokumen yang disampaikan', 'catatan', 'textarea', '1. Laporan Keuangan\n2. Berkas Pendukung')}
+                {renderField('Isi Penutup', 'isi_penutup', 'textarea', 'Demikian surat pengantar ini...')}
+              </>
+            )}
+
+            {/* GAYA CENTER */}
+            {['KETERANGAN', 'PERNYATAAN'].includes(templateType) && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {renderField('Nama Pihak', 'pihak_nama', 'text', 'Nama Siswa / Guru')}
+                  {renderField('Identitas (NISN/NIP)', 'pihak_identitas', 'text', '12345678')}
+                </div>
+                {renderField('Isi Keterangan / Pernyataan', 'isi_surat', 'textarea', 'Yang bersangkutan adalah benar...')}
+                {renderField('Penutup', 'isi_penutup', 'textarea', 'Demikian surat ini dibuat...')}
+              </>
+            )}
+
             {templateType === 'TUGAS' && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {renderField('Nama Pemberi', 'pemberi_nama', 'text', 'Yunus, S.Pd.I')}
                   {renderField('Jabatan Pemberi', 'pemberi_jabatan', 'text', 'Kepala Sekolah')}
-                  {renderField('Instansi Pemberi', 'pemberi_instansi', 'text', 'SMK KH. A. Wahab Muhsin')}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {renderField('Nama Penerima', 'penerima_nama', 'text', 'Gina Meilinda...')}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {renderField('Nama Penerima', 'penerima_nama', 'text', 'Gina...')}
                   {renderField('Jabatan Penerima', 'penerima_jabatan', 'text', 'Guru')}
-                  {renderField('Instansi Penerima', 'penerima_instansi', 'text', 'SMK KH. A. Wahab Muhsin')}
                 </div>
-                {renderField('Sebagai / Tugas', 'tugas_sebagai', 'text', 'Pengawas Silang ANBK')}
+                {renderField('Tugas Sebagai', 'tugas_sebagai', 'text', 'Pengawas Silang')}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {renderField('Hari, Tanggal', 'hari_tanggal', 'text', 'Rabu, 06 Agustus 2025')}
                   {renderField('Waktu', 'waktu', 'text', '08.00 s.d selesai')}
@@ -245,28 +217,14 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
               </>
             )}
 
-            {/* FORM KETERANGAN */}
-            {templateType === 'KETERANGAN' && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {renderField('Nama Siswa', 'siswa_nama', 'text', 'Keysa Nafiza Sabna')}
-                  {renderField('Tempat/Tgl Lahir', 'siswa_ttl', 'text', 'Bandung, 24 Agustus 2007')}
-                  {renderField('Jenis Kelamin', 'siswa_jk', 'text', 'Perempuan')}
-                  {renderField('Kompetensi Keahlian', 'siswa_kompetensi', 'text', 'Farmasi Klinis')}
-                </div>
-                {renderField('Isi Keterangan', 'isi_keterangan', 'textarea', 'Yang bersangkutan adalah benar siswa...')}
-              </>
-            )}
-
-            {/* FORM SK */}
             {templateType === 'SK' && (
               <>
-                {renderField('Tentang', 'sk_tentang', 'text', 'PENGANGKATAN WALI KELAS TAHUN PELAJARAN 2025/2026')}
-                {renderField('Menimbang', 'sk_menimbang', 'textarea', 'Bahwa dalam rangka memperlancar...')}
-                {renderField('Mengingat', 'sk_mengingat', 'textarea', '1. Undang-undang Nomor 20 Tahun 2003...\n2. Peraturan...')}
-                {renderField('Memperhatikan', 'sk_memperhatikan', 'textarea', 'Hasil Musyawarah Kepala Sekolah dengan...')}
-                {renderField('Memutuskan (PERTAMA, KEDUA, dst)', 'sk_memutuskan', 'textarea', 'PERTAMA: Menetapkan Wali Kelas...\nKEDUA: Seluruh Wali Kelas...')}
-                {renderField('Tembusan (Opsional)', 'catatan', 'textarea', 'Yayasan KH. Zainal Muhsin\nArsip')}
+                {renderField('Tentang', 'sk_tentang', 'text', 'PENGANGKATAN WALI KELAS...')}
+                {renderField('Menimbang', 'sk_menimbang', 'textarea', 'Bahwa dalam rangka...')}
+                {renderField('Mengingat', 'sk_mengingat', 'textarea', '1. Undang-undang...\n2. Peraturan...')}
+                {renderField('Memperhatikan', 'sk_memperhatikan', 'textarea', 'Hasil Musyawarah...')}
+                {renderField('Memutuskan', 'sk_memutuskan', 'textarea', 'PERTAMA: Menetapkan...\nKEDUA: ...')}
+                {renderField('Tembusan', 'catatan', 'textarea', 'Yayasan KH. Zainal Muhsin\nArsip')}
               </>
             )}
           </div>
