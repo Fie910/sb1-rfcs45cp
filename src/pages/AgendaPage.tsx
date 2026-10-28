@@ -909,15 +909,21 @@ export function AgendaPage() {
           {/* ============ PANEL STATUS GPS + TOMBOL PERBARUI ============ */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-5 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border shrink-0 ${
-                gps.status === 'success' ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' :
-                gps.status === 'checking' ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400' :
-                gps.status === 'out_of_range' ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' :
-                (gps.status === 'denied' || gps.status === 'error') ? 'bg-rose-500/15 border-rose-500/30 text-rose-400' :
-                'bg-slate-950 border-slate-800 text-slate-400'
-              }`}>
-                <Navigation size={20} />
-              </div>
+              <div className="relative shrink-0">
+  {/* Efek Radar saat checking */}
+  {gps.status === 'checking' && (
+    <div className="absolute inset-0 rounded-2xl bg-indigo-500 animate-radar" />
+  )}
+  <div className={`relative w-11 h-11 rounded-2xl flex items-center justify-center border transition-all duration-300 ${
+    gps.status === 'success' ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' :
+    gps.status === 'checking' ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]' :
+    gps.status === 'out_of_range' ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' :
+    (gps.status === 'denied' || gps.status === 'error') ? 'bg-rose-500/15 border-rose-500/30 text-rose-400' :
+    'bg-slate-950 border-slate-800 text-slate-400'
+  }`}>
+    <Navigation size={20} className={gps.status === 'checking' ? 'animate-pulse' : ''} />
+  </div>
+</div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Status Lokasi GPS</p>
                 <p className="text-sm font-semibold text-slate-100 mt-0.5">
