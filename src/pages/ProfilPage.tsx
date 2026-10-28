@@ -75,8 +75,8 @@ export function ProfilPage() {
   };
 
   const tabs = [
-    { id: 'identitas', label: 'Identitas Diri', icon: User },
     { id: 'kehadiran', label: 'Catatan Kehadiran', icon: BookHeart },
+    { id: 'identitas', label: 'Identitas Diri', icon: User },
     { id: 'keamanan', label: 'Keamanan Akun', icon: ShieldCheck },
   ] as const;
 
