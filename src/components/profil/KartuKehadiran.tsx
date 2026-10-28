@@ -165,8 +165,8 @@ export function KartuKehadiran() {
                 </defs>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-black text-slate-100">
-                  {stats.rate}%
+                <span className="text-3xl font-black text-slate-100 flex items-baseline">
+                  <AnimatedNumber value={stats.rate} duration={1200} />%
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
                   Kehadiran
