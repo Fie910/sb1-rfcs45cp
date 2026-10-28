@@ -221,8 +221,13 @@ export function KartuKehadiran() {
                       <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
                         {card.label}
                       </p>
-                      <p className={`text-lg font-extrabold ${card.color} mt-0.5 leading-tight`}>
-                        {card.value}
+                      <p className={`text-lg font-extrabold ${card.color} mt-0.5 leading-tight flex items-baseline`}>
+                        {/* ✅ Animasi angka, perhatikan tipe data card.value */}
+                        <AnimatedNumber 
+                          value={Number(card.value)} 
+                          decimals={card.label === 'Setara' ? 1 : 0} // Setara pakai desimal
+                          duration={1200}
+                        />
                         <span className="text-[10px] font-bold text-slate-500 ml-1">
                           {card.unit}
                         </span>
