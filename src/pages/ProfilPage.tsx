@@ -12,7 +12,7 @@ type TabKey = 'identitas' | 'kehadiran' | 'keamanan';
 
 export function ProfilPage() {
   const { user, guru, refreshGuru } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabKey>('kehadiran');
+  const [activeTab, setActiveTab] = usePersistedState<TabKey>('profil_active_tab_v1', 'kehadiran');
 
   // State Profil
   const [namaLengkap, setNamaLengkap] = useState('');
