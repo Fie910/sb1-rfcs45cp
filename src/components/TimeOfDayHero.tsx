@@ -40,10 +40,13 @@ export function TimeOfDayHero({
     <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 shadow-lg">
       {/* Layer 1: Background image */}
       <div
-        className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
-        style={{ backgroundImage: `url('${bgImage}')` }}
-        aria-hidden="true"
-      />
+  className="absolute inset-0 bg-contain bg-no-repeat bg-center"
+  style={{
+    backgroundImage: `url('${bgImage}')`,
+    backgroundColor: '#0f172a', // warna gelap solid sbg isi area kosong
+  }}
+  aria-hidden="true"
+/>
 
       {/* Layer 2: Dark gradient overlay — gelap di kiri, transparan di kanan */}
       <div
