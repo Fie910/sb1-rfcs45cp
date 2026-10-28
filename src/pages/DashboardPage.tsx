@@ -189,8 +189,8 @@ export function DashboardPage({
     </div>
   }
 >
-  <p //className="text-[10px] italic text-amber-300/90 tracking-wide truncate drop-shadow-md">
-    ></p><Tagline variant="inline" separator="rub" />
+  <p className="text-[10px] italic text-amber-300/90 tracking-wide truncate drop-shadow-md">
+    <Tagline variant="inline" separator="rub" />
   </p>
   <p className="text-sm md:text-base font-extrabold text-white truncate mt-0.5 drop-shadow-lg">
     {SCHOOL_GREETING},
