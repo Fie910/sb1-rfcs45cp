@@ -195,9 +195,7 @@ export function DashboardPage({
   <p className="text-sm md:text-base font-extrabold text-white truncate mt-0.5 drop-shadow-lg">
     {SCHOOL_GREETING}
   </p>
-  <p className="text-sm md:text-base font-extrabold text-white truncate mt-0.5 drop-shadow-lg">
-    {namaPanggilan}!
-  </p>
+  
 </TimeOfDayHero>
 
       {/* ==================== PENGUMUMAN ==================== */}
