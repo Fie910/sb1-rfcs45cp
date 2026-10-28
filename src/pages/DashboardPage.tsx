@@ -94,18 +94,21 @@ export function DashboardPage({
   // ==========================================================================
   // FETCH PENGUMUMAN
   // ==========================================================================
-  const fetchPengumuman = useCallback(async () => {
+    const fetchPengumuman = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('v_pengumuman_aktif')
-        .select('*')
-        .order('tanggal_mulai', { ascending: false });
-
-      if (error) {
-        console.warn('[dashboard] pengumuman error:', error);
-        return;
-      }
-      setPengumumanList((data as Pengumuman[]) ?? []);
+      const { data } = await cachedQuerySafe<any[]>(
+        'dashboard_pengumuman_aktif',
+        async () => {
+          const { data, error } = await supabase
+            .from('v_pengumuman_aktif')
+            .select('*')
+            .order('tanggal_mulai', { ascending: false });
+          if (error) throw error;
+          return data ?? [];
+        },
+        [] // Fallback jika kosong
+      );
+      setPengumumanList(data as Pengumuman[]);
     } catch (err) {
       console.warn('[dashboard] pengumuman fetch:', err);
     } finally {
