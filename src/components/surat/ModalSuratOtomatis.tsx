@@ -72,7 +72,11 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
       const fileName = `otomatis/${token}.pdf`;
       const { error: uploadErr } = await supabase.storage
         .from('dokumen-surat')
-        .upload(fileName, blob, { cacheControl: '31536000', upsert: false });
+        .upload(fileName, blob, { 
+          contentType: 'application/pdf',
+          cacheControl: '31536000', 
+          upsert: false 
+        });
 
       if (uploadErr) throw uploadErr;
 
