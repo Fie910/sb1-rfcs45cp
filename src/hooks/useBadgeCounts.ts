@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { cachedQuerySafe } from '@/lib/offline/cachedQuery'; // ✅ Tambah Import
 import type { PageKey } from '@/config/navigation';
 
 type BadgeMap = Partial<Record<PageKey, number>>;
@@ -16,7 +17,6 @@ const PATH_TO_NOTIF_TIPE: Record<string, string[]> = {
   '/saran_pengaduan': ['saran_pengaduan'],
   '/todo': ['tugas'],
   '/rapat': ['rapat_baru', 'rapat_update', 'rapat_cancel', 'notulensi_final'],
-  // disposisi_surat tidak pakai tabel notifikasi — auto-clear di halaman
 };
 
 // Map tipe notifikasi → PageKey (untuk badge)
@@ -37,49 +37,59 @@ export function useBadgeCounts(guruId: string | null, guruNama: string | null) {
   const [badges, setBadges] = useState<BadgeMap>({});
 
   // ===========================================================================
-  // FETCH COUNTS
+  // FETCH COUNTS (OFFLINE-AWARE)
   // ===========================================================================
   const fetchCounts = async () => {
     if (!guruId) return;
 
-    const [notifRes, dispRes] = await Promise.all([
-      supabase
-        .from('notifikasi')
-        .select('tipe')
-        .eq('guru_id', guruId)
-        .eq('is_read', false),
-      guruNama
-        ? supabase
-            .from('disposisi_surat')
-            .select('id', { count: 'exact', head: true })
-            .eq('penerima_disposisi', guruNama)
-            .neq('status', 'SELESAI')
-        : Promise.resolve({ count: 0 } as any),
-    ]);
+    try {
+      const { data: counts } = await cachedQuerySafe<BadgeMap>(
+        `badge_counts:${guruId}`,
+        async () => {
+          const [notifRes, dispRes] = await Promise.all([
+            supabase
+              .from('notifikasi')
+              .select('tipe')
+              .eq('guru_id', guruId)
+              .eq('is_read', false),
+            guruNama
+              ? supabase
+                  .from('disposisi_surat')
+                  .select('id', { count: 'exact', head: true })
+                  .eq('penerima_disposisi', guruNama)
+                  .neq('status', 'SELESAI')
+              : Promise.resolve({ count: 0 } as any),
+          ]);
 
-    // Aggregate notif per tipe → PageKey
-    const counts: BadgeMap = {};
-    (notifRes.data ?? []).forEach((n: any) => {
-      const key = TIPE_TO_PAGE[n.tipe];
-      if (!key) return;
-      counts[key] = (counts[key] ?? 0) + 1;
-    });
+          if (notifRes.error) throw notifRes.error;
 
-    // Disposisi
-    if (dispRes.count && dispRes.count > 0) {
-      counts.tugas_disposisi = dispRes.count;
+          const newCounts: BadgeMap = {};
+          (notifRes.data ?? []).forEach((n: any) => {
+            const key = TIPE_TO_PAGE[n.tipe];
+            if (!key) return;
+            newCounts[key] = (newCounts[key] ?? 0) + 1;
+          });
+
+          if (dispRes.count && dispRes.count > 0) {
+            newCounts.tugas_disposisi = dispRes.count;
+          }
+
+          return newCounts;
+        },
+        {} // Fallback jika offline dan belum ada cache
+      );
+      setBadges(counts);
+    } catch (err) {
+      console.warn('[useBadgeCounts] fetch error:', err);
     }
-
-    setBadges(counts);
   };
 
   // ===========================================================================
   // AUTO-MARK-READ berdasarkan path aktif
   // ===========================================================================
   const markReadByPath = async (path: string) => {
-    if (!guruId) return;
+    if (!guruId || !navigator.onLine) return; // ✅ Skip jika offline
 
-    // Cari prefix yang cocok (mis: /buku_tamu atau /buku_tamu/isi)
     const match = Object.entries(PATH_TO_NOTIF_TIPE).find(([prefix]) =>
       path.startsWith(prefix)
     );
@@ -93,7 +103,6 @@ export function useBadgeCounts(guruId: string | null, guruNama: string | null) {
       .in('tipe', tipeList)
       .eq('is_read', false);
 
-    // Refresh counts
     fetchCounts();
   };
 
