@@ -702,10 +702,17 @@ export function PresensiPage() {
                   }`}
                 >
                   <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-base font-bold text-slate-100">{s.nama_lengkap}</p>
-                      <p className="text-xs text-slate-400 font-mono mt-0.5">{s.nisn || '-'}</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(s.nama_lengkap)} flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-lg`}>
+                        {getInitials(s.nama_lengkap)}
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-slate-100">{s.nama_lengkap}</p>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5">{s.nisn || '-'}</p>
+                      </div>
                     </div>
+                    {/* ... badge belum diabsen ... */}
+                  </div>
                     {isUnselected && (
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
                         Belum Diabsen
