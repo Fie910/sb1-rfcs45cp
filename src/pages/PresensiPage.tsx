@@ -1,17 +1,8 @@
 //src/pages/PresensiPage.tsx
 import { useEffect, useState, useCallback } from 'react';
 import {
-  CalendarCheck,
-  Loader2,
-  Save,
-  Check,
-  X,
-  AlertCircle,
-  Clock,
-  Sparkles,
-  BookOpen,
-  CalendarX,
-  CheckCheck,
+  CalendarCheck, Loader2, Save, Check, X, AlertCircle,
+  Clock, Sparkles, BookOpen, CalendarX, CheckCheck,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -20,15 +11,10 @@ import { cachedQuerySafe } from '@/lib/offline/cachedQuery';
 import { showToast } from '@/components/Toast';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import {
-  getTodayDateWib,
-  getHariFromDateString,
-  getCurrentTimeStrWib,
+  getTodayDateWib, getHariFromDateString, getCurrentTimeStrWib,
 } from '@/utils/date';
 import type {
-  Kelas,
-  Siswa,
-  PresensiWithSiswa,
-  JadwalKbmWithRelations,
+  Kelas, Siswa, PresensiWithSiswa, JadwalKbmWithRelations,
 } from '@/types/database';
 
 type Status = 'Hadir' | 'Sakit' | 'Izin' | 'Alpa';
