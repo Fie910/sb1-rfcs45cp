@@ -828,12 +828,24 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
             <Plus className="w-4 h-4" /> Tambah Kode Perihal
           </button>
         ) : (
-          <button
-            onClick={handleOpenCreateSurat}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-indigo-600/30 border border-indigo-400/20 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Tambah Surat {activeTab}
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* ✅ Tombol Baru: Generate Otomatis */}
+            <button
+              onClick={() => setShowOtomatisModal(true)}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-purple-600/30 border border-purple-400/20 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" /> Buat Surat Otomatis
+            </button>
+
+            {/* Tombol Upload/Manual yang lama */}
+            <button
+              onClick={handleOpenCreateSurat}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-white/10 cursor-pointer"
+              title="Upload scan surat atau input manual data saja"
+            >
+              <Plus className="w-4 h-4" /> Upload / Manual
+            </button>
+          </div>
         )}
       </div>
 
