@@ -26,6 +26,7 @@ import type {
   HariMinggu, PengaturanSekolah,
 } from '@/types/database';
 import { successMsg } from '@/constants/branding';
+import { SkeletonCard } from '@/components/Skeleton';
 
 type PresensiWithSiswa = {
   id: number;
