@@ -130,7 +130,7 @@ export const SuratPage: React.FC = () => {
     tanggal_surat: new Date().toISOString().split('T')[0],
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
+  const [showOtomatisModal, setShowOtomatisModal] = useState(false);
   /** ✅ Flag: apakah user sudah mengedit nomor secara manual */
   const [isNomorManual, setIsNomorManual] = useState(false);
   // ✅ NEW: State untuk modal detail + AI ringkasan
