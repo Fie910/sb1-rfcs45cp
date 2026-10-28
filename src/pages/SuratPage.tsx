@@ -4,7 +4,7 @@ import {
   Plus, Search, Trash2, Edit3, UserCheck, X, Calendar, FileText,
   Printer, MessageSquare, RotateCcw, Image as ImageIcon,
   Send, Truck, Clock, CheckCircle2, Paperclip, UploadCloud, Zap,
-  AlertCircle, Sparkles, Eye,
+  AlertCircle, Sparkles, Eye, Sparkles,
 } from 'lucide-react';
 import { JenisSurat, Surat, KategoriSurat, DisposisiSurat } from '../types/surat';
 import {
@@ -23,6 +23,7 @@ import { supabase } from '../lib/supabase';
 import { logActivity, AUDIT_MODUL } from '../utils/audit';
 import { ModalDetailSurat } from '@/components/surat/ModalDetailSurat';
 import { uploadSuratFile, formatCompressionInfo } from '@/utils/uploadSuratFile';
+import { ModalSuratOtomatis } from '@/components/surat/ModalSuratOtomatis';
 
 // =============================================================================
 // KONSTANTA
