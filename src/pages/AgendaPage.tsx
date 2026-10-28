@@ -797,10 +797,18 @@ export function AgendaPage() {
     }
   };
 
-  if (loading) {
+    if (loading) {
     return (
-      <div className="flex items-center justify-center h-full py-24">
-        <Loader2 className="animate-spin text-indigo-400" size={36} />
+      <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+        {/* Skeleton Header */}
+        <div className="h-16 bg-slate-800/50 rounded-2xl animate-pulse" />
+        {/* Skeleton GPS */}
+        <div className="h-20 bg-slate-800/50 rounded-3xl animate-pulse" />
+        {/* Skeleton Cards */}
+        <div className="space-y-4">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={3} />
+        </div>
       </div>
     );
   }
