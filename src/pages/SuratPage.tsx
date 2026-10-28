@@ -829,15 +829,17 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
           </button>
         ) : (
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* ✅ Tombol Baru: Generate Otomatis */}
-            <button
-              onClick={() => setShowOtomatisModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-purple-600/30 border border-purple-400/20 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4" /> Buat Surat Otomatis
-            </button>
+            {/* ✅ TOMBOL OTOMATIS: Hanya muncul untuk KELUAR & SK */}
+            {activeTab !== 'MASUK' && (
+              <button
+                onClick={() => setShowOtomatisModal(true)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-purple-600/30 border border-purple-400/20 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" /> Buat Surat Otomatis
+              </button>
+            )}
 
-            {/* Tombol Upload/Manual yang lama */}
+            {/* Tombol Upload/Manual */}
             <button
               onClick={handleOpenCreateSurat}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-white/10 cursor-pointer"
