@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 import { SkeletonCard } from '@/components/Skeleton';
 import { Tagline } from '@/components/Tagline';
 import { TimeOfDayHero } from '@/components/TimeOfDayHero';
+import { cachedQuerySafe } from '@/lib/offline/cachedQuery';
 
 // =============================================================================
 // KONSTANTA SEKOLAH
