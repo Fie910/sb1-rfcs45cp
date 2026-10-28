@@ -782,7 +782,7 @@ export function PresensiPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {siswaList.map((s) => {
+                  {filteredSiswa.map((s) => {
                     const status = attendance[s.id] ?? null;
                     const isUnselected = status === null;
 
