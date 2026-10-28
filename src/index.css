@@ -631,3 +631,23 @@ button:not(:disabled):active,
     animation: none;
   }
 }
+
+/* Premium Radar Animation for GPS */
+@keyframes radar-ping {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.animate-radar {
+  animation: radar-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Timeline Line */
+.timeline-line {
+  position: absolute;
+  left: 2.25rem; /* Sesuaikan dengan padding kiri card */
+  top: 4rem;
+  bottom: -1rem;
+  width: 2px;
+  background: linear-gradient(to bottom, #334155 0%, transparent 100%);
+  z-index: 0;
+}
