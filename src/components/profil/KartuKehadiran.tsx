@@ -177,8 +177,10 @@ export function KartuKehadiran() {
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
               <TrendingUp size={12} className="text-indigo-400" />
               <span>
-                <strong className="text-slate-100">{stats.hadir_jp} JP hadir</strong>{' '}
-                dari {totalRecords} JP
+                <strong className="text-slate-100">
+                  <AnimatedNumber value={stats.hadir_jp} duration={1000} /> JP hadir
+                </strong>{' '}
+                dari <AnimatedNumber value={totalRecords} duration={1000} /> JP
               </span>
             </div>
 
