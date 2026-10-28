@@ -153,8 +153,9 @@ export function KartuKehadiran() {
                   stroke="url(#gradient-khd)"
                   strokeWidth="11"
                   strokeLinecap="round"
-                  strokeDasharray={`${(stats.rate / 100) * 314.16} 314.16`}
-                  className="transition-all duration-700 ease-out"
+                  /* ✅ Gunakan state donutAnimated untuk memicu animasi dari 0 */
+                  strokeDasharray={`${donutAnimated ? (stats.rate / 100) * 314.16 : 0} 314.16`}
+                  className="transition-all duration-1000 ease-out"
                 />
                 <defs>
                   <linearGradient id="gradient-khd" x1="0%" y1="0%" x2="100%" y2="100%">
