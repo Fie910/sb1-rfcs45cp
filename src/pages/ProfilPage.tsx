@@ -1,3 +1,4 @@
+//src/pages/ProfilPage.tsx
 import { useState, useEffect } from 'react';
 import { User, Hash, Save, Loader2, Lock, KeyRound, CheckCircle2, Sparkles, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
