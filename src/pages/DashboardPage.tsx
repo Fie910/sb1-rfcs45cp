@@ -171,8 +171,8 @@ export function DashboardPage({
   // ==========================================================================
   // RENDER
   // ==========================================================================
-  const namaPanggilan = guru?.nama_lengkap?.split(' ')[0] ?? 'Guru';
-
+  //const namaPanggilan = guru?.nama_lengkap?.split(' ')[0] ?? 'Guru';
+  const namaPanggilan = guru?.nama_lengkap ?? 'Guru';
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
       
