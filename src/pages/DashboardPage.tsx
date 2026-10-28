@@ -193,7 +193,7 @@ export function DashboardPage({
     <Tagline variant="inline" separator="rub" />
   </p>
   <p className="text-sm md:text-base font-extrabold text-white truncate mt-0.5 drop-shadow-lg">
-    {SCHOOL_GREETING}
+    {SCHOOL_GREETING},
   </p>
   <p className="text-sm md:text-base font-extrabold text-white truncate mt-0.5 drop-shadow-lg">
     {namaPanggilan}!
