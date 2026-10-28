@@ -1779,11 +1779,19 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
       )}
 
       {/* ==================== MODAL DETAIL + AI RINGKASAN ==================== */}
-<ModalDetailSurat
-  surat={detailSurat}
-  onClose={() => setDetailSurat(null)}
-  onSaved={loadData}
-/>
+      <ModalDetailSurat
+        surat={detailSurat}
+        onClose={() => setDetailSurat(null)}
+        onSaved={loadData}
+      />
+
+      {/* ==================== MODAL SURAT OTOMATIS ==================== */}
+      <ModalSuratOtomatis
+        open={showOtomatisModal}
+        onClose={() => setShowOtomatisModal(false)}
+        onSuccess={loadData}
+        kategoriList={kategoriList}
+      />
     </div>
   );
 };
