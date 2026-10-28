@@ -690,7 +690,7 @@ export function PresensiPage() {
 
           {/* MOBILE CARD */}
           <div className="md:hidden space-y-4">
-            {siswaList.map((s) => {
+            {filteredSiswa.map((s) => {
               const status = attendance[s.id] ?? null;
               const isUnselected = status === null;
 
