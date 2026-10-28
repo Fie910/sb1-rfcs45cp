@@ -14,6 +14,18 @@ import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 export function KartuKehadiran() {
   const { stats, loading, filterMonth, setFilterMonth } = useKehadiranGuru();
   const monthOptions = getMonthOptions();
+  // ✅ State untuk memicu animasi Donut Chart
+  const [donutAnimated, setDonutAnimated] = useState(false);
+  
+  useEffect(() => {
+    if (!loading) {
+      // Delay sedikit agar transisi CSS sempat berjalan
+      const timer = setTimeout(() => setDonutAnimated(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setDonutAnimated(false);
+    }
+  }, [loading, stats.rate]);
 
   const totalRecords =
     stats.hadir_jp + stats.alpa_jp + stats.izin_jp + stats.sakit_jp;
