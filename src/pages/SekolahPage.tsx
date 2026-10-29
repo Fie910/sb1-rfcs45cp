@@ -190,11 +190,7 @@ export function SekolahPage() {
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-      {/* ==================== PANEL GENERATE MANUAL ==================== */}
+            {/* ==================== PANEL GENERATE MANUAL ==================== */}
       <div className="pt-6">
         <PanelGenerateAgenda />
       </div>
@@ -202,3 +198,7 @@ export function SekolahPage() {
     </div>
   );
 }
+    </div>
+  );
+}
+
