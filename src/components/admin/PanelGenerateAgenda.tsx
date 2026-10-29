@@ -181,7 +181,7 @@ export function PanelGenerateAgenda() {
                   </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     {cronEnabled 
-                      ? `Berjalan otomatis Senin–Sabtu pukul 13:21 WIB`
+                      ? `Berjalan otomatis Senin–Sabtu pukul 13:30 WIB`
                       : 'Cron job dihentikan. Guru tidak di-alpa otomatis.'}
                   </p>
                 </div>
