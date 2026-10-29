@@ -53,7 +53,7 @@ export function PanelGenerateAgenda() {
     const ok = await confirm({
       title: newState ? 'Aktifkan Auto-Generate?' : 'Matikan Auto-Generate?',
       message: newState 
-        ? 'Fungsi akan berjalan otomatis setiap Senin–Sabtu pukul 13:21 WIB untuk menandai guru yang tidak mengisi presensi.'
+        ? 'Fungsi akan berjalan otomatis setiap Senin–Sabtu pukul 13:30 WIB untuk menandai guru yang tidak mengisi presensi.'
         : 'Fungsi cron akan dihentikan. Guru yang tidak mengisi presensi TIDAK akan otomatis ditandai Alpa sampai Anda mengaktifkannya kembali.',
       variant: newState ? 'default' : 'warning',
       confirmLabel: newState ? 'Ya, Aktifkan' : 'Ya, Matikan',
