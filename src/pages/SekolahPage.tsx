@@ -198,7 +198,5 @@ export function SekolahPage() {
     </div>
   );
 }
-    </div>
-  );
-}
+
 
