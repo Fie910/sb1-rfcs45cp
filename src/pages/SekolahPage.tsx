@@ -3,6 +3,7 @@ import { MapPin, Save, Loader2, School } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import type { PengaturanSekolah } from '@/types/database';
+import { PanelGenerateAgenda } from '@/components/admin/PanelGenerateAgenda';
 
 export function SekolahPage() {
   const [config, setConfig] = useState<PengaturanSekolah | null>(null);
