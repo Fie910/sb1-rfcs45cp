@@ -193,3 +193,12 @@ export function SekolahPage() {
     </div>
   );
 }
+
+      {/* ==================== PANEL GENERATE MANUAL ==================== */}
+      <div className="pt-6">
+        <PanelGenerateAgenda />
+      </div>
+
+    </div>
+  );
+}
