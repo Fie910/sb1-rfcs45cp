@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { Guru, Divisi, Siswa, StatusBukuTamu } from '@/types/database';
+import { KioskClock } from '@/components/bukutamu/KioskClock';
 
 // Tambah type lokal untuk response RPC
 type SiswaPublicRow = {
