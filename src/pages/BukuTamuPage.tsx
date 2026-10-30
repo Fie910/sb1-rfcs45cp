@@ -73,11 +73,7 @@ export function BukuTamuPage() {
   // ===========================================================================
   // EFFECTS
   // ===========================================================================
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
+  
   useEffect(() => {
     (async () => {
       setLoadingMaster(true);
