@@ -1,6 +1,4 @@
 // src/pages/KalenderAkademikPage.tsx
-// Kalender Akademik — kalender bulanan + linimasa agenda (rapat + kegiatan + libur).
-
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -49,8 +47,7 @@ function generateCalendarCells(year: number, month: number): CalendarCell[] {
   const today = getTodayDateWib();
 
   const firstDay = new Date(year, month, 1);
-// 0 = Minggu, 1 = Senin, ... 6 = Sabtu (native getDay)
-const firstDayIdx = firstDay.getDay();
+  const firstDayIdx = firstDay.getDay();
 
   const startDate = new Date(year, month, 1 - firstDayIdx);
 
@@ -62,7 +59,6 @@ const firstDayIdx = firstDay.getDay();
     const cellMonth = cellDate.getMonth();
     const cellDay = cellDate.getDate();
     const dateStr = toDateStr(cellYear, cellMonth, cellDay);
-
     const dayOfWeek = cellDate.getDay();
 
     cells.push({
@@ -80,7 +76,7 @@ const firstDayIdx = firstDay.getDay();
 }
 
 // =============================================================================
-// KOMPONEN UTAMA
+// TYPES
 // =============================================================================
 type KegiatanGroup = {
   key: string;
@@ -107,32 +103,23 @@ export function KalenderAkademikPage() {
   const [events, setEvents] = useState<KalenderEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter by source
   const [showRencana, setShowRencana] = useState(true);
   const [showRapat, setShowRapat] = useState(true);
   const [showLibur, setShowLibur] = useState(true);
 
-  // Selected date detail
   const [selectedDate, setSelectedDate] = useState<string | null>(today);
-
-  // ✅ Recurring modal
   const [recurringModalOpen, setRecurringModalOpen] = useState(false);
   
-  // ✅ State & Handler Edit Kegiatan
   const [modalKegiatanOpen, setModalKegiatanOpen] = useState(false);
   const [editingKegiatan, setEditingKegiatan] = useState<RencanaKegiatan | null>(null);
-
-  // ✅ Batch edit state — HARUS di top-level komponen
-  const [batchEditing, setBatchEditing] = useState<{
-    batchId: string;
-    items: RencanaKegiatan[];
-  } | null>(null);
+  const [batchEditing, setBatchEditing] = useState<{ batchId: string; items: RencanaKegiatan[] } | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+  // =========================================================================
+  // HANDLERS
+  // =========================================================================
   const handleEditKegiatan = (event: KalenderEvent) => {
     if (event.source !== 'rencana') return;
-
-    // Konversi KalenderEvent ke RencanaKegiatan
     const originalData: RencanaKegiatan = {
       id: event.source_id,
       nama_kegiatan: event.judul,
@@ -143,21 +130,18 @@ export function KalenderAkademikPage() {
       deskripsi: event.deskripsi,
       status: event.status ?? 'Akan Datang',
     };
-    
     setEditingKegiatan(originalData);
     setModalKegiatanOpen(true);
   };
   
-  // ✅ Handler dengan guard
   const handleOpenRecurring = () => {
-    if (!canManageRecurringEvent(guru?.role)) {
+    if (!canManageRecurring) {
       showToast('error', 'Anda tidak memiliki akses untuk membuat event recurring');
       return;
     }
     setRecurringModalOpen(true);
   };
 
-  // ✅ Handler tambah kegiatan
   const handleOpenCreateKegiatan = () => {
     if (!canManageRecurring) {
       showToast('error', 'Anda tidak memiliki akses untuk menambah kegiatan');
@@ -167,46 +151,81 @@ export function KalenderAkademikPage() {
     setBatchEditing(null);
     setModalKegiatanOpen(true);
   };
-  
+
+  const handleDeleteKegiatan = async (event: KalenderEvent) => {
+    if (event.source !== 'rencana' || !canManageRecurring) return;
+    if (!(await confirm({ title: 'Hapus Kegiatan?', message: `Hapus "${event.judul}"?` }))) return;
+
+    const { error } = await supabase.from('rencana_kegiatan').delete().eq('id', event.source_id);
+    if (error) {
+      showToast('error', 'Gagal menghapus kegiatan');
+      return;
+    }
+    showToast('success', 'Kegiatan berhasil dihapus');
+    logActivity({ aksi: 'DELETE', modul: AUDIT_MODUL.AUTH, deskripsi: `Hapus kegiatan: ${event.judul}` });
+    fetchData();
+  };
+
+  const handleEditBatch = async (group: KegiatanGroup) => {
+    if (!canManageRecurring || !group.batch_id) return;
+    const { data, error } = await supabase.from('rencana_kegiatan').select('*').eq('batch_id', group.batch_id).order('tanggal_mulai');
+    if (error || !data) {
+      showToast('error', 'Gagal memuat data grup');
+      return;
+    }
+    setEditingKegiatan(null);
+    setBatchEditing({ batchId: group.batch_id, items: data as RencanaKegiatan[] });
+    setModalKegiatanOpen(true);
+  };
+
+  const handleDeleteBatch = async (group: KegiatanGroup) => {
+    if (!canManageRecurring || !group.batch_id) return;
+    const ok = await confirm({
+      title: 'Hapus Grup Kegiatan?',
+      message: `Hapus ${group.count} kegiatan "${group.label}"?\n\nTindakan ini tidak dapat dibatalkan.`,
+      variant: 'danger',
+      confirmLabel: `Ya, Hapus ${group.count} Kegiatan`,
+    });
+    if (!ok) return;
+
+    const { error } = await supabase.from('rencana_kegiatan').delete().eq('batch_id', group.batch_id);
+    if (error) {
+      showToast('error', 'Gagal menghapus grup kegiatan');
+      return;
+    }
+    showToast('success', `${group.count} kegiatan berhasil dihapus`);
+    fetchData();
+  };
+
+  const toggleGroupExpand = (key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+ 
+  useEffect(() => {
+    logActivity({ aksi: 'VIEW', modul: AUDIT_MODUL.AUTH, deskripsi: 'Membuka Kalender Akademik' });
+  }, []);
+
   // =========================================================================
-  // FETCH
+  // FETCH DATA
   // =========================================================================
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Range: 1 bulan sebelum + current + 1 bulan sesudah
-      const startDate = toDateStr(
-        currentMonth === 0 ? currentYear - 1 : currentYear,
-        currentMonth === 0 ? 11 : currentMonth - 1,
-        1
-      );
+      const startDate = toDateStr(currentMonth === 0 ? currentYear - 1 : currentYear, currentMonth === 0 ? 11 : currentMonth - 1, 1);
       const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
       const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
       const lastDayNext = new Date(nextYear, nextMonth + 1, 0).getDate();
       const endDate = toDateStr(nextYear, nextMonth, lastDayNext);
 
       const [kegiatanRes, liburRes, rapatRes] = await Promise.all([
-        supabase
-          .from('rencana_kegiatan')
-          .select('*')
-          .or(`tanggal_mulai.gte.${startDate},tanggal_selesai.gte.${startDate}`)
-          .lte('tanggal_mulai', endDate)
-          .order('tanggal_mulai', { ascending: true }),
-        supabase
-          .from('hari_liburs')
-          .select('*')
-          .gte('tanggal', startDate)
-          .lte('tanggal', endDate)
-          .order('tanggal', { ascending: true }),
-        // ✅ RAPAT: public saja, skip yang dibatalkan
-        supabase
-          .from('v_rapat_lengkap')
-          .select('*')
-          .eq('is_public', true)
-          .neq('status', 'Dibatalkan')
-          .gte('tanggal', startDate)
-          .lte('tanggal', endDate)
-          .order('tanggal', { ascending: true }),
+        supabase.from('rencana_kegiatan').select('*').or(`tanggal_mulai.gte.${startDate},tanggal_selesai.gte.${startDate}`).lte('tanggal_mulai', endDate).order('tanggal_mulai', { ascending: true }),
+        supabase.from('hari_liburs').select('*').gte('tanggal', startDate).lte('tanggal', endDate).order('tanggal', { ascending: true }),
+        supabase.from('v_rapat_lengkap').select('*').eq('is_public', true).neq('status', 'Dibatalkan').gte('tanggal', startDate).lte('tanggal', endDate).order('tanggal', { ascending: true }),
       ]);
 
       if (kegiatanRes.error) console.error('[kalender] kegiatan:', kegiatanRes.error);
@@ -225,7 +244,6 @@ export function KalenderAkademikPage() {
 
       setEvents(merged);
     } catch (err) {
-      console.error('[kalender] fetch:', err);
       showToast('error', 'Gagal memuat data kalender');
     } finally {
       setLoading(false);
@@ -234,112 +252,8 @@ export function KalenderAkademikPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ✅ Handler Hapus Kegiatan
-const handleDeleteKegiatan = async (event: KalenderEvent) => {
-  if (event.source !== 'rencana') return;
-
-  if (!canManageRecurring) {
-    showToast('error', 'Anda tidak memiliki akses untuk menghapus kegiatan');
-    return;
-  }
-
-  if (!(await confirm({ title: 'Hapus Kegiatan?', message: `Hapus "${event.judul}"?` }))) return;
-
-  const { error } = await supabase
-    .from('rencana_kegiatan')
-    .delete()
-    .eq('id', event.source_id);
-
-  if (error) {
-    console.error('[kalender] delete kegiatan:', error);
-    showToast('error', 'Gagal menghapus kegiatan');
-    return;
-  }
-
-  showToast('success', 'Kegiatan berhasil dihapus');
-  logActivity({
-    aksi: 'DELETE',
-    modul: AUDIT_MODUL.AUTH,
-    deskripsi: `Hapus kegiatan: ${event.judul}`,
-  });
-
-  fetchData();
-};
-
-// ✅ Edit grup (batch)
-const handleEditBatch = async (group: KegiatanGroup) => {
-  if (!canManageRecurring || !group.batch_id) return;
-
-  const { data, error } = await supabase
-    .from('rencana_kegiatan')
-    .select('*')
-    .eq('batch_id', group.batch_id)
-    .order('tanggal_mulai');
-
-  if (error || !data) {
-    showToast('error', 'Gagal memuat data grup');
-    return;
-  }
-
-  setEditingKegiatan(null);
-  setBatchEditing({ batchId: group.batch_id, items: data as RencanaKegiatan[] });
-  setModalKegiatanOpen(true);
-};
-
-// ✅ Hapus grup (batch)
-const handleDeleteBatch = async (group: KegiatanGroup) => {
-  if (!canManageRecurring || !group.batch_id) return;
-
-  const ok = await confirm({
-    title: 'Hapus Grup Kegiatan?',
-    message: `Hapus ${group.count} kegiatan "${group.label}"?\n\nTindakan ini tidak dapat dibatalkan.`,
-    variant: 'danger',
-    confirmLabel: `Ya, Hapus ${group.count} Kegiatan`,
-  });
-  if (!ok) return;
-
-  const { error } = await supabase
-    .from('rencana_kegiatan')
-    .delete()
-    .eq('batch_id', group.batch_id);
-
-  if (error) {
-    console.error('[kalender] delete batch:', error);
-    showToast('error', 'Gagal menghapus grup kegiatan');
-    return;
-  }
-
-  showToast('success', `${group.count} kegiatan berhasil dihapus`);
-  logActivity({
-    aksi: 'DELETE',
-    modul: AUDIT_MODUL.AUTH,
-    deskripsi: `Hapus grup kegiatan: ${group.label} (${group.count} hari)`,
-  });
-
-  fetchData();
-};
-
-// ✅ Toggle expand grup
-const toggleGroupExpand = (key: string) => {
-  setExpandedGroups((prev) => {
-    const next = new Set(prev);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    return next;
-  });
-};
- 
-  // Log VIEW
-  useEffect(() => {
-    logActivity({
-      aksi: 'VIEW',
-      modul: AUDIT_MODUL.AUTH,
-      deskripsi: 'Membuka Kalender Akademik',
-    });
-  }, []);
-
   // =========================================================================
-  // DERIVED
+  // DERIVED STATE
   // =========================================================================
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
@@ -350,12 +264,8 @@ const toggleGroupExpand = (key: string) => {
     });
   }, [events, showRencana, showRapat, showLibur]);
 
-  const cells = useMemo(
-    () => generateCalendarCells(currentYear, currentMonth),
-    [currentYear, currentMonth]
-  );
+  const cells = useMemo(() => generateCalendarCells(currentYear, currentMonth), [currentYear, currentMonth]);
 
-  // Linimasa: event dari hari ini s.d. 60 hari ke depan (multi-hari di-flatten)
   const timeline = useMemo(() => {
     const todayStr = getTodayDateWib();
     const futureLimit = new Date(`${todayStr}T12:00:00+07:00`);
@@ -368,124 +278,79 @@ const toggleGroupExpand = (key: string) => {
       .slice(0, 20);
   }, [filteredEvents]);
 
-  // Event untuk tanggal terpilih
   const selectedEvents = useMemo(() => {
     if (!selectedDate) return [];
     return getEventsForDate(selectedDate, filteredEvents)
       .sort((a, b) => {
-        // Urutkan: libur dulu, lalu berdasarkan waktu mulai
         if (a.source === 'libur' && b.source !== 'libur') return -1;
         if (b.source === 'libur' && a.source !== 'libur') return 1;
         return (a.waktu_mulai ?? '').localeCompare(b.waktu_mulai ?? '');
       });
   }, [selectedDate, filteredEvents]);
 
-// ✅ Grouping kegiatan by batch_id
-const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
-  const rencana = filteredEvents.filter((e) => e.source === 'rencana');
+  const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
+    const rencana = filteredEvents.filter((e) => e.source === 'rencana');
+    const byBatch = new Map<string, KalenderEvent[]>();
+    const singles: KalenderEvent[] = [];
 
-  const byBatch = new Map<string, KalenderEvent[]>();
-  const singles: KalenderEvent[] = [];
-
-  for (const e of rencana) {
-    if (e.batch_id) {
-      const arr = byBatch.get(e.batch_id) ?? [];
-      arr.push(e);
-      byBatch.set(e.batch_id, arr);
-    } else {
-      singles.push(e);
+    for (const e of rencana) {
+      if (e.batch_id) {
+        const arr = byBatch.get(e.batch_id) ?? [];
+        arr.push(e);
+        byBatch.set(e.batch_id, arr);
+      } else {
+        singles.push(e);
+      }
     }
-  }
 
-  const groups: KegiatanGroup[] = [];
+    const groups: KegiatanGroup[] = [];
+    for (const [batchId, items] of byBatch) {
+      const sorted = [...items].sort((a, b) => a.tanggal_mulai.localeCompare(b.tanggal_mulai));
+      groups.push({
+        key: `batch-${batchId}`, batch_id: batchId, label: sorted[0].batch_label || sorted[0].judul,
+        items: sorted, tanggalMulai: sorted[0].tanggal_mulai, tanggalSelesai: sorted[sorted.length - 1].tanggal_selesai,
+        count: sorted.length, isBatch: true,
+      });
+    }
 
-  for (const [batchId, items] of byBatch) {
-    const sorted = [...items].sort((a, b) =>
-      a.tanggal_mulai.localeCompare(b.tanggal_mulai)
-    );
-    groups.push({
-      key: `batch-${batchId}`,
-      batch_id: batchId,
-      label: sorted[0].batch_label || sorted[0].judul,
-      items: sorted,
-      tanggalMulai: sorted[0].tanggal_mulai,
-      tanggalSelesai: sorted[sorted.length - 1].tanggal_selesai,
-      count: sorted.length,
-      isBatch: true,
-    });
-  }
+    for (const s of singles) {
+      groups.push({
+        key: `single-${s.id}`, batch_id: null, label: s.judul, items: [s],
+        tanggalMulai: s.tanggal_mulai, tanggalSelesai: s.tanggal_selesai, count: 1, isBatch: false,
+      });
+    }
 
-  for (const s of singles) {
-    groups.push({
-      key: `single-${s.id}`,
-      batch_id: null,
-      label: s.judul,
-      items: [s],
-      tanggalMulai: s.tanggal_mulai,
-      tanggalSelesai: s.tanggal_selesai,
-      count: 1,
-      isBatch: false,
-    });
-  }
+    return groups.sort((a, b) => a.tanggalMulai.localeCompare(b.tanggalMulai));
+  }, [filteredEvents]);
 
-  return groups.sort((a, b) => a.tanggalMulai.localeCompare(b.tanggalMulai));
-}, [filteredEvents]);
-  
   // =========================================================================
-  // NAVIGASI
+  // NAVIGASI & EXPORT
   // =========================================================================
   const goPrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear((y) => y - 1); } 
+    else { setCurrentMonth((m) => m - 1); }
   };
-
   const goNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear((y) => y + 1); } 
+    else { setCurrentMonth((m) => m + 1); }
   };
-
   const goToday = () => {
     setCurrentYear(todayDate.getFullYear());
     setCurrentMonth(todayDate.getMonth());
     setSelectedDate(today);
   };
 
-  // =========================================================================
-  // EXPORT ICS
-  // =========================================================================
   const handleExportIcs = () => {
-    const eventsToExport = filteredEvents.filter((e) => {
-      // Filter: hanya event bulan ini
-      const bulan = e.tanggal_mulai.slice(0, 7);
-      const bulanIni = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-      return bulan === bulanIni;
-    });
-
-    if (eventsToExport.length === 0) {
-      showToast('error', 'Tidak ada event di bulan ini untuk di-export');
-      return;
-    }
+    const eventsToExport = filteredEvents.filter((e) => e.tanggal_mulai.slice(0, 7) === `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`);
+    if (eventsToExport.length === 0) { showToast('error', 'Tidak ada event di bulan ini untuk di-export'); return; }
 
     const icsEvents = eventsToExport.map((e) => ({
-      uid: `${e.id}@smk-khawm.app`,
-      summary: e.judul,
-      description: e.deskripsi ?? undefined,
-      location: e.lokasi ?? undefined,
-      dtstart: e.tanggal_mulai,
-      dtend: e.tanggal_selesai !== e.tanggal_mulai ? e.tanggal_selesai : undefined,
-      allday: !e.waktu_mulai,
+      uid: `${e.id}@smk-khawm.app`, summary: e.judul, description: e.deskripsi ?? undefined,
+      location: e.lokasi ?? undefined, dtstart: e.tanggal_mulai,
+      dtend: e.tanggal_selesai !== e.tanggal_mulai ? e.tanggal_selesai : undefined, allday: !e.waktu_mulai,
     }));
 
-    const namaBulan = NAMA_BULAN[currentMonth].toLowerCase();
-    downloadIcsFile(icsEvents, `kalender-${namaBulan}-${currentYear}.ics`);
+    downloadIcsFile(icsEvents, `kalender-${NAMA_BULAN[currentMonth].toLowerCase()}-${currentYear}.ics`);
     showToast('success', `${icsEvents.length} event berhasil di-export`);
   };
   
@@ -497,49 +362,26 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+          <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/10">
             <CalendarRange size={22} />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">
-              Kalender Akademik
-            </h1>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Agenda sekolah, rapat, & hari libur terpadu
-            </p>
+            <h1 className="text-xl md:text-2xl font-extrabold text-slate-100 tracking-tight">Kalender Akademik</h1>
+            <p className="text-[11px] text-slate-400 mt-0.5">Agenda sekolah, rapat, & hari libur terpadu</p>
           </div>
         </div>
 
-        {/* ✅ Tombol Actions */}
         <div className="flex items-center gap-2">
-          {/* Export — semua user yang bisa akses kalender boleh export */}
-          <button
-            onClick={handleExportIcs}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition cursor-pointer"
-            title="Export kalender bulan ini ke Google Calendar"
-          >
-            <Download size={14} />
-            Export ICS
+          <button onClick={handleExportIcs} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition cursor-pointer">
+            <Download size={14} /> Export ICS
           </button>
-
-          {/* Recurring — hanya manager */}
           {canManageRecurring && (
             <>
-              <button
-                onClick={handleOpenCreateKegiatan}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition cursor-pointer"
-                title="Tambah kegiatan (single atau per hari)"
-              >
-                <Plus size={14} />
-                Tambah Kegiatan
+              <button onClick={handleOpenCreateKegiatan} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition cursor-pointer">
+                <Plus size={14} /> Tambah Kegiatan
               </button>
-
-              <button
-                onClick={handleOpenRecurring}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer"
-              >
-                <Repeat size={14} />
-                Buat Recurring
+              <button onClick={handleOpenRecurring} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer">
+                <Repeat size={14} /> Buat Recurring
               </button>
             </>
           )}
@@ -549,100 +391,61 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
       {/* FILTER CHIPS */}
       <div className="flex flex-wrap items-center gap-2">
         <Filter size={13} className="text-slate-500" />
-        <button
-          onClick={() => setShowRencana((v) => !v)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${
-            showRencana
-              ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300'
-              : 'bg-slate-950 border-slate-800 text-slate-500'
-          }`}
-        >
-          <span className={`w-2 h-2 rounded-full ${showRencana ? 'bg-indigo-400' : 'bg-slate-600'}`} />
-          Agenda Sekolah
-        </button>
-        <button
-          onClick={() => setShowRapat((v) => !v)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${
-            showRapat
-              ? 'bg-blue-500/15 border-blue-500/30 text-blue-300'
-              : 'bg-slate-950 border-slate-800 text-slate-500'
-          }`}
-        >
-          <span className={`w-2 h-2 rounded-full ${showRapat ? 'bg-blue-400' : 'bg-slate-600'}`} />
-          Rapat
-        </button>
-        <button
-          onClick={() => setShowLibur((v) => !v)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${
-            showLibur
-              ? 'bg-slate-500/15 border-slate-500/30 text-slate-300'
-              : 'bg-slate-950 border-slate-800 text-slate-500'
-          }`}
-        >
-          <span className={`w-2 h-2 rounded-full ${showLibur ? 'bg-slate-400' : 'bg-slate-600'}`} />
-          Hari Libur
-        </button>
+        {[
+          { label: 'Agenda Sekolah', state: showRencana, set: setShowRencana, color: 'indigo' },
+          { label: 'Rapat', state: showRapat, set: setShowRapat, color: 'blue' },
+          { label: 'Hari Libur', state: showLibur, set: setShowLibur, color: 'slate' },
+        ].map((f) => (
+          <button key={f.label} onClick={() => f.set((v) => !v)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${
+            f.state ? `bg-${f.color}-500/15 border-${f.color}-500/30 text-${f.color}-300` : 'bg-slate-950 border-slate-800 text-slate-500'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${f.state ? `bg-${f.color}-400` : 'bg-slate-600'}`} />
+            {f.label}
+          </button>
+        ))}
       </div>
 
-      {/* MAIN LAYOUT: KALENDER (2/3) + LINIMASA (1/3) */}
+      {/* MAIN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* ============ KALENDER BULANAN ============ */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          {/* Nav bulan */}
-          <div className="flex items-center justify-between p-3 border-b border-slate-800">
-            <button
-              onClick={goPrevMonth}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-            >
+        
+        {/* KALENDER BULANAN */}
+        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/30">
+            <button onClick={goPrevMonth} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer">
               <ChevronLeft size={16} />
             </button>
-
-            <div className="flex items-center gap-3">
-              <p className="text-sm font-extrabold text-slate-100">
-                {NAMA_BULAN[currentMonth]} {currentYear}
-              </p>
-              <button
-                onClick={goToday}
-                className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold transition cursor-pointer"
-              >
+            <div className="flex items-center gap-4">
+              <p className="text-base font-extrabold text-slate-100">{NAMA_BULAN[currentMonth]} {currentYear}</p>
+              <button onClick={goToday} className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold shadow-lg shadow-indigo-600/20 transition cursor-pointer">
                 Hari Ini
               </button>
             </div>
-
-            <button
-              onClick={goNextMonth}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-            >
+            <button onClick={goNextMonth} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer">
               <ChevronRight size={16} />
             </button>
           </div>
 
-          {/* Kalender */}
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-indigo-400" size={24} />
+            <div className="p-4">
+              <div className="grid grid-cols-7 gap-2 mb-2">
+                {NAMA_HARI_SINGKAT.map(h => <div key={h} className="h-6 bg-slate-800/50 rounded animate-pulse" />)}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 35 }).map((_, i) => <div key={i} className="h-24 bg-slate-800/40 rounded-xl animate-pulse" />)}
+              </div>
             </div>
           ) : (
             <>
-              {/* Header hari */}
               <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-950/60">
                 {NAMA_HARI_SINGKAT.map((hari, idx) => (
-                  <div
-                    key={hari}
-                    className={`py-2 text-center text-[10px] font-extrabold uppercase tracking-wider ${
-                      idx === 0
-                        ? 'text-rose-400'
-                        : idx === 5
-                        ? 'text-emerald-400'
-                        : 'text-slate-500'
-                    }`}
-                  >
+                  <div key={hari} className={`py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider ${
+                    idx === 0 ? 'text-rose-400' : idx === 5 ? 'text-emerald-400' : 'text-slate-500'
+                  }`}>
                     {hari}
                   </div>
                 ))}
               </div>
 
-              {/* Grid */}
               <div className="grid grid-cols-7">
                 {cells.map((cell, idx) => {
                   const dayEvents = getEventsForDate(cell.dateStr, filteredEvents);
@@ -655,297 +458,169 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
                     <button
                       key={cell.dateStr}
                       onClick={() => setSelectedDate(cell.dateStr)}
-                      className={`relative min-h-[72px] md:min-h-[88px] p-1.5 text-left transition cursor-pointer hover:bg-slate-800/50 ${borderRight} ${borderBottom} border-slate-700/90 ${
-                        !cell.isCurrentMonth
-                          ? 'bg-slate-950/40'
-                          : isLibur
-                          ? 'bg-red-900/40'
-                          : cell.isWeekend
-                          ? 'bg-rose-900/40'
-                          : cell.isFriday
-                          ? 'bg-emerald-900/40'
-                          : 'bg-slate-900'
-                      } ${
-                        isSelected
-                          ? 'ring-2 ring-indigo-500 ring-inset'
-                          : ''
-                      }`}
+                      className={`relative min-h-[80px] md:min-h-[96px] p-1.5 text-left transition-all duration-200 ${borderRight} ${borderBottom} border-slate-800/60 group hover:z-10 hover:shadow-xl hover:ring-2 hover:ring-indigo-500/50 ${
+                        !cell.isCurrentMonth ? 'bg-slate-950/40 opacity-50' 
+                        : isLibur ? 'bg-red-950/30' 
+                        : cell.isWeekend ? 'bg-rose-950/20' 
+                        : cell.isFriday ? 'bg-emerald-950/20' 
+                        : 'bg-slate-900'
+                      } ${isSelected ? 'ring-2 ring-indigo-500 ring-inset bg-slate-800' : ''}`}
                     >
-                      <div className="flex items-start justify-between gap-1">
-                        <span
-                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold ${
-                            cell.isToday
-                              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                              : !cell.isCurrentMonth
-                              ? 'text-slate-700'
-                              : isLibur
-                              ? 'text-red-400'
-                              : cell.isWeekend
-                              ? 'text-rose-300'
-                              : cell.isFriday
-                              ? 'text-emerald-300'
-                              : 'text-slate-300'
-                          }`}
-                        >
+                      <div className="flex items-start justify-between gap-1 mb-1">
+                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold ${
+                          cell.isToday ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                          : isLibur ? 'text-red-400' : cell.isWeekend ? 'text-rose-300' : cell.isFriday ? 'text-emerald-300' : 'text-slate-300'
+                        }`}>
                           {cell.day}
                         </span>
-
-                        {/* Dot indicators */}
-                        {dayEvents.length > 0 && (
-                          <div className="flex items-center gap-0.5 mt-1">
-                            {dayEvents.slice(0, 3).map((e, i) => (
-                              <span
-                                key={i}
-                                className={`w-1.5 h-1.5 rounded-full ${WARNA_DOT[e.warna]}`}
-                              />
-                            ))}
-                            {dayEvents.length > 3 && (
-                              <span className="text-[8px] text-slate-500 font-bold">
-                                +{dayEvents.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        {cell.isToday && <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mt-1">Hari Ini</span>}
                       </div>
 
-                      {/* Preview titles (desktop) */}
-                      <div className="hidden md:block mt-1 space-y-0.5">
+                      {/* PREMIUM EVENT PILLS */}
+                      <div className="space-y-1 mt-1">
                         {dayEvents.slice(0, 2).map((e, i) => (
-                          <div
-                            key={i}
-                            className="text-[9px] font-semibold truncate leading-tight text-slate-400"
-                            title={e.judul}
-                          >
-                            • {e.judul}
+                          <div key={i} className={`text-[9px] font-bold truncate px-1.5 py-0.5 rounded-md border ${WARNA_BG[e.warna]} shadow-sm`} title={e.judul}>
+                            {e.judul}
                           </div>
                         ))}
                         {dayEvents.length > 2 && (
-                          <div className="text-[9px] text-slate-600 italic">
-                            +{dayEvents.length - 2} lagi
-                          </div>
+                          <div className="text-[9px] text-slate-500 font-bold px-1">+{dayEvents.length - 2} lagi</div>
                         )}
                       </div>
                     </button>
                   );
                 })}
               </div>
-
-              {/* Legend */}
-              <div className="flex flex-wrap items-center gap-3 p-3 border-t border-slate-800 bg-slate-950/40 text-[10px] text-slate-500">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-rose-400" /> Ujian
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-400" /> Rapat
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" /> Pelatihan
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-400" /> Lomba
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-teal-400" /> Siswa
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-red-500" /> Libur
-                </span>
-              </div>
             </>
           )}
         </div>
 
-        {/* ============ LINIMASA ============ */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl flex flex-col max-h-[600px]">
-          <div className="flex items-center justify-between p-3 border-b border-slate-800">
+        {/* LINIMASA */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl flex flex-col max-h-[650px] overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/30">
             <div className="flex items-center gap-2">
-              <CalendarDays size={14} className="text-indigo-400" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                Linimasa Agenda
-              </h2>
+              <CalendarDays size={16} className="text-indigo-400" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">Linimasa Agenda</h2>
             </div>
-            <span className="text-[10px] text-slate-500 font-bold">
-              {timeline.length}
-            </span>
+            <span className="text-xs text-slate-500 font-bold bg-slate-800 px-2 py-0.5 rounded-md">{timeline.length}</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
             {timeline.length === 0 ? (
               <div className="text-center py-12">
-                <Calendar size={28} className="mx-auto text-slate-600 mb-2" />
-                <p className="text-[11px] text-slate-500">
-                  Belum ada agenda mendatang
-                </p>
+                <Calendar size={32} className="mx-auto text-slate-700 mb-3" />
+                <p className="text-xs text-slate-500">Belum ada agenda mendatang</p>
               </div>
             ) : (
-              timeline.map((e) => {
-                const relative = relativeDay(e.tanggal_mulai, today);
-                const isToday = e.tanggal_mulai === today;
-                return (
-                  <button
-                    key={e.id}
-                    onClick={() => setSelectedDate(e.tanggal_mulai)}
-                    className={`w-full text-left bg-slate-950/60 hover:bg-slate-800/60 border border-slate-800 rounded-xl p-2.5 transition cursor-pointer border-l-4 ${WARNA_BORDER_LEFT[e.warna]}`}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${WARNA_BG[e.warna]}`}>
-                        {e.kategori_label}
-                      </span>
-                      <span
-                        className={`text-[9px] font-bold ${
-                          isToday ? 'text-emerald-400' : 'text-slate-500'
-                        }`}
-                      >
-                        {relative}
-                      </span>
-                    </div>
+              <div className="relative space-y-4">
+                {/* Garis Timeline Vertikal */}
+                <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-800" />
+                
+                {timeline.map((e) => {
+                  const relative = relativeDay(e.tanggal_mulai, today);
+                  const isToday = e.tanggal_mulai === today;
+                  return (
+                    <button
+                      key={e.id}
+                      onClick={() => setSelectedDate(e.tanggal_mulai)}
+                      className="relative w-full text-left bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800 rounded-2xl p-3 transition cursor-pointer ml-6 group"
+                    >
+                      {/* Titik Timeline */}
+                      <div className={`absolute -left-[27px] top-4 w-3 h-3 rounded-full border-2 border-slate-900 ${
+                        isToday ? 'bg-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.8)]' : WARNA_DOT[e.warna]
+                      }`} />
 
-                    <p className="text-xs font-bold text-slate-200 line-clamp-2">
-                      {e.judul}
-                    </p>
-
-                    <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar size={9} />
-                        {formatEventRange(e)}
-                      </span>
-                      {e.waktu_mulai && (
-                        <span className="inline-flex items-center gap-1">
-                          <Clock size={9} />
-                          {e.waktu_mulai.slice(0, 5)}
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${WARNA_BG[e.warna]}`}>
+                          {e.kategori_label}
                         </span>
-                      )}
-                    </div>
+                        <span className={`text-[10px] font-bold ${isToday ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          {relative}
+                        </span>
+                      </div>
 
-                    {e.lokasi && (
-                      <p className="text-[10px] text-slate-500 truncate mt-0.5 inline-flex items-center gap-1">
-                        <MapPin size={9} /> {e.lokasi}
-                      </p>
-                    )}
-                  </button>
-                );
-              })
+                      <p className="text-sm font-bold text-slate-200 line-clamp-2 group-hover:text-indigo-300 transition-colors">{e.judul}</p>
+
+                      <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500">
+                        <span className="inline-flex items-center gap-1"><Calendar size={11} /> {formatEventRange(e)}</span>
+                        {e.waktu_mulai && <span className="inline-flex items-center gap-1"><Clock size={11} /> {e.waktu_mulai.slice(0, 5)}</span>}
+                      </div>
+                      {e.lokasi && <p className="text-[10px] text-slate-500 truncate mt-1 inline-flex items-center gap-1"><MapPin size={11} /> {e.lokasi}</p>}
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ============ DETAIL TANGGAL TERPILIH ============ */}
+      {/* DETAIL TANGGAL TERPILIH */}
       {selectedDate && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-slate-800">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
-                <Calendar size={16} />
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden animate-fade-in-up">
+          <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+                <Calendar size={18} />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-100">
-                  {formatTanggalPanjang(selectedDate)}
-                </p>
-                <p className="text-[10px] text-slate-500">
-                  {selectedEvents.length > 0
-                    ? `${selectedEvents.length} agenda`
-                    : 'Tidak ada agenda'}
-                  {' · '}
-                  {relativeDay(selectedDate, today)}
+                <p className="text-base font-bold text-slate-100">{formatTanggalPanjang(selectedDate)}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {selectedEvents.length > 0 ? `${selectedEvents.length} agenda` : 'Tidak ada agenda'} · {relativeDay(selectedDate, today)}
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setSelectedDate(null)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
-            >
-              <X size={14} />
+            <button onClick={() => setSelectedDate(null)} className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer">
+              <X size={16} />
             </button>
           </div>
 
           {selectedEvents.length === 0 ? (
-            <div className="text-center py-10">
-              <Info size={28} className="mx-auto text-slate-600 mb-2" />
-              <p className="text-xs text-slate-500">
-                Tidak ada agenda atau libur pada tanggal ini
-              </p>
+            <div className="text-center py-12">
+              <Info size={32} className="mx-auto text-slate-600 mb-3" />
+              <p className="text-sm text-slate-500">Tidak ada agenda atau libur pada tanggal ini</p>
             </div>
           ) : (
-            <div className="p-4 space-y-2">
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
               {selectedEvents.map((e) => (
-                <EventDetailCard
-                  key={e.id}
-                  event={e}
-                  onEdit={handleEditKegiatan}
-                  onDelete={handleDeleteKegiatan}
-                  canManage={canManageRecurring}
-                />
+                <EventDetailCard key={e.id} event={e} onEdit={handleEditKegiatan} onDelete={handleDeleteKegiatan} canManage={canManageRecurring} />
               ))}
             </div>
           )}
         </div>
       )}
 
-{/* ============ AGENDA KEGIATAN TERDAFTAR (GROUPED) ============ */}
-{rencanaGroups.length > 0 && (
-  <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-    <div className="flex items-center justify-between p-4 border-b border-slate-800">
-      <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-          <Layers size={16} />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-slate-100">Agenda Kegiatan Terdaftar</p>
-          <p className="text-[10px] text-slate-500">
-            {rencanaGroups.length} grup · {rencanaGroups.reduce((a, g) => a + g.count, 0)} kegiatan
-          </p>
-        </div>
-      </div>
-    </div>
+      {/* AGENDA KEGIATAN TERDAFTAR (GROUPED) */}
+      {rencanaGroups.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <Layers size={18} />
+              </div>
+              <div>
+                <p className="text-base font-bold text-slate-100">Agenda Kegiatan Terdaftar</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{rencanaGroups.length} grup · {rencanaGroups.reduce((a, g) => a + g.count, 0)} kegiatan</p>
+              </div>
+            </div>
+          </div>
 
-    <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-      {rencanaGroups.map((group) => (
-        <KegiatanGroupCard
-          key={group.key}
-          group={group}
-          canManage={canManageRecurring}
-          expanded={expandedGroups.has(group.key)}
-          onToggleExpand={() => toggleGroupExpand(group.key)}
-          onEditSingle={(e) => {
-            handleEditKegiatan(e);
-          }}
-          onDeleteSingle={handleDeleteKegiatan}
-          onEditGroup={() => handleEditBatch(group)}
-          onDeleteGroup={() => handleDeleteBatch(group)}
-        />
-      ))}
-    </div>
-  </div>
-)}
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {rencanaGroups.map((group) => (
+              <KegiatanGroupCard
+                key={group.key} group={group} canManage={canManageRecurring}
+                expanded={expandedGroups.has(group.key)} onToggleExpand={() => toggleGroupExpand(group.key)}
+                onEditSingle={handleEditKegiatan} onDeleteSingle={handleDeleteKegiatan}
+                onEditGroup={() => handleEditBatch(group)} onDeleteGroup={() => handleDeleteBatch(group)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       
-      {/* ✅ Modal Recurring Event */}
-      <ModalRecurringEvent
-        open={recurringModalOpen}
-        onClose={() => setRecurringModalOpen(false)}
-        onSaved={() => {
-          setRecurringModalOpen(false);
-          fetchData();
-        }}
-      />
-
-      {/* ✅ Modal Edit/Tambah Kegiatan Sekolah */}
-      <ModalTambahKegiatan
-        open={modalKegiatanOpen}
-        onClose={() => {
-          setModalKegiatanOpen(false);
-          setEditingKegiatan(null);
-          setBatchEditing(null);
-        }}
-        onSuccess={() => {
-          setModalKegiatanOpen(false);
-          setEditingKegiatan(null);
-          setBatchEditing(null);
-          fetchData();
-        }}
-        kegiatanEdit={editingKegiatan}
-        batchEdit={batchEditing}
-      />
+      {/* MODALS */}
+      <ModalRecurringEvent open={recurringModalOpen} onClose={() => setRecurringModalOpen(false)} onSaved={() => { setRecurringModalOpen(false); fetchData(); }} />
+      <ModalTambahKegiatan open={modalKegiatanOpen} onClose={() => { setModalKegiatanOpen(false); setEditingKegiatan(null); setBatchEditing(null); }} onSuccess={() => { setModalKegiatanOpen(false); setEditingKegiatan(null); setBatchEditing(null); fetchData(); }} kegiatanEdit={editingKegiatan} batchEdit={batchEditing} />
     </div>
   );
 }
@@ -953,110 +628,34 @@ const rencanaGroups = useMemo<KegiatanGroup[]>(() => {
 // =============================================================================
 // SUB: Event Detail Card
 // =============================================================================
-function EventDetailCard({
-  event,
-  onEdit,
-  onDelete,
-  canManage,
-}: {
-  event: KalenderEvent;
-  onEdit: (e: KalenderEvent) => void;
-  onDelete: (e: KalenderEvent) => void;
-  canManage: boolean;
-}) {
+function EventDetailCard({ event, onEdit, onDelete, canManage }: { event: KalenderEvent; onEdit: (e: KalenderEvent) => void; onDelete: (e: KalenderEvent) => void; canManage: boolean; }) {
   return (
-    <div
-      className={`bg-slate-950/60 border border-slate-800 rounded-2xl p-3.5 border-l-4 ${WARNA_BORDER_LEFT[event.warna]}`}
-    >
-      <div className="flex items-start justify-between gap-3 mb-1.5">
+    <div className={`bg-slate-950/60 border border-slate-800 rounded-2xl p-4 border-l-4 ${WARNA_BORDER_LEFT[event.warna]} shadow-lg`}>
+      <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap mb-1">
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${WARNA_BG[event.warna]}`}>
-              {event.kategori_label}
-            </span>
+          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${WARNA_BG[event.warna]}`}>{event.kategori_label}</span>
             {event.status && event.source === 'rapat' && (
-              <span
-                className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                  event.status === 'Selesai'
-                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                    : event.status === 'Berlangsung'
-                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                    : 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'
-                }`}
-              >
-                {event.status}
-              </span>
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${event.status === 'Selesai' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : event.status === 'Berlangsung' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' : 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'}`}>{event.status}</span>
             )}
-            {event.source === 'rapat' && (
-              <span className="text-[9px] font-bold text-blue-400 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
-                Rapat
-              </span>
-            )}
-            {(event as any).is_recurring && (
-              <span className="text-[9px] font-bold text-purple-400 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 inline-flex items-center gap-0.5">
-                <Repeat size={8} /> Recurring
-              </span>
-            )}
+            {event.source === 'rapat' && <span className="text-[9px] font-bold text-blue-400 px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20">Rapat</span>}
+            {(event as any).is_recurring && <span className="text-[9px] font-bold text-purple-400 px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 inline-flex items-center gap-0.5"><Repeat size={8} /> Recurring</span>}
           </div>
-
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-bold text-slate-100">{event.judul}</p>
-
-            {/* ✅ Tombol Edit + Delete (khusus Kegiatan Sekolah) */}
-            {event.source === 'rencana' && canManage && (
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => onEdit(event)}
-                  className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition cursor-pointer"
-                  title="Edit Kegiatan Sekolah"
-                >
-                  <Pencil size={12} />
-                </button>
-                <button
-                  onClick={() => onDelete(event)}
-                  className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition cursor-pointer"
-                  title="Hapus Kegiatan Sekolah"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            )}
-          </div>
+          <p className="text-sm font-bold text-slate-100">{event.judul}</p>
         </div>
+        {event.source === 'rencana' && canManage && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => onEdit(event)} className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition cursor-pointer" title="Edit"><Pencil size={13} /></button>
+            <button onClick={() => onDelete(event)} className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition cursor-pointer" title="Hapus"><Trash2 size={13} /></button>
+          </div>
+        )}
       </div>
-
-      {event.deskripsi && (
-        <p className="text-[11px] text-slate-400 leading-relaxed mb-2">
-          {event.deskripsi}
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 pt-2 border-t border-slate-800/60">
-        {event.waktu_mulai && (
-          <span className="inline-flex items-center gap-1">
-            <Clock size={10} className="text-slate-500" />
-            {event.waktu_mulai.slice(0, 5)}
-            {event.waktu_selesai ? ` - ${event.waktu_selesai.slice(0, 5)}` : ''} WIB
-          </span>
-        )}
-        {event.lokasi && (
-          <span className="inline-flex items-center gap-1">
-            <MapPin size={10} className="text-slate-500" />
-            {event.lokasi}
-          </span>
-        )}
-        {event.penanggung_jawab && (
-          <span className="inline-flex items-center gap-1">
-            <User size={10} className="text-slate-500" />
-            {event.penanggung_jawab}
-          </span>
-        )}
-        {event.peserta && (
-          <span className="inline-flex items-center gap-1">
-            <Users size={10} className="text-slate-500" />
-            {event.peserta}
-          </span>
-        )}
+      {event.deskripsi && <p className="text-[11px] text-slate-400 leading-relaxed mb-3">{event.deskripsi}</p>}
+      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 pt-3 border-t border-slate-800/80">
+        {event.waktu_mulai && <span className="inline-flex items-center gap-1"><Clock size={12} className="text-slate-500" /> {event.waktu_mulai.slice(0, 5)}{event.waktu_selesai ? ` - ${event.waktu_selesai.slice(0, 5)}` : ''} WIB</span>}
+        {event.lokasi && <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-slate-500" /> {event.lokasi}</span>}
+        {event.penanggung_jawab && <span className="inline-flex items-center gap-1"><User size={12} className="text-slate-500" /> {event.penanggung_jawab}</span>}
+        {event.peserta && <span className="inline-flex items-center gap-1"><Users size={12} className="text-slate-500" /> {event.peserta}</span>}
       </div>
     </div>
   );
@@ -1065,176 +664,72 @@ function EventDetailCard({
 // =============================================================================
 // SUB: Kegiatan Group Card
 // =============================================================================
-function KegiatanGroupCard({
-  group, canManage, expanded, onToggleExpand,
-  onEditSingle, onDeleteSingle, onEditGroup, onDeleteGroup,
-}: {
-  group: KegiatanGroup;
-  canManage: boolean;
-  expanded: boolean;
-  onToggleExpand: () => void;
-  onEditSingle: (e: KalenderEvent) => void;
-  onDeleteSingle: (e: KalenderEvent) => void;
-  onEditGroup: () => void;
-  onDeleteGroup: () => void;
-}) {
+function KegiatanGroupCard({ group, canManage, expanded, onToggleExpand, onEditSingle, onDeleteSingle, onEditGroup, onDeleteGroup }: { group: KegiatanGroup; canManage: boolean; expanded: boolean; onToggleExpand: () => void; onEditSingle: (e: KalenderEvent) => void; onDeleteSingle: (e: KalenderEvent) => void; onEditGroup: () => void; onDeleteGroup: () => void; }) {
   const todayStr = getTodayDateWib();
   const isPast = group.tanggalSelesai < todayStr;
   const isOngoing = group.tanggalMulai <= todayStr && group.tanggalSelesai >= todayStr;
 
   return (
-    <div
-      className={`relative group bg-slate-950/60 border rounded-2xl p-3.5 transition-all ${
-        isOngoing
-          ? 'border-amber-500/40 ring-1 ring-amber-500/20'
-          : isPast
-          ? 'border-slate-800/60 opacity-70'
-          : 'border-slate-800 hover:border-indigo-500/40'
-      }`}
-    >
-      {/* Top actions */}
+    <div className={`relative group bg-slate-950/60 border rounded-2xl p-4 transition-all duration-200 ${
+      isOngoing ? 'border-amber-500/50 ring-1 ring-amber-500/20 shadow-lg shadow-amber-500/10' : isPast ? 'border-slate-800/60 opacity-60' : 'border-slate-800 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5'
+    }`}>
       {canManage && (
-        <div className="absolute top-3 right-3 flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-4 right-4 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           {group.isBatch ? (
             <>
-              <button
-                onClick={onEditGroup}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
-                title={`Edit semua ${group.count} kegiatan`}
-              >
-                <Pencil size={13} />
-              </button>
-              <button
-                onClick={onDeleteGroup}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                title={`Hapus semua ${group.count} kegiatan`}
-              >
-                <Trash2 size={13} />
-              </button>
+              <button onClick={onEditGroup} className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer" title={`Edit semua ${group.count} kegiatan`}><Pencil size={14} /></button>
+              <button onClick={onDeleteGroup} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer" title={`Hapus semua ${group.count} kegiatan`}><Trash2 size={14} /></button>
             </>
           ) : (
             <>
-              <button
-                onClick={() => onEditSingle(group.items[0])}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer"
-                title="Edit"
-              >
-                <Pencil size={13} />
-              </button>
-              <button
-                onClick={() => onDeleteSingle(group.items[0])}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                title="Hapus"
-              >
-                <Trash2 size={13} />
-              </button>
+              <button onClick={() => onEditSingle(group.items[0])} className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer" title="Edit"><Pencil size={14} /></button>
+              <button onClick={() => onDeleteSingle(group.items[0])} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer" title="Hapus"><Trash2 size={14} /></button>
             </>
           )}
         </div>
       )}
 
-      {/* Header */}
-      <div className="pr-16 mb-2">
-        <div className="flex flex-wrap items-center gap-1.5 mb-1">
-          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${WARNA_BG[group.items[0].warna]}`}>
-            {group.items[0].kategori_label}
-          </span>
-          {group.isBatch && (
-            <span className="text-[9px] font-bold text-cyan-400 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 inline-flex items-center gap-0.5">
-              <Layers size={8} /> Grup · {group.count} hari
-            </span>
-          )}
-          {isOngoing && (
-            <span className="text-[9px] font-bold text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-              Berlangsung
-            </span>
-          )}
-          {isPast && (
-            <span className="text-[9px] font-bold text-slate-500 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700">
-              Lewat
-            </span>
-          )}
+      <div className="pr-16 mb-3">
+        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${WARNA_BG[group.items[0].warna]}`}>{group.items[0].kategori_label}</span>
+          {group.isBatch && <span className="text-[9px] font-bold text-cyan-400 px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 inline-flex items-center gap-1"><Layers size={10} /> Grup · {group.count} hari</span>}
+          {isOngoing && <span className="text-[9px] font-bold text-amber-400 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">Berlangsung</span>}
+          {isPast && <span className="text-[9px] font-bold text-slate-500 px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700">Lewat</span>}
         </div>
 
-        <p className="text-sm font-bold text-slate-100 leading-tight">
-          {group.label}
-        </p>
-        <p className="text-[10px] text-slate-500 mt-0.5">
+        <p className="text-sm font-bold text-slate-100 leading-tight">{group.label}</p>
+        <p className="text-[11px] text-slate-500 mt-1">
           {group.isBatch ? (
-            <>
-              {formatTanggalPanjang(group.tanggalMulai).split(',')[0]},{' '}
-              {group.tanggalMulai.slice(8, 10)}/{group.tanggalMulai.slice(5, 7)}
-              {group.count > 1 && (
-                <>
-                  {' — '}
-                  {group.tanggalSelesai.slice(8, 10)}/{group.tanggalSelesai.slice(5, 7)}
-                </>
-              )}
-            </>
+            <>{formatTanggalPanjang(group.tanggalMulai).split(',')[0]}, {group.tanggalMulai.slice(8, 10)}/{group.tanggalMulai.slice(5, 7)} {group.count > 1 && <> — {group.tanggalSelesai.slice(8, 10)}/{group.tanggalSelesai.slice(5, 7)}</>}</>
           ) : (
             formatTanggalPanjang(group.tanggalMulai)
           )}
         </p>
       </div>
 
-      {/* PJ & Peserta */}
-      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mb-2">
-        {group.items[0].penanggung_jawab && (
-          <span className="inline-flex items-center gap-1 truncate">
-            <User size={9} /> {group.items[0].penanggung_jawab}
-          </span>
-        )}
-        {group.items[0].peserta && (
-          <span className="inline-flex items-center gap-1 truncate">
-            <Users size={9} /> {group.items[0].peserta}
-          </span>
-        )}
+      <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 mb-3 bg-slate-900/50 p-2 rounded-xl">
+        {group.items[0].penanggung_jawab && <span className="inline-flex items-center gap-1 truncate"><User size={11} /> {group.items[0].penanggung_jawab}</span>}
+        {group.items[0].peserta && <span className="inline-flex items-center gap-1 truncate"><Users size={11} /> {group.items[0].peserta}</span>}
       </div>
 
-      {/* Expand toggle untuk batch */}
       {group.isBatch && group.count > 1 && (
-        <button
-          onClick={onToggleExpand}
-          className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-slate-400 hover:text-indigo-300 py-1.5 rounded-lg hover:bg-slate-800/50 transition cursor-pointer border-t border-slate-800/60 pt-2 mt-1"
-        >
-          {expanded ? (
-            <><ChevronUp size={12} /> Sembunyikan {group.count} tanggal</>
-          ) : (
-            <><ChevronDown size={12} /> Lihat {group.count} tanggal</>
-          )}
+        <button onClick={onToggleExpand} className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-slate-400 hover:text-indigo-300 py-2 rounded-xl hover:bg-slate-800/60 transition cursor-pointer border-t border-slate-800/80">
+          {expanded ? <><ChevronUp size={14} /> Sembunyikan {group.count} tanggal</> : <><ChevronDown size={14} /> Lihat {group.count} tanggal</>}
         </button>
       )}
 
-      {/* Expanded list */}
       {group.isBatch && expanded && (
-        <div className="mt-2 space-y-1 pt-2 border-t border-slate-800/60">
+        <div className="mt-2 space-y-1.5 pt-2 border-t border-slate-800/60 animate-fade-in-up">
           {group.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between text-[11px] p-1.5 rounded-lg bg-slate-900/40 hover:bg-slate-900/70"
-            >
+            <div key={item.id} className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-slate-900/40 hover:bg-slate-900/80 transition-colors">
               <div className="min-w-0 flex-1">
                 <p className="text-slate-300 font-medium truncate">{item.judul}</p>
-                <p className="text-slate-500 text-[10px]">
-                  {formatTanggalPanjang(item.tanggal_mulai)}
-                </p>
+                <p className="text-slate-500 text-[10px]">{formatTanggalPanjang(item.tanggal_mulai)}</p>
               </div>
               {canManage && (
-                <div className="flex items-center gap-0.5 shrink-0 ml-1">
-                  <button
-                    onClick={() => onEditSingle(item)}
-                    className="p-1 rounded text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition cursor-pointer"
-                    title="Edit tanggal ini"
-                  >
-                    <Pencil size={10} />
-                  </button>
-                  <button
-                    onClick={() => onDeleteSingle(item)}
-                    className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-                    title="Hapus tanggal ini"
-                  >
-                    <Trash2 size={10} />
-                  </button>
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  <button onClick={() => onEditSingle(item)} className="p-1.5 rounded-md text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition cursor-pointer" title="Edit tanggal ini"><Pencil size={12} /></button>
+                  <button onClick={() => onDeleteSingle(item)} className="p-1.5 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer" title="Hapus tanggal ini"><Trash2 size={12} /></button>
                 </div>
               )}
             </div>
