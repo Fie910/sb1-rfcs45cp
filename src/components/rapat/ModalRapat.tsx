@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Loader2, Save, Users, X, Search, Check, AlertTriangle,
-  Calendar as CalendarIcon, Clock, MapPin, UserCog, Bell,
+  Bell,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -125,7 +125,7 @@ export function ModalRapat({
   };
 
   // ==========================================================================
-  // SUBMIT
+  // SUBMIT — Pakai RPC Atomic (create_rapat_with_peserta / update_rapat_with_peserta)
   // ==========================================================================
   const handleSubmit = async () => {
     if (!form.judul.trim()) {
@@ -143,7 +143,8 @@ export function ModalRapat({
 
     setSaving(true);
     try {
-      const payload: any = {
+      // 1️⃣ Build payload rapat
+      const rapatPayload: Record<string, any> = {
         judul: form.judul.trim(),
         jenis: form.jenis,
         deskripsi: form.deskripsi.trim() || null,
@@ -159,13 +160,26 @@ export function ModalRapat({
         catatan_umum: form.catatan_umum.trim() || null,
       };
 
+      // 2️⃣ Build payload peserta (auto-assign jabatan)
+      const pesertaPayload = pesertaIds.map((id) => {
+        let jabatan = 'Peserta';
+        if (id === form.pemimpin_rapat_id) jabatan = 'Pemimpin';
+        else if (id === form.notulis_id) jabatan = 'Notulis';
+        return {
+          guru_id: id,
+          jabatan_dalam_rapat: jabatan,
+        };
+      });
+
       let rapatId: string;
 
+      // 3️⃣ Eksekusi RPC
       if (isEdit && editing?.id) {
-        const { error } = await supabase
-          .from('rapat')
-          .update(payload)
-          .eq('id', editing.id);
+        const { error } = await supabase.rpc('update_rapat_with_peserta', {
+          p_rapat_id: editing.id,
+          p_rapat: rapatPayload,
+          p_peserta: pesertaPayload,
+        });
         if (error) throw error;
         rapatId = editing.id;
 
@@ -173,82 +187,25 @@ export function ModalRapat({
           aksi: 'UPDATE',
           modul: AUDIT_MODUL.TODO,
           targetId: editing.id,
-          deskripsi: `Update rapat: ${payload.judul}`,
+          deskripsi: `Update rapat: ${rapatPayload.judul}`,
         });
       } else {
-        const { data, error } = await supabase
-          .from('rapat')
-          .insert({ ...payload, created_by: currentGuruId })
-          .select()
-          .single();
+        const { data, error } = await supabase.rpc('create_rapat_with_peserta', {
+          p_rapat: rapatPayload,
+          p_peserta: pesertaPayload,
+        });
         if (error) throw error;
-        rapatId = data.id;
+        rapatId = data as string;
 
         await logActivity({
           aksi: 'CREATE',
           modul: AUDIT_MODUL.TODO,
-          targetId: data.id,
-          deskripsi: `Buat rapat: ${payload.judul}`,
+          targetId: rapatId,
+          deskripsi: `Buat rapat: ${rapatPayload.judul}`,
         });
       }
 
-      // Sync peserta
-      // 1. Hapus yang sudah tidak ada
-      const { error: delErr } = await supabase
-        .from('rapat_peserta')
-        .delete()
-        .eq('rapat_id', rapatId)
-        .not(
-          'guru_id',
-          'in',
-          `(${pesertaIds.length > 0 ? pesertaIds.join(',') : '00000000-0000-0000-0000-000000000000'})`
-        );
-      if (delErr) console.warn('Delete peserta:', delErr);
-
-      // 2. Insert peserta baru
-      const existing = await supabase
-        .from('rapat_peserta')
-        .select('guru_id')
-        .eq('rapat_id', rapatId);
-      const existingIds = new Set((existing.data ?? []).map((p: any) => p.guru_id));
-
-      const toInsert = pesertaIds
-        .filter((id) => !existingIds.has(id))
-        .map((id) => {
-          let jabatan = 'Peserta';
-          if (id === form.pemimpin_rapat_id) jabatan = 'Pemimpin';
-          else if (id === form.notulis_id) jabatan = 'Notulis';
-          return {
-            rapat_id: rapatId,
-            guru_id: id,
-            jabatan_dalam_rapat: jabatan,
-          };
-        });
-
-      if (toInsert.length > 0) {
-        const { error: insErr } = await supabase
-          .from('rapat_peserta')
-          .insert(toInsert);
-        if (insErr) console.warn('Insert peserta:', insErr);
-      }
-
-      // 3. Update jabatan untuk peserta yang sudah ada
-      if (form.pemimpin_rapat_id && existingIds.has(form.pemimpin_rapat_id)) {
-        await supabase
-          .from('rapat_peserta')
-          .update({ jabatan_dalam_rapat: 'Pemimpin' })
-          .eq('rapat_id', rapatId)
-          .eq('guru_id', form.pemimpin_rapat_id);
-      }
-      if (form.notulis_id && existingIds.has(form.notulis_id)) {
-        await supabase
-          .from('rapat_peserta')
-          .update({ jabatan_dalam_rapat: 'Notulis' })
-          .eq('rapat_id', rapatId)
-          .eq('guru_id', form.notulis_id);
-      }
-
-      // ✅ NOTIFIKASI KE PESERTA
+      // 4️⃣ Notifikasi peserta
       try {
         const { data: freshRapat } = await supabase
           .from('v_rapat_lengkap')
@@ -276,7 +233,20 @@ export function ModalRapat({
       onSaved();
       onClose();
     } catch (err: any) {
-      showToast('error', 'Gagal menyimpan: ' + (err.message || 'Error'));
+      // ✅ Error message yang lebih jelas untuk RLS
+      const msg = String(err?.message ?? err ?? '');
+      if (
+        msg.includes('row-level security') ||
+        msg.includes('Akses ditolak') ||
+        err?.code === '42501'
+      ) {
+        showToast(
+          'error',
+          'Anda tidak memiliki akses untuk membuat/mengedit rapat. Hubungi administrator.'
+        );
+      } else {
+        showToast('error', 'Gagal menyimpan: ' + msg);
+      }
     } finally {
       setSaving(false);
     }
@@ -297,9 +267,7 @@ export function ModalRapat({
         <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 flex items-start gap-2.5">
           <Bell size={14} className="text-indigo-400 shrink-0 mt-0.5" />
           <div className="text-xs">
-            <p className="font-bold text-indigo-300">
-              Notifikasi Otomatis
-            </p>
+            <p className="font-bold text-indigo-300">Notifikasi Otomatis</p>
             <p className="text-slate-400 mt-0.5 leading-relaxed">
               Setelah disimpan, semua peserta akan menerima notifikasi undangan rapat
               beserta detail jadwal & lokasi.
@@ -527,9 +495,7 @@ export function ModalRapat({
               className="mt-0.5 w-4 h-4 accent-indigo-500 cursor-pointer"
             />
             <div className="flex-1">
-              <p className="text-xs font-bold text-indigo-300">
-                Tampilkan ke Semua Guru
-              </p>
+              <p className="text-xs font-bold text-indigo-300">Tampilkan ke Semua Guru</p>
               <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
                 Kalau dicentang, rapat akan tampil di jadwal semua guru (read-only).
                 Kalau tidak, hanya peserta yang bisa melihat.
