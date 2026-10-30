@@ -48,6 +48,7 @@ const emptyForm = {
 };
 
 export function BukuTamuPage() {
+  const { nama_sekolah, logo_url } = useSchoolBranding();
   const [gurus, setGurus] = useState<Guru[]>([]);
   const [divisis, setDivisis] = useState<Divisi[]>([]);
   const [siswas, setSiswas] = useState<SiswaPublicRow[]>([]);
