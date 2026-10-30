@@ -4,10 +4,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import QRCode from 'qrcode';
 import {
   UserCheck, Loader2, Building, User, Phone, Camera, Eraser,
   X, GraduationCap, Sparkles, CheckCircle2, ShieldCheck,
-  ArrowRight,
+  ArrowRight, Clock, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -62,17 +63,28 @@ export function BukuTamuPage() {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
+  // Kiosk Clock & Badge
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [badgeQr, setBadgeQr] = useState<string | null>(null);
+  const [badgeData, setBadgeData] = useState<{ waktu: string; tamu_id: string } | null>(null);
+
   // ===========================================================================
-  // FETCH MASTER DATA
+  // EFFECTS
   // ===========================================================================
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     (async () => {
       setLoadingMaster(true);
-        const [guruRes, divisiRes, siswaRes] = await Promise.all([
-          supabase.rpc('get_gurus_public'),
-          supabase.rpc('get_divisis_public'),
-          supabase.rpc('get_siswas_public'),
-        ]);
+      const [guruRes, divisiRes, siswaRes] = await Promise.all([
+        supabase.rpc('get_gurus_public'),
+        supabase.rpc('get_divisis_public'),
+        supabase.rpc('get_siswas_public'),
+      ]);
 
       setGurus((guruRes.data as any[]) ?? []);
       setDivisis((divisiRes.data as any[]) ?? []);
@@ -108,8 +120,16 @@ export function BukuTamuPage() {
     setIsCameraActive(false);
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current) return;
+
+    // Countdown 3-2-1
+    for (let i = 3; i >= 1; i--) {
+      setCountdown(i);
+      await new Promise((r) => setTimeout(r, 700));
+    }
+    setCountdown(null);
+
     const canvas = document.createElement('canvas');
     const maxWidth = 480;
     const videoWidth = videoRef.current.videoWidth || 640;
@@ -219,9 +239,12 @@ export function BukuTamuPage() {
       status: 'menunggu' as StatusBukuTamu,
     };
 
-const { error } = await supabase
-  .from('buku_tamu')
-  .insert(payload);
+    // ✅ Ambil data yang baru di-insert untuk generate QR Badge
+    const { data: insertedData, error } = await supabase
+      .from('buku_tamu')
+      .insert(payload)
+      .select('id, created_at')
+      .single();
 
     if (error) {
       showToast('error', 'Gagal menyimpan: ' + error.message);
@@ -229,31 +252,53 @@ const { error } = await supabase
       return;
     }
 
-// Notifikasi via RPC (SECURITY DEFINER — bisa jalan sebagai anon)
-try {
-  let targetIds: string[] = [];
+    // Notifikasi via RPC
+    try {
+      let targetIds: string[] = [];
+      if (form.guru_id) {
+        targetIds = [form.guru_id];
+      } else if (form.divisi_id) {
+        const { data: divisiGurus } = await supabase.rpc('get_gurus_by_divisi_public', {
+          p_divisi_id: form.divisi_id,
+        });
+        targetIds = (divisiGurus as any[])?.map((g) => g.id) ?? [];
+      }
 
-  if (form.guru_id) {
-    targetIds = [form.guru_id];
-  } else if (form.divisi_id) {
-    // Fetch guru per divisi via RPC publik
-    const { data: divisiGurus } = await supabase.rpc('get_gurus_by_divisi_public', {
-      p_divisi_id: form.divisi_id,
-    });
-    targetIds = (divisiGurus as any[])?.map((g) => g.id) ?? [];
-  }
+      if (targetIds.length > 0) {
+        await supabase.rpc('notify_buku_tamu', {
+          p_guru_ids: targetIds,
+          p_nama_tamu: form.nama_tamu,
+          p_instansi: form.instansi || null,
+          p_keperluan: form.keperluan,
+        });
+      }
+    } catch (notifErr) {
+      console.error('Gagal kirim notif:', notifErr);
+    }
 
-  if (targetIds.length > 0) {
-    await supabase.rpc('notify_buku_tamu', {
-      p_guru_ids: targetIds,
-      p_nama_tamu: form.nama_tamu,
-      p_instansi: form.instansi || null,
-      p_keperluan: form.keperluan,
-    });
-  }
-} catch (notifErr) {
-  console.error('Gagal kirim notif:', notifErr);
-}
+    // ✅ Generate QR Code Badge
+    try {
+      if (insertedData) {
+        const qrContent = `TAMU-${insertedData.id.slice(0, 8).toUpperCase()}|${form.nama_tamu}|${new Date(insertedData.created_at).toISOString()}`;
+        const qrDataUrl = await QRCode.toDataURL(qrContent, {
+          width: 400,
+          margin: 1,
+          color: { dark: '#1e1b4b', light: '#ffffff' },
+          errorCorrectionLevel: 'H',
+        });
+        setBadgeQr(qrDataUrl);
+        setBadgeData({
+          waktu: new Date(insertedData.created_at).toLocaleTimeString('id-ID', {
+            timeZone: 'Asia/Jakarta',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          tamu_id: insertedData.id.slice(0, 8).toUpperCase(),
+        });
+      }
+    } catch (qrErr) {
+      console.warn('Gagal generate QR badge:', qrErr);
+    }
 
     stopCamera();
 
@@ -267,6 +312,8 @@ try {
       setForm(emptyForm);
       setCapturedPhoto(null);
       setSubmitted(false);
+      setBadgeQr(null);
+      setBadgeData(null);
       clearCanvas();
     }, 10000);
   };
@@ -275,36 +322,81 @@ try {
     setForm(emptyForm);
     setCapturedPhoto(null);
     setSubmitted(false);
+    setBadgeQr(null);
+    setBadgeData(null);
     clearCanvas();
   };
 
   // ===========================================================================
-  // RENDER — THANK YOU SCREEN
+  // RENDER — THANK YOU SCREEN (DIGITAL BADGE)
   // ===========================================================================
   if (submitted) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="w-20 h-20 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto">
-            <CheckCircle2 size={40} className="text-emerald-400" />
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-md w-full space-y-5">
+          {/* ✅ DIGITAL VISITOR BADGE */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border-2 border-indigo-500/50 rounded-3xl shadow-2xl shadow-indigo-500/20">
+            <div className="h-2 bg-gradient-to-r from-emerald-400 via-indigo-400 to-purple-400" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none" />
+
+            <div className="relative p-6 space-y-4">
+              <div className="text-center space-y-1">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 mb-2 shadow-lg shadow-emerald-500/30">
+                  <CheckCircle2 size={32} className="text-emerald-400" />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">
+                  Kunjungan Tercatat
+                </p>
+                <h1 className="text-xl font-black text-white tracking-tight">
+                  {lastSubmittedName}
+                </h1>
+              </div>
+
+              {badgeQr ? (
+                <div className="flex justify-center">
+                  <div className="p-3 bg-white rounded-2xl shadow-xl shadow-indigo-500/20">
+                    <img src={badgeQr} alt="Visitor QR" className="w-40 h-40" />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <div className="w-40 h-40 rounded-2xl bg-slate-800 animate-pulse" />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Waktu Masuk</p>
+                  <p className="text-sm font-black text-indigo-300 tabular-nums mt-0.5">{badgeData?.waktu ?? '-'} WIB</p>
+                </div>
+                <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">ID Kunjungan</p>
+                  <p className="text-sm font-black text-emerald-300 font-mono mt-0.5">{badgeData?.tamu_id ?? '-'}</p>
+                </div>
+              </div>
+
+              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-indigo-200 leading-relaxed">
+                  <ShieldCheck size={12} className="inline mr-1" />
+                  Tunjukkan QR Code ini ke petugas saat bertemu
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-extrabold text-slate-100">
-              Terima Kasih, {lastSubmittedName}!
-            </h1>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Kunjungan Anda telah tercatat. Petugas akan segera menemui Anda.
-            </p>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleResetManual}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition cursor-pointer active:scale-95"
+            >
+              <ArrowRight size={16} />
+              Isi Tamu Baru
+            </button>
           </div>
-          <button
-            onClick={handleResetManual}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition cursor-pointer"
-          >
-            Isi Tamu Baru
-            <ArrowRight size={16} />
-          </button>
-          <p className="text-xs text-slate-600">
-            Form akan otomatis reset dalam 10 detik
+
+          <p className="text-center text-xs text-slate-600">
+            Halaman akan reset otomatis dalam 10 detik
           </p>
         </div>
       </div>
@@ -317,23 +409,45 @@ try {
   return (
     <div className="min-h-screen bg-slate-950">
       <div className="p-3.5 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-4 sm:space-y-6">
-        {/* HEADER */}
-        <div className="relative overflow-hidden bg-slate-900/50 backdrop-blur-xl border border-slate-800/80 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl">
-          <div className="flex items-center gap-3 sm:gap-4 relative z-10">
-            <div className="p-2.5 sm:p-3.5 bg-indigo-500/15 text-indigo-400 rounded-xl sm:rounded-2xl border border-indigo-500/30 shrink-0">
-              <UserCheck size={24} className="sm:w-7 sm:h-7" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
-                  Selamat Datang
-                </h1>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  <Sparkles size={10} /> Buku Tamu Digital
-                </span>
+        
+        {/* ✅ HEADER KIOSK DENGAN LIVE CLOCK */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl shadow-indigo-500/10 p-6 sm:p-8">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+            <div className="text-center sm:text-left flex items-center gap-4">
+              <div className="p-3.5 bg-indigo-500/20 text-indigo-300 rounded-2xl border border-indigo-500/40 shrink-0 shadow-lg shadow-indigo-500/20">
+                <UserCheck size={28} />
               </div>
-              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                Silakan isi data kunjungan Anda
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Selamat Datang 👋
+                </h1>
+                <p className="text-sm text-slate-400 mt-1">
+                  Silakan isi data kunjungan Anda di bawah ini
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center sm:text-right">
+              <p className="text-5xl sm:text-6xl font-black text-white tracking-tighter tabular-nums">
+                {currentTime.toLocaleTimeString('id-ID', {
+                  timeZone: 'Asia/Jakarta',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+                <span className="text-xl text-indigo-400 ml-1">WIB</span>
+              </p>
+              <p className="text-xs text-slate-400 mt-1 flex items-center justify-center sm:justify-end gap-1.5 font-semibold">
+                <Calendar size={12} />
+                {currentTime.toLocaleDateString('id-ID', {
+                  timeZone: 'Asia/Jakarta',
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </p>
             </div>
           </div>
@@ -449,18 +563,18 @@ try {
                 <GraduationCap size={12} /> Siswa Terkait
               </label>
               <SearchableSelect
-  options={siswas.map((s) => ({
-    value: s.id,
-    label: s.nama_lengkap,
-    hint: s.kelas_nama ?? undefined,
-    searchText: `${s.nisn} ${s.kelas_nama ?? ''}`,
-      }))}
-  value={form.siswa_id}
-  onChange={(v) => setForm({ ...form, siswa_id: v })}
-  placeholder="Pilih Nama Siswa"
-  searchPlaceholder="Cari nama siswa / NISN / kelas..."
-  emptyMessage="Siswa tidak ditemukan"
-/>
+                options={siswas.map((s) => ({
+                  value: s.id,
+                  label: s.nama_lengkap,
+                  hint: s.kelas_nama ?? undefined,
+                  searchText: `${s.nisn} ${s.kelas_nama ?? ''}`,
+                }))}
+                value={form.siswa_id}
+                onChange={(v) => setForm({ ...form, siswa_id: v })}
+                placeholder="Pilih Nama Siswa"
+                searchPlaceholder="Cari nama siswa / NISN / kelas..."
+                emptyMessage="Siswa tidak ditemukan"
+              />
             </div>
           )}
 
@@ -513,12 +627,21 @@ try {
                       playsInline
                       className="w-full h-full object-cover"
                     />
+                    {/* ✅ Countdown Overlay */}
+                    {countdown !== null && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                        <p className="text-7xl font-black text-white animate-ping">
+                          {countdown}
+                        </p>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={capturePhoto}
-                      className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-xs px-3 py-1 rounded-full font-medium"
+                      disabled={countdown !== null}
+                      className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg transition cursor-pointer disabled:opacity-50"
                     >
-                      Ambil Foto
+                      {countdown !== null ? 'Bersiap...' : '📸 Ambil Foto'}
                     </button>
                   </div>
                 ) : (
