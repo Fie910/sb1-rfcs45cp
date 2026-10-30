@@ -5,10 +5,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
+import { useSchoolBranding } from '@/hooks/useSchoolBranding';
 import {
   UserCheck, Loader2, Building, User, Phone, Camera, Eraser,
   X, GraduationCap, Sparkles, CheckCircle2, ShieldCheck,
-  ArrowRight, Clock, Calendar,
+  ArrowRight, Clock, Calendar, Users,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
