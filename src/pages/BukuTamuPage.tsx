@@ -445,7 +445,7 @@ export function BukuTamuPage() {
                   {nama_sekolah || 'Buku Tamu Digital'}
                 </p>
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
-                  Ahlan wa Sahlan Bikum
+                  Ahlan wa Sahlan
                 </h1>
                 <p className="text-sm text-slate-400 mt-1 max-w-xs">
                   Silakan isi data kunjungan Anda pada form di bawah ini.
