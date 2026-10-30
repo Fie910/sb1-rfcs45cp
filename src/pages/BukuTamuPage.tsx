@@ -71,6 +71,21 @@ export function BukuTamuPage() {
   const [badgeQr, setBadgeQr] = useState<string | null>(null);
   const [badgeData, setBadgeData] = useState<{ waktu: string; tamu_id: string } | null>(null);
 
+  // ✅ State & Effect untuk Live Guest Counter
+  const [todayCount, setTodayCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); // YYYY-MM-DD
+      const { count } = await supabase
+        .from('buku_tamu')
+        .select('*', { count: 'exact', head: true })
+        .gte('waktu_masuk', `${today}T00:00:00`);
+      
+      setTodayCount(count ?? 0);
+    })();
+  }, [submitted]);
+
   // ===========================================================================
   // EFFECTS
   // ===========================================================================
