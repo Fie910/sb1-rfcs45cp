@@ -406,12 +406,13 @@ export function BukuTamuPage() {
     <div className="min-h-screen bg-slate-950">
       <div className="p-3.5 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-4 sm:space-y-6">
         
-        {/* ✅ HEADER KIOSK DENGAN LIVE CLOCK */}
+                {/* ✅ HEADER KIOSK DENGAN ANALOG CLOCK PREMIUM */}
         <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl shadow-indigo-500/10 p-6 sm:p-8">
           <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
+            {/* KIRI: Sapaan */}
             <div className="text-center sm:text-left flex items-center gap-4">
               <div className="p-3.5 bg-indigo-500/20 text-indigo-300 rounded-2xl border border-indigo-500/40 shrink-0 shadow-lg shadow-indigo-500/20">
                 <UserCheck size={28} />
@@ -426,26 +427,8 @@ export function BukuTamuPage() {
               </div>
             </div>
 
-            <div className="text-center sm:text-right">
-              <p className="text-5xl sm:text-6xl font-black text-white tracking-tighter tabular-nums">
-                {currentTime.toLocaleTimeString('id-ID', {
-                  timeZone: 'Asia/Jakarta',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-                <span className="text-xl text-indigo-400 ml-1">WIB</span>
-              </p>
-              <p className="text-xs text-slate-400 mt-1 flex items-center justify-center sm:justify-end gap-1.5 font-semibold">
-                <Calendar size={12} />
-                {currentTime.toLocaleDateString('id-ID', {
-                  timeZone: 'Asia/Jakarta',
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
-            </div>
+            {/* KANAN: Analog Clock + Digital Hybrid */}
+            <KioskClock />
           </div>
         </div>
 
