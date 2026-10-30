@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import {
   UserCheck, Search, Loader2, Clock, Building, User, X,
   FileText, CheckCircle2, XCircle, LogOut, Users, ExternalLink,
-  Image as ImageIcon,
+  Image as ImageIcon, Wifi, WifiOff,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
@@ -34,6 +34,10 @@ export function BukuTamuKelolaPage() {
   const [detailItem, setDetailItem] = useState<BukuTamuWithRelations | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BukuTamuWithRelations | null>(null);
 
+  // ✅ State Live Realtime
+  const [isLive, setIsLive] = useState(false);
+  const [newGuestAlert, setNewGuestAlert] = useState(false);
+
   // ===========================================================================
   // FETCH
   // ===========================================================================
@@ -56,6 +60,31 @@ export function BukuTamuKelolaPage() {
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // ✅ Realtime Subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('buku-tamu-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'buku_tamu' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setNewGuestAlert(true);
+            showToast('info', '🔔 Tamu baru telah tiba!');
+            setTimeout(() => setNewGuestAlert(false), 4000);
+          }
+          fetchData();
+        }
+      )
+      .subscribe((status) => {
+        setIsLive(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // ===========================================================================
@@ -151,11 +180,28 @@ export function BukuTamuKelolaPage() {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight flex items-center gap-3 flex-wrap">
             <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/10">
               <UserCheck size={26} />
             </div>
             Kelola Buku Tamu
+            {/* ✅ Live Indicator */}
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all ${
+              isLive 
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' 
+                : 'bg-slate-800 text-slate-500 border-slate-700'
+            }`}>
+              {isLive ? (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live
+                </>
+              ) : (
+                <>
+                  <WifiOff size={10} /> Offline
+                </>
+              )}
+            </span>
           </h1>
           <p className="text-slate-400 text-xs mt-1">
             Rekap kunjungan tamu & kelola status kehadiran
@@ -243,99 +289,106 @@ export function BukuTamuKelolaPage() {
             <p className="text-xs text-slate-400">Belum ada catatan tamu</p>
           </div>
         ) : (
-          filteredList.map((item) => (
-            <div
-              key={item.id}
-              className="bg-slate-900/50 backdrop-blur-xl border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-md"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {item.foto_url ? (
-                    <img
-                      src={item.foto_url}
-                      alt={item.nama_tamu}
-                      className="w-11 h-11 rounded-xl object-cover border border-slate-700/80 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-11 h-11 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
-                      <User size={20} />
+          filteredList.map((item, idx) => {
+            const isRecent = idx < 3 && item.status === 'menunggu' && newGuestAlert;
+            return (
+              <div
+                key={item.id}
+                className={`bg-slate-900/50 backdrop-blur-xl border p-4 rounded-2xl space-y-3 shadow-md transition-all duration-500 ${
+                  isRecent 
+                    ? 'border-amber-500/50 ring-2 ring-amber-500/30 ring-inset bg-amber-500/5' 
+                    : 'border-slate-800/80'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {item.foto_url ? (
+                      <img
+                        src={item.foto_url}
+                        alt={item.nama_tamu}
+                        className="w-11 h-11 rounded-xl object-cover border border-slate-700/80 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                        <User size={20} />
+                      </div>
+                    )}
+                    <div>
+                      <h2 className="font-semibold text-slate-100 text-sm">
+                        {item.nama_tamu}
+                      </h2>
+                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                        <Building size={11} className="text-slate-500" />
+                        {item.instansi || 'Perorangan'}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <h2 className="font-semibold text-slate-100 text-sm">
-                      {item.nama_tamu}
-                    </h2>
-                    <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                      <Building size={11} className="text-slate-500" />
-                      {item.instansi || 'Perorangan'}
-                    </p>
+                  </div>
+                  <span
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-medium border ${getStatusBadge(
+                      item.status
+                    )}`}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+
+                <div className="bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/60 space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center text-slate-300">
+                    <span className="text-slate-500 text-[11px]">Tujuan:</span>
+                    <span className="font-medium">
+                      {item.gurus?.nama_lengkap || item.divisis?.nama_divisi || '-'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-300">
+                    <span className="text-slate-500 text-[11px]">Kategori:</span>
+                    <span className="text-[10px] font-semibold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                      {item.kategori}
+                    </span>
+                  </div>
+                  <p className="text-slate-400 pt-1 border-t border-slate-800/60 line-clamp-2">
+                    {item.keperluan}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <Clock size={11} />
+                    {formatWaktu(item.waktu_masuk)}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setDetailItem(item)}
+                      className="p-2 rounded-lg bg-slate-800/80 text-slate-300 hover:bg-slate-700 cursor-pointer"
+                    >
+                      <FileText size={15} />
+                    </button>
+                    {item.status === 'menunggu' && (
+                      <button
+                        onClick={() => handleUpdateStatus(item.id, 'bertemu')}
+                        className="p-2 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 cursor-pointer"
+                      >
+                        <CheckCircle2 size={15} />
+                      </button>
+                    )}
+                    {item.status !== 'selesai' && (
+                      <button
+                        onClick={() => handleUpdateStatus(item.id, 'selesai')}
+                        className="p-2 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 cursor-pointer"
+                      >
+                        <LogOut size={15} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDeleteTarget(item)}
+                      className="p-2 rounded-lg bg-rose-600/20 text-rose-300 border border-rose-500/30 cursor-pointer"
+                    >
+                      <XCircle size={15} />
+                    </button>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-medium border ${getStatusBadge(
-                    item.status
-                  )}`}
-                >
-                  {item.status}
-                </span>
               </div>
-
-              <div className="bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/60 space-y-1.5 text-xs">
-                <div className="flex justify-between items-center text-slate-300">
-                  <span className="text-slate-500 text-[11px]">Tujuan:</span>
-                  <span className="font-medium">
-                    {item.gurus?.nama_lengkap || item.divisis?.nama_divisi || '-'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-slate-300">
-                  <span className="text-slate-500 text-[11px]">Kategori:</span>
-                  <span className="text-[10px] font-semibold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                    {item.kategori}
-                  </span>
-                </div>
-                <p className="text-slate-400 pt-1 border-t border-slate-800/60 line-clamp-2">
-                  {item.keperluan}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                  <Clock size={11} />
-                  {formatWaktu(item.waktu_masuk)}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setDetailItem(item)}
-                    className="p-2 rounded-lg bg-slate-800/80 text-slate-300 hover:bg-slate-700 cursor-pointer"
-                  >
-                    <FileText size={15} />
-                  </button>
-                  {item.status === 'menunggu' && (
-                    <button
-                      onClick={() => handleUpdateStatus(item.id, 'bertemu')}
-                      className="p-2 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 cursor-pointer"
-                    >
-                      <CheckCircle2 size={15} />
-                    </button>
-                  )}
-                  {item.status !== 'selesai' && (
-                    <button
-                      onClick={() => handleUpdateStatus(item.id, 'selesai')}
-                      className="p-2 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 cursor-pointer"
-                    >
-                      <LogOut size={15} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setDeleteTarget(item)}
-                    className="p-2 rounded-lg bg-rose-600/20 text-rose-300 border border-rose-500/30 cursor-pointer"
-                  >
-                    <XCircle size={15} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -364,106 +417,116 @@ export function BukuTamuKelolaPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {filteredList.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        {item.foto_url ? (
-                          <img
-                            src={item.foto_url}
-                            alt={item.nama_tamu}
-                            className="w-10 h-10 rounded-2xl object-cover border border-slate-700/80 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
-                            <User size={18} />
+                {filteredList.map((item, idx) => {
+                  const isRecent = idx < 3 && item.status === 'menunggu' && newGuestAlert;
+                  return (
+                    <tr 
+                      key={item.id} 
+                      className={`transition-all duration-500 ${
+                        isRecent 
+                          ? 'bg-amber-500/10 ring-2 ring-amber-500/30 ring-inset' 
+                          : 'hover:bg-slate-800/30'
+                      }`}
+                    >
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          {item.foto_url ? (
+                            <img
+                              src={item.foto_url}
+                              alt={item.nama_tamu}
+                              className="w-10 h-10 rounded-2xl object-cover border border-slate-700/80 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                              <User size={18} />
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-semibold text-slate-100 leading-tight">
+                              {item.nama_tamu}
+                            </p>
+                            <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Building size={12} className="text-slate-500" />{' '}
+                              {item.instansi || 'Perorangan / Umum'}
+                            </p>
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-300">
+                        {item.gurus?.nama_lengkap ? (
+                          <div className="flex items-center gap-1.5 text-xs text-indigo-300 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 w-fit">
+                            <User size={13} /> {item.gurus.nama_lengkap}
+                          </div>
+                        ) : item.divisis?.nama_divisi ? (
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 w-fit">
+                            <Users size={13} /> Divisi {item.divisis.nama_divisi}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 text-xs">-</span>
                         )}
-                        <div>
-                          <p className="font-semibold text-slate-100 leading-tight">
-                            {item.nama_tamu}
-                          </p>
-                          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Building size={12} className="text-slate-500" />{' '}
-                            {item.instansi || 'Perorangan / Umum'}
-                          </p>
+                      </td>
+                      <td className="px-5 py-3.5 max-w-xs">
+                        <span className="inline-block text-[10px] font-semibold uppercase tracking-wider bg-slate-950/60 text-slate-300 px-2 py-0.5 rounded border border-slate-800/80 mb-1">
+                          {item.kategori}
+                        </span>
+                        <p className="text-xs text-slate-400 truncate" title={item.keperluan}>
+                          {item.keperluan}
+                        </p>
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap text-slate-300 font-medium">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Clock size={13} className="text-slate-500" />
+                          <span>{formatWaktu(item.waktu_masuk)}</span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-300">
-                      {item.gurus?.nama_lengkap ? (
-                        <div className="flex items-center gap-1.5 text-xs text-indigo-300 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 w-fit">
-                          <User size={13} /> {item.gurus.nama_lengkap}
-                        </div>
-                      ) : item.divisis?.nama_divisi ? (
-                        <div className="flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 w-fit">
-                          <Users size={13} /> Divisi {item.divisis.nama_divisi}
-                        </div>
-                      ) : (
-                        <span className="text-slate-500 text-xs">-</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 max-w-xs">
-                      <span className="inline-block text-[10px] font-semibold uppercase tracking-wider bg-slate-950/60 text-slate-300 px-2 py-0.5 rounded border border-slate-800/80 mb-1">
-                        {item.kategori}
-                      </span>
-                      <p className="text-xs text-slate-400 truncate" title={item.keperluan}>
-                        {item.keperluan}
-                      </p>
-                    </td>
-                    <td className="px-5 py-3.5 whitespace-nowrap text-slate-300 font-medium">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <Clock size={13} className="text-slate-500" />
-                        <span>{formatWaktu(item.waktu_masuk)}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`px-2.5 py-1 rounded-xl text-xs font-medium border ${getStatusBadge(
-                          item.status
-                        )}`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => setDetailItem(item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer"
-                          title="Detail"
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`px-2.5 py-1 rounded-xl text-xs font-medium border ${getStatusBadge(
+                            item.status
+                          )}`}
                         >
-                          <FileText size={16} />
-                        </button>
-                        {item.status === 'menunggu' && (
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => handleUpdateStatus(item.id, 'bertemu')}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/15 cursor-pointer"
-                            title="Tandai Bertemu"
+                            onClick={() => setDetailItem(item)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer"
+                            title="Detail"
                           >
-                            <CheckCircle2 size={16} />
+                            <FileText size={16} />
                           </button>
-                        )}
-                        {item.status !== 'selesai' && (
+                          {item.status === 'menunggu' && (
+                            <button
+                              onClick={() => handleUpdateStatus(item.id, 'bertemu')}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/15 cursor-pointer"
+                              title="Tandai Bertemu"
+                            >
+                              <CheckCircle2 size={16} />
+                            </button>
+                          )}
+                          {item.status !== 'selesai' && (
+                            <button
+                              onClick={() => handleUpdateStatus(item.id, 'selesai')}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/15 cursor-pointer"
+                              title="Tandai Selesai"
+                            >
+                              <LogOut size={16} />
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleUpdateStatus(item.id, 'selesai')}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/15 cursor-pointer"
-                            title="Tandai Selesai"
+                            onClick={() => setDeleteTarget(item)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/15 cursor-pointer"
+                            title="Hapus"
                           >
-                            <LogOut size={16} />
+                            <XCircle size={16} />
                           </button>
-                        )}
-                        <button
-                          onClick={() => setDeleteTarget(item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/15 cursor-pointer"
-                          title="Hapus"
-                        >
-                          <XCircle size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
