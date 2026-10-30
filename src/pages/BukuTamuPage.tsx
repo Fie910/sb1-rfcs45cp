@@ -65,7 +65,7 @@ export function BukuTamuPage() {
   const [isDrawing, setIsDrawing] = useState(false);
 
   // Kiosk Clock & Badge
-  const [currentTime, setCurrentTime] = useState(new Date());
+  
   const [countdown, setCountdown] = useState<number | null>(null);
   const [badgeQr, setBadgeQr] = useState<string | null>(null);
   const [badgeData, setBadgeData] = useState<{ waktu: string; tamu_id: string } | null>(null);
