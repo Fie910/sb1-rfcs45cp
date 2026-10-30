@@ -29,7 +29,7 @@ const EMPTY_FORM = {
   penanggung_jawab: '',
   peserta: '',
   tanggal_mulai: new Date().toISOString().slice(0, 10),
-  recurrence_pattern: 'Pekanan' as RecurrencePattern,
+  recurrence_pattern: 'Mingguan' as RecurrencePattern,
   recurrence_until: (() => {
     const d = new Date();
     d.setMonth(d.getMonth() + 3);
@@ -255,7 +255,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
 
           {/* Pattern Selector */}
           <div className="grid grid-cols-3 gap-2">
-            {(['Harian', 'Pekanan', 'Bulanan'] as RecurrencePattern[]).map((p) => (
+            {(['Harian', 'Mingguan', 'Bulanan'] as RecurrencePattern[]).map((p) => (
               <button
                 key={p}
                 type="button"
