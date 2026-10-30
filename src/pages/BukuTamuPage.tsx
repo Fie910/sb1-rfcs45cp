@@ -423,29 +423,61 @@ export function BukuTamuPage() {
     <div className="min-h-screen bg-slate-950">
       <div className="p-3.5 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-4 sm:space-y-6">
         
-                {/* ✅ HEADER KIOSK DENGAN ANALOG CLOCK PREMIUM */}
+                        {/* ✅ HEADER KIOSK PREMIUM (3 Kolom) */}
         <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl shadow-indigo-500/10 p-6 sm:p-8">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
-            {/* KIRI: Sapaan */}
-            <div className="text-center sm:text-left flex items-center gap-4">
-              <div className="p-3.5 bg-indigo-500/20 text-indigo-300 rounded-2xl border border-indigo-500/40 shrink-0 shadow-lg shadow-indigo-500/20">
-                <UserCheck size={28} />
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+            
+            {/* KOLOM 1: Identitas & Sapaan */}
+            <div className="flex-1 flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+              {/* Logo Sekolah */}
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 shadow-lg overflow-hidden p-1.5">
+                {logo_url ? (
+                  <img src={logo_url} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <UserCheck size={28} className="text-indigo-400" />
+                )}
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-1">
+                  {nama_sekolah || 'Buku Tamu Digital'}
+                </p>
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
                   Selamat Datang 👋
                 </h1>
-                <p className="text-sm text-slate-400 mt-1">
-                  Silakan isi data kunjungan Anda di bawah ini
+                <p className="text-sm text-slate-400 mt-1 max-w-xs">
+                  Silakan isi data kunjungan Anda pada form di bawah ini.
                 </p>
               </div>
             </div>
 
-            {/* KANAN: Analog Clock + Digital Hybrid */}
+            {/* KOLOM 2: Live Guest Counter (Pengisi Ruang Kosong) */}
+            <div className="flex-1 flex items-center justify-center lg:border-x border-slate-800/80 lg:px-8">
+              <div className="text-center bg-slate-950/40 border border-slate-800/60 rounded-2xl px-6 py-3 shadow-inner">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 flex items-center justify-center gap-1.5">
+                  <Users size={12} className="text-emerald-400" /> Tamu Hari Ini
+                </p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-3xl font-black text-emerald-400 tabular-nums">
+                    {todayCount === null ? '...' : todayCount}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">Orang</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KOLOM 3: Jam Analog & Digital */}
             <KioskClock />
+            
+          </div>
+
+          {/* BARIS BAWAH: Quote / Doa (Mengisi Ruang Vertikal) */}
+          <div className="mt-6 pt-5 border-t border-slate-800/60 text-center relative z-10">
+            <p className="text-[11px] italic text-slate-500 font-serif leading-relaxed">
+              "Barangsiapa mengunjungi saudaranya (di jalan Allah), maka Allah akan menjaga kehormatannya."
+            </p>
           </div>
         </div>
 
