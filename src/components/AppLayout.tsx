@@ -33,6 +33,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const { cheatSheetOpen, setCheatSheetOpen } = useKeyboardShortcuts();
+  useGlobalHaptics();
 
   const guruId = guru?.id || '';
 
