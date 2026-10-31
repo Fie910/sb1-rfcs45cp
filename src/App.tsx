@@ -1,6 +1,5 @@
 //src/App.tsx
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ConfirmProvider } from '@/hooks/useConfirm';
