@@ -1,6 +1,12 @@
 // src/components/MobileBottomNav.tsx
 import { motion } from 'motion/react';
-import { LayoutDashboard, CalendarCheck, FileText, User } from 'lucide-react';
+import {
+  LayoutDashboard,
+  CalendarDays,
+  CalendarCheck,
+  ListTodo,
+  User,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useMemo } from 'react';
@@ -9,29 +15,37 @@ type TabItem = {
   path: string;
   icon: typeof LayoutDashboard;
   label: string;
+  accessKey?: string;
 };
 
 /**
+ * Daftar tab default — urutan inilah yang muncul di bottom nav.
+ * Kalau nanti mau ubah, cukup ubah di array ini.
+ */
+const ALL_TABS: TabItem[] = [
+  { path: '/',          icon: LayoutDashboard, label: 'Beranda'  },
+  { path: '/agenda',    icon: CalendarDays,    label: 'Agenda',   accessKey: 'agenda'   },
+  { path: '/presensi',  icon: CalendarCheck,   label: 'Presensi', accessKey: 'presensi' },
+  { path: '/todo',      icon: ListTodo,        label: 'Tugas',    accessKey: 'todo'     },
+  { path: '/profil',    icon: User,            label: 'Profil'   },
+];
+
+/**
  * Bottom tab bar khusus mobile — meniru pola aplikasi native (iOS/Android).
- * Hanya tab yang user punya aksesnya yang muncul.
+ * Tab yang muncul otomatis disaring sesuai hak akses (RBAC) user.
  */
 export function MobileBottomNav() {
   const { pathname } = useLocation();
   const { hasAccess } = useAuth();
 
-  const tabs = useMemo<TabItem[]>(() => {
-    const items: TabItem[] = [
-      { path: '/', icon: LayoutDashboard, label: 'Beranda' },
-    ];
-    if (hasAccess('presensi')) {
-      items.push({ path: '/presensi', icon: CalendarCheck, label: 'Presensi' });
-    }
-    if (hasAccess('surat')) {
-      items.push({ path: '/surat', icon: FileText, label: 'Surat' });
-    }
-    items.push({ path: '/profil', icon: User, label: 'Profil' });
-    return items;
-  }, [hasAccess]);
+  // Filter tab yang user berhak akses saja
+  const tabs = useMemo(
+    () =>
+      ALL_TABS.filter(
+        (t) => !t.accessKey || hasAccess(t.accessKey as any),
+      ),
+    [hasAccess],
+  );
 
   return (
     <nav
@@ -50,7 +64,7 @@ export function MobileBottomNav() {
             <Link
               key={tab.path}
               to={tab.path}
-              className="relative flex flex-col items-center justify-center gap-0.5 px-4 py-2 min-w-[64px]"
+              className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 flex-1 min-w-0"
             >
               {active && (
                 <motion.span
@@ -66,7 +80,7 @@ export function MobileBottomNav() {
                 }`}
               />
               <span
-                className={`relative z-10 text-[10px] font-medium transition-colors ${
+                className={`relative z-10 text-[10px] font-medium transition-colors truncate ${
                   active ? 'text-indigo-400' : 'text-slate-500'
                 }`}
               >
