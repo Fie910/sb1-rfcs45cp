@@ -94,14 +94,37 @@ const TvDisplayPage = lazy(() => import('@/pages/TvDisplayPage'));
 // SUB-COMPONENT
 // =============================================================================
 function PageLoadingFallback() {
-  return (
-    <div className="flex-1 min-h-[60vh] flex items-center justify-center">
-      <div className="relative flex items-center justify-center">
-        <div className="absolute w-12 h-12 rounded-full bg-indigo-500/20 animate-ping" />
-        <Loader2 className="animate-spin text-indigo-400 relative z-10" size={36} />
-      </div>
-    </div>
-  );
+  const { pathname } = useLocation();
+
+  const variant = useMemo<'dashboard' | 'list' | 'grid' | 'form'>(() => {
+    // Dashboard
+    if (
+      pathname === '/' ||
+      pathname === '/dashboard' ||
+      pathname === '/dashboard_kepsek'
+    ) {
+      return 'dashboard';
+    }
+    // Grid-heavy pages
+    if (
+      pathname.startsWith('/perpus') ||
+      pathname.startsWith('/sarpras')
+    ) {
+      return 'grid';
+    }
+    // Profile / form pages
+    if (
+      pathname === '/profil' ||
+      pathname === '/sekolah' ||
+      pathname === '/agenda'
+    ) {
+      return 'form';
+    }
+    // Default: list/table page
+    return 'list';
+  }, [pathname]);
+
+  return <PageSkeleton variant={variant} />;
 }
 
 function ProtectedRoute({ accessKey, children }: { accessKey?: PageKey; children: JSX.Element }) {
