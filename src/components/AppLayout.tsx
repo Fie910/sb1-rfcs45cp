@@ -166,7 +166,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
         </header>
 
         {/* Konten Halaman — dibungkus PageTransition + padding bawah untuk bottom nav */}
-        <main className="flex-1 min-w-0 overflow-x-hidden pb-20 lg:pb-0">
+        <main className="flex-1 min-w-0 pb-20 lg:pb-0">
           <PageTransition>{children}</PageTransition>
         </main>
 
