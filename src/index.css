@@ -847,7 +847,6 @@ select:focus {
     box-shadow:
       0 10px 20px -5px rgba(0, 0, 0, 0.35),
       0 4px 8px -4px rgba(0, 0, 0, 0.2);
-    border-color: rgba(129, 140, 248, 0.3) !important;
   }
 }
 
