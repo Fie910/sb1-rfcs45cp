@@ -701,3 +701,54 @@ button,
   user-select: none;
   touch-action: manipulation;
 }
+
+
+/* ============================================================
+   PERCEIVED PERFORMANCE — ditambahkan Tahap 4
+   ============================================================ */
+
+/* Smooth scroll untuk anchor & scrollTo (dihormati reduced-motion) */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* GPU hint — animasi tetap 60fps */
+.motion-safe {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Content visibility — untuk list panjang (bisa dipakai nanti) */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 72px;
+}
+
+/* Scrollbar native-like (tipis & halus) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
+
+/* Cegah "overscroll bounce" saat sudah mentok */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
