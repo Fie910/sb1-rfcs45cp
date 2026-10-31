@@ -17,6 +17,7 @@ import { isSoundEnabled, toggleSound } from '@/lib/sound';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { KeyboardShortcutCheatSheet } from '@/components/KeyboardShortcutCheatSheet';
 import { PageTransition } from '@/components/PageTransition';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 
 type LayoutProps = {
   current: PageKey;
@@ -32,10 +33,8 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const { cheatSheetOpen, setCheatSheetOpen } = useKeyboardShortcuts();
 
-  // Ambil ID guru yang sedang login untuk komponen lonceng
   const guruId = guru?.id || '';
 
-  // Deteksi platform untuk label shortcut
   const isMac = useMemo(() => {
     if (typeof navigator === 'undefined') return false;
     const platform =
@@ -44,11 +43,6 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
   }, []);
   const modKeyLabel = isMac ? '⌘' : 'Ctrl';
 
-  // ==========================================================================
-  // Global keyboard shortcut
-  // - Ctrl+K / Cmd+K → toggle command palette
-  // - "/" (kalau tidak di input/textarea) → buka command palette
-  // ==========================================================================
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -135,7 +129,6 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
 
           {/* Sisi Kanan: Search (mobile), Lonceng Notifikasi & Tombol Logout Mobile */}
           <div className="flex items-center gap-3 ml-auto shrink-0">
-            {/* Mobile: Search Icon */}
             <button
               onClick={() => setCommandOpen(true)}
               className="p-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors lg:hidden"
@@ -145,10 +138,8 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
               <Search size={20} />
             </button>
 
-            {/* Lonceng Notifikasi */}
             {guruId && <NotificationBell guruId={guruId} />}
 
-            {/* Toggle Tema */}
             <ThemeToggle />
 
             <button onClick={() => {
@@ -160,7 +151,6 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
               {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </button>
 
-            {/* Tombol Logout Khusus Mobile */}
             <button
               onClick={signOut}
               className="p-2 rounded-xl text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors lg:hidden"
@@ -171,8 +161,8 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
           </div>
         </header>
 
-        {/* Konten Halaman — dibungkus PageTransition untuk animasi */}
-        <main className="flex-1 min-w-0 overflow-x-hidden">
+        {/* Konten Halaman — dibungkus PageTransition + padding bawah untuk bottom nav */}
+        <main className="flex-1 min-w-0 overflow-x-hidden pb-20 lg:pb-0">
           <PageTransition>{children}</PageTransition>
         </main>
 
@@ -189,11 +179,12 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
         </button>
       )}
 
+      {/* 🆕 Bottom Tab Bar (khusus mobile) */}
+      <MobileBottomNav />
+
       {/* Command Palette */}
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
-      {/* Install PWA Banner (muncul otomatis di bottom-right) */}
       <InstallPWA />
-      {/* Badge status offline/sinkronisasi */}
       <SyncStatusBadge />
       <KeyboardShortcutCheatSheet
         open={cheatSheetOpen}
