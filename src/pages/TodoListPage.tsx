@@ -21,6 +21,8 @@ import {
 } from '@/utils/date';
 import { sendNotification } from '@/lib/notifications/notification';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { SkeletonCard } from '@/components/Skeleton';
 import type {
   PriorityType, StatusType, TipeRutin, TodoItem,
   TodoTemplate, SopLog,
@@ -72,6 +74,8 @@ export function TodoListPage() {
 
   // Filter States
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('Semua');
+  const [filterGuru, setFilterGuru] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [sopPetugasFilter, setSopPetugasFilter] = useState<string>('');
 
   // Filter Tab Riwayat
@@ -96,6 +100,13 @@ export function TodoListPage() {
     tanggal_tenggat: '',
     ditugaskan_ke_id: '',
   });
+
+  // Set default Filter Guru ke ID Pengguna
+  useEffect(() => {
+    if (guru?.id && !filterGuru) {
+      setFilterGuru(guru.id);
+    }
+  }, [guru?.id, filterGuru]);
 
   // Default SOP Filter ke ID Pengguna
   useEffect(() => {
@@ -530,10 +541,41 @@ export function TodoListPage() {
   };
 
   // Filter Tugas Sekali Jalan
-  const oneTimeTodos = todos.filter((todo) => !todo.template_id);
-  const filteredTodos = oneTimeTodos.filter((todo) => {
-    return selectedStatusFilter === 'Semua' || todo.status === selectedStatusFilter;
-  });
+  const oneTimeTodos = useMemo(() => todos.filter((todo) => !todo.template_id), [todos]);
+
+  const statsTugas = useMemo(() => {
+    return {
+      total: oneTimeTodos.length,
+      belum: oneTimeTodos.filter(t => t.status === 'Belum Selesai').length,
+      proses: oneTimeTodos.filter(t => t.status === 'Sedang Dikerjakan').length,
+      selesai: oneTimeTodos.filter(t => t.status === 'Selesai').length,
+    };
+  }, [oneTimeTodos]);
+
+  const filteredTodos = useMemo(() => {
+    return oneTimeTodos.filter((todo) => {
+      // 1. Search
+      const matchSearch = 
+        !searchQuery || 
+        todo.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (todo.deskripsi && todo.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      // 2. Status
+      const matchStatus = 
+        selectedStatusFilter === 'Semua' || 
+        todo.status === selectedStatusFilter;
+
+      // 3. Petugas
+      let matchGuru = true;
+      if (filterGuru === 'Unassigned') {
+        matchGuru = !todo.ditugaskan_ke_id;
+      } else if (filterGuru !== 'Semua') {
+        matchGuru = todo.ditugaskan_ke_id === filterGuru;
+      }
+
+      return matchSearch && matchStatus && matchGuru;
+    });
+  }, [oneTimeTodos, searchQuery, selectedStatusFilter, filterGuru]);
 
   // Filter SOP Rutin sesuai Petugas
   const filteredTemplates = useMemo(() => {
@@ -761,8 +803,8 @@ export function TodoListPage() {
       </div>
 
       {/* NAV TAB PANEL */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto w-full md:w-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-1.5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div className="flex items-center gap-1 bg-slate-950 p-1.5 rounded-xl border border-slate-800 overflow-x-auto w-full md:w-auto custom-scrollbar">
           <button
             onClick={() => setActiveTab('tugas')}
             className={`whitespace-nowrap flex-1 md:flex-none flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -808,26 +850,8 @@ export function TodoListPage() {
           )}
         </div>
 
-        {activeTab === 'tugas' && (
-          <div className="flex items-center gap-3 justify-between md:justify-end">
-            <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-              <Filter size={14} className="text-indigo-400" /> Filter:
-            </span>
-            <select
-              value={selectedStatusFilter}
-              onChange={(e) => setSelectedStatusFilter(e.target.value)}
-              className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
-            >
-              <option value="Semua">Semua Status</option>
-              <option value="Belum Selesai">Belum Selesai</option>
-              <option value="Sedang Dikerjakan">Sedang Dikerjakan</option>
-              <option value="Selesai">Selesai</option>
-            </select>
-          </div>
-        )}
-
         {activeTab === 'sop' && (
-          <div className="flex items-center gap-3 justify-between md:justify-end w-full md:w-auto">
+          <div className="flex items-center gap-3 justify-between md:justify-end px-2 pb-2 md:pb-0 w-full md:w-auto">
             <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400 shrink-0">
               <Filter size={14} className="text-indigo-400" /> Petugas:
             </span>
@@ -854,11 +878,80 @@ export function TodoListPage() {
 
       {/* CONTENT TAB 1: LIST TUGAS SEKALI JALAN */}
       {activeTab === 'tugas' && (
-        <>
+        <div className="space-y-4 animate-fade-in-up">
+          {/* KPI STATS */}
+          {!loading && !authLoading && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3 shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0"><ListTodo size={18} /></div>
+                <div><p className="text-[10px] font-bold uppercase text-slate-500">Total Tugas</p><p className="text-lg font-extrabold text-slate-200"><AnimatedNumber value={statsTugas.total} /></p></div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3 shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0"><AlertCircle size={18} /></div>
+                <div><p className="text-[10px] font-bold uppercase text-slate-500">Belum Selesai</p><p className="text-lg font-extrabold text-rose-400"><AnimatedNumber value={statsTugas.belum} /></p></div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3 shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0"><Clock size={18} /></div>
+                <div><p className="text-[10px] font-bold uppercase text-slate-500">Dikerjakan</p><p className="text-lg font-extrabold text-amber-400"><AnimatedNumber value={statsTugas.proses} /></p></div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3 shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0"><CheckCircle size={18} /></div>
+                <div><p className="text-[10px] font-bold uppercase text-slate-500">Selesai</p><p className="text-lg font-extrabold text-emerald-400"><AnimatedNumber value={statsTugas.selesai} /></p></div>
+              </div>
+            </div>
+          )}
+
+          {/* FILTER SECTION */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-lg">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Cari tugas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <SearchableSelect
+                  options={[
+                    { value: guru?.id || '', label: 'Tugas Saya' },
+                    { value: 'Semua', label: 'Semua Anggota Divisi' },
+                    { value: 'Unassigned', label: 'Tanpa PJ Khusus' },
+                    ...guruList.filter(g => g.id !== guru?.id).map(g => ({ value: g.id, label: g.nama_lengkap }))
+                  ]}
+                  value={filterGuru}
+                  onChange={setFilterGuru}
+                  placeholder="Pilih Petugas"
+                  searchPlaceholder="Cari petugas..."
+                  emptyMessage="Petugas tidak ditemukan"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter size={14} className="text-slate-500 shrink-0" />
+              <select
+                value={selectedStatusFilter}
+                onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                className="w-full md:w-auto text-xs font-semibold px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                <option value="Semua">Semua Status</option>
+                <option value="Belum Selesai">Belum Selesai</option>
+                <option value="Sedang Dikerjakan">Sedang Dikerjakan</option>
+                <option value="Selesai">Selesai</option>
+              </select>
+            </div>
+          </div>
+
+          {/* LIST CONTENT */}
           {loading || authLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="animate-spin text-indigo-400 mb-2" size={32} />
-              <p className="text-xs text-slate-400">Memuat daftar tugas divisi...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <SkeletonCard lines={3} />
+              <SkeletonCard lines={3} />
+              <SkeletonCard lines={3} />
             </div>
           ) : filteredTodos.length === 0 ? (
             <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-3xl p-6">
@@ -875,7 +968,7 @@ export function TodoListPage() {
                 return (
                   <div
                     key={todo.id}
-                    className={`relative group bg-slate-900 border rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col justify-between transition-all ${
+                    className={`relative group bg-slate-900 border rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
                       isFinished
                         ? 'border-slate-800/60 opacity-75'
                         : 'border-slate-800 hover:border-indigo-500/40'
@@ -978,12 +1071,12 @@ export function TodoListPage() {
               })}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* CONTENT TAB 2: KELOLA SOP RUTIN */}
       {activeTab === 'sop' && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in-up">
           {filteredTemplates.length === 0 ? (
             <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-3xl p-6">
               <RefreshCw size={40} className="mx-auto text-slate-600 mb-2" />
@@ -1001,8 +1094,8 @@ export function TodoListPage() {
                 return (
                   <div
                     key={tmpl.id}
-                    className={`bg-slate-900 border rounded-2xl p-5 flex flex-col justify-between transition-all ${
-                      tmpl.is_active ? 'border-slate-800' : 'border-slate-800/40 opacity-60'
+                    className={`bg-slate-900 border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+                      tmpl.is_active ? 'border-slate-800 hover:border-indigo-500/40' : 'border-slate-800/40 opacity-60'
                     }`}
                   >
                     <div>
@@ -1120,7 +1213,7 @@ export function TodoListPage() {
 
       {/* CONTENT TAB 3: RIWAYAT GABUNGAN DENGAN FILTER TANGGAL & PETUGAS */}
       {activeTab === 'riwayat' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 animate-fade-in-up">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-800">
             <div>
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
@@ -1255,7 +1348,7 @@ export function TodoListPage() {
 
       {/* CONTENT TAB 4: DAFTAR TUGAS CONTROLLING */}
       {activeTab === 'controlling' && canViewControlling && (
-        <div className="bg-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="bg-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-6 space-y-4 animate-fade-in-up">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
             <div>
               <h2 className="text-base font-bold text-amber-400 flex items-center gap-2">
@@ -1274,7 +1367,7 @@ export function TodoListPage() {
                 placeholder="Cari tugas / petugas..."
                 value={controllingSearch}
                 onChange={(e) => setControllingSearch(e.target.value)}
-                className="w-full text-xs pl-8 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-amber-500"
+                className="w-full text-xs pl-8 pr-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
