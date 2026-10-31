@@ -252,6 +252,7 @@ export type Pengumuman = {
   is_aktif: boolean;
   gambar_url?: string | null;
   url?: string | null;
+  ringkasan_ai?: string | null;
   created_at: string;
 };
 
