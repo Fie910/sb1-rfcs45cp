@@ -718,11 +718,11 @@ export function AsetTab() {
             return (
               <div
                 key={a.id}
-                className={`bg-slate-900 border rounded-2xl overflow-hidden transition-all group ${
-                  isSelected
-                    ? 'border-indigo-500/60 ring-1 ring-indigo-500/40'
-                    : 'border-slate-800 hover:border-indigo-500/40'
-                }`}
+                className={`cv-auto bg-slate-900 border rounded-2xl overflow-hidden transition-all group ${
+  isSelected
+    ? 'border-indigo-500/60 ring-1 ring-indigo-500/40'
+    : 'border-slate-800 hover:border-indigo-500/40'
+}`}
               >
                 <div className="aspect-video bg-slate-950 flex items-center justify-center overflow-hidden relative">
                   {a.foto_url ? (
