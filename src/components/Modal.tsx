@@ -24,18 +24,26 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
 
   return createPortal(
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
-      {/* Backdrop overlay */}
+      {/* Backdrop overlay — frosted glass */}
       <div
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
+        className="absolute inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal Container */}
+      {/* Modal Container — frosted glass strong */}
       <div
-        className={`relative w-full ${sizeClass} bg-slate-900 text-slate-100 rounded-3xl shadow-2xl border border-slate-800/80 max-h-[90vh] overflow-hidden flex flex-col backdrop-blur-xl z-10`}
+        className={`relative w-full ${sizeClass}
+          bg-slate-900/85 backdrop-blur-2xl saturate-150
+          text-slate-100
+          rounded-3xl
+          shadow-2xl shadow-slate-950/60
+          ring-1 ring-white/5
+          border border-slate-700/50
+          max-h-[90vh] overflow-hidden flex flex-col
+          z-10`}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-800/80">
+        <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-800/60">
           <h2 className="text-lg font-extrabold text-slate-100 tracking-tight">{title}</h2>
           <button
             onClick={onClose}
