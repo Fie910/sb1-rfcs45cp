@@ -575,7 +575,7 @@ const valid = shortcuts
               <Link
   key={s.page_key}
   to={cfg.path}
-  className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-950/60 border ${colors.border} ${colors.hoverBorder} transition active:scale-95 cursor-pointer`}
+  className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-950/60 border ${colors.border} ${colors.hoverBorder} transition active:scale-95 cursor-pointer card-interactive`}
   title={cfg.label}
 >
   {/* BADGE OVERLAY — kanan atas */}
