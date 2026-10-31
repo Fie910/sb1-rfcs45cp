@@ -22,20 +22,12 @@ import {
 import { sendNotification } from '@/lib/notifications/notification';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type {
-  PriorityType,
-  StatusType,
-  TipeRutin,
-  TodoItem,
-  TodoTemplate,
-  SopLog,
+  PriorityType, StatusType, TipeRutin, TodoItem,
+  TodoTemplate, SopLog,
 } from '@/types/TodoTemplate';
 export type {
-  PriorityType,
-  StatusType,
-  TipeRutin,
-  TodoItem,
-  TodoTemplate,
-  SopLog,
+  PriorityType, StatusType, TipeRutin, TodoItem,
+  TodoTemplate, SopLog,
 } from '@/types/TodoTemplate';
 
 const NAMA_HARI = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
