@@ -4,6 +4,7 @@ import { buildPengumumanPrompt } from './prompts/pengumuman';
 
 export type RingkasanPengumumanAI = {
   ringkasan: string;
+  inti?: string;
   poin_aksi: string[];
 };
 
