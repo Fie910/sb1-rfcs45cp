@@ -357,7 +357,7 @@ export function PengumumanPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredList.map((item, idx) => {
             // Cek apakah ada ringkasan AI
-            const aiSummary = summaryCache[item.id] || (item.ringkasan_ai ? JSON.parse(item.ringkasan_ai) : null);
+            const aiSummary = summaryCache[item.id] || ((item as PengumumanWithAI).ringkasan_ai ? JSON.parse((item as PengumumanWithAI).ringkasan_ai!) : null) as RingkasanAI | null;
             
             return (
               <div
