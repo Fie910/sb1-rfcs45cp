@@ -417,7 +417,7 @@ export function PengumumanPage() {
                         <Sparkles size={11} /> Ringkasan AI
                       </p>
                       <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-2">
-                        "{aiSummary.inti || aiSummary.ringkasan || 'Telah diringkas'}"
+                        "{(aiSummary as RingkasanAI)?.inti || (aiSummary as RingkasanAI)?.ringkasan || 'Telah diringkas'}"
                       </p>
                     </div>
                   )}
