@@ -130,12 +130,15 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
 
   return (
     <aside
-      className={`fixed lg:sticky top-0 left-0 h-screen h-dvh w-72 bg-slate-900 border-r border-slate-800 z-40 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}
+      className={`fixed lg:sticky top-0 left-0 h-screen h-dvh w-72
+        bg-slate-900/85 backdrop-blur-2xl saturate-150
+        border-r border-slate-800/60
+        z-40 flex flex-col transition-transform duration-300 ease-in-out
+        shadow-2xl shadow-slate-950/50
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
     >
       {/* HEADER */}
-      <div className="px-6 py-6 flex items-center gap-3.5 border-b border-slate-800">
+      <div className="px-6 py-6 flex items-center gap-3.5 border-b border-slate-800/60">
         <div className="w-11 h-11 bg-indigo-500/15 rounded-xl flex items-center justify-center border border-indigo-500/20 text-indigo-400 font-bold text-xl shadow-sm">
           WM
         </div>
@@ -151,7 +154,7 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
       </div>
 
       {/* QUICK ACTION BAR */}
-      <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-slate-800/60">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-slate-800/40">
         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
           Menu
         </span>
@@ -220,8 +223,8 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
                         onClick={() => setSidebarOpen(false)}
                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] transition-all duration-200 ${
                           active
-                            ? 'bg-indigo-500/15 text-indigo-300 font-semibold shadow-sm border border-indigo-500/10'
-                            : 'text-slate-400 font-medium hover:bg-slate-800/60 hover:text-slate-200'
+                            ? 'bg-indigo-500/15 text-indigo-300 font-semibold shadow-sm border border-indigo-500/20'
+                            : 'text-slate-400 font-medium hover:bg-slate-800/60 hover:text-slate-200 border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
@@ -255,8 +258,8 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
       </nav>
 
       {/* FOOTER (Profil & Logout) */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-        <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800/80 shadow-sm mb-3">
+      <div className="p-4 border-t border-slate-800/60 bg-slate-950/40 backdrop-blur-sm">
+        <div className="p-3.5 bg-slate-950/70 backdrop-blur-sm rounded-xl border border-slate-800/80 shadow-sm mb-3">
           <p className="text-sm font-semibold text-slate-200 truncate">
             {guru?.nama_lengkap ?? 'Guru'}
           </p>
