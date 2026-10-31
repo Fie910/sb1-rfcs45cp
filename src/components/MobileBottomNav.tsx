@@ -1,22 +1,6 @@
 // src/components/MobileBottomNav.tsx
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  LayoutDashboard,
-  CalendarDays,
-  CalendarCheck,
-  ListTodo,
-  User,
-  FileText,
-  Users,
-  Clock,
-  Megaphone,
-  Calendar,
-  BarChart3,
-  Settings,
-  Check,
-  RotateCcw,
-  X,
-} from 'lucide-react';
+import { LayoutDashboard, Settings, Check, RotateCcw, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -27,48 +11,65 @@ import {
   type MouseEvent,
 } from 'react';
 import { useBottomNavTabs, MAX_TABS } from '@/hooks/useBottomNavTabs';
+import { PAGE_CONFIG } from '@/components/dashboard/ShortcutGrid';
+import { canAccessTahfidz } from '@/components/tahfidz/shared';
+import type { PageKey } from '@/config/navigation';
 
 type TabItem = {
   path: string;
-  icon: typeof LayoutDashboard;
-  label: string;
-  accessKey?: string;
+  icon: any;
+  label: string;       // shortLabel — untuk tampilan bottom nav (ringkas)
+  fullLabel?: string;  // label lengkap — untuk panel pengaturan
+  accessKey?: PageKey;
+  isProfile?: boolean; // profile selalu tampil tanpa cek RBAC
 };
 
 /**
- * Katalog lengkap tab yang bisa dipilih user.
- * `accessKey` diambil dari PageKey — tab hanya muncul jika user punya akses.
+ * Tab "Beranda" — tidak ada di PAGE_CONFIG ShortcutGrid,
+ * jadi kita tambahkan manual di sini.
+ */
+const HOME_TAB: TabItem = {
+  path: '/',
+  icon: LayoutDashboard,
+  label: 'Beranda',
+  fullLabel: 'Dashboard / Beranda',
+};
+
+/**
+ * Katalog lengkap tab — sumbernya dari PAGE_CONFIG ShortcutGrid.
+ * Ikon, label, dan path otomatis sinkron dengan shortcut grid.
  */
 const TAB_CATALOG: TabItem[] = [
-  { path: '/',                  icon: LayoutDashboard, label: 'Beranda' },
-  { path: '/agenda',            icon: CalendarDays,    label: 'Agenda',     accessKey: 'agenda' },
-  { path: '/presensi',          icon: CalendarCheck,   label: 'Presensi',   accessKey: 'presensi' },
-  { path: '/todo',              icon: ListTodo,        label: 'Tugas',      accessKey: 'todo' },
-  { path: '/profil',            icon: User,            label: 'Profil' },
-  { path: '/surat',             icon: FileText,        label: 'Surat',      accessKey: 'surat' },
-  { path: '/rapat',             icon: Users,           label: 'Rapat',      accessKey: 'rapat' },
-  { path: '/izin',              icon: Clock,           label: 'Izin',       accessKey: 'izin' },
-  { path: '/pengumuman',        icon: Megaphone,       label: 'Pengumuman', accessKey: 'pengumuman' },
-  { path: '/kalender_akademik', icon: Calendar,        label: 'Kalender',   accessKey: 'kalender_akademik' },
-  { path: '/dashboard_kepsek',  icon: BarChart3,       label: 'Kepsek',     accessKey: 'dashboard_kepsek' },
+  HOME_TAB,
+  ...Object.entries(PAGE_CONFIG).map(([key, cfg]) => ({
+    path: cfg.path,
+    icon: cfg.icon,
+    label: cfg.shortLabel,
+    fullLabel: cfg.label,
+    accessKey: key as PageKey,
+    isProfile: key === 'profile',
+  })),
 ];
 
 export function MobileBottomNav() {
   const { pathname } = useLocation();
-  const { hasAccess } = useAuth();
+  const { hasAccess, guru } = useAuth();
   const { paths, setPaths, reset } = useBottomNavTabs();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // ---- Daftar tab yang boleh dipilih user (difilter RBAC) ----
+  // ---- Filter tab sesuai hak akses (RBAC + custom Tahfidz) ----
   const availableTabs = useMemo(
     () =>
-      TAB_CATALOG.filter(
-        (t) => !t.accessKey || hasAccess(t.accessKey as any),
-      ),
-    [hasAccess],
+      TAB_CATALOG.filter((t) => {
+        if (!t.accessKey) return true;          // Beranda — selalu tampil
+        if (t.isProfile) return true;           // Profil — selalu tampil
+        if (t.accessKey === 'tahfidz' && !canAccessTahfidz(guru)) return false;
+        return hasAccess(t.accessKey);
+      }),
+    [hasAccess, guru],
   );
 
-  // ---- Tab yang sedang aktif ditampilkan (urut sesuai pilihan user) ----
+  // ---- Tab aktif (urut sesuai pilihan user) ----
   const activeTabs = useMemo(
     () =>
       paths
@@ -96,7 +97,6 @@ export function MobileBottomNav() {
     }
   }, []);
 
-  // Cegah navigasi jika long-press sudah memicu panel
   const handleTabClick = (e: MouseEvent) => {
     if (longPressedRef.current) {
       e.preventDefault();
@@ -118,7 +118,13 @@ export function MobileBottomNav() {
   return (
     <>
       {/* ====================== BOTTOM NAV ====================== */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-slate-900/70 backdrop-blur-2xl saturate-150 border-t border-slate-800/80 pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_0_0_rgba(255,255,255,0.04)]">
+      <nav
+        className="fixed bottom-0 inset-x-0 z-50 lg:hidden
+                   bg-slate-900/70 backdrop-blur-2xl saturate-150
+                   border-t border-slate-800/80
+                   pb-[env(safe-area-inset-bottom)]
+                   shadow-[0_-1px_0_0_rgba(255,255,255,0.04)]"
+      >
         <div className="flex items-center justify-around h-16">
           {activeTabs.map((tab) => {
             const active =
@@ -160,7 +166,7 @@ export function MobileBottomNav() {
             );
           })}
 
-          {/* Ikon gear kecil untuk membuka panel pengaturan */}
+          {/* Gear kecil untuk buka panel pengaturan */}
           <button
             onClick={() => setSettingsOpen(true)}
             className="shrink-0 w-8 h-8 mx-1 rounded-lg flex items-center justify-center text-slate-600 hover:text-indigo-400 hover:bg-slate-800 transition-colors"
@@ -179,7 +185,6 @@ export function MobileBottomNav() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            // onPointerDown (bukan onClick) agar long-press tidak langsung menutup panel
             onPointerDown={() => setSettingsOpen(false)}
             className="fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center lg:hidden"
           >
@@ -215,8 +220,7 @@ export function MobileBottomNav() {
               <div className="space-y-1.5">
                 {availableTabs.map((tab) => {
                   const selected = paths.includes(tab.path);
-                  const disabled =
-                    !selected && paths.length >= MAX_TABS;
+                  const disabled = !selected && paths.length >= MAX_TABS;
                   const Icon = tab.icon;
                   return (
                     <button
@@ -235,7 +239,9 @@ export function MobileBottomNav() {
                         size={18}
                         className={selected ? 'text-indigo-400' : ''}
                       />
-                      <span className="flex-1 text-sm">{tab.label}</span>
+                      <span className="flex-1 text-sm">
+                        {tab.fullLabel ?? tab.label}
+                      </span>
                       {selected && (
                         <span className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
                           <Check
