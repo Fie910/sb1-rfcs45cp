@@ -344,20 +344,81 @@ export function BukuTab() {
             {hasFilter ? 'Tidak ada buku yang cocok' : 'Belum ada buku terdaftar'}
           </p>
         </div>
-      ) : viewMode === 'grid' ? (
+            ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filtered.map((b) => {
             const isSelected = selectedIds.has(b.id);
             return (
               <div key={b.id}
                 className={`cv-auto bg-slate-900 border rounded-2xl overflow-hidden hover:border-indigo-500/40 transition-all group ${
-  isSelected ? 'border-indigo-500/60 ring-1 ring-indigo-500/40' : 'border-slate-800'
-}`}
+                  isSelected ? 'border-indigo-500/60 ring-1 ring-indigo-500/40' : 'border-slate-800'
+                }`}>
                 <div className="aspect-[3/4] bg-slate-950 flex items-center justify-center overflow-hidden relative">
                   {b.cover_url ? (
                     <img src={b.cover_url} alt={b.judul}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                   ) : (
+                    <div className="flex flex-col items-center text-slate-700 p-4">
+                      <Book size={48} />
+                      <p className="text-[10px] mt-2 text-center line-clamp-2">{b.judul}</p>
+                    </div>
+                  )}
+
+                  {/* Checkbox overlay */}
+                  {isManager && (
+                    <button onClick={(e) => { e.stopPropagation(); toggleSelect(b.id); }}
+                      className={`absolute top-2 left-2 p-1.5 rounded-lg backdrop-blur-md transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-900/70 hover:bg-slate-900 text-slate-300 border border-slate-700'
+                      }`}
+                      title={isSelected ? 'Batal pilih' : 'Pilih untuk cetak QR'}>
+                      {isSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                    </button>
+                  )}
+
+                  <div className="absolute top-2 right-2">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md border backdrop-blur ${
+                      b.jumlah_tersedia > 0
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    }`}>
+                      {b.jumlah_tersedia > 0 ? `${b.jumlah_tersedia} tersedia` : 'Habis'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 space-y-1.5">
+                  <p className="text-[9px] font-mono text-indigo-400 truncate">{b.kode_buku ?? '-'}</p>
+                  <h3 className="font-bold text-slate-100 text-xs leading-tight line-clamp-2 min-h-[2rem]">
+                    {b.judul}
+                  </h3>
+                  <p className="text-[10px] text-slate-500 truncate">
+                    {b.pengarang ?? 'Tanpa pengarang'}
+                  </p>
+                </div>
+
+                {isManager && (
+                  <div className="px-3 pb-3 flex gap-1.5">
+                    <button onClick={() => handleOpenEdit(b)}
+                      className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer">
+                      <Pencil size={11} /> Edit
+                    </button>
+                    <button onClick={() => setDetailTarget(b)}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-indigo-400 border border-slate-700 transition cursor-pointer">
+                      <Eye size={11} />
+                    </button>
+                    <button onClick={() => setDeleteTarget(b)}
+                      className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition cursor-pointer">
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
                     <div className="flex flex-col items-center text-slate-700 p-4">
                       <Book size={48} />
                       <p className="text-[10px] mt-2 text-center line-clamp-2">{b.judul}</p>
