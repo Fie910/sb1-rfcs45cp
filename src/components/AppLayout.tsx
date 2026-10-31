@@ -12,11 +12,11 @@ import { InstallPWA } from '@/components/InstallPWA';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TaglineBadge } from '@/components/TaglineBadge';
-import { useLocation } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '@/lib/sound';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { KeyboardShortcutCheatSheet } from '@/components/KeyboardShortcutCheatSheet';
+import { PageTransition } from '@/components/PageTransition';
 
 type LayoutProps = {
   current: PageKey;
@@ -31,7 +31,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const { cheatSheetOpen, setCheatSheetOpen } = useKeyboardShortcuts();
-  const location = useLocation();
+
   // Ambil ID guru yang sedang login untuk komponen lonceng
   const guruId = guru?.id || '';
 
@@ -51,14 +51,12 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
   // ==========================================================================
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+K / Cmd+K
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setCommandOpen((v) => !v);
         return;
       }
 
-      // "/" shortcut — only when NOT typing in input/textarea
       if (
         e.key === '/' &&
         !e.metaKey &&
@@ -152,15 +150,15 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
 
             {/* Toggle Tema */}
             <ThemeToggle />
-            
-<button onClick={() => {
-  const next = !soundOn;
-  setSoundOn(next);
-  toggleSound(next);
-  if (next) playSuccess(); // feedback bahwa suara aktif
-}}>
-  {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
-</button>
+
+            <button onClick={() => {
+              const next = !soundOn;
+              setSoundOn(next);
+              toggleSound(next);
+              if (next) playSuccess();
+            }}>
+              {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
 
             {/* Tombol Logout Khusus Mobile */}
             <button
@@ -173,12 +171,11 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
           </div>
         </header>
 
-        {/* Konten Halaman */}
-        <main className="...">
-  <div key={location.pathname} className="animate-fade-page">
-    {children}
-  </div>
-</main>
+        {/* Konten Halaman — dibungkus PageTransition untuk animasi */}
+        <main className="flex-1 min-w-0 overflow-x-hidden">
+          <PageTransition>{children}</PageTransition>
+        </main>
+
         <TaglineBadge />
       </div>
 
@@ -196,11 +193,11 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       {/* Install PWA Banner (muncul otomatis di bottom-right) */}
       <InstallPWA />
-      {/* 🆕 Badge status offline/sinkronisasi */}
+      {/* Badge status offline/sinkronisasi */}
       <SyncStatusBadge />
-      <KeyboardShortcutCheatSheet 
-        open={cheatSheetOpen} 
-        onClose={() => setCheatSheetOpen(false)} 
+      <KeyboardShortcutCheatSheet
+        open={cheatSheetOpen}
+        onClose={() => setCheatSheetOpen(false)}
       />
     </div>
   );
