@@ -100,7 +100,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
       {/* Area Konten Utama */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header / Topbar Utama */}
-        <header className="sticky top-0 z-20 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-20 bg-slate-900/70 backdrop-blur-2xl saturate-150 border-b border-slate-800/80 px-4 sm:px-6 py-3 flex items-center justify-between shadow-[0_1px_0_0_rgba(255,255,255,0.04)]">
           {/* Sisi Kiri: Tombol Menu (Mobile) & Judul */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <button
