@@ -722,9 +722,12 @@ button,
 }
 
 /* Content visibility — untuk list panjang (bisa dipakai nanti) */
+/* Content visibility — untuk kartu grid list panjang.
+   `auto 400px` artinya: pakai 400px sebagai estimasi awal,
+   lalu browser akan ingat ukuran sebenarnya setelah render pertama. */
 .cv-auto {
   content-visibility: auto;
-  contain-intrinsic-size: 0 72px;
+  contain-intrinsic-size: auto 400px;
 }
 
 /* Scrollbar native-like (tipis & halus) */
