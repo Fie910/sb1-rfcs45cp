@@ -1,32 +1,29 @@
-//src/components/PageTransition.tsx
-import { motion, AnimatePresence } from 'motion/react';
-import { useLocation, useOutlet } from 'react-router-dom';
+// src/components/PageTransition.tsx
+import { motion } from 'motion/react';
+import { useLocation } from 'react-router-dom';
+import type { ReactNode } from 'react';
 
 /**
- * Membungkus <Outlet /> agar setiap perpindahan halaman
- * memiliki animasi masuk/keluar yang halus (spring physics).
+ * Membungkus isi halaman agar setiap perpindahan route
+ * memiliki animasi masuk yang halus (spring physics).
  */
-export function PageTransition() {
+export function PageTransition({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const outlet = useOutlet();
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{
-          type: 'spring',
-          stiffness: 380,
-          damping: 32,
-          mass: 0.8,
-        }}
-        className="h-full"
-      >
-        {outlet}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        type: 'spring',
+        stiffness: 380,
+        damping: 32,
+        mass: 0.8,
+      }}
+      className="h-full"
+    >
+      {children}
+    </motion.div>
   );
 }
