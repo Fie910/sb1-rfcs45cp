@@ -359,7 +359,7 @@ function ArsipCardGrid({
 
   return (
     <div
-      className="bg-slate-900 rounded-2xl border border-slate-800 hover:border-indigo-500/40 transition cursor-pointer group overflow-hidden flex flex-col"
+      className="cv-auto bg-slate-900 rounded-2xl border border-slate-800 hover:border-indigo-500/40 transition cursor-pointer group overflow-hidden flex flex-col"
       onClick={onDetail}
     >
       {/* Thumbnail area */}
