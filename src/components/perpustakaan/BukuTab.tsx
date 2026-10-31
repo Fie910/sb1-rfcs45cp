@@ -350,9 +350,9 @@ export function BukuTab() {
             const isSelected = selectedIds.has(b.id);
             return (
               <div key={b.id}
-                className={`bg-slate-900 border rounded-2xl overflow-hidden hover:border-indigo-500/40 transition-all group ${
-                  isSelected ? 'border-indigo-500/60 ring-1 ring-indigo-500/40' : 'border-slate-800'
-                }`}>
+                className={`cv-auto bg-slate-900 border rounded-2xl overflow-hidden hover:border-indigo-500/40 transition-all group ${
+  isSelected ? 'border-indigo-500/60 ring-1 ring-indigo-500/40' : 'border-slate-800'
+}`}
                 <div className="aspect-[3/4] bg-slate-950 flex items-center justify-center overflow-hidden relative">
                   {b.cover_url ? (
                     <img src={b.cover_url} alt={b.judul}
