@@ -19,6 +19,10 @@ import { useLocation } from 'react-router-dom';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { SkeletonCard } from '@/components/Skeleton';
 
+// Type augmentations — field yang ada di DB tapi belum di tipe
+type PengumumanWithAI = Pengumuman & { ringkasan_ai?: string | null };
+type RingkasanAI = { inti?: string; ringkasan?: string };
+
 const emptyForm = {
   judul: '',
   isi: '',
@@ -243,7 +247,7 @@ export function PengumumanPage() {
       total: list.length,
       aktif: list.filter((i) => i.is_aktif).length,
       nonaktif: list.filter((i) => !i.is_aktif).length,
-      ai: list.filter((i) => i.ringkasan_ai).length,
+      ai: list.filter((i) => (i as PengumumanWithAI).ringkasan_ai).length,
     };
   }, [list]);
 
