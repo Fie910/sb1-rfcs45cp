@@ -84,7 +84,7 @@ export function AppLayout({ current, badgeCounts, children }: LayoutProps) {
       {/* Overlay Mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-950/50 backdrop-blur-md z-30 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
