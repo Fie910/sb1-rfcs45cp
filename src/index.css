@@ -888,3 +888,12 @@ a:focus-visible {
   text-decoration-color: rgba(129, 140, 248, 0.6);
   text-underline-offset: 3px;
 }
+
+/* ============================================================
+   FIX SCROLL RESTORATION — ditambahkan setelah audit
+   Cegah horizontal scroll di level root,
+   agar <main> tidak jadi scroll container internal.
+   ============================================================ */
+html {
+  overflow-x: clip;
+}
