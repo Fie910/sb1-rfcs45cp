@@ -651,3 +651,24 @@ button:not(:disabled):active,
   background: linear-gradient(to bottom, #334155 0%, transparent 100%);
   z-index: 0;
 }
+
+/* ============================================================
+   SAFE AREA (PWA iOS/Android) — ditambahkan Tahap 2
+   Memberi jarak aman agar konten tidak tertutup notch / gesture bar
+   ============================================================ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* Utility kalau nanti butuh */
+.safe-top    { padding-top: var(--safe-top); }
+.safe-bottom { padding-bottom: var(--safe-bottom); }
+.safe-x      { padding-left: var(--safe-left); padding-right: var(--safe-right); }
+
+/* Cegah "bounce scroll" saat sudah mentok (khas native) */
+html, body {
+  overscroll-behavior-y: contain;
+}
