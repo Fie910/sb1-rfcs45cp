@@ -18,6 +18,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { KeyboardShortcutCheatSheet } from '@/components/KeyboardShortcutCheatSheet';
 import { PageTransition } from '@/components/PageTransition';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { useGlobalHaptics } from '@/hooks/useGlobalHaptics';
 
 type LayoutProps = {
   current: PageKey;
