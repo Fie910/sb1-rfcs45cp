@@ -243,7 +243,7 @@ export function PengumumanPage() {
       total: list.length,
       aktif: list.filter((i) => i.is_aktif).length,
       nonaktif: list.filter((i) => !i.is_aktif).length,
-      ai: list.filter((i) => (i as PengumumanWithAI).ringkasan_ai).length,
+      ai: list.filter((i) => i.ringkasan_ai).length,
     };
   }, [list]);
 
