@@ -672,3 +672,32 @@ button:not(:disabled):active,
 html, body {
   overscroll-behavior-y: contain;
 }
+
+
+/* ============================================================
+   TACTILE PRESS — ditambahkan Tahap 3
+   Efek tombol mengecil saat ditekan, khas aplikasi native.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  /* Tombol biasa */
+  button:not(:disabled):active,
+  [role="button"]:active,
+  .tactile:active {
+    transform: scale(0.97);
+  }
+
+  /* Link internal (nav, sidebar, bottom-tab) — sedikit lebih responsif */
+  a[href^="/"]:active {
+    transform: scale(0.96);
+  }
+}
+
+/* Menghindari "text selection" yang tidak diinginkan saat tekan lama tombol */
+button,
+[role="button"],
+.tactile {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
