@@ -2,6 +2,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle, Info } from 'lucide-react';
+import { HoldToConfirmButton } from './HoldToConfirmButton';
 
 type ModalProps = {
   open: boolean;
@@ -24,13 +25,11 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
 
   return createPortal(
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
-      {/* Backdrop overlay — frosted glass */}
       <div
         className="absolute inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal Container — frosted glass strong */}
       <div
         className={`relative w-full ${sizeClass}
           bg-slate-900/85 backdrop-blur-2xl saturate-150
@@ -42,7 +41,6 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
           max-h-[90vh] overflow-hidden flex flex-col
           z-10`}
       >
-        {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-800/60">
           <h2 className="text-lg font-extrabold text-slate-100 tracking-tight">{title}</h2>
           <button
@@ -53,7 +51,6 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
           </button>
         </div>
 
-        {/* Modal Body */}
         <div className="px-6 py-5 overflow-y-auto custom-scrollbar">{children}</div>
       </div>
     </div>,
@@ -62,7 +59,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
 }
 
 // ---------------------------------------------------------------------------
-// ConfirmModal — dengan data-haptic sesuai tingkat bahaya
+// ConfirmModal — variant "danger" otomatis pakai HoldToConfirmButton
 // ---------------------------------------------------------------------------
 
 type ConfirmVariant = 'danger' | 'warning' | 'default';
@@ -132,8 +129,14 @@ export function ConfirmModal({
   const Icon = styles.icon;
   const finalConfirmLabel = confirmLabel ?? styles.defaultConfirmLabel;
 
+  const handleCancelSafe = () => {
+    // Kalau user cancel saat progress berjalan, aman — HoldToConfirmButton
+    // akan otomatis reset progress saat pointer leave.
+    onClose();
+  };
+
   return (
-    <Modal open={open} onClose={onClose} title={title} size="sm">
+    <Modal open={open} onClose={handleCancelSafe} title={title} size="sm">
       <div className="space-y-6">
         <div className="flex items-start gap-4">
           <div
@@ -144,20 +147,29 @@ export function ConfirmModal({
           <p className="text-sm text-slate-300 leading-relaxed mt-1">{message}</p>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex justify-end items-center gap-3 pt-2">
           <button
-            onClick={onClose}
+            onClick={handleCancelSafe}
             className="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 font-semibold text-xs transition-colors cursor-pointer"
           >
             {cancelLabel}
           </button>
-          <button
-            onClick={onConfirm}
-            data-haptic={styles.hapticPattern}
-            className={`px-6 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition-all cursor-pointer ${styles.confirmClass}`}
-          >
-            {finalConfirmLabel}
-          </button>
+
+          {variant === 'danger' ? (
+            <HoldToConfirmButton
+              onConfirm={onConfirm}
+              label={finalConfirmLabel}
+              holdDuration={1500}
+            />
+          ) : (
+            <button
+              onClick={onConfirm}
+              data-haptic={styles.hapticPattern}
+              className={`px-6 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition-all cursor-pointer ${styles.confirmClass}`}
+            >
+              {finalConfirmLabel}
+            </button>
+          )}
         </div>
       </div>
     </Modal>
