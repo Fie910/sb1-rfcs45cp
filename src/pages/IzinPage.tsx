@@ -33,7 +33,6 @@ import type {
   KategoriIzin, JenisDelegasi, JadwalKbm, JadwalKbmWithRelations,
 } from '@/types/database';
 import { successMsg } from '@/constants/branding';
-import { HoldToConfirmButton } from '@/components/HoldToConfirmButton';
 import { useLocation } from 'react-router-dom';
 
 const ROLE_KEPALA_KEPEGAWAIAN = ['admin', 'kepala', 'takola'];
