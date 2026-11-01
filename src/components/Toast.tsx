@@ -2,6 +2,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
 import { playSuccess, playError } from '@/lib/sound';
+import { haptic } from '@/lib/haptics';
 
 type ToastType = 'success' | 'error' | 'info';
 
