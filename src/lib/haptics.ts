@@ -8,10 +8,6 @@ export type HapticPattern =
   | 'error'
   | 'selection';
 
-/**
- * Durasi getaran (ms) untuk tiap jenis feedback.
- * Kalau array, artinya getar-pause-getar.
- */
 const PATTERNS: Record<HapticPattern, number | number[]> = {
   light: 10,
   medium: 20,
@@ -22,6 +18,33 @@ const PATTERNS: Record<HapticPattern, number | number[]> = {
   selection: 5,
 };
 
+// =============================================================================
+// PREFERENSI USER — Haptic ON/OFF (disimpan di localStorage)
+// =============================================================================
+const STORAGE_KEY = 'haptic-enabled';
+
+export function isHapticEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return true; // default: aktif
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export function setHapticEnabled(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, String(enabled));
+  } catch {
+    /* ignore */
+  }
+}
+
+// =============================================================================
+// IMPLEMENTASI GETARAN
+// =============================================================================
 const isIOS = () =>
   typeof navigator !== 'undefined' &&
   /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -46,15 +69,17 @@ function iosHaptic() {
     label.click();
     setTimeout(() => label.remove(), 500);
   } catch {
-    // abaikan — kalau tidak didukung, ya tidak ada getaran
+    /* ignore */
   }
 }
 
 /**
- * Picu haptic feedback. Aman dipanggil di mana saja (no-op di desktop).
+ * Picu haptic feedback.
+ * Aman dipanggil di mana saja (no-op di desktop atau kalau user mematikan).
  */
 export function haptic(pattern: HapticPattern = 'light') {
   if (typeof navigator === 'undefined') return;
+  if (!isHapticEnabled()) return; // ← guard preferensi user
 
   if (isIOS()) {
     iosHaptic();
@@ -65,7 +90,7 @@ export function haptic(pattern: HapticPattern = 'light') {
     try {
       navigator.vibrate(PATTERNS[pattern]);
     } catch {
-      // abaikan
+      /* ignore */
     }
   }
 }
