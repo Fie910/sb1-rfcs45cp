@@ -705,6 +705,7 @@ export function RekapPresensiKesiswaanPage() {
                       <td className="py-3.5 px-5 text-right">
                         <button
                           onClick={() => setDeleteTarget(item)}
+                          data-haptic="warning"
                           className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
                           title="Hapus Record"
                         >
