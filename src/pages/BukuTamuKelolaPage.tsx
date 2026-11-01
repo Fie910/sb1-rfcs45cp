@@ -380,6 +380,7 @@ export function BukuTamuKelolaPage() {
                     )}
                     <button
                       onClick={() => setDeleteTarget(item)}
+                      data-haptic="warning"
                       className="p-2 rounded-lg bg-rose-600/20 text-rose-300 border border-rose-500/30 cursor-pointer"
                     >
                       <XCircle size={15} />
