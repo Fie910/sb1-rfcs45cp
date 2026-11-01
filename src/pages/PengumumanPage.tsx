@@ -437,6 +437,7 @@ export function PengumumanPage() {
                     </button>
                     <button
                       type="button" onClick={() => setDeleteTarget(item)}
+                      data-haptic="warning"
                       className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
                     >
                       <Trash2 size={13} /> Hapus
