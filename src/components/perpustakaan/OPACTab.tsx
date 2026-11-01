@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import {
   getKondisiBukuBadge, getJenisSerialBadge, getJenisSerialIcon,
   formatDateShort, INPUT_CLASS,
@@ -246,9 +247,7 @@ export function OPACTab() {
 
       {/* RESULT */}
       {loading ? (
-        <div className="text-center py-16 text-slate-500 text-sm">
-          <div className="animate-pulse">Memuat katalog...</div>
-        </div>
+        <TabLoadingFallback variant="grid" minHeight="400px" />
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
           <Search size={44} className="mx-auto text-slate-600 mb-3" />

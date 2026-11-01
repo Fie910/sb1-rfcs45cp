@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { useConfirm } from '@/hooks/useConfirm';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalSetoran } from './ModalSetoran';
@@ -217,12 +218,7 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
   // RENDER
   // ===========================================================================
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <Loader2 className="animate-spin text-emerald-400 mb-3" size={36} />
-        <p className="text-xs text-slate-400">Memuat setoran...</p>
-      </div>
-    );
+    return <TabLoadingFallback variant="table" minHeight="400px" />;
   }
 
   return (

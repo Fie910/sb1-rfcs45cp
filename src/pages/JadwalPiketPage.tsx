@@ -14,6 +14,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { JadwalPiketWithRelations, Guru, HariMinggu } from '@/types/database';
 
@@ -172,12 +173,7 @@ export function JadwalPiketPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <Loader2 className="animate-spin text-indigo-400 mb-2" size={36} />
-        <p className="text-sm text-slate-400 font-medium">Memuat jadwal piket...</p>
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   return (

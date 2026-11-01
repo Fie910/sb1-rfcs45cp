@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { getFirstDayOfMonthWib, getTodayDateWib } from '@/utils/date';
@@ -921,14 +922,8 @@ export function RekapPresensiGuruPage() {
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={DETAIL_HEADERS.length}
-                      className="text-center py-16"
-                    >
-                      <Loader2
-                        className="animate-spin text-indigo-400 mx-auto mb-2"
-                        size={28}
-                      />
+                    <td colSpan={DETAIL_HEADERS.length} className="p-4">
+                      <PageSkeleton variant="list" />
                     </td>
                   </tr>
                 ) : list.length === 0 ? (
@@ -1173,14 +1168,8 @@ export function RekapPresensiGuruPage() {
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={rekapHeaders.length + 1}
-                      className="text-center py-16"
-                    >
-                      <Loader2
-                        className="animate-spin text-indigo-400 mx-auto mb-2"
-                        size={28}
-                      />
+                    <td colSpan={rekapHeaders.length + 1} className="p-4">
+                      <PageSkeleton variant="list" />
                     </td>
                   </tr>
                 ) : rekapSummary.length === 0 ? (

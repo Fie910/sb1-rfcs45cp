@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { getTodayDateWib } from '@/utils/date';
 import { Modal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 
 // =============================================================================
@@ -565,12 +566,7 @@ export function MonevDivisiPage() {
   // RENDER
   // =========================================================================
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh]">
-        <Loader2 className="animate-spin text-indigo-400 mb-3" size={40} />
-        <p className="text-slate-400 text-xs font-medium">Memuat data monev...</p>
-      </div>
-    );
+    return <PageSkeleton variant="dashboard" />;
   }
 
   return (

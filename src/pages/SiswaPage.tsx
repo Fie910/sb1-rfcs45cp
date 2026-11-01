@@ -19,6 +19,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { SiswaWithKelas, Kelas } from '@/types/database';
 
@@ -367,12 +368,7 @@ export function SiswaPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <Loader2 className="animate-spin text-indigo-400 mb-2" size={36} />
-        <p className="text-sm text-slate-400 font-medium">Memuat data siswa...</p>
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   return (

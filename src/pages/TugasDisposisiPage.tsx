@@ -17,6 +17,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { PrintDisposisi } from '@/components/PrintDisposisi';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 export interface DisposisiItem {
   id: string;
@@ -216,9 +217,7 @@ export function TugasDisposisiPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center items-center py-20 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        </div>
+        <PageSkeleton variant="list" />
       ) : filteredTugas.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/30 rounded-xl border border-slate-800">
           <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />

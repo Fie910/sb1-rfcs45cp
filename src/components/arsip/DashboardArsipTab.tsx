@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import {
   getKategoriBadge, getStatusDokumenBadge,
   formatFileSize, formatTanggalArsip,
@@ -154,11 +155,7 @@ export function DashboardArsipTab() {
   // RENDER
   // ==========================================================================
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </div>
-    );
+    return <TabLoadingFallback variant="list" minHeight="400px" />;
   }
 
   return (

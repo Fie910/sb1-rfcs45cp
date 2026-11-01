@@ -25,6 +25,7 @@ import { useAuth } from '@/context/AuthContext';
 import { offlineUpsert, offlineUpdate } from '@/lib/offline/offlineClient';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import type {
   JadwalPiket,
   IzinGuruPiketWithRelations,
@@ -532,11 +533,7 @@ export function PiketPage() {
   // LOADING SCREEN
   // ===========================================================================
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="animate-spin text-indigo-400" size={36} />
-      </div>
-    );
+    return <PageSkeleton variant="dashboard" />;
   }
 
   // ===========================================================================

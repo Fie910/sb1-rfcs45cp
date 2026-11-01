@@ -21,6 +21,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import {
   getTodayDateWib,
@@ -666,9 +667,7 @@ export function RekapPresensiKesiswaanPage() {
       {/* Main Content Body */}
       <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl shadow-black/40">
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-slate-400">
-            <Loader2 className="animate-spin text-indigo-400" size={28} />
-          </div>
+          <PageSkeleton variant="list" />
         ) : activeTab === 'riwayat' ? (
           filteredRiwayatList.length === 0 ? (
             <div className="text-center py-16 px-4 text-slate-400">

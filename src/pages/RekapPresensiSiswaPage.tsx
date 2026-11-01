@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';       // ✅ TAMBAH
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { PresensiWithSiswa, Kelas } from '@/types/database';
 import {
@@ -475,9 +476,7 @@ useEffect(() => {
         {/* TABEL CONTENT */}
         <div className="max-h-[600px] overflow-auto relative">
           {loading ? (
-            <div className="flex items-center justify-center py-24">
-              <Loader2 className="animate-spin text-indigo-400" size={36} />
-            </div>
+            <PageSkeleton variant="list" />
           ) : viewMode === 'summary' ? (
             <table className="w-full text-sm text-left min-w-[1000px]">
               <thead className="bg-slate-950 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800/80">

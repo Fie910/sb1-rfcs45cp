@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { WhatsAppButton } from './WhatsAppButton';
 import { generateSuratIzinPDF } from '@/lib/pdf/generateSuratIzin';
@@ -283,11 +284,7 @@ export function ApprovalTab() {
   // RENDER
   // ==========================================================================
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </div>
-    );
+    return <TabLoadingFallback variant="table" minHeight="400px" />;
   }
 
   if (myLevel === 0) {

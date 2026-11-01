@@ -152,6 +152,7 @@ export function KedisiplinanPage() {
                 <TabLoadingFallback
                   label={`Memuat ${visibleTabs.find((t) => t.key === activeTab)?.label ?? ''}...`}
                   minHeight="500px"
+                  variant="list"
                 />
               }
             >

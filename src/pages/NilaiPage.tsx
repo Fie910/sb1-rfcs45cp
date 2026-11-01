@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { Kelas, Siswa, NilaiWithRelations, MataPelajaran } from '@/types/database';
 
@@ -176,11 +177,7 @@ export function NilaiPage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full py-20">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   return (

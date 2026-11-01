@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { showToast } from '@/components/Toast';
 import { getTodayDateWib, getFirstDayOfMonthWib } from '@/utils/date';
 import {
@@ -698,8 +699,8 @@ export function RekapIzinPage() {
               </thead>
               <tbody className="divide-y divide-slate-800/50 text-xs text-slate-300">
                 {loading ? (
-                  <tr><td colSpan={HEADERS.length} className="text-center py-20 text-slate-400">
-                    <Loader2 className="animate-spin text-indigo-400 mx-auto" size={28} />
+                  <tr><td colSpan={HEADERS.length} className="p-4">
+                    <PageSkeleton variant="list" />
                   </td></tr>
                 ) : filteredList.length === 0 ? (
                   <tr><td colSpan={HEADERS.length} className="text-center py-16 text-slate-400">
@@ -850,8 +851,8 @@ export function RekapIzinPage() {
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-sm font-medium">
                 {loading ? (
-                  <tr><td colSpan={11} className="text-center py-16">
-                    <Loader2 className="animate-spin text-indigo-400 mx-auto" size={28} />
+                  <tr><td colSpan={11} className="p-4">
+                    <PageSkeleton variant="list" />
                   </td></tr>
                 ) : rekapSummary.length === 0 ? (
                   <tr><td colSpan={11} className="text-center py-16 text-slate-500">

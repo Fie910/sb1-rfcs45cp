@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import {
   getTodayDateWib, formatDateWibShort, getHariFromDateString,
@@ -508,11 +509,7 @@ export function IzinPage() {
   const otherIzin = safeList.filter((i) => i?.guru_izin_id !== guru?.id);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full py-24">
-        <Loader2 className="animate-spin text-indigo-400" size={36} />
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   // ===========================================================================

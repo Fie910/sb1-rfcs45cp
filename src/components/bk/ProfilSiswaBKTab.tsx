@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import {
@@ -374,10 +375,7 @@ export function ProfilSiswaBKTab() {
 
           {/* Timeline */}
           {loadingTimeline ? (
-            <div className="text-center py-12 text-slate-500 text-sm">
-              <Loader2 className="animate-spin mx-auto mb-2 text-purple-400" size={28} />
-              Memuat timeline...
-            </div>
+            <TabLoadingFallback variant="list" minHeight="400px" />
           ) : timeline.length === 0 ? (
             <div className="text-center py-12 bg-slate-900 border border-slate-800 rounded-2xl">
               <Sparkles size={36} className="mx-auto text-slate-600 mb-2" />

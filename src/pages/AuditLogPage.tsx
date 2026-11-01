@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { getTodayDateWib } from '@/utils/date';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
@@ -522,9 +523,7 @@ export function AuditLogPage() {
       {/* TABEL LOG */}
       <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-slate-400">
-            <Loader2 className="animate-spin text-indigo-400" size={28} />
-          </div>
+          <PageSkeleton variant="list" />
         ) : logs.length === 0 ? (
           <div className="text-center py-16 px-4 text-slate-400">
             <AlertCircle size={36} className="mx-auto mb-2 text-slate-600" />

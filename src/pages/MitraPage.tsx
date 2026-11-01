@@ -146,6 +146,7 @@ export function MitraPage() {
             <TabLoadingFallback
               label={`Memuat ${visibleTabs.find((t) => t.key === effectiveTab)?.label ?? ''}...`}
               minHeight="500px"
+              variant="list"
             />
           }
         >

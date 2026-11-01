@@ -58,7 +58,8 @@ const ALL_TABS: TabDef[] = [
   { key: 'sertifikat', label: 'Sertifikat', icon: Award, managerOnly: true },
 ];
 
-const TAB_IMPORTERS: Record<TabKey, () => Promise<any>> = {
+// Type-safe: gunakan `unknown` (bukan `any`) untuk hindari lint error
+const TAB_IMPORTERS: Record<TabKey, () => Promise<unknown>> = {
   setoran: () => import('@/components/tahfidz/SetoranTab'),
   dashboard: () => import('@/components/tahfidz/DashboardTahfidzTab'),
   progress: () => import('@/components/tahfidz/ProgressSiswaTab'),
@@ -74,6 +75,53 @@ export function TahfidzPage() {
   const { guru } = useAuth();
   const hasAccess = canAccessTahfidz(guru);
   const isManager = isTahfidzManager(guru);
+
+  // ⚠️ SEMUA HOOKS DI ATAS — JANGAN ADA EARLY RETURN SEBELUM INI
+  // (melanggar rules-of-hooks = React crash saat akses berubah)
+
+  const visibleTabs = useMemo(
+    () => ALL_TABS.filter((t) => !t.managerOnly || isManager),
+    [isManager]
+  );
+
+  const [activeTab, setActiveTab] = useState<TabKey>('setoran');
+  const [surahList, setSurahList] = useState<TahfidzSurah[]>([]);
+  const [halamanMap, setHalamanMap] = useState<TahfidzHalamanDetail[]>([]);
+  const [loadingSurah, setLoadingSurah] = useState(true);
+
+  useEffect(() => {
+    // Skip fetch kalau user tidak punya akses
+    if (!hasAccess) return;
+    (async () => {
+      const [surahRes, halamanRes] = await Promise.all([
+        supabase.from('tahfidz_surah').select('*').order('nomor', { ascending: true }),
+        supabase
+          .from('tahfidz_halaman_detail')
+          .select('*')
+          .order('halaman', { ascending: true })
+          .order('surah_nomor', { ascending: true }),
+      ]);
+      setSurahList((surahRes.data as TahfidzSurah[]) ?? []);
+      setHalamanMap((halamanRes.data as TahfidzHalamanDetail[]) ?? []);
+      setLoadingSurah(false);
+    })();
+  }, [hasAccess]);
+
+  // Buat map untuk lookup O(1)
+  const surahMap = useMemo(() => {
+    const m = new Map<number, TahfidzSurah>();
+    surahList.forEach((s) => m.set(s.nomor, s));
+    return m;
+  }, [surahList]);
+
+  useEffect(() => {
+    const currentTab = ALL_TABS.find((t) => t.key === activeTab);
+    if (currentTab?.managerOnly && !isManager) setActiveTab('setoran');
+  }, [isManager, activeTab]);
+
+  usePrefetchTabs(TAB_IMPORTERS, activeTab);
+
+  // ✅ EARLY RETURN SETELAH SEMUA HOOKS — aman, tidak melanggar rules-of-hooks
   if (!hasAccess) {
     return (
       <div className="p-4 md:p-8 max-w-3xl mx-auto">
@@ -92,47 +140,6 @@ export function TahfidzPage() {
       </div>
     );
   }
-  const visibleTabs = useMemo(
-    () => ALL_TABS.filter((t) => !t.managerOnly || isManager),
-    [isManager]
-  );
-
-  const [activeTab, setActiveTab] = useState<TabKey>('setoran');
-
-  // Fetch master surah sekali, share ke semua tab
-  const [surahList, setSurahList] = useState<TahfidzSurah[]>([]);
-  const [halamanMap, setHalamanMap] = useState<TahfidzHalamanDetail[]>([]);
-  const [loadingSurah, setLoadingSurah] = useState(true);
-
-useEffect(() => {
-  (async () => {
-    const [surahRes, halamanRes] = await Promise.all([
-      supabase.from('tahfidz_surah').select('*').order('nomor', { ascending: true }),
-      supabase
-        .from('tahfidz_halaman_detail')
-        .select('*')
-        .order('halaman', { ascending: true })
-        .order('surah_nomor', { ascending: true }),
-    ]);
-    setSurahList((surahRes.data as TahfidzSurah[]) ?? []);
-    setHalamanMap((halamanRes.data as TahfidzHalamanDetail[]) ?? []);
-    setLoadingSurah(false);
-  })();
-}, []);
-
-  // Buat map untuk lookup O(1)
-  const surahMap = useMemo(() => {
-    const m = new Map<number, TahfidzSurah>();
-    surahList.forEach((s) => m.set(s.nomor, s));
-    return m;
-  }, [surahList]);
-
-  useEffect(() => {
-    const currentTab = ALL_TABS.find((t) => t.key === activeTab);
-    if (currentTab?.managerOnly && !isManager) setActiveTab('setoran');
-  }, [isManager, activeTab]);
-
-  usePrefetchTabs(TAB_IMPORTERS, activeTab);
 
   const tabProps = { surahList, surahMap, halamanMap, isManager };
 

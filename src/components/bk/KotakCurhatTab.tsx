@@ -26,6 +26,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
@@ -530,9 +531,7 @@ export function KotakCurhatTab() {
 
       {/* SPLIT-PANE */}
       {loading ? (
-        <div className="text-center py-16 text-slate-500 text-sm">
-          Memuat curhat...
-        </div>
+        <TabLoadingFallback variant="list" minHeight="400px" />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[600px]">
           {/* ==================== LEFT: LIST ==================== */}

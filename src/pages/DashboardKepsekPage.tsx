@@ -13,6 +13,7 @@ import {
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { getTodayDateWib } from '@/utils/date';
 import {
   CHART_COLORS,
@@ -838,12 +839,7 @@ export function DashboardKepsekPage() {
   // RENDER — LOADING STATE
   // =========================================================================
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh]">
-        <Loader2 className="animate-spin text-indigo-400 mb-3" size={40} />
-        <p className="text-slate-400 text-xs font-medium">Memuat dashboard...</p>
-      </div>
-    );
+    return <PageSkeleton variant="dashboard" />;
   }
 
   // =========================================================================

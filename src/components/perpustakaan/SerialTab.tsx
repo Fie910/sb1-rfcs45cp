@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalSerial } from './ModalSerial';
@@ -206,7 +207,7 @@ export function SerialTab() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-slate-500 text-sm">Memuat serial...</div>
+        <TabLoadingFallback variant="table" minHeight="400px" />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
           <Newspaper size={44} className="mx-auto text-slate-600 mb-3" />

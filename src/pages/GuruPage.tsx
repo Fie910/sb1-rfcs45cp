@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Loader2, UserCog, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { Guru } from '@/types/database';
 
@@ -203,11 +204,7 @@ export function GuruPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full py-20">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   return (

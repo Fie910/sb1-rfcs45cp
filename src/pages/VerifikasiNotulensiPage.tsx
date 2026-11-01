@@ -9,6 +9,7 @@ import {
   FileText, CheckCircle2, AlertTriangle, Hash, Clock, MapPin,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 type VerifData = {
   id: string;
@@ -93,10 +94,7 @@ export default function VerifikasiNotulensiPage() {
         </div>
 
         {loading ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center">
-            <Loader2 className="animate-spin text-indigo-400 mx-auto mb-3" size={32} />
-            <p className="text-sm text-slate-400">Memverifikasi notulensi...</p>
-          </div>
+          <PageSkeleton variant="list" />
         ) : !data ? (
           <div className="bg-rose-500/5 border border-rose-500/30 rounded-3xl p-8 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 mb-4">

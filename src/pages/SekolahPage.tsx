@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapPin, Save, Loader2, School } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import type { PengaturanSekolah } from '@/types/database';
 import { PanelGenerateAgenda } from '@/components/admin/PanelGenerateAgenda';
 
@@ -79,11 +80,7 @@ export function SekolahPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full py-20">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
 
   return (

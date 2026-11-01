@@ -3,6 +3,7 @@ import { Plus, Trash2, Calendar, UserPlus, Loader2, ShieldAlert } from 'lucide-r
 import { supabase } from '@/lib/supabase';
 import { useCanAccess } from '@/hooks/useCanAccess';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -170,10 +171,7 @@ export function JadwalPiketPenyambutanPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-400">
-            <Loader2 className="animate-spin mx-auto mb-2 text-indigo-400" size={24} />
-            <p className="text-xs">Memuat daftar petugas...</p>
-          </div>
+          <PageSkeleton variant="list" />
         ) : jadwalList.length === 0 ? (
           <p className="py-8 text-center text-slate-500 text-xs">
             Belum ada guru yang dijadwalkan pada hari {selectedHari}.

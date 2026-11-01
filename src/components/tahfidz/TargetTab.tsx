@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { useConfirm } from '@/hooks/useConfirm';
 import { INPUT_CLASS } from './shared';
 import { getHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
@@ -277,12 +278,7 @@ export function TargetTab({ surahMap, halamanMap }: Props) {
   // RENDER
   // ===========================================================================
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <Loader2 className="animate-spin text-emerald-400 mb-3" size={36} />
-        <p className="text-xs text-slate-400">Memuat target...</p>
-      </div>
-    );
+    return <TabLoadingFallback variant="table" minHeight="400px" />;
   }
 
   return (

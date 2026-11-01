@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import {
   getStatusCutiBadge, getJenisCutiBadge,
@@ -165,11 +166,7 @@ export function RekapTab() {
   // RENDER
   // ==========================================================================
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </div>
-    );
+    return <TabLoadingFallback variant="table" minHeight="400px" />;
   }
 
   return (

@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 
 interface Role {
@@ -189,12 +190,7 @@ export function HakAksesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-slate-400 gap-3">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-        <span>Memuat Matriks Hak Akses...</span>
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   return (

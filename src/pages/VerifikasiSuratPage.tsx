@@ -10,6 +10,7 @@ import {
   FileText, CheckCircle2, AlertTriangle, Hash, Clock, GraduationCap,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 // =============================================================================
 // TYPES
@@ -243,12 +244,7 @@ export default function VerifikasiSuratPage() {
 // SUB: Loading
 // =============================================================================
 function LoadingCard() {
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center">
-      <Loader2 className="animate-spin text-indigo-400 mx-auto mb-3" size={32} />
-      <p className="text-sm text-slate-400">Memverifikasi dokumen...</p>
-    </div>
-  );
+  return <PageSkeleton variant="list" />;
 }
 
 // =============================================================================

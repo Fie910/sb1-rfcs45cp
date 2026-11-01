@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 
 // =============================================================================
 // KONSTANTA WARNA
@@ -220,12 +221,7 @@ export function DashboardBKTab() {
   // ==========================================================================
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <Loader2 className="animate-spin text-purple-400 mb-3" size={36} />
-        <p className="text-xs text-slate-400">Memuat dashboard BK...</p>
-      </div>
-    );
+    return <TabLoadingFallback variant="list" minHeight="400px" />;
   }
 
   return (

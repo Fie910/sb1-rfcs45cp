@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { offlineUpsert } from '@/lib/offline/offlineClient';
 import { showToast } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { getWibDateString } from '@/utils/date';
 import { haversineDistance } from '@/utils/geo';
 import type {
@@ -332,12 +333,7 @@ export function KehadiranPiketPenyambutanPage() {
   ).length;
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] py-24">
-        <Loader2 className="animate-spin text-indigo-400 mb-3" size={36} />
-        <p className="text-slate-400 text-xs font-medium">Memuat data presensi mandiri...</p>
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   return (

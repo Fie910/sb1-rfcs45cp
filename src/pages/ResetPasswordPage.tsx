@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -111,14 +112,7 @@ export default function ResetPasswordPage() {
   // RENDER
   // ==========================================================================
   if (checkingToken) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="animate-spin text-indigo-400 mx-auto mb-3" size={40} />
-          <p className="text-sm text-slate-400">Memverifikasi link...</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
 
   if (!tokenValid && !success) {

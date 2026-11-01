@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import type {
   BukuTamuWithRelations,
   StatusBukuTamu,
@@ -151,7 +152,7 @@ export function BukuTamuKelolaPage() {
     setList((prev) => prev.filter((x) => x.id !== target.id));
 
     showToastUndo({
-      message: `Tamu "${target.nama}" dihapus`,
+      message: `Tamu "${target.nama_tamu}" dihapus`,
       duration: 5000,
       onCommit: async () => {
         const { error } = await supabase.from('buku_tamu').delete().eq('id', target.id);
@@ -299,9 +300,7 @@ export function BukuTamuKelolaPage() {
       {/* LIST — MOBILE */}
       <div className="grid grid-cols-1 gap-3 md:hidden">
         {loading ? (
-          <div className="text-center py-12">
-            <Loader2 className="animate-spin text-indigo-400 mx-auto" size={24} />
-          </div>
+          <PageSkeleton variant="list" />
         ) : filteredList.length === 0 ? (
           <div className="bg-slate-900/40 border border-slate-800/80 p-8 rounded-2xl text-center">
             <UserCheck size={36} className="mx-auto mb-2 text-slate-600" />
@@ -415,9 +414,7 @@ export function BukuTamuKelolaPage() {
       {/* LIST — DESKTOP */}
       <div className="hidden md:block bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-slate-800/80 shadow-2xl overflow-hidden">
         {loading ? (
-          <div className="text-center py-16">
-            <Loader2 className="animate-spin text-indigo-400 mx-auto" size={28} />
-          </div>
+          <PageSkeleton variant="list" />
         ) : filteredList.length === 0 ? (
           <div className="text-center py-16">
             <UserCheck size={44} className="mx-auto mb-3 text-slate-600" />

@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Loader2, ClipboardList, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { showToast } from '@/components/Toast';
 import type { NilaiWithRelations, Kelas } from '@/types/database';
@@ -231,8 +232,8 @@ export function RekapNilaiPage() {
             <tbody className="divide-y divide-slate-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan={HEADERS.length} className="text-center py-12">
-                    <Loader2 className="animate-spin text-indigo-400 mx-auto" size={24} />
+                  <td colSpan={HEADERS.length} className="p-4">
+                    <PageSkeleton variant="list" />
                   </td>
                 </tr>
               ) : list.length === 0 ? (

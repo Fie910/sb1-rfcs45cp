@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { getTodayDateWib } from '@/utils/date';
 
@@ -268,10 +269,7 @@ export function InputPresensiKesiswaanPage() {
         {/* List Section */}
         <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl shadow-black/40 p-3 sm:p-0">
           {loadingSiswa ? (
-            <div className="flex items-center justify-center py-16 sm:py-20 text-slate-400 gap-3">
-              <Loader2 className="animate-spin text-indigo-400" size={24} />
-              <span className="text-xs sm:text-sm">Memuat data siswa & presensi...</span>
-            </div>
+            <PageSkeleton variant="list" />
           ) : siswas.length === 0 ? (
             <div className="text-center py-12 sm:py-16 text-slate-500 text-xs sm:text-sm">
               Tidak ada siswa terdaftar di kelas ini.

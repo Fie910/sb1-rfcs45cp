@@ -9,6 +9,7 @@ import {
   FileText, CheckCircle2, AlertTriangle, Hash, Clock, Archive,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 // =============================================================================
 // TYPES
@@ -101,10 +102,7 @@ export default function VerifikasiArsipPage() {
 
         {/* CONTENT */}
         {loading ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center">
-            <Loader2 className="animate-spin text-indigo-400 mx-auto mb-3" size={32} />
-            <p className="text-sm text-slate-400">Memverifikasi dokumen...</p>
-          </div>
+          <PageSkeleton variant="list" />
         ) : !data ? (
           /* TIDAK DITEMUKAN */
           <div className="bg-rose-500/5 border border-rose-500/30 rounded-3xl p-8 text-center">

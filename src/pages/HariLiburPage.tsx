@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Modal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { getTodayDateWib, getHariFromDateString, formatDateWibLong } from '@/utils/date';
 import type { HariLibur } from '@/types/database';
 
@@ -520,10 +521,7 @@ export function HariLiburPage() {
 
       {/* LIST */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center min-h-[300px]">
-          <Loader2 className="animate-spin text-indigo-400 mb-2" size={32} />
-          <p className="text-xs text-slate-400 font-medium">Memuat data hari libur...</p>
-        </div>
+        <PageSkeleton variant="list" />
       ) : groupedList.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl text-center py-20 px-6">
           <CalendarX size={40} className="mx-auto mb-3 opacity-40 text-slate-500" />

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Loader2, School, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { showToast, showToastUndo } from '@/components/Toast';
 import type { KelasWithWali, Guru } from '@/types/database';
@@ -131,11 +132,7 @@ export function KelasPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="animate-spin text-indigo-400" size={32} />
-      </div>
-    );
+    return <PageSkeleton variant="list" />;
   }
 
   return (

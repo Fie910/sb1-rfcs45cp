@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { PrintDisposisi } from '../components/PrintDisposisi';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { showToast, showToastUndo } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '../lib/supabase';
 import { logActivity, AUDIT_MODUL } from '../utils/audit';
@@ -896,9 +897,7 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
 
       {/* CONTENT */}
       {loading ? (
-        <div className="p-12 text-center text-slate-400 text-xs sm:text-sm bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/10">
-          Memuat data...
-        </div>
+        <PageSkeleton variant="list" />
       ) : activeTab === 'KATEGORI' ? (
         // ==================== TAB KATEGORI ====================
         <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-xl">

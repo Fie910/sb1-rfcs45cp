@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useCanAccess } from '@/hooks/useCanAccess';
 import { showToast } from '@/components/Toast';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 type RowPiketHarian = {
   guru_id: string;
@@ -168,10 +169,7 @@ export function KehadiranPiketPage() {
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-slate-400">
-          <Loader2 className="animate-spin mx-auto mb-2 text-indigo-400" size={32} />
-          <p className="text-xs">Memuat daftar piket KBM...</p>
-        </div>
+        <PageSkeleton variant="list" />
       ) : rows.length === 0 ? (
         <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 text-xs">
           Tidak ada jadwal piket KBM untuk tanggal ini.

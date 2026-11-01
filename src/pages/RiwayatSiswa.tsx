@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { akademikService } from '../services/akademikService';
 import { Siswa } from '../types/database';
 import { Search, X, ChevronDown, UserCheck } from 'lucide-react';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 interface RiwayatItem {
   id: number;
@@ -193,7 +194,7 @@ export const RiwayatSiswa: React.FC = () => {
 
       {/* Timeline Riwayat */}
       {loading ? (
-        <div className="text-center py-8 text-slate-400 text-sm">Memuat riwayat...</div>
+        <PageSkeleton variant="list" />
       ) : riwayat.length > 0 ? (
         <div className="relative pl-6 border-l-2 border-slate-800 space-y-8 my-6">
           {riwayat.map((item) => (

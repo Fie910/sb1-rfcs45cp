@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import {
   INPUT_CLASS, getJenisSetoranBadge, getKualitasBadge,
   getNilaiBadge, formatTanggalShort,
@@ -258,12 +259,7 @@ export function ProgressSiswaTab({ surahMap, halamanMap }: Props) {
   // RENDER — DETAIL
   // ===========================================================================
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <Loader2 className="animate-spin text-emerald-400 mb-3" size={36} />
-        <p className="text-xs text-slate-400">Memuat progress siswa...</p>
-      </div>
-    );
+    return <TabLoadingFallback variant="table" minHeight="400px" />;
   }
 
   if (view === 'detail' && selectedSiswa) {

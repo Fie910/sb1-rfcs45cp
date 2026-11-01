@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { INPUT_CLASS } from './shared';
 import { getHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
 import { exportColoredPdf, PDF_COLORS } from '@/lib/pdf/pdfColoredExport';
@@ -183,12 +184,7 @@ export function RekapTab({ surahMap, halamanMap }: Props) {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <Loader2 className="animate-spin text-emerald-400 mb-3" size={36} />
-        <p className="text-xs text-slate-400">Memuat rekap...</p>
-      </div>
-    );
+    return <TabLoadingFallback variant="table" minHeight="400px" />;
   }
 
   return (

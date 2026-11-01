@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
+import { TabLoadingFallback } from '@/components/TabLoadingFallback';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
@@ -505,9 +506,7 @@ export function PeminjamanTab() {
 
       {/* LIST */}
       {loading ? (
-        <div className="text-center py-16 text-slate-500 text-sm">
-          Memuat data peminjaman...
-        </div>
+        <TabLoadingFallback variant="table" minHeight="400px" />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
           <Send size={44} className="mx-auto text-slate-600 mb-3" />
