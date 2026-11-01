@@ -1,6 +1,6 @@
 // src/components/MobileBottomNav.tsx
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutDashboard, Settings, Check, RotateCcw, X } from 'lucide-react';
+import { LayoutDashboard, Settings, Check, RotateCcw, X, Vibrate, VibrateOff } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -14,20 +14,17 @@ import { useBottomNavTabs, MAX_TABS } from '@/hooks/useBottomNavTabs';
 import { PAGE_CONFIG } from '@/components/dashboard/ShortcutGrid';
 import { canAccessTahfidz } from '@/components/tahfidz/shared';
 import type { PageKey } from '@/config/navigation';
+import { haptic, isHapticEnabled, setHapticEnabled } from '@/lib/haptics';
 
 type TabItem = {
   path: string;
   icon: any;
-  label: string;       // shortLabel — untuk tampilan bottom nav (ringkas)
-  fullLabel?: string;  // label lengkap — untuk panel pengaturan
+  label: string;
+  fullLabel?: string;
   accessKey?: PageKey;
-  isProfile?: boolean; // profile selalu tampil tanpa cek RBAC
+  isProfile?: boolean;
 };
 
-/**
- * Tab "Beranda" — tidak ada di PAGE_CONFIG ShortcutGrid,
- * jadi kita tambahkan manual di sini.
- */
 const HOME_TAB: TabItem = {
   path: '/',
   icon: LayoutDashboard,
@@ -35,10 +32,6 @@ const HOME_TAB: TabItem = {
   fullLabel: 'Dashboard / Beranda',
 };
 
-/**
- * Katalog lengkap tab — sumbernya dari PAGE_CONFIG ShortcutGrid.
- * Ikon, label, dan path otomatis sinkron dengan shortcut grid.
- */
 const TAB_CATALOG: TabItem[] = [
   HOME_TAB,
   ...Object.entries(PAGE_CONFIG).map(([key, cfg]) => ({
@@ -56,20 +49,19 @@ export function MobileBottomNav() {
   const { hasAccess, guru } = useAuth();
   const { paths, setPaths, reset } = useBottomNavTabs();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [hapticOn, setHapticOn] = useState(() => isHapticEnabled());
 
-  // ---- Filter tab sesuai hak akses (RBAC + custom Tahfidz) ----
   const availableTabs = useMemo(
     () =>
       TAB_CATALOG.filter((t) => {
-        if (!t.accessKey) return true;          // Beranda — selalu tampil
-        if (t.isProfile) return true;           // Profil — selalu tampil
+        if (!t.accessKey) return true;
+        if (t.isProfile) return true;
         if (t.accessKey === 'tahfidz' && !canAccessTahfidz(guru)) return false;
         return hasAccess(t.accessKey);
       }),
     [hasAccess, guru],
   );
 
-  // ---- Tab aktif (urut sesuai pilihan user) ----
   const activeTabs = useMemo(
     () =>
       paths
@@ -78,7 +70,6 @@ export function MobileBottomNav() {
     [paths, availableTabs],
   );
 
-  // ---- Long-press untuk buka panel pengaturan ----
   const longPressTimer = useRef<number | null>(null);
   const longPressedRef = useRef(false);
 
@@ -86,6 +77,7 @@ export function MobileBottomNav() {
     longPressedRef.current = false;
     longPressTimer.current = window.setTimeout(() => {
       longPressedRef.current = true;
+      haptic('medium'); // konfirmasi bahwa long-press berhasil
       setSettingsOpen(true);
     }, 550);
   }, []);
@@ -104,14 +96,24 @@ export function MobileBottomNav() {
     }
   };
 
-  // ---- Toggle tab di panel pengaturan ----
   const togglePath = (path: string) => {
     if (paths.includes(path)) {
-      if (paths.length <= 1) return; // minimal 1 tab
+      if (paths.length <= 1) return;
       setPaths(paths.filter((p) => p !== path));
     } else {
       if (paths.length >= MAX_TABS) return;
       setPaths([...paths, path]);
+    }
+  };
+
+  const toggleHaptic = () => {
+    const next = !hapticOn;
+    setHapticOn(next);
+    setHapticEnabled(next);
+    // Kalau baru diaktifkan, langsung beri getaran konfirmasi
+    if (next) {
+      // Set state dulu, baru trigger (karena haptic() baca dari localStorage)
+      setTimeout(() => haptic('light'), 10);
     }
   };
 
@@ -166,7 +168,6 @@ export function MobileBottomNav() {
             );
           })}
 
-          {/* Gear kecil untuk buka panel pengaturan */}
           <button
             onClick={() => setSettingsOpen(true)}
             className="shrink-0 w-8 h-8 mx-1 rounded-lg flex items-center justify-center text-slate-600 hover:text-indigo-400 hover:bg-slate-800 transition-colors"
@@ -256,6 +257,47 @@ export function MobileBottomNav() {
                 })}
               </div>
 
+              {/* ====================== PREFERENSI: HAPTIC ====================== */}
+              <div className="mt-4 pt-4 border-t border-slate-800">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">
+                  Preferensi
+                </p>
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-950/50 border border-slate-800">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      hapticOn
+                        ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                    }`}>
+                      {hapticOn ? <Vibrate size={16} /> : <VibrateOff size={16} />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-200">
+                        Getaran
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+                        Bergetar saat simpan atau hapus
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={hapticOn}
+                    onClick={toggleHaptic}
+                    className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer ${
+                      hapticOn ? 'bg-indigo-500' : 'bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${
+                        hapticOn ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
               {/* Tombol aksi */}
               <div className="flex gap-2 mt-5">
                 <button
@@ -263,7 +305,7 @@ export function MobileBottomNav() {
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-800 text-slate-300 hover:bg-slate-800 text-sm transition-colors"
                 >
                   <RotateCcw size={14} />
-                  Default
+                  Reset Menu
                 </button>
                 <button
                   onClick={() => setSettingsOpen(false)}
