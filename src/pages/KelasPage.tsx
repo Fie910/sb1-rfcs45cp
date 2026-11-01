@@ -162,6 +162,7 @@ export function KelasPage() {
                   </button>
                   <button
                     onClick={() => setDeleteTarget(k)}
+                    data-haptic="warning"
                     className="p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors cursor-pointer"
                     title="Hapus Kelas"
                   >
