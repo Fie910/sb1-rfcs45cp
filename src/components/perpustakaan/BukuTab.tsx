@@ -412,6 +412,7 @@ export function BukuTab() {
                       <Eye size={11} />
                     </button>
                     <button onClick={() => setDeleteTarget(b)}
+                      data-haptic="warning"
                       className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition cursor-pointer">
                       <Trash2 size={11} />
                     </button>
