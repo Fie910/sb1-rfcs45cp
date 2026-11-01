@@ -271,6 +271,7 @@ export function GuruPage() {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(guru)}
+                          data-haptic="warning"
                           className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors cursor-pointer"
                           title="Hapus"
                         >
