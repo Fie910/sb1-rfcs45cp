@@ -662,6 +662,7 @@ export function ModalSetoran({
           </button>
           <button
             onClick={handleSave}
+            data-haptic="success"
             disabled={saving || !form.siswa_id}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
           >
