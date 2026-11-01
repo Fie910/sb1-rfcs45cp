@@ -387,6 +387,7 @@ export function ModalDetailArsip({
                     id: dokumen.id,
                     label: dokumen.judul,
                   })}
+                  data-haptic="warning"
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[11px] font-bold transition cursor-pointer ml-auto"
                 >
                   <Trash2 size={12} /> Hapus
