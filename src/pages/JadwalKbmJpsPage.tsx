@@ -507,6 +507,7 @@ export function JadwalKbmJpsPage() {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(item)}
+                          data-haptic="warning"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                           title="Hapus Jadwal"
                         >
