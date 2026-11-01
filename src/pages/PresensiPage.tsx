@@ -824,6 +824,7 @@ export function PresensiPage() {
           <div className="flex justify-end pt-2">
             <button
               onClick={handleSave}
+              data-haptic="success"
               disabled={saving}
               className={`w-full sm:w-auto px-8 py-3.5 font-bold rounded-xl shadow-lg transform transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer ${
                 unselectedCount > 0
