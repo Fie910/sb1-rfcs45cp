@@ -62,7 +62,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
 }
 
 // ---------------------------------------------------------------------------
-// ConfirmModal — Diperluas dengan variant & custom labels
+// ConfirmModal — dengan data-haptic sesuai tingkat bahaya
 // ---------------------------------------------------------------------------
 
 type ConfirmVariant = 'danger' | 'warning' | 'default';
@@ -86,6 +86,7 @@ const VARIANT_STYLES: Record<
     iconBg: string;
     confirmClass: string;
     defaultConfirmLabel: string;
+    hapticPattern: 'error' | 'warning' | 'success';
   }
 > = {
   danger: {
@@ -95,6 +96,7 @@ const VARIANT_STYLES: Record<
     confirmClass:
       'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-red-500/20',
     defaultConfirmLabel: 'Ya, Hapus',
+    hapticPattern: 'error',
   },
   warning: {
     icon: AlertTriangle,
@@ -103,6 +105,7 @@ const VARIANT_STYLES: Record<
     confirmClass:
       'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-500/20',
     defaultConfirmLabel: 'Ya, Lanjutkan',
+    hapticPattern: 'warning',
   },
   default: {
     icon: Info,
@@ -111,6 +114,7 @@ const VARIANT_STYLES: Record<
     confirmClass:
       'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 shadow-indigo-500/20',
     defaultConfirmLabel: 'Ya',
+    hapticPattern: 'success',
   },
 };
 
@@ -149,6 +153,7 @@ export function ConfirmModal({
           </button>
           <button
             onClick={onConfirm}
+            data-haptic={styles.hapticPattern}
             className={`px-6 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition-all cursor-pointer ${styles.confirmClass}`}
           >
             {finalConfirmLabel}
