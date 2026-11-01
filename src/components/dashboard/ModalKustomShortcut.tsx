@@ -442,6 +442,7 @@ const accessibleKeys = useMemo(() => {
               <button
                 type="button"
                 onClick={handleSave}
+                data-haptic="success"
                 disabled={saving || selectedKeys.length === 0}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer"
               >
