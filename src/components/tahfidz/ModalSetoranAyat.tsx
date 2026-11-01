@@ -620,6 +620,7 @@ export function ModalSetoranAyat({
               </button>
               <button
                 onClick={handleSave}
+                data-haptic="success"
                 disabled={saving || !canSave}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title={!canSave ? 'Minimal 1 ayat harus dinilai' : ''}
