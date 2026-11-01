@@ -17,6 +17,7 @@ import VerifikasiNotulensiPage from '@/pages/VerifikasiNotulensiPage';
 import VerifikasiArsipPage from '@/pages/VerifikasiArsipPage';
 import { SplashScreen } from '@/components/SplashScreen';
 import { PageSkeleton } from '@/components/PageSkeleton';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // =============================================================================
 // Lazy load seluruh halaman internal untuk optimasi bundle
