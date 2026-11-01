@@ -32,6 +32,8 @@ export type Guru = {
   status_kepegawaian?: string | null;
   jenis_ptk?: string | null;
   created_at?: string;
+  avatar_preset?: string | null;
+  avatar_url?: string | null;
 };
 
 export type GuruWithMapel = Guru & {

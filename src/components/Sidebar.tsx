@@ -5,6 +5,7 @@ import { ChevronRight, LogOut, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { NAVIGATION_CONFIG, type PageKey } from '@/config/navigation';
 import { canAccessTahfidz } from '@/components/tahfidz/shared';
+import { useSchoolBranding } from '@/hooks/useSchoolBranding';
 
 // =============================================================================
 // KONSTANTA
@@ -64,6 +65,7 @@ function loadCollapsedState(current: PageKey): Set<string> {
 // =============================================================================
 export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: SidebarProps) {
   const { guru, role, namaRole, signOut, hasAccess } = useAuth();
+  const { logo_url } = useSchoolBranding();
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() =>
     loadCollapsedState(current)
@@ -139,16 +141,35 @@ export function Sidebar({ current, sidebarOpen, setSidebarOpen, badgeCounts }: S
     >
       {/* HEADER */}
       <div className="px-6 py-6 flex items-center gap-3.5 border-b border-slate-800/60">
-        <div className="w-11 h-11 bg-indigo-500/15 rounded-xl flex items-center justify-center border border-indigo-500/20 text-indigo-400 font-bold text-xl shadow-sm">
-          WM
-        </div>
+        {logo_url ? (
+  <div className="w-16 h-16 rounded-xl overflow-hidden border border-indigo-500/20 shadow-sm bg-slate shrink-0">
+    <img
+      src={logo_url}
+      alt="Logo Sekolah"
+      className="w-full h-full object-contain p-1"
+      onError={(e) => {
+        e.currentTarget.style.display = 'none';
+        const parent = e.currentTarget.parentElement;
+        if (parent) {
+          parent.className =
+            'w-11 h-11 bg-indigo-500/15 rounded-xl flex items-center justify-center border border-indigo-500/20 text-indigo-400 font-bold text-xl shadow-sm';
+          parent.innerHTML = 'WM';
+        }
+      }}
+    />
+  </div>
+) : (
+  <div className="w-11 h-11 bg-indigo-500/15 rounded-xl flex items-center justify-center border border-indigo-500/20 text-indigo-400 font-bold text-xl shadow-sm">
+    WM
+  </div>
+)}
         <div className="min-w-0">
           <h1 className="text-slate-100 font-extrabold text-[13px] tracking-tight leading-snug">
             SMK KH. A. WAHAB
             <br /> MUHSIN
           </h1>
           <p className="text-slate-500 text-[11px] font-medium mt-0.5 uppercase tracking-wider">
-            SISFO Pemuliaan Murid
+            Fitrah ۞ Karya
           </p>
         </div>
       </div>

@@ -1,13 +1,66 @@
 // src/components/profil/KartuKehadiran.tsx
 // Kartu ringkasan kehadiran di halaman Profil — donut + 6 stat cards + filter bulan.
 
-import {useState, useEffect} from 'react'
+import { useState, useEffect } from 'react';
 import {
-  Loader2, BookHeart, CalendarDays, TrendingUp, CheckCircle2,
+  BookHeart, CalendarDays, TrendingUp, CheckCircle2,
   XCircle, Timer, ClockAlert, Stethoscope, HeartPulse, Calendar,
 } from 'lucide-react';
 import { useKehadiranGuru, getMonthOptions } from '@/hooks/useKehadiranGuru';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+
+// =============================================================================
+// SKELETON — menyerupai layout asli (donut + 6 stat cards)
+// =============================================================================
+function KehadiranSkeleton() {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      {/* HEADER skeleton */}
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-4 pb-4 border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl skeleton-block" />
+          <div className="space-y-2">
+            <div className="h-3 w-40 skeleton-block rounded" />
+            <div className="h-2 w-52 skeleton-block rounded" />
+          </div>
+        </div>
+        <div className="h-10 w-36 skeleton-block rounded-xl" />
+      </div>
+
+      {/* BODY skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+        {/* Donut skeleton */}
+        <div className="lg:col-span-4 flex flex-col items-center justify-center lg:border-r border-slate-800">
+          <div className="w-32 h-32 md:w-36 md:h-36 rounded-full skeleton-block mb-3" />
+          <div className="h-7 w-44 skeleton-block rounded-full mb-2" />
+          <div className="h-3 w-32 skeleton-block rounded" />
+        </div>
+
+        {/* Stat cards skeleton */}
+        <div className="lg:col-span-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-slate-950/60 border border-slate-800 rounded-xl p-3"
+              >
+                <div className="w-7 h-7 rounded-lg skeleton-block mb-2" />
+                <div className="h-2 w-16 skeleton-block rounded mb-2" />
+                <div className="h-6 w-14 skeleton-block rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer skeleton */}
+      <div className="mt-4 pt-4 border-t border-slate-800 space-y-1.5">
+        <div className="h-2 w-full skeleton-block rounded" />
+        <div className="h-2 w-2/3 skeleton-block rounded" />
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // KOMPONEN
@@ -17,7 +70,7 @@ export function KartuKehadiran() {
   const monthOptions = getMonthOptions();
   // ✅ State untuk memicu animasi Donut Chart
   const [donutAnimated, setDonutAnimated] = useState(false);
-  
+
   useEffect(() => {
     if (!loading) {
       // Delay sedikit agar transisi CSS sempat berjalan
@@ -27,6 +80,11 @@ export function KartuKehadiran() {
       setDonutAnimated(false);
     }
   }, [loading, stats.rate]);
+
+  // ⚠️ EARLY RETURN SETELAH SEMUA HOOKS (rules-of-hooks aman)
+  if (loading) {
+    return <KehadiranSkeleton />;
+  }
 
   const totalRecords =
     stats.hadir_jp + stats.alpa_jp + stats.izin_jp + stats.sakit_jp;
@@ -127,121 +185,113 @@ export function KartuKehadiran() {
       </div>
 
       {/* BODY */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="animate-spin text-indigo-400" size={26} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-          {/* DONUT */}
-          <div className="lg:col-span-4 flex flex-col items-center justify-center lg:border-r border-slate-800">
-            <div className="relative w-32 h-32 md:w-36 md:h-36 mb-3">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
-                  fill="none"
-                  stroke="#1e293b"
-                  strokeWidth="11"
-                />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
-                  fill="none"
-                  stroke="url(#gradient-khd)"
-                  strokeWidth="11"
-                  strokeLinecap="round"
-                  /* ✅ Gunakan state donutAnimated untuk memicu animasi dari 0 */
-                  strokeDasharray={`${donutAnimated ? (stats.rate / 100) * 314.16 : 0} 314.16`}
-                  className="transition-all duration-1000 ease-out"
-                />
-                <defs>
-                  <linearGradient id="gradient-khd" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#6366f1" />
-                    <stop offset="100%" stopColor="#3b82f6" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-black text-slate-100 flex items-baseline">
-                  <AnimatedNumber value={stats.rate} duration={1200} />%
-                </span>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Kehadiran
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
-              <TrendingUp size={12} className="text-indigo-400" />
-              <span>
-                <strong className="text-slate-100">
-                  <AnimatedNumber value={stats.hadir_jp} duration={1000} /> JP hadir
-                </strong>{' '}
-                dari <AnimatedNumber value={totalRecords} duration={1000} /> JP
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+        {/* DONUT */}
+        <div className="lg:col-span-4 flex flex-col items-center justify-center lg:border-r border-slate-800">
+          <div className="relative w-32 h-32 md:w-36 md:h-36 mb-3">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+              <circle
+                cx="60"
+                cy="60"
+                r="50"
+                fill="none"
+                stroke="#1e293b"
+                strokeWidth="11"
+              />
+              <circle
+                cx="60"
+                cy="60"
+                r="50"
+                fill="none"
+                stroke="url(#gradient-khd)"
+                strokeWidth="11"
+                strokeLinecap="round"
+                strokeDasharray={`${donutAnimated ? (stats.rate / 100) * 314.16 : 0} 314.16`}
+                className="transition-all duration-1000 ease-out"
+              />
+              <defs>
+                <linearGradient id="gradient-khd" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#6366f1" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-black text-slate-100 flex items-baseline">
+                <AnimatedNumber value={stats.rate} duration={1200} />%
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                Kehadiran
               </span>
             </div>
-
-            {stats.total_sesi > 0 && (
-              <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
-                <Calendar size={10} />
-                {stats.total_sesi} sesi mengajar
-                {stats.total_sesi_terlambat > 0 && (
-                  <span className="text-amber-400">
-                    {' · '}{stats.total_sesi_terlambat} terlambat
-                  </span>
-                )}
-              </p>
-            )}
           </div>
 
-          {/* STAT CARDS */}
-          <div className="lg:col-span-8">
-            {totalRecords === 0 ? (
-              <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl">
-                <BookHeart size={28} className="mx-auto text-slate-600 mb-2" />
-                <p className="text-xs text-slate-500">
-                  Belum ada data presensi mengajar bulan ini
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {statCards.map((card) => {
-                  const Icon = card.icon;
-                  return (
-                    <div
-                      key={card.label}
-                      className={`${card.bg} ${card.border} border rounded-xl p-3`}
-                    >
-                      <div
-                        className={`w-7 h-7 rounded-lg bg-slate-950/60 ${card.color} flex items-center justify-center mb-2`}
-                      >
-                        <Icon size={13} />
-                      </div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                        {card.label}
-                      </p>
-                      <p className={`text-lg font-extrabold ${card.color} mt-0.5 leading-tight flex items-baseline`}>
-                        {/* ✅ Animasi angka, perhatikan tipe data card.value */}
-                        <AnimatedNumber 
-                          value={Number(card.value)} 
-                          decimals={card.label === 'Setara' ? 1 : 0} // Setara pakai desimal
-                          duration={1200}
-                        />
-                        <span className="text-[10px] font-bold text-slate-500 ml-1">
-                          {card.unit}
-                        </span>
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
+            <TrendingUp size={12} className="text-indigo-400" />
+            <span>
+              <strong className="text-slate-100">
+                <AnimatedNumber value={stats.hadir_jp} duration={1000} /> JP hadir
+              </strong>{' '}
+              dari <AnimatedNumber value={totalRecords} duration={1000} /> JP
+            </span>
           </div>
+
+          {stats.total_sesi > 0 && (
+            <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+              <Calendar size={10} />
+              {stats.total_sesi} sesi mengajar
+              {stats.total_sesi_terlambat > 0 && (
+                <span className="text-amber-400">
+                  {' · '}{stats.total_sesi_terlambat} terlambat
+                </span>
+              )}
+            </p>
+          )}
         </div>
-      )}
+
+        {/* STAT CARDS */}
+        <div className="lg:col-span-8">
+          {totalRecords === 0 ? (
+            <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl">
+              <BookHeart size={28} className="mx-auto text-slate-600 mb-2" />
+              <p className="text-xs text-slate-500">
+                Belum ada data presensi mengajar bulan ini
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {statCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.label}
+                    className={`${card.bg} ${card.border} border rounded-xl p-3`}
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-lg bg-slate-950/60 ${card.color} flex items-center justify-center mb-2`}
+                    >
+                      <Icon size={13} />
+                    </div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                      {card.label}
+                    </p>
+                    <p className={`text-lg font-extrabold ${card.color} mt-0.5 leading-tight flex items-baseline`}>
+                      <AnimatedNumber
+                        value={Number(card.value)}
+                        decimals={card.label === 'Setara' ? 1 : 0}
+                        duration={1200}
+                      />
+                      <span className="text-[10px] font-bold text-slate-500 ml-1">
+                        {card.unit}
+                      </span>
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* FOOTER NOTE */}
       <div className="mt-4 pt-4 border-t border-slate-800">
