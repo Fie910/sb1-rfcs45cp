@@ -364,6 +364,7 @@ export function ModalRecurringEvent({ open, onClose, onSaved }: Props) {
           </button>
           <button
             onClick={handleSave}
+            data-haptic="success"
             disabled={saving || preview.count === 0}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
           >
