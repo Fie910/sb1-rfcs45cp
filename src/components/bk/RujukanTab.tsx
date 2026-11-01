@@ -553,6 +553,7 @@ export function RujukanTab() {
                       <Pencil size={12} /> Edit
                     </button>
                     <button onClick={() => { setDetailTarget(null); setDeleteTarget(detailTarget); }}
+                      data-haptic="warning"
                       className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-colors cursor-pointer">
                       <Trash2 size={12} /> Hapus
                     </button>
