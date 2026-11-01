@@ -388,6 +388,7 @@ export function NilaiPage() {
                       </span>
                       <button
                         onClick={() => setDeleteTarget(n)}
+                        data-haptic="warning"
                         className="p-1.5 rounded-lg text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                         title="Hapus Nilai"
                       >
