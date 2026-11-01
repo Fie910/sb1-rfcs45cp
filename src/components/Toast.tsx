@@ -33,8 +33,16 @@ function showToastBase(type: ToastType, message: string) {
 // PUBLIC API — dengan sound feedback
 // =============================================================================
 export function showToast(type: ToastType, message: string) {
-  if (type === 'success') playSuccess();
-  if (type === 'error') playError();
+  if (type === 'success') {
+    playSuccess();
+    haptic('success'); // getar-pause-getar
+  } else if (type === 'error') {
+    playError();
+    haptic('error'); // getar tegas (5x)
+  } else {
+    // info — getar ringan saja
+    haptic('light');
+  }
   showToastBase(type, message);
 }
 
