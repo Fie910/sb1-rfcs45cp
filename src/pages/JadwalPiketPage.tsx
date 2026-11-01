@@ -346,6 +346,7 @@ export function JadwalPiketPage() {
             <button
               type="button"
               onClick={handleSave}
+              data-haptic="success"
               disabled={saving}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm shadow-lg shadow-indigo-600/20 transition-colors disabled:opacity-60 cursor-pointer"
             >
