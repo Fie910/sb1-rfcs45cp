@@ -420,6 +420,7 @@ export function AsesmenTab() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => setDetailTarget(a)}
+                            data-haptic="warning"
                             className="p-1.5 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors cursor-pointer" title="Lihat">
                             <Eye size={14} />
                           </button>
