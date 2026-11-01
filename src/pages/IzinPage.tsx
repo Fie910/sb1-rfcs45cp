@@ -608,6 +608,7 @@ export function IzinPage() {
                 </button>
                 <button
                   onClick={() => setDeleteTarget(izin)}
+                  data-haptic="warning"
                   className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
                   title="Hapus"
                 >
