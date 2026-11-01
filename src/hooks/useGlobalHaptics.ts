@@ -3,17 +3,23 @@ import { useEffect } from 'react';
 import { haptic, type HapticPattern } from '@/lib/haptics';
 
 /**
- * Memasang haptic otomatis ke SEMUA elemen interaktif:
- *   - <button> (non-disabled)
- *   - <a href> (link internal maupun eksternal)
- *   - [role="button"]
- *   - .tactile
- *   - [data-haptic]
+ * Haptic SELEKTIF — hanya trigger pada aksi penting.
  *
- * Untuk override per elemen, cukup tambah atribut:
- *   <button data-haptic="success">Simpan</button>
+ * Elemen yang trigger haptic:
+ *   1. Ada atribut `data-haptic="pattern"` secara eksplisit
+ *      Contoh: <button data-haptic="success">Simpan</button>
+ *   2. Tombol submit form: <button type="submit">
+ *      Otomatis haptic="light"
  *
- * Panggil hook ini SEKALI di komponen root (AppLayout).
+ * Elemen yang TIDAK trigger (diabaikan):
+ *   - Klik link navigasi (a[href])
+ *   - Klik item sidebar
+ *   - Klik bottom tab
+ *   - Klik tombol biasa (button tanpa type submit dan tanpa data-haptic)
+ *   - Toggle, filter, icon close, dll.
+ *
+ * Kalau user mematikan haptic via setting, fungsi ini tetap jalan
+ * tapi `haptic()` sendiri akan no-op karena guard di lib/haptics.ts.
  */
 export function useGlobalHaptics() {
   useEffect(() => {
@@ -24,7 +30,7 @@ export function useGlobalHaptics() {
       if (!target) return;
 
       const interactive = target.closest<HTMLElement>(
-        'button:not(:disabled), a[href], [role="button"], .tactile, [data-haptic]',
+        '[data-haptic], button[type="submit"]:not(:disabled)',
       );
       if (!interactive) return;
 
@@ -32,7 +38,6 @@ export function useGlobalHaptics() {
       haptic(custom ?? 'light');
     };
 
-    // pointerdown lebih awal dari click → terasa lebih responsif
     document.addEventListener('pointerdown', handlePointerDown, {
       passive: true,
     });
