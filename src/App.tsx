@@ -308,7 +308,9 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <ConfirmProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
           <ToastContainer />
         </ConfirmProvider>
       </BrowserRouter>
