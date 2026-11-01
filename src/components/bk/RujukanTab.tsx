@@ -426,7 +426,7 @@ export function RujukanTab() {
               className="px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-bold text-xs transition-colors cursor-pointer">
               Batal
             </button>
-            <button type="button" onClick={handleSave} disabled={saving}
+            <button type="button" onClick={handleSave} data-haptic="success" disabled={saving}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/20 transition-colors disabled:opacity-50 cursor-pointer">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               {editing ? 'Simpan Perubahan' : 'Buat Rujukan'}
