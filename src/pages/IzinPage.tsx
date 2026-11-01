@@ -458,24 +458,46 @@ export function IzinPage() {
       return;
     }
 
-    const { error } = await supabase
-      .from('izin_guru_pikets')
-      .delete()
-      .eq('id', deleteTarget.id);
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.IZIN,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus izin ${deleteTarget.kategori_izin} tgl ${deleteTarget.tanggal_izin}`,
-      });
-      showToast('success', 'Izin dihapus');
-      setDeleteTarget(null);
-      fetchData();
-    }
+    // 1) Optimistic: hilangkan dari list dulu
+    setIzinList((prev) => prev.filter((x) => x.id !== target.id));
+
+    // 2) Tampilkan toast dengan undo (5 detik)
+    showToastUndo({
+      message: `Izin ${target.kategori_izin} dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        // User TIDAK undo → jalankan delete sungguhan
+        const { error } = await supabase
+          .from('izin_guru_pikets')
+          .delete()
+          .eq('id', target.id);
+
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchData(); // restore dari server
+        } else {
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.IZIN,
+            targetId: target.id,
+            deskripsi: `Hapus izin ${target.kategori_izin} tgl ${target.tanggal_izin}`,
+          });
+        }
+      },
+      onUndo: () => {
+        // User undo → kembalikan ke list
+        setIzinList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // ===========================================================================
