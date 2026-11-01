@@ -506,7 +506,7 @@ export function PengumumanPage() {
           </label>
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer">Batal</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20 cursor-pointer">
+            <button type="button" onClick={handleSave} data-haptic="success" disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20 cursor-pointer">
               {saving && <Loader2 size={16} className="animate-spin" />}
               {saving ? 'Menyimpan...' : 'Simpan'}
             </button>
