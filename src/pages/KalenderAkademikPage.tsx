@@ -9,7 +9,7 @@ import {
   Trash2, Plus, Layers, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { getTodayDateWib } from '@/utils/date';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
@@ -154,16 +154,27 @@ export function KalenderAkademikPage() {
 
   const handleDeleteKegiatan = async (event: KalenderEvent) => {
     if (event.source !== 'rencana' || !canManageRecurring) return;
-    if (!(await confirm({ title: 'Hapus Kegiatan?', message: `Hapus "${event.judul}"?` }))) return;
 
-    const { error } = await supabase.from('rencana_kegiatan').delete().eq('id', event.source_id);
-    if (error) {
-      showToast('error', 'Gagal menghapus kegiatan');
-      return;
-    }
-    showToast('success', 'Kegiatan berhasil dihapus');
-    logActivity({ aksi: 'DELETE', modul: AUDIT_MODUL.AUTH, deskripsi: `Hapus kegiatan: ${event.judul}` });
-    fetchData();
+    // Optimistic: hilangkan dari events
+    setEvents((prev) => prev.filter((e) => e.id !== event.id));
+
+    showToastUndo({
+      message: `Kegiatan "${event.judul}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('rencana_kegiatan').delete().eq('id', event.source_id);
+        if (error) {
+          showToast('error', 'Gagal menghapus kegiatan');
+          fetchData();
+          return;
+        }
+        logActivity({ aksi: 'DELETE', modul: AUDIT_MODUL.AUTH, deskripsi: `Hapus kegiatan: ${event.judul}` });
+      },
+      onUndo: () => {
+        setEvents((prev) => [event, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleEditBatch = async (group: KegiatanGroup) => {
@@ -180,21 +191,26 @@ export function KalenderAkademikPage() {
 
   const handleDeleteBatch = async (group: KegiatanGroup) => {
     if (!canManageRecurring || !group.batch_id) return;
-    const ok = await confirm({
-      title: 'Hapus Grup Kegiatan?',
-      message: `Hapus ${group.count} kegiatan "${group.label}"?\n\nTindakan ini tidak dapat dibatalkan.`,
-      variant: 'danger',
-      confirmLabel: `Ya, Hapus ${group.count} Kegiatan`,
-    });
-    if (!ok) return;
 
-    const { error } = await supabase.from('rencana_kegiatan').delete().eq('batch_id', group.batch_id);
-    if (error) {
-      showToast('error', 'Gagal menghapus grup kegiatan');
-      return;
-    }
-    showToast('success', `${group.count} kegiatan berhasil dihapus`);
-    fetchData();
+    const removedEvents = events.filter((e) => e.batch_id === group.batch_id);
+    // Optimistic: hilangkan dari events
+    setEvents((prev) => prev.filter((e) => e.batch_id !== group.batch_id));
+
+    showToastUndo({
+      message: `${group.count} kegiatan "${group.label}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('rencana_kegiatan').delete().eq('batch_id', group.batch_id);
+        if (error) {
+          showToast('error', 'Gagal menghapus grup kegiatan');
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setEvents((prev) => [...removedEvents, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const toggleGroupExpand = (key: string) => {

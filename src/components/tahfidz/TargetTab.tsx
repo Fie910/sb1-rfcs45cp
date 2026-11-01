@@ -7,7 +7,7 @@ import {
   Target, Search, Loader2, RefreshCw, Plus, Pencil, Trash2, Users,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { INPUT_CLASS } from './shared';
 import { getHalamanSetoran, formatHalaman } from '@/lib/tahfidz/hitungHalaman';
@@ -247,24 +247,30 @@ export function TargetTab({ surahMap, halamanMap }: Props) {
 
   const handleDelete = async (row: TargetRow) => {
     if (!row.target) return;
-    const ok = await confirm({
-      title: 'Hapus Target',
-      message: `Yakin hapus target ${row.siswa.nama_lengkap}?`,
-      variant: 'danger',
-    });
-    if (!ok) return;
+    const target = row.target;
 
-    try {
-      const { error } = await supabase
-        .from('tahfidz_target')
-        .delete()
-        .eq('id', row.target.id);
-      if (error) throw error;
-      showToast('success', 'Target dihapus');
-      fetchAll(true);
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    setTargets((prev) => prev.filter((t) => t.id !== target.id));
+
+    showToastUndo({
+      message: `Target hafalan "${row.siswa.nama_lengkap}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase
+            .from('tahfidz_target')
+            .delete()
+            .eq('id', target.id);
+          if (error) throw error;
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll(true);
+        }
+      },
+      onUndo: () => {
+        setTargets((prev) => [target, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // ===========================================================================

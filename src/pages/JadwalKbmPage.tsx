@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type {
@@ -181,14 +181,39 @@ export function JadwalKbmPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from('jadwal_kbms').delete().eq('id', deleteTarget.id);
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Jadwal dihapus');
-      fetchData();
-    }
+
+    const target = deleteTarget;
     setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    const mapel = target.mata_pelajarans?.nama_mapel ?? 'Mapel';
+    showToastUndo({
+      message: `"Jadwal ${mapel} (${target.hari})" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('jadwal_kbms').delete().eq('id', target.id);
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) => {
+            const orderA = HARI_ORDER[a.hari] || 99;
+            const orderB = HARI_ORDER[b.hari] || 99;
+            if (orderA !== orderB) return orderA - orderB;
+            const timeA = a.waktu_mulai || '00:00';
+            const timeB = b.waktu_mulai || '00:00';
+            return timeA.localeCompare(timeB);
+          });
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   if (loading) {

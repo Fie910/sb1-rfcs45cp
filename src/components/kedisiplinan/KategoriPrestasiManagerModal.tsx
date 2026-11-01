@@ -5,7 +5,7 @@ import {
   Trophy, Power, Search,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
@@ -114,14 +114,34 @@ export function KategoriPrestasiManagerModal({ open, onClose, kategoriList, onCh
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase.from('kesiswaan_kategori_prestasi').delete().eq('id', deleteTarget.id);
-      if (error) throw error;
-      await logActivity({ aksi: 'DELETE', modul: MODUL_KEDISIPLINAN,
-        targetId: deleteTarget.id, deskripsi: `Hapus kategori prestasi: ${deleteTarget.nama}` });
-      showToast('success', 'Kategori dihapus');
-      setDeleteTarget(null); onChanged();
-    } catch (err: any) { showToast('error', 'Gagal: ' + (err.message || 'Error')); }
+
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    showToastUndo({
+      message: `Kategori prestasi "${target.nama}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('kesiswaan_kategori_prestasi').delete().eq('id', target.id);
+          if (error) throw error;
+          await logActivity({
+            aksi: 'DELETE',
+            modul: MODUL_KEDISIPLINAN,
+            targetId: target.id,
+            deskripsi: `Hapus kategori prestasi: ${target.nama}`,
+          });
+          onChanged();
+        } catch (err: any) {
+          showToast('error', 'Gagal: ' + (err.message || 'Error'));
+          onChanged();
+        }
+      },
+      onUndo: () => {
+        onChanged();
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleToggleAktif = async (k: KesiswaanKategoriPrestasi) => {

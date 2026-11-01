@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
@@ -300,29 +300,41 @@ export function PenghapusanTab() {
     }
   };
 
-  // ============== DELETE ==============
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase
-        .from('inventaris_penghapusan')
-        .delete()
-        .eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.SARPRAS,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus pengajuan penghapusan: ${deleteTarget.aset?.nama_aset}`,
-      });
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-      showToast('success', 'Pengajuan dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `Pengajuan penghapusan "${target.aset?.nama_aset ?? 'Aset'}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase
+            .from('inventaris_penghapusan')
+            .delete()
+            .eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.SARPRAS,
+            targetId: target.id,
+            deskripsi: `Hapus pengajuan penghapusan: ${target.aset?.nama_aset}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => [target, ...prev].sort((a, b) => (b.tanggal_pengajuan || '').localeCompare(a.tanggal_pengajuan || '')));
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // ==========================================================================
@@ -500,15 +512,14 @@ export function PenghapusanTab() {
           {filtered.map((p) => (
             <div
               key={p.id}
-              className={`bg-slate-900 border rounded-2xl p-4 space-y-3 transition-all ${
-                p.status === 'Menunggu'
+              className={`bg-slate-900 border rounded-2xl p-4 space-y-3 transition-all ${p.status === 'Menunggu'
                   ? 'border-amber-500/30'
                   : p.status === 'Disetujui'
-                  ? 'border-indigo-500/30'
-                  : p.status === 'Ditolak'
-                  ? 'border-rose-500/30'
-                  : 'border-slate-800'
-              }`}
+                    ? 'border-indigo-500/30'
+                    : p.status === 'Ditolak'
+                      ? 'border-rose-500/30'
+                      : 'border-slate-800'
+                }`}
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-3">

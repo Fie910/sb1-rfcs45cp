@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Loader2, UserCog, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { Guru } from '@/types/database';
@@ -157,33 +157,49 @@ export function GuruPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
 
-    // Simpan info untuk log
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
     const infoGuru = {
-      id: deleteTarget.id,
-      nama: deleteTarget.nama_lengkap,
-      email: deleteTarget.email,
-      nip: deleteTarget.nip,
-      role: deleteTarget.role,
+      id: target.id,
+      nama: target.nama_lengkap,
+      email: target.email,
+      nip: target.nip,
+      role: target.role,
     };
 
-    const { error } = await supabase.from('gurus').delete().eq('id', deleteTarget.id);
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Data guru dihapus');
-
-      // Audit log — DELETE guru
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.GURU,
-        targetId: infoGuru.id,
-        deskripsi: `Hapus data guru: ${infoGuru.nama} (${infoGuru.email}) — Role: ${infoGuru.role}`,
-        metadata: { nip: infoGuru.nip, email: infoGuru.email, role: infoGuru.role },
-      });
-
-      fetchData();
-    }
-    setDeleteTarget(null);
+    showToastUndo({
+      message: `"${target.nama_lengkap}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('gurus').delete().eq('id', target.id);
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchData();
+        } else {
+          // Audit log — DELETE guru
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.GURU,
+            targetId: infoGuru.id,
+            deskripsi: `Hapus data guru: ${infoGuru.nama} (${infoGuru.email}) — Role: ${infoGuru.role}`,
+            metadata: { nip: infoGuru.nip, email: infoGuru.email, role: infoGuru.role },
+          });
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (a.nama_lengkap || '').localeCompare(b.nama_lengkap || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   if (loading) {

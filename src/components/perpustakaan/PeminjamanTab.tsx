@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
@@ -122,34 +122,51 @@ export function PeminjamanTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    if (!window.confirm(
-      deleteTarget.status === 'Dikembalikan'
-        ? 'Hapus transaksi ini?'
-        : 'Peminjaman masih aktif. Hapus akan mengembalikan stok buku. Lanjutkan?'
-    )) return;
 
-    try {
-      const { error } = await supabase.from('perpus_peminjaman').delete().eq('id', deleteTarget.id);
-      if (error) throw error;
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-      if (deleteTarget.status === 'Dipinjam' || deleteTarget.status === 'Terlambat') {
-        const { data: bukuData } = await supabase.from('perpus_buku')
-          .select('jumlah_tersedia').eq('id', deleteTarget.buku_id).single();
-        if (bukuData) {
-          await supabase.from('perpus_buku')
-            .update({ jumlah_tersedia: bukuData.jumlah_tersedia + 1 })
-            .eq('id', deleteTarget.buku_id);
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `Peminjaman "${target.buku?.judul ?? '-'}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('perpus_peminjaman').delete().eq('id', target.id);
+          if (error) throw error;
+
+          // Side effect: kembalikan stok buku
+          if (target.status === 'Dipinjam' || target.status === 'Terlambat') {
+            const { data: bukuData } = await supabase.from('perpus_buku')
+              .select('jumlah_tersedia').eq('id', target.buku_id).single();
+            if (bukuData) {
+              await supabase.from('perpus_buku')
+                .update({ jumlah_tersedia: bukuData.jumlah_tersedia + 1 })
+                .eq('id', target.buku_id);
+            }
+          }
+
+          await logActivity({
+            aksi: 'DELETE', modul: MODUL_PERPUS, targetId: target.id,
+            deskripsi: `Hapus peminjaman: ${target.buku?.judul} — ${target.anggota?.nama_lengkap}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
         }
-      }
-
-      await logActivity({
-        aksi: 'DELETE', modul: MODUL_PERPUS, targetId: deleteTarget.id,
-        deskripsi: `Hapus peminjaman: ${deleteTarget.buku?.judul} — ${deleteTarget.anggota?.nama_lengkap}`,
-      });
-
-      showToast('success', 'Peminjaman dihapus');
-      setDeleteTarget(null); fetchAll();
-    } catch (err: any) { showToast('error', 'Gagal hapus: ' + (err.message || 'Error')); }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const exportHeaders = [

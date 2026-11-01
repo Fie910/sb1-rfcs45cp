@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { logActivity } from '@/utils/audit';
 
 // =============================================================================
@@ -154,23 +154,36 @@ export function useKategoriManager<T extends KategoriBase>({
   // ---------------------------------------------------------------------------
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase.from(tableName).delete().eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: logModul,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus ${label}: ${deleteTarget.nama}`,
-      });
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-      showToast('success', `${label} dihapus`);
-      setDeleteTarget(null);
-      onChanged();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    showToastUndo({
+      message: `${label} "${target.nama}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from(tableName).delete().eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: logModul,
+            targetId: target.id,
+            deskripsi: `Hapus ${label}: ${target.nama}`,
+          });
+
+          onChanged();
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          onChanged();
+        }
+      },
+      onUndo: () => {
+        onChanged();
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   return {

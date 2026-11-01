@@ -19,7 +19,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Modal } from '@/components/Modal';
 import { getTodayDateWib, getHariFromDateString, formatDateWibLong } from '@/utils/date';
@@ -367,42 +367,57 @@ export function HariLiburPage() {
   // DELETE
   // ==========================================================================
   const handleDelete = async (item: HariLibur) => {
-    const ok = await confirm({
-      title: 'Hapus Hari Libur',
-      message: `Hapus hari libur "${item.keterangan}" pada ${formatDateWibLong(item.tanggal)}?`,
-      variant: 'danger',
-      confirmLabel: 'Ya, Hapus',
-    });
-    if (!ok) return;
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== item.id));
 
-    try {
-      const { error } = await supabase.from('hari_liburs').delete().eq('id', item.id);
-      if (error) throw error;
-      showToast('success', 'Hari libur berhasil dihapus');
-      fetchData();
-    } catch (err: any) {
-      showToast('error', 'Gagal menghapus: ' + (err.message || 'Error tidak diketahui'));
-    }
+    showToastUndo({
+      message: `Hari libur "${item.keterangan}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('hari_liburs').delete().eq('id', item.id);
+          if (error) throw error;
+        } catch (err: any) {
+          showToast('error', 'Gagal menghapus: ' + (err.message || 'Error tidak diketahui'));
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [item, ...prev];
+          return restored.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleDeleteGroup = async (group: LiburGroup) => {
-    const ok = await confirm({
-      title: 'Hapus Semua Hari Libur',
-      message: `Hapus ${group.count} hari libur "${group.keterangan}"?`,
-      variant: 'danger',
-      confirmLabel: `Ya, Hapus ${group.count} Hari`,
-    });
-    if (!ok) return;
+    const ids = new Set(group.items.map((i) => i.id));
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => !ids.has(x.id)));
 
-    try {
-      const ids = group.items.map((i) => i.id);
-      const { error } = await supabase.from('hari_liburs').delete().in('id', ids);
-      if (error) throw error;
-      showToast('success', `${group.count} hari libur berhasil dihapus`);
-      fetchData();
-    } catch (err: any) {
-      showToast('error', 'Gagal menghapus: ' + (err.message || 'Error tidak diketahui'));
-    }
+    showToastUndo({
+      message: `${group.count} hari libur "${group.keterangan}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const idList = group.items.map((i) => i.id);
+          const { error } = await supabase.from('hari_liburs').delete().in('id', idList);
+          if (error) throw error;
+        } catch (err: any) {
+          showToast('error', 'Gagal menghapus: ' + (err.message || 'Error tidak diketahui'));
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [...group.items, ...prev];
+          return restored.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // ==========================================================================

@@ -9,7 +9,7 @@ import {
   Save, Info, Sparkles, Archive, Activity, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
@@ -216,47 +216,56 @@ export function ModalDetailArsip({
     }
   };
 
-  // ==========================================================================
-  // DELETE — dokumen (soft) atau versi
-  // ==========================================================================
   const handleDelete = async () => {
     if (!deleteTarget || !dokumen) return;
 
-    try {
-      if (deleteTarget.type === 'dokumen') {
-        // Soft delete
-        const { error } = await supabase
-          .from('arsip_dokumen')
-          .update({
-            deleted_at: new Date().toISOString(),
-            deleted_by: currentGuruId,
-          })
-          .eq('id', dokumen.id);
-        if (error) throw error;
+    const target = deleteTarget;
+    const doc = dokumen;
+    setDeleteTarget(null);
+    onClose();
 
-        await supabase.from('arsip_aktivitas').insert({
-          dokumen_id: dokumen.id,
-          guru_id: currentGuruId,
-          aksi: 'Hapus',
-          catatan: `Soft delete: ${dokumen.judul}`,
-        });
+    showToastUndo({
+      message: `"${target.label}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          if (target.type === 'dokumen') {
+            // Soft delete
+            const { error } = await supabase
+              .from('arsip_dokumen')
+              .update({
+                deleted_at: new Date().toISOString(),
+                deleted_by: currentGuruId,
+              })
+              .eq('id', doc.id);
+            if (error) throw error;
 
-        await logActivity({
-          aksi: 'DELETE',
-          modul: AUDIT_MODUL.HRIS,
-          targetId: dokumen.id,
-          deskripsi: `Hapus arsip: ${dokumen.judul}`,
-        });
+            await supabase.from('arsip_aktivitas').insert({
+              dokumen_id: doc.id,
+              guru_id: currentGuruId,
+              aksi: 'Hapus',
+              catatan: `Soft delete: ${doc.judul}`,
+            });
 
-        showToast('success', 'Dokumen dihapus');
+            await logActivity({
+              aksi: 'DELETE',
+              modul: AUDIT_MODUL.HRIS,
+              targetId: doc.id,
+              deskripsi: `Hapus arsip: ${doc.judul}`,
+            });
+
+            onRefresh();
+          }
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          onRefresh();
+        }
+      },
+      onUndo: () => {
         onRefresh();
-        onClose();
-      }
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    } finally {
-      setDeleteTarget(null);
-    }
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // ==========================================================================

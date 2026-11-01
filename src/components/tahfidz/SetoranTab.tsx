@@ -8,7 +8,7 @@ import {
   Calendar, User, Award, Filter, BookOpen, Info,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalSetoran } from './ModalSetoran';
@@ -167,40 +167,39 @@ export function SetoranTab({ surahMap, halamanMap, isManager }: Props) {
   };
 
   const handleDelete = async (item: TahfidzSetoranWithRelations) => {
-    // ✅ Konfirmasi lebih detail kalau per-ayat
     const isPerAyat = setoranAyatIds.has(item.id);
-    const messageExtra = isPerAyat
-      ? ' Semua penilaian per ayat akan ikut terhapus.'
-      : '';
 
-    const ok = await confirm({
-      title: 'Hapus Setoran',
-      message: `Yakin hapus setoran ${item.siswa?.nama_lengkap} tanggal ${formatTanggalShort(item.tanggal)}?${messageExtra}`,
-      variant: 'danger',
+    setList((prev) => prev.filter((x) => x.id !== item.id));
+
+    showToastUndo({
+      message: `Setoran "${item.siswa?.nama_lengkap ?? 'Siswa'}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          // Setoran ayat punya ON DELETE CASCADE ke tahfidz_setoran
+          // Jadi hapus setoran utama otomatis hapus penilaian per ayat
+          const { error } = await supabase
+            .from('tahfidz_setoran')
+            .delete()
+            .eq('id', item.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.TAHFIDZ,
+            targetId: item.id,
+            deskripsi: `Hapus setoran tahfidz: ${item.siswa?.nama_lengkap}${isPerAyat ? ' (per ayat)' : ''}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll(true);
+        }
+      },
+      onUndo: () => {
+        setList((prev) => [item, ...prev].sort((a, b) => (b.tanggal || '').localeCompare(a.tanggal || '')));
+        showToast('info', 'Penghapusan dibatalkan');
+      },
     });
-    if (!ok) return;
-
-    try {
-      // Setoran ayat punya ON DELETE CASCADE ke tahfidz_setoran
-      // Jadi hapus setoran utama otomatis hapus penilaian per ayat
-      const { error } = await supabase
-        .from('tahfidz_setoran')
-        .delete()
-        .eq('id', item.id);
-      if (error) throw error;
-
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.TAHFIDZ,
-        targetId: item.id,
-        deskripsi: `Hapus setoran tahfidz: ${item.siswa?.nama_lengkap}${isPerAyat ? ' (per ayat)' : ''}`,
-      });
-
-      showToast('success', 'Setoran dihapus');
-      fetchAll(true);
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
   };
 
   const handleSaved = () => {

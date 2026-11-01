@@ -12,7 +12,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { JadwalPiketWithRelations, Guru, HariMinggu } from '@/types/database';
@@ -136,14 +136,39 @@ export function JadwalPiketPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from('jadwal_pikets').delete().eq('id', deleteTarget.id);
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Jadwal piket dihapus');
-      fetchData();
-    }
+
+    const target = deleteTarget;
     setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    const namaGuru = target.gurus?.nama_lengkap ?? '-';
+    showToastUndo({
+      message: `"Piket ${target.hari_piket} (${namaGuru})" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('jadwal_pikets').delete().eq('id', target.id);
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) => {
+            const orderA = HARI_ORDER[a.hari_piket] || 99;
+            const orderB = HARI_ORDER[b.hari_piket] || 99;
+            if (orderA !== orderB) return orderA - orderB;
+            const nameA = a.gurus?.nama_lengkap || '';
+            const nameB = b.gurus?.nama_lengkap || '';
+            return nameA.localeCompare(nameB);
+          });
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   if (loading) {

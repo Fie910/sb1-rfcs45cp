@@ -7,7 +7,7 @@ import {
   ExternalLink, UploadCloud, Paperclip, Building2, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
@@ -226,25 +226,39 @@ export function PekerjaanSection({ guruId, editable }: Props) {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase
-        .from('hris_pekerjaan')
-        .delete()
-        .eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.HRIS,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus riwayat pekerjaan: ${deleteTarget.nama_perusahaan}`,
-      });
-      showToast('success', 'Riwayat pekerjaan dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `Pekerjaan "${target.nama_perusahaan}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase
+            .from('hris_pekerjaan')
+            .delete()
+            .eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.HRIS,
+            targetId: target.id,
+            deskripsi: `Hapus riwayat pekerjaan: ${target.nama_perusahaan}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => [target, ...prev].sort((a, b) => (b.tanggal_mulai || '').localeCompare(a.tanggal_mulai || '')));
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // Ringkasan: total tahun pengalaman (kasar, dari semua pekerjaan)

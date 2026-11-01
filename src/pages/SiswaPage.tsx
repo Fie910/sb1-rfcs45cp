@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import type { SiswaWithKelas, Kelas } from '@/types/database';
@@ -185,32 +185,48 @@ export function SiswaPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
 
-    // Simpan info untuk log sebelum dihapus
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setSiswaList((prev) => prev.filter((x) => x.id !== target.id));
+
     const infoSiswa = {
-      id: deleteTarget.id,
-      nama: deleteTarget.nama_lengkap,
-      nisn: deleteTarget.nisn,
-      kelas: deleteTarget.kelas?.nama_kelas || '-',
+      id: target.id,
+      nama: target.nama_lengkap,
+      nisn: target.nisn,
+      kelas: target.kelas?.nama_kelas || '-',
     };
 
-    const { error } = await supabase.from('siswas').delete().eq('id', deleteTarget.id);
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Data siswa berhasil dihapus');
-
-      // Audit log — DELETE siswa
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.SISWA,
-        targetId: infoSiswa.id,
-        deskripsi: `Hapus data siswa: ${infoSiswa.nama} (NISN: ${infoSiswa.nisn}) — Kelas: ${infoSiswa.kelas}`,
-        metadata: { nisn: infoSiswa.nisn, kelas: infoSiswa.kelas },
-      });
-
-      fetchData();
-    }
-    setDeleteTarget(null);
+    showToastUndo({
+      message: `"${target.nama_lengkap}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('siswas').delete().eq('id', target.id);
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchData();
+        } else {
+          // Audit log — DELETE siswa
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.SISWA,
+            targetId: infoSiswa.id,
+            deskripsi: `Hapus data siswa: ${infoSiswa.nama} (NISN: ${infoSiswa.nisn}) — Kelas: ${infoSiswa.kelas}`,
+            metadata: { nisn: infoSiswa.nisn, kelas: infoSiswa.kelas },
+          });
+        }
+      },
+      onUndo: () => {
+        setSiswaList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (a.nama_lengkap || '').localeCompare(b.nama_lengkap || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // --- FITUR IMPORT DATASHEET ---

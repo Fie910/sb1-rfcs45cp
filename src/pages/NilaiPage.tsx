@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ClipboardList, Loader2, Save, Trash2, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { Kelas, Siswa, NilaiWithRelations, MataPelajaran } from '@/types/database';
@@ -129,14 +129,41 @@ export function NilaiPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from('nilais').delete().eq('id', deleteTarget.id);
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Nilai berhasil dihapus');
-      setNilaiList(nilaiList.filter((n) => n.id !== deleteTarget.id));
-    }
+
+    const target = deleteTarget;
     setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setNilaiList((prev) => prev.filter((n) => n.id !== target.id));
+
+    const mapel = getMapelName(target);
+    showToastUndo({
+      message: `Nilai "${mapel}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('nilais').delete().eq('id', target.id);
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          if (selectedSiswa) {
+            const { data } = await supabase
+              .from('nilais')
+              .select('*, siswas(id, nama_lengkap, nisn), gurus(id, nama_lengkap), mata_pelajarans(id, nama_mapel)')
+              .eq('siswa_id', selectedSiswa)
+              .order('created_at', { ascending: false });
+            if (data) setNilaiList(data as NilaiWithRelations[]);
+          }
+        }
+      },
+      onUndo: () => {
+        setNilaiList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const getMapelName = (n: NilaiWithRelations): string =>

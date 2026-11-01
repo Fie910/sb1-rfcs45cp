@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { Guru, Kelas, HariMinggu, MataPelajaran } from '@/types/database';
@@ -202,14 +202,38 @@ export function JadwalKbmJpsPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from('jadwal_kbmjps').delete().eq('id', deleteTarget.id);
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Jadwal KBM JPS berhasil dihapus');
-      fetchData();
-    }
+
+    const target = deleteTarget;
     setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    const mapel = target.mata_pelajarans?.nama_mapel ?? target.mata_pelajaran ?? 'JPS';
+    showToastUndo({
+      message: `"Jadwal ${mapel} (${target.hari} Jam ke-${target.jam_ke})" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('jadwal_kbmjps').delete().eq('id', target.id);
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) => {
+            const orderA = HARI_ORDER[a.hari] || 99;
+            const orderB = HARI_ORDER[b.hari] || 99;
+            if (orderA !== orderB) return orderA - orderB;
+            if (a.jam_ke !== b.jam_ke) return a.jam_ke - b.jam_ke;
+            return (a.waktu_mulai || '00:00').localeCompare(b.waktu_mulai || '00:00');
+          });
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // --- FITUR IMPORT DATASHEET ---

@@ -17,7 +17,7 @@ import { formatNomorSurat } from '../utils/formatSurat';
 import { useAuth } from '../context/AuthContext';
 import { PrintDisposisi } from '../components/PrintDisposisi';
 import { SearchableSelect } from '../components/SearchableSelect';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '../lib/supabase';
 import { logActivity, AUDIT_MODUL } from '../utils/audit';
@@ -253,21 +253,27 @@ export const SuratPage: React.FC = () => {
   };
 
   const handleDeleteKategori = async (id: string) => {
-    const ok = await confirm({
-      title: 'Hapus Kode Perihal',
-      message: 'Apakah Anda yakin ingin menghapus Kode Perihal ini? Tindakan ini tidak dapat dibatalkan.',
-      variant: 'danger',
-      confirmLabel: 'Ya, Hapus',
-    });
-    if (!ok) return;
+    const target = kategoriList.find((x) => x.id === id);
+    if (!target) return;
 
-    try {
-      await deleteKategoriSurat(id);
-      showToast('success', 'Kode Perihal berhasil dihapus');
-      loadData();
-    } catch (err) {
-      showToast('error', 'Gagal menghapus kategori. Kategori mungkin sedang digunakan oleh data surat.');
-    }
+    setKategoriList((prev) => prev.filter((x) => x.id !== id));
+
+    showToastUndo({
+      message: `Kode Perihal "${target.nama_kategori}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          await deleteKategoriSurat(id);
+        } catch (err) {
+          showToast('error', 'Gagal menghapus kategori. Kategori mungkin sedang digunakan oleh data surat.');
+          loadData();
+        }
+      },
+      onUndo: () => {
+        setKategoriList((prev) => [target, ...prev].sort((a, b) => a.kode.localeCompare(b.kode)));
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // =========================================================================
@@ -495,53 +501,51 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
   };
 
   const handleDeleteSurat = async (id: string) => {
+    const target = suratList.find((x) => x.id === id);
+    if (!target) return;
+
     const { data: disposisi, error: errCek } = await supabase
       .from('disposisi_surat')
       .select('id')
       .eq('surat_id', id);
 
     if (errCek) console.error('Gagal cek disposisi:', errCek);
-
     const jumlahDisposisi = disposisi?.length ?? 0;
-    const pesan =
-      jumlahDisposisi > 0
-        ? `Surat ini memiliki ${jumlahDisposisi} disposisi terkait. Jika Anda hapus, semua disposisi juga akan hilang dan tidak dapat dikembalikan. Lanjutkan?`
-        : 'Apakah Anda yakin ingin menghapus surat ini? Tindakan ini tidak dapat dibatalkan.';
 
-    const ok = await confirm({
-      title: 'Hapus Surat',
-      message: pesan,
-      variant: 'danger',
-      confirmLabel: 'Ya, Hapus',
+    setSuratList((prev) => prev.filter((x) => x.id !== id));
+
+    showToastUndo({
+      message: `Surat "${target.perihal}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          if (jumlahDisposisi > 0) {
+            const { error: errDisposisi } = await supabase
+              .from('disposisi_surat')
+              .delete()
+              .eq('surat_id', id);
+            if (errDisposisi) throw errDisposisi;
+          }
+
+          await deleteSurat(id);
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: MODUL_SURAT,
+            targetId: id,
+            deskripsi: `Hapus surat ${activeTab} beserta ${jumlahDisposisi} disposisi terkait`,
+          });
+        } catch (err) {
+          console.error('Gagal menghapus surat:', err);
+          showToast('error', 'Gagal menghapus surat');
+          loadData();
+        }
+      },
+      onUndo: () => {
+        setSuratList((prev) => [target, ...prev].sort((a, b) => (b.tanggal_surat || '').localeCompare(a.tanggal_surat || '')));
+        showToast('info', 'Penghapusan dibatalkan');
+      },
     });
-    if (!ok) return;
-
-    try {
-      if (jumlahDisposisi > 0) {
-        const { error: errDisposisi } = await supabase
-          .from('disposisi_surat')
-          .delete()
-          .eq('surat_id', id);
-        if (errDisposisi) throw errDisposisi;
-      }
-
-      await deleteSurat(id);
-
-      await logActivity({
-        aksi: 'DELETE',
-        modul: MODUL_SURAT,
-        targetId: id,
-        deskripsi: `Hapus surat ${activeTab} beserta ${jumlahDisposisi} disposisi terkait`,
-      });
-
-      showToast('success', jumlahDisposisi > 0
-        ? `Surat dan ${jumlahDisposisi} disposisi berhasil dihapus`
-        : 'Surat berhasil dihapus');
-      loadData();
-    } catch (err) {
-      console.error('Gagal menghapus surat:', err);
-      showToast('error', 'Gagal menghapus surat');
-    }
   };
 
   // =========================================================================
@@ -641,26 +645,31 @@ const uploadSuratBerkas = async (file: File): Promise<string | null> => {
   };
 
   const handleDeleteDisposisi = async (id: string) => {
-    const ok = await confirm({
-      title: 'Hapus Disposisi',
-      message: 'Apakah Anda yakin ingin menghapus instruksi disposisi ini?',
-      variant: 'danger',
-      confirmLabel: 'Ya, Hapus',
+    const target = disposisiList.find((x) => x.id === id);
+    if (!target) return;
+
+    setDisposisiList((prev) => prev.filter((x) => x.id !== id));
+
+    showToastUndo({
+      message: `Disposisi "${target.instruksi || 'Instruksi'}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('disposisi_surat').delete().eq('id', id);
+          if (error) throw error;
+        } catch (err: any) {
+          showToast('error', 'Gagal menghapus disposisi: ' + (err.message || 'Error tidak diketahui'));
+          if (selectedSuratForDisposisi?.id) {
+            const updated = await getDisposisiBySuratId(selectedSuratForDisposisi.id);
+            setDisposisiList(updated);
+          }
+        }
+      },
+      onUndo: () => {
+        setDisposisiList((prev) => [target, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
     });
-    if (!ok) return;
-
-    try {
-      const { error } = await supabase.from('disposisi_surat').delete().eq('id', id);
-      if (error) throw error;
-
-      if (selectedSuratForDisposisi?.id) {
-        const updated = await getDisposisiBySuratId(selectedSuratForDisposisi.id);
-        setDisposisiList(updated);
-      }
-      showToast('success', 'Disposisi berhasil dihapus');
-    } catch (err: any) {
-      showToast('error', 'Gagal menghapus disposisi: ' + (err.message || 'Error tidak diketahui'));
-    }
   };
 
   const handleStatusDisposisi = async (id: string, status: 'PENDING' | 'PROSES' | 'SELESAI') => {

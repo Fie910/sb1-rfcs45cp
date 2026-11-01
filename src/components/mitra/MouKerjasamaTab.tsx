@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { ModalMou } from './ModalMou';
@@ -152,25 +152,46 @@ export function MouKerjasamaTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase
-        .from('mou')
-        .delete()
-        .eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.HRIS,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus MoU: ${deleteTarget.nomor_mou} — ${deleteTarget.mitra_nama}`,
-      });
-      showToast('success', 'MoU dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    const namaTarget = target.nomor_mou ?? target.mitra_nama;
+    showToastUndo({
+      message: `MoU "${namaTarget}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase
+            .from('mou')
+            .delete()
+            .eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.HRIS,
+            targetId: target.id,
+            deskripsi: `Hapus MoU: ${target.nomor_mou} — ${target.mitra_nama}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (a.tanggal_selesai || '').localeCompare(b.tanggal_selesai || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleCopyNomor = (nomor: string | null) => {

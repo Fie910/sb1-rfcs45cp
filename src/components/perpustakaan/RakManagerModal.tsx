@@ -7,7 +7,7 @@ import {
   Library, Power, Search, MapPin,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { INPUT_CLASS, LABEL_CLASS } from './shared';
@@ -119,23 +119,36 @@ export function RakManagerModal({ open, onClose, rakList, onChanged }: Props) {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase.from('perpus_rak').delete().eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: MODUL_PERPUS,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus rak perpus: ${deleteTarget.nama}`,
-      });
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-      showToast('success', 'Rak dihapus');
-      setDeleteTarget(null);
-      onChanged();
-    } catch (err: any) {
-      showToast('error', 'Gagal: ' + (err.message || 'Error'));
-    }
+    showToastUndo({
+      message: `Rak "${target.nama}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('perpus_rak').delete().eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: MODUL_PERPUS,
+            targetId: target.id,
+            deskripsi: `Hapus rak perpus: ${target.nama}`,
+          });
+
+          onChanged();
+        } catch (err: any) {
+          showToast('error', 'Gagal: ' + (err.message || 'Error'));
+          onChanged();
+        }
+      },
+      onUndo: () => {
+        onChanged();
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleToggleAktif = async (r: PerpusRak) => {

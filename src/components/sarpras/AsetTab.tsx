@@ -21,7 +21,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
@@ -221,26 +221,45 @@ export function AsetTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase
-        .from('inventaris_sarpras')
-        .delete()
-        .eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.SARPRAS,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus aset: ${deleteTarget.nama_aset} (${deleteTarget.kode_aset})`,
-      });
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-      showToast('success', 'Aset berhasil dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    // Optimistic: hilangkan dari list
+    setAsetList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `"${target.nama_aset}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase
+            .from('inventaris_sarpras')
+            .delete()
+            .eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.SARPRAS,
+            targetId: target.id,
+            deskripsi: `Hapus aset: ${target.nama_aset} (${target.kode_aset})`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setAsetList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // Regenerate QR token (anti-forgery)

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
@@ -200,20 +200,39 @@ export function InventarisasiTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase.from('perpus_inventarisasi')
-        .delete().eq('id', deleteTarget.id);
-      if (error) throw error;
-      await logActivity({
-        aksi: 'DELETE', modul: MODUL_PERPUS, targetId: deleteTarget.id,
-        deskripsi: `Hapus inventarisasi ${deleteTarget.tanggal}`,
-      });
-      showToast('success', 'Inventarisasi dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal: ' + (err.message || 'Error'));
-    }
+
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `Inventarisasi "${target.tanggal}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('perpus_inventarisasi')
+            .delete().eq('id', target.id);
+          if (error) throw error;
+          await logActivity({
+            aksi: 'DELETE', modul: MODUL_PERPUS, targetId: target.id,
+            deskripsi: `Hapus inventarisasi ${target.tanggal}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // ==========================================================================

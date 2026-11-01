@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
@@ -201,15 +201,38 @@ export function RujukanTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase.from('bk_rujukan').delete().eq('id', deleteTarget.id);
-      if (error) throw error;
-      await logActivity({ aksi: 'DELETE', modul: AUDIT_MODUL.BK, targetId: deleteTarget.id, deskripsi: `Hapus rujukan` });
-      showToast('success', 'Rujukan dihapus');
-      setDeleteTarget(null); fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    const namaTarget = target.siswa?.nama_lengkap ?? target.alasan;
+    showToastUndo({
+      message: `Rujukan "${namaTarget}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('bk_rujukan').delete().eq('id', target.id);
+          if (error) throw error;
+          await logActivity({ aksi: 'DELETE', modul: AUDIT_MODUL.BK, targetId: target.id, deskripsi: `Hapus rujukan` });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (b.tanggal_rujuk || '').localeCompare(a.tanggal_rujuk || '') ||
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const resetFilter = () => { setSearch(''); setFilterStatus(''); setFilterPrioritas(''); };

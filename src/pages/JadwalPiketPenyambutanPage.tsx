@@ -3,7 +3,7 @@ import { Plus, Trash2, Calendar, UserPlus, Loader2, ShieldAlert } from 'lucide-r
 import { supabase } from '@/lib/supabase';
 import { useCanAccess } from '@/hooks/useCanAccess';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 
 const HARI_LIST = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -70,25 +70,30 @@ export function JadwalPiketPenyambutanPage() {
   };
 
   const handleHapusJadwal = async (id: number) => {
-    const ok = await confirm({
-      title: 'Hapus Petugas Piket',
-      message: 'Apakah Anda yakin ingin menghapus guru ini dari jadwal piket penyambutan?',
-      variant: 'danger',
-      confirmLabel: 'Ya, Hapus',
+    const target = jadwalList.find((x) => x.id === id);
+    if (!target) return;
+
+    setJadwalList((prev) => prev.filter((x) => x.id !== id));
+
+    showToastUndo({
+      message: `Petugas "${target.gurus?.nama_lengkap ?? 'Guru'}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase
+          .from('jadwal_piket_penyambutans')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchJadwal();
+        }
+      },
+      onUndo: () => {
+        setJadwalList((prev) => [target, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
     });
-    if (!ok) return;
-
-    const { error } = await supabase
-      .from('jadwal_piket_penyambutans')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Guru berhasil dihapus dari jadwal');
-      fetchJadwal();
-    }
   };
 
   if (!canAccess) {

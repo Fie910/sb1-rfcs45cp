@@ -14,7 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Modal } from '@/components/Modal';
 import { ModalTemplateRutin } from '@/components/ModalTemplateRutin';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
   getTodayDateWib, getFirstDayOfMonthWib, formatTanggalDDMMYYYY,
@@ -453,36 +453,38 @@ export function TodoListPage() {
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
-    const ok = await confirm({
-      title: 'Hapus Jadwal SOP Rutin',
-      message:
-        'Apakah Anda yakin ingin menghapus jadwal SOP rutin ini? Tindakan ini tidak dapat dibatalkan.',
-      variant: 'danger',
-      confirmLabel: 'Ya, Hapus',
-    });
-    if (!ok) return;
-
     const target = templates.find((t) => t.id === templateId);
+    if (!target) return;
 
-    try {
-      const { error } = await supabase.from('todo_templates').delete().eq('id', templateId);
-      if (error) throw error;
-      setTemplates((prev) => prev.filter((t) => t.id !== templateId));
-      showToast('success', 'Jadwal SOP rutin berhasil dihapus');
+    // Optimistic: hilangkan dari list
+    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
 
-      // Audit log — DELETE SOP
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.TODO_TEMPLATE,
-        targetId: templateId,
-        deskripsi: target
-          ? `Hapus SOP Rutin "${target.judul}" (${target.tipe_rutin})`
-          : `Hapus SOP Rutin`,
-      });
-    } catch (err) {
-      console.error('Gagal menghapus SOP:', err);
-      showToast('error', 'Gagal menghapus SOP');
-    }
+    showToastUndo({
+      message: `SOP "${target.judul}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('todo_templates').delete().eq('id', templateId);
+          if (error) throw error;
+
+          // Audit log — DELETE SOP
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.TODO_TEMPLATE,
+            targetId: templateId,
+            deskripsi: `Hapus SOP Rutin "${target.judul}" (${target.tipe_rutin})`,
+          });
+        } catch (err) {
+          console.error('Gagal menghapus SOP:', err);
+          showToast('error', 'Gagal menghapus SOP');
+          fetchTemplates();
+        }
+      },
+      onUndo: () => {
+        setTemplates((prev) => [target, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleUpdateStatus = async (id: string, newStatus: StatusType) => {
@@ -509,35 +511,38 @@ export function TodoListPage() {
   };
 
   const handleDelete = async (id: string) => {
-    const ok = await confirm({
-      title: 'Hapus Tugas',
-      message: 'Apakah Anda yakin ingin menghapus tugas ini? Tindakan ini tidak dapat dibatalkan.',
-      variant: 'danger',
-      confirmLabel: 'Ya, Hapus',
-    });
-    if (!ok) return;
-
     const target = todos.find((t) => t.id === id);
+    if (!target) return;
 
-    try {
-      const { error } = await supabase.from('todos').delete().eq('id', id);
-      if (error) throw error;
-      setTodos((prev) => prev.filter((t) => t.id !== id));
-      showToast('success', 'Tugas berhasil dihapus');
+    // Optimistic: hilangkan dari list
+    setTodos((prev) => prev.filter((t) => t.id !== id));
 
-      // Audit log — DELETE tugas
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.TODO,
-        targetId: id,
-        deskripsi: target
-          ? `Hapus tugas divisi "${target.judul}"`
-          : `Hapus tugas divisi`,
-      });
-    } catch (err) {
-      console.error('Gagal menghapus tugas:', err);
-      showToast('error', 'Gagal menghapus tugas');
-    }
+    showToastUndo({
+      message: `Tugas "${target.judul}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('todos').delete().eq('id', id);
+          if (error) throw error;
+
+          // Audit log — DELETE tugas
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.TODO,
+            targetId: id,
+            deskripsi: `Hapus tugas divisi "${target.judul}"`,
+          });
+        } catch (err) {
+          console.error('Gagal menghapus tugas:', err);
+          showToast('error', 'Gagal menghapus tugas');
+          fetchTodos();
+        }
+      },
+      onUndo: () => {
+        setTodos((prev) => [target, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // Filter Tugas Sekali Jalan

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import {
@@ -252,21 +252,34 @@ export function DokumenSection({ guruId, editable }: DokumenSectionProps) {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase.from('hris_dokumen').delete().eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE', modul: MODUL_HRIS, targetId: deleteTarget.id,
-        deskripsi: `Hapus dokumen: ${deleteTarget.nama_dokumen}`,
-      });
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-      showToast('success', 'Dokumen dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `Dokumen "${target.nama_dokumen}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase.from('hris_dokumen').delete().eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE', modul: MODUL_HRIS, targetId: target.id,
+            deskripsi: `Hapus dokumen: ${target.nama_dokumen}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => [target, ...prev]);
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleVerify = async (doc: HrisDokumen) => {

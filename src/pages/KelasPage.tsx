@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Loader2, School, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import type { KelasWithWali, Guru } from '@/types/database';
 
 export function KelasPage() {
@@ -101,14 +101,33 @@ export function KelasPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from('kelas').delete().eq('id', deleteTarget.id);
-    if (error) {
-      showToast('error', 'Gagal menghapus: ' + error.message);
-    } else {
-      showToast('success', 'Kelas berhasil dihapus');
-      setDeleteTarget(null);
-      fetchData();
-    }
+
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setKelasList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `"${target.nama_kelas}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase.from('kelas').delete().eq('id', target.id);
+        if (error) {
+          showToast('error', 'Gagal menghapus: ' + error.message);
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setKelasList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (a.nama_kelas || '').localeCompare(b.nama_kelas || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   if (loading) {

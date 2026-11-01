@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import {
@@ -162,18 +162,39 @@ export function RekapPresensiKesiswaanPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase
-      .from('presensi_siswa_kesiswaans')
-      .delete()
-      .eq('id', deleteTarget.id);
 
-    if (error) {
-      showToast('error', 'Gagal menghapus data: ' + error.message);
-    } else {
-      showToast('success', 'Catatan presensi berhasil dihapus');
-      fetchData();
-    }
+    const target = deleteTarget;
     setDeleteTarget(null);
+
+    // Optimistic: hilangkan dari list
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    const namaSiswa = target.siswas?.nama_lengkap ?? 'Siswa';
+    showToastUndo({
+      message: `"Presensi ${namaSiswa} (${target.tanggal})" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        const { error } = await supabase
+          .from('presensi_siswa_kesiswaans')
+          .delete()
+          .eq('id', target.id);
+
+        if (error) {
+          showToast('error', 'Gagal menghapus data: ' + error.message);
+          fetchData();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => {
+          const restored = [target, ...prev];
+          return restored.sort((a, b) =>
+            (b.tanggal || '').localeCompare(a.tanggal || '') ||
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        });
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const totalRecords = list.length;

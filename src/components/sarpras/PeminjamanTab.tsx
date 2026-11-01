@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { Modal, ConfirmModal } from '@/components/Modal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ExportImportButtons } from '@/components/ExportImportButtons';
@@ -323,26 +323,39 @@ export function PeminjamanTab() {
   // ============================
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase
-        .from('inventaris_peminjaman')
-        .delete()
-        .eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.SARPRAS,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus peminjaman: ${deleteTarget.aset?.nama_aset}`,
-      });
+    const target = deleteTarget;
+    setDeleteTarget(null);
 
-      showToast('success', 'Catatan peminjaman dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `Peminjaman "${target.aset?.nama_aset ?? 'Aset'}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase
+            .from('inventaris_peminjaman')
+            .delete()
+            .eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.SARPRAS,
+            targetId: target.id,
+            deskripsi: `Hapus peminjaman: ${target.aset?.nama_aset}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => [target, ...prev].sort((a, b) => (b.tanggal_pinjam || '').localeCompare(a.tanggal_pinjam || '')));
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   // ============================

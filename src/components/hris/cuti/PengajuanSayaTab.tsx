@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showToastUndo } from '@/components/Toast';
 import { ConfirmModal, Modal } from '@/components/Modal';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 import { WhatsAppButton } from './WhatsAppButton';
@@ -120,25 +120,39 @@ export function PengajuanSayaTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      const { error } = await supabase
-        .from('hris_cuti')
-        .delete()
-        .eq('id', deleteTarget.id);
-      if (error) throw error;
 
-      await logActivity({
-        aksi: 'DELETE',
-        modul: AUDIT_MODUL.HRIS,
-        targetId: deleteTarget.id,
-        deskripsi: `Hapus pengajuan: ${deleteTarget.jenis_nama ?? '-'}`,
-      });
-      showToast('success', 'Pengajuan dihapus');
-      setDeleteTarget(null);
-      fetchAll();
-    } catch (err: any) {
-      showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
-    }
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    setList((prev) => prev.filter((x) => x.id !== target.id));
+
+    showToastUndo({
+      message: `Pengajuan cuti "${target.jenis_nama ?? 'Cuti'}" dihapus`,
+      duration: 5000,
+      onCommit: async () => {
+        try {
+          const { error } = await supabase
+            .from('hris_cuti')
+            .delete()
+            .eq('id', target.id);
+          if (error) throw error;
+
+          await logActivity({
+            aksi: 'DELETE',
+            modul: AUDIT_MODUL.HRIS,
+            targetId: target.id,
+            deskripsi: `Hapus pengajuan: ${target.jenis_nama ?? '-'}`,
+          });
+        } catch (err: any) {
+          showToast('error', 'Gagal hapus: ' + (err.message || 'Error'));
+          fetchAll();
+        }
+      },
+      onUndo: () => {
+        setList((prev) => [target, ...prev].sort((a, b) => (b.tanggal_mulai || '').localeCompare(a.tanggal_mulai || '')));
+        showToast('info', 'Penghapusan dibatalkan');
+      },
+    });
   };
 
   const handleBatalkan = async (item: HrisCutiWithRelations) => {
