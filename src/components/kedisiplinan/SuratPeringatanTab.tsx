@@ -343,6 +343,7 @@ export function SuratPeringatanTab() {
                         <Pencil size={13} />
                       </button>
                       <button onClick={() => setDeleteTarget(sp)}
+                        data-haptic="warning"
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
                         title="Hapus">
                         <Trash2 size={13} />
