@@ -825,6 +825,7 @@ export function AsetTab() {
                     </button>
                     <button
                       onClick={() => setDeleteTarget(a)}
+                      data-haptic="warning"
                       className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
                       title="Hapus"
                     >
