@@ -1,98 +1,25 @@
 // src/lib/ai/dashboardInsight.ts
-// AI Insight Dashboard Kepsek — generate ringkasan kondisi sekolah via Gemini.
+// AI Insight Dashboard Kepsek — menggunakan failover otomatis dari aiProvider.
+import { generateJSON } from './aiProvider';
 
-const GEMINI_MODELS = [
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-flash',
-];
-
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
-
-// =============================================================================
-// TYPES
-// =============================================================================
 export type DashboardInsightInput = {
   stats: {
-    guruHadir: number;
-    guruTotal: number;
-    siswaHadir: number;
-    siswaTotal: number;
-    izinPending: number;
-    disposisiPending: number;
-    tahfidzSetoran: number;
-    tahfidzSiswaAktif: number;
-    tahfidzMilestone: number;
-    pelanggaranBulanIni: number;
-    spAktif: number;
-    prestasiBulanIni: number;
-    cutiPending: number;
-    dokumenExpired: number;
-    rapatBulanIni: number;
-    actionItemPending: number;
+    guruHadir: number; guruTotal: number; siswaHadir: number; siswaTotal: number;
+    izinPending: number; disposisiPending: number; tahfidzSetoran: number;
+    tahfidzSiswaAktif: number; tahfidzMilestone: number; pelanggaranBulanIni: number;
+    spAktif: number; prestasiBulanIni: number; cutiPending: number; dokumenExpired: number;
+    rapatBulanIni: number; actionItemPending: number;
   };
   alerts: { level: string; judul: string; pesan: string }[];
 };
 
 export type DashboardInsightResult = {
   ringkasan: string;
-  perhatian_khusus: {
-    kategori: string;
-    isi: string;
-    level: 'Tinggi' | 'Sedang' | 'Rendah';
-  }[];
+  perhatian_khusus: { kategori: string; isi: string; level: 'Tinggi' | 'Sedang' | 'Rendah'; }[];
   rekomendasi: string[];
   generatedAt: string;
 };
 
-// =============================================================================
-// GEMINI CALL
-// =============================================================================
-async function callGemini(prompt: string): Promise<string> {
-  if (!API_KEY) {
-    throw new Error(
-      'Gemini API key belum diset. Hubungi administrator untuk setup VITE_GEMINI_API_KEY.'
-    );
-  }
-
-  let lastErr: Error | null = null;
-
-  for (const model of GEMINI_MODELS) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 2048,
-              responseMimeType: 'application/json',
-            },
-          }),
-        }
-      );
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) throw new Error('No content returned');
-
-      return text;
-    } catch (err: any) {
-      lastErr = err;
-      console.warn(`[dashboard-insight] Model ${model} failed:`, err.message);
-    }
-  }
-
-  throw lastErr ?? new Error('Semua model AI gagal');
-}
-
-// =============================================================================
-// MAIN
-// =============================================================================
 export async function generateDashboardInsight(
   input: DashboardInsightInput
 ): Promise<DashboardInsightResult> {
@@ -152,20 +79,22 @@ ATURAN PENTING:
 5. Jangan mengarang data yang tidak ada di input.
 6. Output HARUS valid JSON.`;
 
-  const raw = await callGemini(prompt);
+  try {
+    // ✅ Memanggil aiProvider (akan otomatis mencoba Gemini -> DeepSeek -> Groq)
+    const { data } = await generateJSON<DashboardInsightResult>({
+      prompt,
+      temperature: 0.4,
+      maxTokens: 2048,
+    });
 
-  const cleaned = raw
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
-
-  const parsed = JSON.parse(cleaned);
-
-  return {
-    ringkasan: parsed.ringkasan ?? '',
-    perhatian_khusus: Array.isArray(parsed.perhatian_khusus) ? parsed.perhatian_khusus : [],
-    rekomendasi: Array.isArray(parsed.rekomendasi) ? parsed.rekomendasi : [],
-    generatedAt: new Date().toISOString(),
-  };
+    return {
+      ringkasan: data.ringkasan ?? '',
+      perhatian_khusus: Array.isArray(data.perhatian_khusus) ? data.perhatian_khusus : [],
+      rekomendasi: Array.isArray(data.rekomendasi) ? data.rekomendasi : [],
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    console.error('[dashboard-insight]', err);
+    throw new Error('Gagal generate insight: ' + err.message);
+  }
 }

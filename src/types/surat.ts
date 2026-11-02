@@ -24,6 +24,9 @@ export interface Surat {
   tanggal_diterima_atau_dikirim?: string;
   file_url?: string | null;
   siswa_id?: number | null;
+  metadata?: any;
+  verification_token?: string;
+  status?: 'DRAFT' | 'FINAL';
 
   // Bukti Ekspedisi (Surat Keluar)
   nama_penerima_surat?: string | null;

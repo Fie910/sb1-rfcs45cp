@@ -1,48 +1,132 @@
 // src/components/surat/ModalSuratOtomatis.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Sparkles, Loader2, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { showToast } from '@/components/Toast';
 import { generateSuratOtomatisPDF, type TemplateType } from '@/lib/pdf/generateSuratOtomatisPDF';
 import { formatNomorSurat } from '@/utils/formatSurat';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import type { KategoriSurat } from '@/types/surat';
+import type { KategoriSurat, Surat } from '@/types/surat';
 import { getNextUrutanSurat } from '@/services/suratService';
 import { logActivity, AUDIT_MODUL } from '@/utils/audit';
 
-type Props = { open: boolean; onClose: () => void; onSuccess: () => void; kategoriList: KategoriSurat[]; };
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  kategoriList: KategoriSurat[];
+  editData?: Surat | null; // ✅ PROP BARU UNTUK EDIT
+};
 
-const emptyData = { tujuan: '', lampiran: '', isi_surat: '', isi_penutup: '', catatan: '', pihak_nama: '', pihak_identitas: '', pemberi_nama: '', pemberi_jabatan: '', pemberi_instansi: '', penerima_nama: '', penerima_jabatan: '', penerima_instansi: '', tugas_sebagai: '', hari_tanggal: '', waktu: '', tempat: '', sk_tentang: '', sk_menimbang: '', sk_mengingat: '', sk_memperhatikan: '', sk_memutuskan: '', kepada: '', dari: '', sifat: '', hari: '', tanggal: '', bulan: '', tahun: '', pihak1_nama: '', pihak1_jabatan: '', pihak2_nama: '', pihak2_jabatan: '' };
+const emptyData = {
+  tujuan: '', lampiran: '', isi_surat: '', isi_penutup: '', catatan: '',
+  pihak_nama: '', pihak_identitas: '', pemberi_nama: '', pemberi_jabatan: '',
+  pemberi_instansi: '', penerima_nama: '', penerima_jabatan: '', penerima_instansi: '',
+  tugas_sebagai: '', hari_tanggal: '', waktu: '', tempat: '', sk_tentang: '',
+  sk_menimbang: '', sk_mengingat: '', sk_memperhatikan: '', sk_memutuskan: '',
+  kepada: '', dari: '', sifat: '', hari: '', tanggal: '', bulan: '', tahun: '',
+  pihak1_nama: '', pihak1_jabatan: '', pihak2_nama: '', pihak2_jabatan: ''
+};
 
-export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: Props) {
+export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList, editData }: Props) {
   const [loading, setLoading] = useState(false);
   const [templateType, setTemplateType] = useState<TemplateType>('UNDANGAN');
-  const [form, setForm] = useState({ kategori_id: '', nomor_surat: '', tanggal_surat: new Date().toISOString().split('T')[0], perihal: '', ...emptyData });
+  const [form, setForm] = useState({
+    kategori_id: '', nomor_surat: '', tanggal_surat: new Date().toISOString().split('T')[0],
+    perihal: '', ...emptyData
+  });
   const [isNomorManual, setIsNomorManual] = useState(false);
+
+  // ✅ Load data lama saat mode Edit dibuka
+  useEffect(() => {
+    if (open && editData?.metadata) {
+      setTemplateType(editData.metadata.template_type);
+      setForm(editData.metadata.form_data);
+    } else if (open) {
+      setTemplateType('UNDANGAN');
+      setForm({
+        kategori_id: '', nomor_surat: '', tanggal_surat: new Date().toISOString().split('T')[0],
+        perihal: '', ...emptyData
+      });
+      setIsNomorManual(false);
+    }
+  }, [open, editData]);
 
   const handleKategoriChange = async (katId: string) => {
     const kat = kategoriList.find(k => k.id === katId); if (!kat) return;
     setForm(prev => ({ ...prev, kategori_id: katId }));
-    if (!isNomorManual) { const nextUrutan = await getNextUrutanSurat('KELUAR'); const autoNomor = formatNomorSurat(nextUrutan, kat.kode, 'SMK-KHAWM', form.tanggal_surat); setForm(prev => ({ ...prev, nomor_surat: autoNomor })); }
+    if (!isNomorManual) {
+      const nextUrutan = await getNextUrutanSurat('KELUAR');
+      const autoNomor = formatNomorSurat(nextUrutan, kat.kode, 'SMK-KHAWM', form.tanggal_surat);
+      setForm(prev => ({ ...prev, nomor_surat: autoNomor }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nomor_surat.trim() || !form.perihal.trim()) { showToast('error', 'Nomor dan Perihal wajib diisi'); return; }
+    if (!form.nomor_surat.trim() || !form.perihal.trim()) {
+      showToast('error', 'Nomor dan Perihal wajib diisi');
+      return;
+    }
     setLoading(true);
+
     try {
-      const token = crypto.randomUUID();
-      const blob = await generateSuratOtomatisPDF({ nomor_surat: form.nomor_surat, tanggal_surat: form.tanggal_surat, perihal: form.perihal, verification_token: token, template_type: templateType, data: form }, 'blob') as Blob;
+      // Gunakan token lama jika sedang edit, buat baru jika surat baru
+      const token = editData?.verification_token || crypto.randomUUID();
+
+      const blob = await generateSuratOtomatisPDF({
+        nomor_surat: form.nomor_surat,
+        tanggal_surat: form.tanggal_surat,
+        perihal: form.perihal,
+        verification_token: token,
+        template_type: templateType,
+        data: form
+      }, 'blob') as Blob;
+
       const fileName = `otomatis/${token}.pdf`;
-      const { error: uploadErr } = await supabase.storage.from('dokumen-surat').upload(fileName, blob, { contentType: 'application/pdf', cacheControl: '31536000', upsert: false });
+      const { error: uploadErr } = await supabase.storage
+        .from('dokumen-surat')
+        .upload(fileName, blob, { contentType: 'application/pdf', cacheControl: '31536000', upsert: true });
       if (uploadErr) throw uploadErr;
+
       const { data: publicUrlData } = supabase.storage.from('dokumen-surat').getPublicUrl(fileName);
-      const { error: insertErr } = await supabase.from('surat').insert([{ jenis_surat: 'KELUAR', kategori_id: form.kategori_id || null, nomor_surat: form.nomor_surat, perihal: form.perihal, ringkasan: form.perihal, pengirim_atau_tujuan: form.tujuan || form.penerima_nama || form.pihak_nama || '-', tanggal_surat: form.tanggal_surat, file_url: publicUrlData.publicUrl }]);
-      if (insertErr) throw insertErr;
-      await logActivity({ aksi: 'CREATE', modul: (AUDIT_MODUL as any)?.SURAT ?? 'Surat', deskripsi: `Buat Surat ${templateType}: ${form.nomor_surat}` });
-      showToast('success', 'Surat berhasil dibuat!'); onSuccess(); onClose();
-      setForm({ kategori_id: '', nomor_surat: '', tanggal_surat: new Date().toISOString().split('T')[0], perihal: '', ...emptyData }); setIsNomorManual(false);
-    } catch (err: any) { showToast('error', 'Gagal: ' + err.message); } finally { setLoading(false); }
+      // Tambahkan cache-buster agar browser tidak menampilkan file lama
+      const publicUrlWithCache = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+      const payload = {
+        jenis_surat: 'KELUAR',
+        kategori_id: form.kategori_id || null,
+        nomor_surat: form.nomor_surat,
+        perihal: form.perihal,
+        ringkasan: form.perihal,
+        pengirim_atau_tujuan: form.tujuan || form.penerima_nama || form.pihak_nama || '-',
+        tanggal_surat: form.tanggal_surat,
+        file_url: publicUrlWithCache,
+        verification_token: token, // ✅ Simpan token
+        metadata: { template_type: templateType, form_data: form }, // ✅ Simpan isi form
+        status: editData ? editData.status : 'DRAFT',
+      };
+
+      // Mode Edit vs Create
+      if (editData?.id) {
+        const { error: updateErr } = await supabase.from('surat').update(payload).eq('id', editData.id);
+        if (updateErr) throw updateErr;
+        await logActivity({ aksi: 'UPDATE', modul: (AUDIT_MODUL as any)?.SURAT ?? 'Surat', deskripsi: `Edit Surat ${templateType}: ${form.nomor_surat}` });
+        showToast('success', 'Surat berhasil diperbarui!');
+      } else {
+        const { error: insertErr } = await supabase.from('surat').insert([payload]);
+        if (insertErr) throw insertErr;
+        await logActivity({ aksi: 'CREATE', modul: (AUDIT_MODUL as any)?.SURAT ?? 'Surat', deskripsi: `Buat Surat ${templateType}: ${form.nomor_surat}` });
+        showToast('success', 'Surat berhasil dibuat!');
+      }
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      showToast('error', 'Gagal: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!open) return null;
@@ -62,7 +146,14 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden max-h-[92vh] flex flex-col">
         <div className="flex justify-between items-center px-5 py-4 border-b border-white/10 bg-slate-900/50 shrink-0">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center"><Sparkles size={18} /></div><h3 className="font-bold text-sm sm:text-base text-white">Buat Surat Otomatis</h3></div>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center">
+              <Sparkles size={18} />
+            </div>
+            <h3 className="font-bold text-sm sm:text-base text-white">
+              {editData ? 'Edit Surat Otomatis' : 'Buat Surat Otomatis'}
+            </h3>
+          </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-200 cursor-pointer"><X className="w-5 h-5" /></button>
         </div>
 
@@ -81,7 +172,7 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <div><label className="block text-xs font-medium text-slate-400 mb-1">Kode Perihal</label><SearchableSelect options={kategoriList.map(k => ({ value: k.id, label: `[${k.kode}] ${k.nama_kategori}` }))} value={form.kategori_id} onChange={handleKategoriChange} placeholder="Pilih..." searchPlaceholder="Cari..." emptyMessage="Kosong" /></div>
+            <div><label className="block text-xs font-medium text-slate-400 mb-1">Kode Perihal</label><SearchableSelect options={kategoriList.map(k => ({ value: k.id, label: `[${k.kode}] ${k.nama_kategori}` }))} value={form.kategori_id} onChange={handleKategoriChange} placeholder="Pilih..." searchPlaceholder="Cari..." emptyMessage="Kosong" /></div>
             <div><label className="block text-xs font-medium text-slate-400 mb-1">Perihal</label><input type="text" value={form.perihal} onChange={(e) => setForm({ ...form, perihal: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl p-2.5 text-xs sm:text-sm text-slate-100 outline-none focus:border-purple-500" required /></div>
           </div>
 
@@ -91,7 +182,6 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
           </div>
 
           <div className="border-t border-white/5 pt-4 space-y-4">
-            {/* Gaya Blok Kiri */}
             {['UNDANGAN', 'PERMOHONAN', 'PEMBERITAHUAN', 'EDARAN', 'PERINGATAN', 'PENGANTAR', 'REKOMENDASI', 'BISNIS', 'DINAS'].includes(templateType) && (
               <>
                 {templateType !== 'EDARAN' && renderField('Tujuan (Yth.)', 'tujuan', 'text', 'Bapak/Ibu ...')}
@@ -103,40 +193,35 @@ export function ModalSuratOtomatis({ open, onClose, onSuccess, kategoriList }: P
               </>
             )}
 
-            {/* Gaya Tengah */}
             {['KETERANGAN', 'PERNYATAAN'].includes(templateType) && (
               <><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{renderField('Nama Pihak', 'pihak_nama', 'text', 'Nama Siswa / Guru')}{renderField('Identitas (NISN/NIP)', 'pihak_identitas', 'text', '12345678')}</div>{renderField('Isi Keterangan / Pernyataan', 'isi_surat', 'textarea', 'Yang bersangkutan adalah benar...')}{renderField('Penutup', 'isi_penutup', 'textarea', 'Demikian surat ini dibuat...')}</>
             )}
 
-            {/* Gaya Tugas */}
             {templateType === 'TUGAS' && (
               <><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{renderField('Nama Pemberi', 'pemberi_nama', 'text', 'Yunus, S.Pd.I')}{renderField('Jabatan Pemberi', 'pemberi_jabatan', 'text', 'Kepala Sekolah')}</div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{renderField('Nama Penerima', 'penerima_nama', 'text', 'Gina...')}{renderField('Jabatan Penerima', 'penerima_jabatan', 'text', 'Guru')}</div>{renderField('Tugas Sebagai', 'tugas_sebagai', 'text', 'Pengawas Silang')}<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{renderField('Hari, Tanggal', 'hari_tanggal', 'text', 'Rabu, 06 Agustus 2025')}{renderField('Waktu', 'waktu', 'text', '08.00 s.d selesai')}{renderField('Tempat', 'tempat', 'text', 'SMK Plus An-Nuur')}</div></>
             )}
 
-            {/* Gaya SK */}
             {templateType === 'SK' && (
               <>{renderField('Tentang', 'sk_tentang', 'text', 'PENGANGKATAN WALI KELAS...')}{renderField('Menimbang', 'sk_menimbang', 'textarea', 'Bahwa dalam rangka...')}{renderField('Mengingat', 'sk_mengingat', 'textarea', '1. Undang-undang...')}{renderField('Memperhatikan', 'sk_memperhatikan', 'textarea', 'Hasil Musyawarah...')}{renderField('Memutuskan', 'sk_memutuskan', 'textarea', 'PERTAMA: Menetapkan...')}{renderField('Tembusan', 'catatan', 'textarea', 'Yayasan KH. Zainal Muhsin\nArsip')}</>
             )}
 
-            {/* Gaya Nota Dinas */}
             {templateType === 'NOTA_DINAS' && (
               <><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{renderField('Yth. (Kepada)', 'kepada', 'text', 'Kepala Sekolah')}{renderField('Dari', 'dari', 'text', 'Waka Kurikulum')}</div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{renderField('Sifat', 'sifat', 'text', 'Segera')}{renderField('Lampiran', 'lampiran', 'text', '-')}</div>{renderField('Isi Nota Dinas', 'isi_surat', 'textarea', 'Sehubungan dengan...')}{renderField('Penutup', 'isi_penutup', 'textarea', 'Demikian nota dinas ini...')}</>
             )}
 
-            {/* Gaya Berita Acara */}
             {templateType === 'BERITA_ACARA' && (
               <><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{renderField('Hari', 'hari', 'text', 'Senin')}{renderField('Tanggal', 'tanggal', 'text', '21')}{renderField('Bulan', 'bulan', 'text', 'Juli')}</div>{renderField('Tahun', 'tahun', 'text', '2025')}{renderField('Tempat', 'tempat', 'text', 'Aula Sekolah')}<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{renderField('Nama Pihak Pertama', 'pihak1_nama', 'text', '...')}{renderField('Jabatan Pihak Pertama', 'pihak1_jabatan', 'text', '...')}</div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{renderField('Nama Pihak Kedua', 'pihak2_nama', 'text', '...')}{renderField('Jabatan Pihak Kedua', 'pihak2_jabatan', 'text', '...')}</div>{renderField('Isi Berita Acara', 'isi_surat', 'textarea', 'Telah dilaksanakan serah terima...')}</>
             )}
 
-            {/* Gaya Surat Kuasa */}
             {templateType === 'SURAT_KUASA' && (
-              <><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{renderField('Nama Pemberi Kuasa', 'pemberi_nama', 'text', '...')}{renderField('Jabatan', 'pemberi_jabatan', 'text', '...')}{renderField('Instansi', 'pemberi_instansi', 'text', '...')}</div><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{renderField('Nama Penerima Kuasa', 'penerima_nama', 'text', '...')}{renderField('Jabatan', 'penerima_jabatan', 'text', '...')}{renderField('Instansi', 'penerima_instansi', 'text', '...')}</div>{renderField('Isi Kuasa', 'isi_surat', 'textarea', 'Untuk mewakili...')}</>
-            )}
+              <><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{renderField('Nama Pemberi Kuasa', 'pemberi_nama', 'text', '...')}{renderField('Jabatan', 'pemberi_jabatan', 'text', '...')}{renderField('Instansi', 'pemberi_instansi', 'text', '...')}</div><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{renderField('Nama Penerima Kuasa', 'penerima_nama', 'text', '...')}{renderField('Jabatan', 'penerima_jabatan', 'text', '...')}{renderField('Instansi', 'penerima_instansi', 'text', '...')}</div>{renderField('Isi Kuasa', 'isi_surat', 'textarea', 'Untuk mewakili...')}</>)}
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
             <button type="button" onClick={onClose} className="px-4 py-2 border border-white/10 rounded-xl text-xs sm:text-sm text-slate-400 hover:bg-white/5 cursor-pointer">Batal</button>
-            <button type="submit" disabled={loading} className="inline-flex items-center gap-2 px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-purple-600/30 disabled:opacity-50 cursor-pointer">{loading ? <><Loader2 size={16} className="animate-spin" /> Membuat...</> : <><FileText size={16} /> Generate PDF</>}</button>
+            <button type="submit" disabled={loading} className="inline-flex items-center gap-2 px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-purple-600/30 disabled:opacity-50 cursor-pointer">
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Menyimpan...</> : <><FileText size={16} /> {editData ? 'Simpan Perubahan' : 'Generate PDF'}</>}
+            </button>
           </div>
         </form>
       </div>

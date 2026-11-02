@@ -22,23 +22,29 @@ type Props = {
 };
 
 // =============================================================================
-// HELPERS
+// HELPERS (DIPERBAIKI: Mengabaikan parameter URL seperti ?t=123)
 // =============================================================================
+function cleanUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  return url.split('?')[0].toLowerCase();
+}
+
 function isImage(url: string | null | undefined): boolean {
-  if (!url) return false;
-  const lower = url.toLowerCase();
+  const clean = cleanUrl(url);
+  if (!clean) return false;
   return (
-    lower.endsWith('.jpg') ||
-    lower.endsWith('.jpeg') ||
-    lower.endsWith('.png') ||
-    lower.endsWith('.webp') ||
-    lower.includes('/image/')
+    clean.endsWith('.jpg') ||
+    clean.endsWith('.jpeg') ||
+    clean.endsWith('.png') ||
+    clean.endsWith('.webp') ||
+    clean.includes('/image/')
   );
 }
 
 function isPdf(url: string | null | undefined): boolean {
-  if (!url) return false;
-  return url.toLowerCase().endsWith('.pdf') || url.toLowerCase().includes('application/pdf');
+  const clean = cleanUrl(url);
+  if (!clean) return false;
+  return clean.endsWith('.pdf') || clean.includes('application/pdf');
 }
 
 // =============================================================================
@@ -141,9 +147,8 @@ export function ModalDetailSurat({ surat, onClose, onSaved }: Props) {
                 <MetaItem
                   icon={Paperclip}
                   label="Metode Kirim"
-                  value={`${surat.metode_pengiriman}${
-                    surat.no_resi ? ` · ${surat.no_resi}` : ''
-                  }`}
+                  value={`${surat.metode_pengiriman}${surat.no_resi ? ` · ${surat.no_resi}` : ''
+                    }`}
                 />
               )}
             </div>
@@ -182,23 +187,21 @@ export function ModalDetailSurat({ surat, onClose, onSaved }: Props) {
                 </div>
               </div>
 
-            
               {canPreview && !previewError ? (
-  fileIsPdf ? (
-    // ✅ Batch 12C: render PDF client-side via pdfjs
-    <PdfPreview
-      url={surat.file_url}
-      maxHeight="400px"
-    />
-  ) : (
-    <img
-      src={surat.file_url}
-      alt={surat.perihal}
-      className="w-full max-h-96 object-contain bg-slate-950"
-      onError={() => setPreviewError(true)}
-    />
-  )
-) : (
+                fileIsPdf ? (
+                  <PdfPreview
+                    url={surat.file_url}
+                    maxHeight="400px"
+                  />
+                ) : (
+                  <img
+                    src={surat.file_url}
+                    alt={surat.perihal}
+                    className="w-full max-h-96 object-contain bg-slate-950"
+                    onError={() => setPreviewError(true)}
+                  />
+                )
+              ) : (
                 <div className="text-center py-12">
                   <FileText size={32} className="mx-auto text-slate-600 mb-2" />
                   <p className="text-xs text-slate-500">
@@ -221,7 +224,7 @@ export function ModalDetailSurat({ surat, onClose, onSaved }: Props) {
           {/* AI RINGKASAN */}
           <RingkasanAiSurat
             suratId={surat.id ?? ''}
-            fileUrl={surat.file_url ?? null}
+            fileUrl={cleanUrl(surat.file_url) || null} // ✅ Gunakan cleanUrl
             sifat={sifat}
             existingRingkasan={
               ((surat as any).ai_ringkasan as RingkasanSuratAI | null) ?? null

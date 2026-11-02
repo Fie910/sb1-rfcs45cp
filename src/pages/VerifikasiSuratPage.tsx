@@ -1,12 +1,8 @@
 // src/pages/VerifikasiSuratPage.tsx
-// Halaman publik verifikasi dokumen via QR scan (tanpa login).
-// Support: Surat Izin/Cuti (HRIS) + Surat Peringatan (Kesiswaan).
-// Hybrid A+B: verifikasi token + hash content.
-
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
-  Loader2, ShieldCheck, ShieldX, ShieldAlert, Calendar, User,
+  ShieldCheck, ShieldX, ShieldAlert, Calendar, User,
   FileText, CheckCircle2, AlertTriangle, Hash, Clock, GraduationCap,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -59,7 +55,20 @@ type VerifDataSP = {
   penandatangan_nip: string | null;
 };
 
-type VerifData = VerifDataIzin | VerifDataSP;
+// ✅ Tipe Baru untuk Surat Umum/Otomatis
+type VerifDataSurat = {
+  kind: 'surat';
+  id: string;
+  nomor: string;
+  tanggal: string;
+  perihal: string;
+  pengirim: string;
+  file_url: string | null;
+  content_hash?: string | null;
+};
+
+// ✅ Union Type yang diperbarui
+type VerifData = VerifDataIzin | VerifDataSP | VerifDataSurat;
 
 // =============================================================================
 // HELPER
@@ -92,18 +101,12 @@ export default function VerifikasiSuratPage() {
       }
 
       try {
-        // ========================================================
         // Step 1: Coba tabel Surat Izin/Cuti (view HRIS)
-        // ========================================================
         const { data: izinResult, error: izinErr } = await supabase
           .from('v_hris_cuti_verifikasi')
           .select('*')
           .eq('verification_token', token)
           .maybeSingle();
-
-        if (izinErr && izinErr.code !== 'PGRST116') {
-          console.warn('[verif-surat] Izin query warning:', izinErr.message);
-        }
 
         if (izinResult) {
           setData({
@@ -130,9 +133,7 @@ export default function VerifikasiSuratPage() {
           return;
         }
 
-        // ========================================================
         // Step 2: Coba tabel Surat Peringatan (Kesiswaan)
-        // ========================================================
         const { data: spResult, error: spErr } = await supabase
           .from('kesiswaan_surat_peringatan')
           .select(`
@@ -145,10 +146,6 @@ export default function VerifikasiSuratPage() {
           `)
           .eq('verification_token', token)
           .maybeSingle();
-
-        if (spErr && spErr.code !== 'PGRST116') {
-          console.warn('[verif-surat] SP query warning:', spErr.message);
-        }
 
         if (spResult) {
           setData({
@@ -171,6 +168,28 @@ export default function VerifikasiSuratPage() {
             penandatangan_nama: spResult.penandatangan?.nama_lengkap ?? null,
             penandatangan_nip: spResult.penandatangan?.nip ?? null,
           });
+          setLoading(false);
+          return;
+        }
+
+        // Step 3: Coba tabel Surat Umum / Surat Otomatis
+        const { data: suratResult } = await supabase
+          .from('surat')
+          .select('*')
+          .eq('verification_token', token)
+          .maybeSingle();
+
+        if (suratResult) {
+          setData({
+            kind: 'surat',
+            id: suratResult.id,
+            nomor: suratResult.nomor_surat,
+            tanggal: suratResult.tanggal_surat,
+            perihal: suratResult.perihal,
+            pengirim: suratResult.pengirim_atau_tujuan,
+            file_url: suratResult.file_url,
+            content_hash: suratResult.content_hash ?? null,
+          });
         }
       } catch (err) {
         console.error('[verif-surat] error:', err);
@@ -189,7 +208,9 @@ export default function VerifikasiSuratPage() {
   })();
 
   const pageTitle =
-    data?.kind === 'sp' ? 'Verifikasi Surat Peringatan' : 'Verifikasi Surat Izin';
+    data?.kind === 'sp' ? 'Verifikasi Surat Peringatan' :
+      data?.kind === 'surat' ? 'Verifikasi Surat Sekolah' :
+        'Verifikasi Surat Izin';
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
@@ -209,7 +230,7 @@ export default function VerifikasiSuratPage() {
 
         {/* CONTENT */}
         {loading ? (
-          <LoadingCard />
+          <PageSkeleton variant="list" />
         ) : !data ? (
           <NotFoundCard />
         ) : (
@@ -218,6 +239,36 @@ export default function VerifikasiSuratPage() {
 
             {data.kind === 'izin' && <IzinDetail data={data} />}
             {data.kind === 'sp' && <SPDetail data={data} />}
+
+            {data.kind === 'surat' && (
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
+                <div className="pb-3 border-b border-slate-800">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Nomor Surat</p>
+                  <p className="text-sm font-mono font-bold text-slate-100 mt-0.5">{data.nomor}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <p className="text-slate-500 mb-1">Tanggal</p>
+                    <p className="text-slate-200 font-semibold">{formatTanggal(data.tanggal)}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500 mb-1">Tujuan / Pengirim</p>
+                    <p className="text-slate-200 font-semibold">{data.pengirim}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-slate-500 mb-1 text-xs">Perihal</p>
+                  <p className="text-slate-200 text-sm font-bold">{data.perihal}</p>
+                </div>
+                {data.file_url && (
+                  <div className="pt-3 border-t border-slate-800">
+                    <a href={data.file_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition">
+                      <FileText size={14} /> Buka Dokumen PDF
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
 
             <p className="text-center text-[10px] text-slate-500 leading-relaxed">
               Halaman ini dihasilkan otomatis oleh Sistem Informasi Sekolah.
@@ -228,23 +279,13 @@ export default function VerifikasiSuratPage() {
         )}
 
         <div className="text-center mt-6">
-          <Link
-            to="/"
-            className="text-xs text-indigo-400 hover:text-indigo-300 font-bold transition"
-          >
+          <Link to="/" className="text-xs text-indigo-400 hover:text-indigo-300 font-bold transition">
             ← Kembali ke Aplikasi
           </Link>
         </div>
       </div>
     </div>
   );
-}
-
-// =============================================================================
-// SUB: Loading
-// =============================================================================
-function LoadingCard() {
-  return <PageSkeleton variant="list" />;
 }
 
 // =============================================================================
@@ -258,8 +299,7 @@ function NotFoundCard() {
       </div>
       <h2 className="text-lg font-bold text-rose-300 mb-2">DOKUMEN TIDAK VALID</h2>
       <p className="text-sm text-slate-400 leading-relaxed">
-        Dokumen dengan kode verifikasi ini tidak ditemukan dalam sistem, atau
-        belum disetujui secara resmi.
+        Dokumen dengan kode verifikasi ini tidak ditemukan dalam sistem, atau belum disetujui secara resmi.
       </p>
       <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-bold">
         <AlertTriangle size={12} /> Kemungkinan dokumen palsu
@@ -276,9 +316,12 @@ function StatusBanner({
   kind,
 }: {
   hashStatus: HashStatus;
-  kind: 'izin' | 'sp';
+  kind: 'izin' | 'sp' | 'surat';
 }) {
-  const label = kind === 'sp' ? 'Surat Peringatan' : 'Surat Izin';
+  let label = 'Surat';
+  if (kind === 'sp') label = 'Surat Peringatan';
+  else if (kind === 'izin') label = 'Surat Izin';
+  else if (kind === 'surat') label = 'Surat Sekolah';
 
   if (hashStatus === 'mismatch') {
     return (
@@ -288,12 +331,8 @@ function StatusBanner({
         </div>
         <h2 className="text-lg font-extrabold text-rose-300">PDF INI VERSI LAMA</h2>
         <p className="text-xs text-rose-400/80 mt-1 leading-relaxed">
-          {label} sudah mengalami revisi setelah PDF ini dicetak. Isi terkini di
-          bawah mungkin berbeda dengan yang ada di PDF Anda.
+          {label} sudah mengalami revisi setelah PDF ini dicetak.
         </p>
-        <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-bold">
-          <AlertTriangle size={12} /> Hash tidak cocok
-        </div>
       </div>
     );
   }
@@ -304,30 +343,22 @@ function StatusBanner({
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 mb-3">
           <ShieldCheck size={32} />
         </div>
-        <h2 className="text-lg font-extrabold text-amber-300">
-          {label.toUpperCase()} VALID
-        </h2>
+        <h2 className="text-lg font-extrabold text-amber-300">{label.toUpperCase()} VALID</h2>
         <p className="text-xs text-amber-400/80 mt-1 leading-relaxed">
-          Token valid. Hash belum tersedia — dokumen dibuat sebelum sistem hash
-          diaktifkan.
+          Token valid. Hash belum tersedia.
         </p>
       </div>
     );
   }
 
-  // valid atau not_specified
   return (
     <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-6 text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 mb-3">
         <CheckCircle2 size={32} />
       </div>
-      <h2 className="text-lg font-extrabold text-emerald-300">
-        {label.toUpperCase()} ASLI & VALID
-      </h2>
+      <h2 className="text-lg font-extrabold text-emerald-300">{label.toUpperCase()} ASLI & VALID</h2>
       <p className="text-xs text-emerald-400/80 mt-1">
-        {hashStatus === 'valid'
-          ? 'Hash cocok — isi dokumen tidak berubah sejak dikunci'
-          : 'Dokumen terdaftar dalam sistem kami'}
+        {hashStatus === 'valid' ? 'Hash cocok — isi dokumen tidak berubah.' : 'Dokumen terdaftar dalam sistem kami.'}
       </p>
     </div>
   );
@@ -340,71 +371,18 @@ function IzinDetail({ data }: { data: VerifDataIzin }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-3">
       <div className="pb-3 border-b border-slate-800">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
-          Nomor Surat Izin
-        </p>
-        <p className="text-sm font-mono font-bold text-slate-100 mt-0.5">
-          {data.nomor}
-        </p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Nomor Surat Izin</p>
+        <p className="text-sm font-mono font-bold text-slate-100 mt-0.5">{data.nomor}</p>
       </div>
-
       <Row icon={User} label="Nama" value={data.guru_nama ?? '-'} />
       <Row icon={FileText} label="NIP" value={data.guru_nip ?? '-'} />
-      <Row icon={FileText} label="Jenis PTK" value={data.jenis_ptk ?? '-'} />
       <Row icon={FileText} label="Jenis Cuti" value={data.jenis_nama ?? '-'} />
-      <Row
-        icon={Calendar}
-        label="Periode"
-        value={`${formatTanggal(data.tanggal_mulai)} — ${formatTanggal(data.tanggal_selesai)}`}
-      />
-      <Row
-        icon={Calendar}
-        label="Durasi"
-        value={`${data.jumlah_hari} hari${
-          data.jam_mulai ? ` (${data.jam_mulai} - ${data.jam_selesai})` : ''
-        }`}
-      />
-
+      <Row icon={Calendar} label="Periode" value={`${formatTanggal(data.tanggal_mulai)} — ${formatTanggal(data.tanggal_selesai)}`} />
+      <Row icon={Calendar} label="Durasi" value={`${data.jumlah_hari} hari`} />
       <div className="pt-3 border-t border-slate-800">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">
-          Alasan
-        </p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">Alasan</p>
         <p className="text-xs text-slate-200 leading-relaxed">{data.alasan}</p>
       </div>
-
-      {data.content_hash && (
-        <div className="pt-3 border-t border-slate-800">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1 flex items-center gap-1">
-            <Hash size={10} /> SHA-256 Content Hash
-          </p>
-          <p className="text-[10px] font-mono text-slate-400 break-all leading-relaxed">
-            {data.content_hash}
-          </p>
-        </div>
-      )}
-
-      {data.frozen_at && (
-        <div className="pt-3 border-t border-slate-800">
-          <p className="text-[10px] text-slate-500 italic flex items-center gap-1">
-            <Clock size={10} />
-            Dokumen dikunci:{' '}
-            {new Date(data.frozen_at).toLocaleString('id-ID', {
-              timeZone: 'Asia/Jakarta',
-            })}
-          </p>
-        </div>
-      )}
-
-      {data.surat_generated_at && (
-        <div className="pt-3 border-t border-slate-800">
-          <p className="text-[10px] text-slate-500 italic">
-            Surat dicetak:{' '}
-            {new Date(data.surat_generated_at).toLocaleString('id-ID', {
-              timeZone: 'Asia/Jakarta',
-            })}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -419,129 +397,22 @@ function SPDetail({ data }: { data: VerifDataSP }) {
     SP3: 'text-rose-400 bg-rose-500/15 border-rose-500/30',
   }[data.level];
 
-  const poinBersih = data.total_poin_pelanggaran - data.total_poin_prestasi;
-
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-3">
       <div className="pb-3 border-b border-slate-800">
         <div className="flex items-center gap-2 mb-1">
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${levelColor}`}
-          >
-            {data.level}
-          </span>
-          <span className="text-[10px] text-slate-500">·</span>
-          <span className="text-[10px] font-semibold text-slate-400">
-            {data.status}
-          </span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${levelColor}`}>{data.level}</span>
         </div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
-          Nomor Surat Peringatan
-        </p>
-        <p className="text-sm font-mono font-bold text-slate-100 mt-0.5">
-          {data.nomor}
-        </p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Nomor SP</p>
+        <p className="text-sm font-mono font-bold text-slate-100 mt-0.5">{data.nomor}</p>
       </div>
-
       <Row icon={GraduationCap} label="Nama Siswa" value={data.siswa_nama ?? '-'} />
       <Row icon={FileText} label="NISN" value={data.siswa_nisn ?? '-'} />
       <Row icon={FileText} label="Kelas" value={data.siswa_kelas ?? '-'} />
-      <Row
-        icon={Calendar}
-        label="Tanggal Terbit"
-        value={formatTanggal(data.tanggal_terbit)}
-      />
-      {data.batas_waktu && (
-        <Row
-          icon={Clock}
-          label="Batas Waktu"
-          value={formatTanggal(data.batas_waktu)}
-        />
-      )}
-
-      {/* Poin */}
       <div className="pt-3 border-t border-slate-800">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-2">
-          Rekapitulasi Poin
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-rose-500/5 border border-rose-500/20 rounded-lg p-2 text-center">
-            <p className="text-[9px] text-rose-400 font-bold uppercase">Pelanggaran</p>
-            <p className="text-sm font-extrabold text-rose-400">
-              {data.total_poin_pelanggaran}
-            </p>
-          </div>
-          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-2 text-center">
-            <p className="text-[9px] text-emerald-400 font-bold uppercase">Prestasi</p>
-            <p className="text-sm font-extrabold text-emerald-400">
-              {data.total_poin_prestasi}
-            </p>
-          </div>
-          <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-2 text-center">
-            <p className="text-[9px] text-amber-400 font-bold uppercase">Bersih</p>
-            <p className="text-sm font-extrabold text-amber-400">{poinBersih}</p>
-          </div>
-        </div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">Alasan</p>
+        <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{data.alasan}</p>
       </div>
-
-      {/* Alasan */}
-      <div className="pt-3 border-t border-slate-800">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">
-          Alasan / Pelanggaran
-        </p>
-        <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
-          {data.alasan}
-        </p>
-      </div>
-
-      {data.catatan && (
-        <div className="pt-3 border-t border-slate-800">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">
-            Catatan Tambahan
-          </p>
-          <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-            {data.catatan}
-          </p>
-        </div>
-      )}
-
-      {data.penandatangan_nama && (
-        <div className="pt-3 border-t border-slate-800">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">
-            Ditandatangani Oleh
-          </p>
-          <p className="text-xs font-semibold text-slate-200">
-            {data.penandatangan_nama}
-          </p>
-          {data.penandatangan_nip && (
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              NIP. {data.penandatangan_nip}
-            </p>
-          )}
-        </div>
-      )}
-
-      {data.content_hash && (
-        <div className="pt-3 border-t border-slate-800">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1 flex items-center gap-1">
-            <Hash size={10} /> SHA-256 Content Hash
-          </p>
-          <p className="text-[10px] font-mono text-slate-400 break-all leading-relaxed">
-            {data.content_hash}
-          </p>
-        </div>
-      )}
-
-      {data.pdf_generated_at && (
-        <div className="pt-3 border-t border-slate-800">
-          <p className="text-[10px] text-slate-500 italic">
-            Surat dicetak:{' '}
-            {new Date(data.pdf_generated_at).toLocaleString('id-ID', {
-              timeZone: 'Asia/Jakarta',
-            })}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -549,15 +420,7 @@ function SPDetail({ data }: { data: VerifDataSP }) {
 // =============================================================================
 // SUB: Row
 // =============================================================================
-function Row({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof User;
-  label: string;
-  value: string;
-}) {
+function Row({ icon: Icon, label, value }: { icon: typeof User; label: string; value: string; }) {
   return (
     <div className="flex items-start gap-3">
       <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center shrink-0">

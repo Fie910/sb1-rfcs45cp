@@ -1,14 +1,15 @@
 // src/lib/pdf/generateSuratOtomatisPDF.ts
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { 
-  A4_LAYOUT, drawKopSurat, drawFooter, fetchPengaturan, 
+import {
+  A4_LAYOUT, drawKopSurat, drawFooter, fetchPengaturan,
   PDF_THEME, drawWatermark, formatTanggalPanjang,
   buildVerifyUrl, drawQrVerifikasi, type PdfAction
 } from './pdfShared';
+import { SEKOLAH_TAGLINE } from '@/constants/branding';
 
-export type TemplateType = 
-  | 'UNDANGAN' | 'PERMOHONAN' | 'PEMBERITAHUAN' | 'EDARAN' | 'PERINGATAN' 
+export type TemplateType =
+  | 'UNDANGAN' | 'PERMOHONAN' | 'PEMBERITAHUAN' | 'EDARAN' | 'PERINGATAN'
   | 'PENGANTAR' | 'REKOMENDASI' | 'BISNIS' | 'DINAS'
   | 'KETERANGAN' | 'PERNYATAAN'
   | 'TUGAS'
@@ -27,10 +28,10 @@ export type SuratOtomatisData = {
 };
 
 export async function generateSuratOtomatisPDF(
-  surat: SuratOtomatisData, 
+  surat: SuratOtomatisData,
   action: PdfAction | 'blob' = 'save'
 ): Promise<Blob | void> {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
   const { pageWidth, pageHeight, marginX, contentWidth } = A4_LAYOUT;
   const pengaturan = await fetchPengaturan(true);
   const d = surat.data;
@@ -66,7 +67,7 @@ export async function generateSuratOtomatisPDF(
     doc.setFontSize(12); doc.text(`Nomor: ${surat.nomor_surat}`, pageWidth / 2, y, { align: 'center' }); y += 6;
     doc.text('TENTANG', pageWidth / 2, y, { align: 'center' }); y += 6;
     doc.text((d.sk_tentang || '').toUpperCase(), pageWidth / 2, y, { align: 'center', maxWidth: contentWidth });
-  } 
+  }
   else if (isNotaDinas) {
     doc.setFont('times', 'bold'); doc.setFontSize(16); doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
     doc.text('NOTA DINAS', pageWidth / 2, y, { align: 'center' }); y += 6;
@@ -87,7 +88,7 @@ export async function generateSuratOtomatisPDF(
     doc.line(pageWidth / 2 - 40, y, pageWidth / 2 + 40, y); y += 6;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(0);
     doc.text(`Nomor: ${surat.nomor_surat}`, pageWidth / 2, y, { align: 'center' });
-  } 
+  }
   else {
     // Gaya Blok Kiri
     doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(0);
@@ -198,8 +199,8 @@ export async function generateSuratOtomatisPDF(
   // ==========================================
   if (y > pageHeight - 80) { doc.addPage(); y = 30; } y += 10;
   if (isSK && d.catatan) {
-     doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text('Tembusan:', marginX, y); y += 4;
-     doc.setFont('helvetica', 'normal'); const tLines = d.catatan.split('\n'); tLines.forEach((t: string, i: number) => { doc.text(`${i+1}. ${t}`, marginX + 3, y); y += 4; }); y += 6;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text('Tembusan:', marginX, y); y += 4;
+    doc.setFont('helvetica', 'normal'); const tLines = d.catatan.split('\n'); tLines.forEach((t: string, i: number) => { doc.text(`${i + 1}. ${t}`, marginX + 3, y); y += 4; }); y += 6;
   }
   if (y > pageHeight - 60) { doc.addPage(); y = 30; }
   const rightX = pageWidth - marginX - 60;
@@ -212,7 +213,22 @@ export async function generateSuratOtomatisPDF(
   const qrSize = 25; const verifyUrl = buildVerifyUrl('surat', surat.verification_token, null);
   await drawQrVerifikasi(doc, verifyUrl, marginX, y - 30, qrSize, ['Scan verifikasi', 'keaslian surat']);
 
-  drawFooter(doc, pengaturan, A4_LAYOUT, `Surat ${judul} - ${surat.perihal}`);
+  // ==========================================
+  // FOOTER KHUSUS SURAT OTOMATIS (TAGLINE)
+  // ==========================================
+  const pageCount = (doc as any).internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8.5);
+    doc.setTextColor(PDF_THEME.navy[0], PDF_THEME.navy[1], PDF_THEME.navy[2]);
+    doc.text(`—  ${SEKOLAH_TAGLINE}  —`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+    // Hanya tampilkan halaman jika lebih dari 1
+    if (pageCount > 1) {
+      doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - marginX, pageHeight - 10, { align: 'right' });
+    }
+  }
   await drawWatermark(doc, pengaturan.logo_url);
 
   // OUTPUT

@@ -149,8 +149,13 @@ export function RingkasanAiSurat({
   const handleGenerate = async () => {
     setLoading(true);
     try {
+      // 1. Proses AI
       const result = await ringkasSurat(fileUrl);
 
+      // 2. Tampilkan ke layar terlebih dahulu
+      setRingkasan(result);
+
+      // 3. Simpan ke database
       const { error } = await supabase
         .from('surat')
         .update({
@@ -159,7 +164,11 @@ export function RingkasanAiSurat({
         })
         .eq('id', suratId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[RingkasanAiSurat] Gagal simpan ke DB:', error);
+        showToast('error', 'Ringkasan tampil, tapi gagal disimpan permanen ke database.');
+        return;
+      }
 
       await logActivity({
         aksi: 'UPDATE',
@@ -168,7 +177,6 @@ export function RingkasanAiSurat({
         deskripsi: `Generate ringkasan AI surat`,
       });
 
-      setRingkasan(result);
       showToast('success', 'Ringkasan AI berhasil dibuat');
       onSaved?.();
     } catch (err: any) {
