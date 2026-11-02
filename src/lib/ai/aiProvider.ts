@@ -148,7 +148,7 @@ async function callGroqVision(req: AIVisionRequest, model: string): Promise<stri
 async function callGemini(req: AITextRequest, model: string): Promise<string> {
   if (!hasGemini) throw new Error('Gemini API key tidak valid');
   const contents: any[] = [{ role: 'user', parts: [{ text: req.prompt }] }];
-
+  
   const payload: any = { contents, generationConfig: { temperature: req.temperature ?? 0.3, maxOutputTokens: req.maxTokens ?? 4096 } };
   if (req.systemPrompt) payload.systemInstruction = { parts: [{ text: req.systemPrompt }] };
   if (req.jsonMode) payload.generationConfig.responseMimeType = 'application/json';
@@ -163,16 +163,15 @@ async function callGemini(req: AITextRequest, model: string): Promise<string> {
 
 async function callGeminiVision(req: AIVisionRequest, model: string): Promise<string> {
   if (!hasGemini) throw new Error('Gemini API key tidak valid');
-
-  // ✅ FIX: Sisipkan Gambar/PDF (inlineData)
-  const contents: any[] = [{
-    role: 'user',
+  
+  const contents: any[] = [{ 
+    role: 'user', 
     parts: [
       { text: req.prompt },
       { inlineData: { mimeType: req.imageMimeType, data: req.imageBase64 } }
-    ]
+    ] 
   }];
-
+  
   const payload: any = { contents, generationConfig: { temperature: req.temperature ?? 0.3, maxOutputTokens: req.maxTokens ?? 4096 } };
   if (req.systemPrompt) payload.systemInstruction = { parts: [{ text: req.systemPrompt }] };
   if (req.jsonMode) payload.generationConfig.responseMimeType = 'application/json';
@@ -186,7 +185,7 @@ async function callGeminiVision(req: AIVisionRequest, model: string): Promise<st
 }
 
 // ============================================================================
-// DEEPSEEK — TEXT & VISION (Kompatibel OpenAI)
+// DEEPSEEK — TEXT & VISION
 // ============================================================================
 async function callDeepSeek(req: AITextRequest, model: string): Promise<string> {
   if (!hasDeepSeek) throw new Error('DeepSeek API key tidak valid');
@@ -230,26 +229,23 @@ async function callDeepSeekVision(req: AIVisionRequest, model: string): Promise<
 export async function generateText(req: AITextRequest): Promise<AIResult> {
   const attempts: string[] = [];
 
-  // 1. Groq
   if (hasGroq) {
     for (const model of GROQ_MODELS) {
-      try { return { text: await callGroq(req, model), provider: 'groq', model }; }
+      try { return { text: await callGroq(req, model), provider: 'groq', model }; } 
       catch (e: any) { attempts.push(e.message); }
     }
   }
-
-  // 2. Gemini
+  
   if (hasGemini) {
     for (const model of GEMINI_MODELS) {
-      try { return { text: await callGemini(req, model), provider: 'gemini', model }; }
+      try { return { text: await callGemini(req, model), provider: 'gemini', model }; } 
       catch (e: any) { attempts.push(e.message); }
     }
   }
 
-  // 3. DeepSeek
   if (hasDeepSeek) {
     for (const model of DEEPSEEK_MODELS) {
-      try { return { text: await callDeepSeek(req, model), provider: 'deepseek', model }; }
+      try { return { text: await callDeepSeek(req, model), provider: 'deepseek', model }; } 
       catch (e: any) { attempts.push(e.message); }
     }
   }
@@ -267,26 +263,23 @@ export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
   const attempts: string[] = [];
   const isPdf = req.imageMimeType === 'application/pdf';
 
-  // 1. Gemini Vision (Utama untuk PDF)
   if (hasGemini) {
     for (const model of GEMINI_VISION_MODELS) {
-      try { return { text: await callGeminiVision(req, model), provider: 'gemini', model }; }
+      try { return { text: await callGeminiVision(req, model), provider: 'gemini', model }; } 
       catch (e: any) { attempts.push(e.message); }
     }
   }
 
-  // 2. DeepSeek Vision (Cadangan)
   if (hasDeepSeek) {
     for (const model of DEEPSEEK_VISION_MODELS) {
-      try { return { text: await callDeepSeekVision(req, model), provider: 'deepseek', model }; }
+      try { return { text: await callDeepSeekVision(req, model), provider: 'deepseek', model }; } 
       catch (e: any) { attempts.push(e.message); }
     }
   }
 
-  // 3. Groq Vision (Hanya untuk Gambar, bukan PDF)
   if (hasGroq && !isPdf) {
     for (const model of GROQ_VISION_MODELS) {
-      try { return { text: await callGroqVision(req, model), provider: 'groq', model }; }
+      try { return { text: await callGroqVision(req, model), provider: 'groq', model }; } 
       catch (e: any) { attempts.push(e.message); }
     }
   }
@@ -302,4 +295,14 @@ export async function generateJSONVision<T>(req: AIVisionRequest): Promise<{ dat
 
 export function hasAnyProvider(): boolean {
   return hasGroq || hasGemini || hasDeepSeek;
+}
+
+// ✅ FUNGSI YANG TADI TERLEWAT (Sekarang sudah dikembalikan)
+export async function checkAiAvailable(): Promise<boolean> {
+  try {
+    await generateText({ prompt: 'Reply OK', maxTokens: 5, temperature: 0 });
+    return true;
+  } catch {
+    return false;
+  }
 }
