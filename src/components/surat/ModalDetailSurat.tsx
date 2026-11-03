@@ -61,8 +61,8 @@ export function ModalDetailSurat({ surat, onClose, onSaved }: Props) {
   const canPreview = fileIsImage || fileIsPdf;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0 shadow-2xl w-full max-w-3xl overflow-hidden max-h-[92vh] flex flex-col">
 
         {/* HEADER */}
         <div className="flex justify-between items-center px-5 py-4 border-b border-white/10 bg-slate-900/50 shrink-0">

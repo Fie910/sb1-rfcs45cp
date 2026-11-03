@@ -41,7 +41,7 @@ const hasGemini = Boolean(GEMINI_KEY && GEMINI_KEY.length > 10);
 const hasDeepSeek = Boolean(DEEPSEEK_KEY);
 
 // ============================================================================
-// CONFIG — MODEL LIST (Terbaru 2026)
+// CONFIG — MODEL LIST
 // ============================================================================
 const GROQ_MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
 const GROQ_VISION_MODELS = ['qwen/qwen3.8-27b'];
@@ -148,7 +148,7 @@ async function callGroqVision(req: AIVisionRequest, model: string): Promise<stri
 async function callGemini(req: AITextRequest, model: string): Promise<string> {
   if (!hasGemini) throw new Error('Gemini API key tidak valid');
   const contents: any[] = [{ role: 'user', parts: [{ text: req.prompt }] }];
-  
+
   const payload: any = { contents, generationConfig: { temperature: req.temperature ?? 0.3, maxOutputTokens: req.maxTokens ?? 4096 } };
   if (req.systemPrompt) payload.systemInstruction = { parts: [{ text: req.systemPrompt }] };
   if (req.jsonMode) payload.generationConfig.responseMimeType = 'application/json';
@@ -163,15 +163,15 @@ async function callGemini(req: AITextRequest, model: string): Promise<string> {
 
 async function callGeminiVision(req: AIVisionRequest, model: string): Promise<string> {
   if (!hasGemini) throw new Error('Gemini API key tidak valid');
-  
-  const contents: any[] = [{ 
-    role: 'user', 
+
+  const contents: any[] = [{
+    role: 'user',
     parts: [
       { text: req.prompt },
       { inlineData: { mimeType: req.imageMimeType, data: req.imageBase64 } }
-    ] 
+    ]
   }];
-  
+
   const payload: any = { contents, generationConfig: { temperature: req.temperature ?? 0.3, maxOutputTokens: req.maxTokens ?? 4096 } };
   if (req.systemPrompt) payload.systemInstruction = { parts: [{ text: req.systemPrompt }] };
   if (req.jsonMode) payload.generationConfig.responseMimeType = 'application/json';
@@ -231,21 +231,21 @@ export async function generateText(req: AITextRequest): Promise<AIResult> {
 
   if (hasGroq) {
     for (const model of GROQ_MODELS) {
-      try { return { text: await callGroq(req, model), provider: 'groq', model }; } 
+      try { return { text: await callGroq(req, model), provider: 'groq', model }; }
       catch (e: any) { attempts.push(e.message); }
     }
   }
-  
+
   if (hasGemini) {
     for (const model of GEMINI_MODELS) {
-      try { return { text: await callGemini(req, model), provider: 'gemini', model }; } 
+      try { return { text: await callGemini(req, model), provider: 'gemini', model }; }
       catch (e: any) { attempts.push(e.message); }
     }
   }
 
   if (hasDeepSeek) {
     for (const model of DEEPSEEK_MODELS) {
-      try { return { text: await callDeepSeek(req, model), provider: 'deepseek', model }; } 
+      try { return { text: await callDeepSeek(req, model), provider: 'deepseek', model }; }
       catch (e: any) { attempts.push(e.message); }
     }
   }
@@ -265,21 +265,21 @@ export async function generateVision(req: AIVisionRequest): Promise<AIResult> {
 
   if (hasGemini) {
     for (const model of GEMINI_VISION_MODELS) {
-      try { return { text: await callGeminiVision(req, model), provider: 'gemini', model }; } 
+      try { return { text: await callGeminiVision(req, model), provider: 'gemini', model }; }
       catch (e: any) { attempts.push(e.message); }
     }
   }
 
   if (hasDeepSeek) {
     for (const model of DEEPSEEK_VISION_MODELS) {
-      try { return { text: await callDeepSeekVision(req, model), provider: 'deepseek', model }; } 
+      try { return { text: await callDeepSeekVision(req, model), provider: 'deepseek', model }; }
       catch (e: any) { attempts.push(e.message); }
     }
   }
 
   if (hasGroq && !isPdf) {
     for (const model of GROQ_VISION_MODELS) {
-      try { return { text: await callGroqVision(req, model), provider: 'groq', model }; } 
+      try { return { text: await callGroqVision(req, model), provider: 'groq', model }; }
       catch (e: any) { attempts.push(e.message); }
     }
   }
@@ -297,7 +297,14 @@ export function hasAnyProvider(): boolean {
   return hasGroq || hasGemini || hasDeepSeek;
 }
 
-// ✅ FUNGSI YANG TADI TERLEWAT (Sekarang sudah dikembalikan)
+export function getAvailableProviders(): AIProviderId[] {
+  const list: AIProviderId[] = [];
+  if (hasGroq) list.push('groq');
+  if (hasGemini) list.push('gemini');
+  if (hasDeepSeek) list.push('deepseek');
+  return list;
+}
+
 export async function checkAiAvailable(): Promise<boolean> {
   try {
     await generateText({ prompt: 'Reply OK', maxTokens: 5, temperature: 0 });

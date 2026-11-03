@@ -744,8 +744,8 @@ export const SuratPage: React.FC = () => {
 
       {/* ==================== MODAL KATEGORI ==================== */}
       {showKategoriModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0 shadow-2xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center px-5 py-4 border-b border-white/10">
               <h3 className="font-bold text-sm sm:text-base text-white">{editingKategori ? 'Edit Kode Perihal' : 'Tambah Kode Perihal Baru'}</h3>
               <button onClick={() => setShowKategoriModal(false)} className="text-slate-400 hover:text-slate-200 cursor-pointer"><X className="w-5 h-5" /></button>
@@ -778,8 +778,8 @@ export const SuratPage: React.FC = () => {
 
       {/* ==================== MODAL SURAT (CREATE + EDIT MANUAL) ==================== */}
       {showSuratModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0 shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center px-5 py-4 border-b border-white/10">
               <h3 className="font-bold text-sm sm:text-base text-white">{editingSurat ? `Edit Data Surat ${activeTab}` : `Tambah Surat ${activeTab}`}</h3>
               <button onClick={() => setShowSuratModal(false)} className="text-slate-400 hover:text-slate-200 cursor-pointer"><X className="w-5 h-5" /></button>
@@ -838,8 +838,8 @@ export const SuratPage: React.FC = () => {
 
       {/* ==================== MODAL DISPOSISI ==================== */}
       {showDisposisiModal && selectedSuratForDisposisi && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0 shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center px-5 py-4 border-b border-white/10">
               <div>
                 <h3 className="font-bold text-sm sm:text-base text-white">Lembar Disposisi Surat</h3>
@@ -909,8 +909,8 @@ export const SuratPage: React.FC = () => {
 
       {/* ==================== MODAL EKSPEDISI ==================== */}
       {ekspedisiTarget && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0 shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center px-5 py-4 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center"><Truck size={18} /></div>
